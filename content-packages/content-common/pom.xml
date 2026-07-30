@@ -1,0 +1,34 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>lr.gov.moh.liberiaemr.content</groupId>
+		<artifactId>liberiaemr-content-packages</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<artifactId>liberiaemr-common</artifactId>
+	<packaging>pom</packaging>
+	<name>LiberiaEMR :: liberiaemr-common</name>
+	<description>Shared CIEL concepts, core encounter/visit types, generic forms and shared frontend config</description>
+
+	<!--
+		Opts this package in to the packaging pipeline. All configuration — goals, phases,
+		versions — is inherited from the pluginManagement block in ../pom.xml.
+	-->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.openmrs.maven.plugins</groupId>
+				<artifactId>openmrs-packager-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

@@ -1,0 +1,5 @@
+Uuid,Void/Retire,Name,Description,Program concept,Outcomes concept
+${var.program.anc.uuid},,Antenatal Care,Antenatal care from first contact to delivery,${var.concept.program.anc.uuid},
+${var.program.labour-delivery.uuid},,Labour and Delivery,Intrapartum care,${var.concept.program.labour-delivery.uuid},
+${var.program.pnc.uuid},,Postnatal Care,Postnatal care for mother and newborn,${var.concept.program.pnc.uuid},
+${var.program.family-planning.uuid},,Family Planning,Family planning counselling and method continuation,${var.concept.program.family-planning.uuid},

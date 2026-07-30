@@ -1,0 +1,7 @@
+Uuid,Void/Retire,Name,Description,Parent,Tags,Address 1,City/village,State/province,Country
+${var.location.facility-root.uuid},,Barnersville Health Center,MOH health center serving Barnersville,,Health Facility;Facility Location;Login Location;Visit Location,,Barnersville,Montserrado,Liberia
+${var.location.opd.uuid},,Barnersville OPD,Outpatient department,Barnersville Health Center,Login Location;Visit Location,,,,
+${var.location.maternity.uuid},,Barnersville Maternity,"Labour, delivery and postnatal unit",Barnersville Health Center,Login Location;Visit Location;Admission Location;Transfer Location,,,,
+${var.location.ward.uuid},,Barnersville Inpatient Ward,General inpatient ward,Barnersville Health Center,Login Location;Admission Location;Transfer Location,,,,
+${var.location.laboratory.uuid},,Barnersville Laboratory,Facility laboratory,Barnersville Health Center,Login Location,,,,
+${var.location.pharmacy.uuid},,Barnersville Pharmacy,Facility pharmacy and dispensing point,Barnersville Health Center,Login Location;Dispensing Location,,,,

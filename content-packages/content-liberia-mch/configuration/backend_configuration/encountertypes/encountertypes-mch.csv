@@ -1,0 +1,8 @@
+Uuid,Void/Retire,Name,Description
+${var.encountertype.anc-initial.uuid},,ANC Initial Visit,First antenatal contact - full history and baseline assessment
+${var.encountertype.anc-followup.uuid},,ANC Follow-up Visit,Subsequent antenatal contact
+${var.encountertype.labour-admission.uuid},,Labour Admission,Admission assessment on presentation in labour
+${var.encountertype.partograph.uuid},,Partograph Observation,Serial intrapartum observation recorded on the partograph
+${var.encountertype.delivery.uuid},,Delivery,Delivery outcome and immediate newborn assessment
+${var.encountertype.pnc.uuid},,Postnatal Visit,Postnatal contact for mother and newborn
+${var.encountertype.family-planning.uuid},,Family Planning Visit,Family planning counselling and method provision

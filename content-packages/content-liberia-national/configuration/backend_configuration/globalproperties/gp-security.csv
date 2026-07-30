@@ -1,0 +1,9 @@
+Property,Value,Description
+security.passwordMinimumLength,${var.security.password.minimum-length},Minimum password length (MOH ICT SOP: 13 characters)
+security.passwordRequiresUpperAndLowerCase,true,Password must mix upper and lower case
+security.passwordRequiresDigit,true,Password must contain a digit
+security.passwordRequiresNonDigit,true,Password must contain a non-digit
+security.passwordCannotMatchUsername,true,Password must not match the username or system id
+security.passwordCustomRegex,,Left empty deliberately - a custom regex would override the rules above
+security.loginAttemptsBeforeLockout,${var.security.login.max-attempts},Account locks after this many consecutive failures
+security.validTime,300000,Lockout duration in milliseconds (5 minutes) after the attempt limit is hit

@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Name,Description
+${var.locationtag.county.uuid},,County,First-level administrative division
+${var.locationtag.district.uuid},,District,Second-level administrative division (health district)
+${var.locationtag.health-facility.uuid},,Health Facility,A health facility recognised by the MOH

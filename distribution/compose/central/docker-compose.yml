@@ -1,0 +1,118 @@
+# LiberiaEMR — CENTRAL aggregation stack
+#
+# Receives the unidirectional push from each facility. Cross-facility patient query is
+# Sprint 4 scope and is NOT enabled here yet (see integration/cross-facility/).
+#
+#   docker compose --env-file ../../env/central.env up -d
+name: liberiaemr-central
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    command: >-
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_allowed_packet=1G
+    environment:
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [liberiaemr]
+
+  backend:
+    image: ${REGISTRY}/liberia-emr-backend:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      OMRS_CONFIG_CONNECTION_TYPE: mysql
+      OMRS_CONFIG_CONNECTION_SERVER: db
+      OMRS_CONFIG_CONNECTION_DATABASE: ${MYSQL_DATABASE}
+      OMRS_CONFIG_CONNECTION_USERNAME: ${MYSQL_USER}
+      OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
+      OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
+      OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
+      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error=false
+      JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
+    volumes:
+      - openmrs-data:/openmrs/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
+      interval: 20s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+    networks: [liberiaemr]
+
+  frontend:
+    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      SPA_PATH: /openmrs/spa
+      API_URL: /openmrs
+      SPA_CONFIG_URLS: >-
+        /openmrs/spa/config/config-core.json,
+        /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-central.json
+    networks: [liberiaemr]
+
+  gateway:
+    image: ${REGISTRY}/liberia-emr-gateway:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on: [frontend, backend]
+    ports:
+      - "443:443"
+    volumes:
+      - ${TLS_CERT_DIR}:/etc/nginx/certs:ro
+    networks: [liberiaemr]
+
+  # Receives facility pushes over TLS with mutual authentication.
+  sync-receiver:
+    image: ${REGISTRY}/liberia-emr-sync-receiver:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      EIP_ALLOWED_FACILITIES: ${ALLOWED_FACILITY_CODES}
+    volumes:
+      - ${TLS_CERT_DIR}:/etc/eip/certs:ro
+      - sync-inbox:/opt/eip/inbox
+    networks: [liberiaemr]
+
+  # DHIS2 aggregate export runs from central only, never from a facility.
+  dhis2-export:
+    image: ${REGISTRY}/liberia-emr-dhis2-export:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DHIS2_BASE_URL: ${DHIS2_BASE_URL}
+      DHIS2_USERNAME: ${DHIS2_USERNAME}
+      DHIS2_PASSWORD: ${DHIS2_PASSWORD}
+    # Blocked until the MOH delivers the data-element mappings; see
+    # integration/dhis2/mappings/README.md.
+    profiles: ["dhis2"]
+    networks: [liberiaemr]
+
+volumes:
+  db-data:
+  openmrs-data:
+  sync-inbox:
+
+networks:
+  liberiaemr:

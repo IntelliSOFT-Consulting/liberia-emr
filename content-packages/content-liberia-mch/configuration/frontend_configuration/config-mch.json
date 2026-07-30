@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "MCH runtime configuration — ANC / L&D / PNC / Family Planning.",
+    "Loaded after config-core.json and config-national.json. Must be listed in",
+    "SPA_CONFIG_URLS or O3 will not read it (IMPLEMENTATION.md §7)."
+  ],
+  "@openmrs/esm-patient-chart-app": {
+    "visitTypeResourceUrl": "/ws/rest/v1/visittype?v=default",
+    "showRecommendedVisitTypeTab": true
+  },
+  "@openmrs/esm-patient-programs-app": {
+    "_comment_programs": "Programme UUIDs come from variables.properties; never inline one here.",
+    "featuredProgramUuids": [
+      "${var.program.anc.uuid}",
+      "${var.program.labour-delivery.uuid}",
+      "${var.program.pnc.uuid}",
+      "${var.program.family-planning.uuid}"
+    ]
+  },
+  "@liberiaemr/esm-liberia-epartograph-app": {
+    "_comment_epartograph": [
+      "The e-partograph is a Custom Build ESM pinned in distribution/distro.properties.",
+      "Its clinical concepts are supplied here rather than compiled into the module, so",
+      "a concept correction ships as a config change, not a frontend release."
+    ],
+    "encounterTypeUuid": "${var.encountertype.partograph.uuid}",
+    "concepts": {
+      "cervicalDilationUuid": "${var.concept.partograph.cervical-dilation.uuid}",
+      "descentOfHeadUuid": "${var.concept.partograph.descent-of-head.uuid}",
+      "contractionsPerTenMinutesUuid": "${var.concept.partograph.contractions-per-10min.uuid}",
+      "contractionDurationUuid": "${var.concept.partograph.contraction-duration.uuid}",
+      "amnioticFluidUuid": "${var.concept.partograph.amniotic-fluid.uuid}",
+      "mouldingUuid": "${var.concept.partograph.moulding.uuid}",
+      "fetalHeartRateUuid": "${var.concept.ciel.fetal-heart-rate.uuid}",
+      "systolicBloodPressureUuid": "${var.concept.ciel.systolic-bp.uuid}",
+      "diastolicBloodPressureUuid": "${var.concept.ciel.diastolic-bp.uuid}",
+      "pulseUuid": "${var.concept.ciel.pulse.uuid}",
+      "temperatureUuid": "${var.concept.ciel.temperature.uuid}"
+    },
+    "alertLine": {
+      "_comment": "WHO partograph alert/action lines. Confirm against the DAK before go-live.",
+      "startDilationCm": 4,
+      "cmPerHour": 1,
+      "actionLineOffsetHours": 4
+    }
+  }
+}

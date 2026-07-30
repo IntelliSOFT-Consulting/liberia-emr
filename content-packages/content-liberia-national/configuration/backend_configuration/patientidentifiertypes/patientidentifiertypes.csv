@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Name,Description,Required,Format,Format description,Check digit algorithm,Location behaviour,Uniqueness behaviour
+${var.identifiertype.moh-health-record.uuid},,MOH Health Record Number,Facility-issued health record number,true,,Assigned by the facility records unit,,REQUIRED,LOCATION
+${var.identifiertype.national-id.uuid},,Liberia National ID,National Identification Registry number,false,[0-9]{11},11 digits,,NOT USED,UNIQUE
+${var.identifiertype.anc-number.uuid},,ANC Number,Antenatal care register number,false,,Assigned on ANC enrolment,,REQUIRED,LOCATION

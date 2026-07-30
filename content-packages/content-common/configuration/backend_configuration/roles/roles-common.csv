@@ -1,0 +1,7 @@
+Uuid,Void/Retire,Role name,Description,Privileges,Inherited roles
+${var.role.records-officer.uuid},,Records Officer,Registration and medical records,Get Patients;Add Patients;Edit Patients;Get Patient Identifiers;Add Patient Identifiers;Get Visits;Add Visits;Get Locations;Get Concepts,
+${var.role.nurse.uuid},,Nurse,Triage and vitals,Get Patients;Get Visits;Add Visits;Get Encounters;Add Encounters;Edit Encounters;Get Observations;Add Observations;Get Concepts;Get Forms,
+${var.role.clinician.uuid},,Clinician,Clinical consultation and ordering,Get Orders;Add Orders;Edit Orders;Get Order Types;Get Care Settings;Get Patient Programs;Add Patient Programs;Edit Patient Programs;Get Diagnoses;Add Diagnoses,Nurse
+${var.role.midwife.uuid},,Midwife,Maternal health clinical care,Get Patient Programs;Add Patient Programs;Edit Patient Programs,Nurse
+${var.role.pharmacist.uuid},,Pharmacist,Dispensing and stock,Get Orders;Get Drugs;Get Medication Dispense;Add Medication Dispense;Edit Medication Dispense;Get Concepts;Get Patients,
+${var.role.lab-technician.uuid},,Lab Technician,Laboratory order fulfilment,Get Orders;Edit Orders;Get Encounters;Add Encounters;Get Observations;Add Observations;Get Concepts;Get Patients,

@@ -1,0 +1,5 @@
+Uuid,Void/Retire,Name,Description
+${var.encountertype.registration.uuid},,Registration,Patient registration and demographic capture
+${var.encountertype.triage.uuid},,Triage,Initial assessment and prioritisation
+${var.encountertype.vitals.uuid},,Vitals,Vital signs and anthropometry
+${var.encountertype.consultation.uuid},,Consultation,General clinical consultation

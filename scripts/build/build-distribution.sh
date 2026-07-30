@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Builds the immutable, versioned LiberiaEMR images.
+#
+#   scripts/build/build-distribution.sh --version 1.0.0 [--site careysburg] [--demo]
+#
+# Images: liberia-emr-backend|-frontend|-gateway :<version>
+# A mutable git checkout is never mounted into a production container.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+VERSION=""
+SITE="careysburg"
+DEMO="false"
+REGISTRY="${REGISTRY:-ghcr.io/intellisoft-consulting}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --version) VERSION="$2"; shift 2 ;;
+    --site)    SITE="$2";    shift 2 ;;
+    --demo)    DEMO="true";  shift ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
+[[ -n "$VERSION" ]] || { echo "--version is required" >&2; exit 2; }
+
+case "$VERSION" in
+  *SNAPSHOT*|latest)
+    echo "refusing to build a release image at version '$VERSION'" >&2
+    echo "distro.properties forbids latest/dynamic/-SNAPSHOT outside development." >&2
+    exit 2 ;;
+esac
+
+"$ROOT/scripts/validate/validate-content.sh"
+"$ROOT/scripts/validate/no-secrets.sh"
+
+if [[ "$DEMO" == "false" ]]; then
+  "$ROOT/scripts/validate/no-demo-in-release.sh"
+  suffix=""
+  demo_package=""
+else
+  echo "WARNING: building DEMO images — training and test use only."
+  suffix="-demo"
+  demo_package="liberiaemr-demo"
+  # content-demo is lifted from upstream; its OCL exports are gitignored, so a fresh
+  # checkout has the CSVs and forms but none of the concepts they reference.
+  if ! compgen -G "$ROOT/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip" >/dev/null; then
+    echo "== fetching the demo OCL exports =="
+    "$ROOT/scripts/build/lift-demo-content.sh" --ocl-only
+  fi
+fi
+
+# Builds the content ZIPs and, with them, target/configuration — the tree with ${var.*}
+# resolved. The backend image builds these again inside its own content stage; the local
+# build is what the frontend config collection below reads.
+echo "== building content packages =="
+mvn -B -q -DskipTests -f "$ROOT/pom.xml" package
+
+echo "== resolving OMODs from distro.properties =="
+"$ROOT/scripts/build/resolve-modules.sh" --out "$ROOT/distribution/backend/modules"
+
+echo "== generating the frontend import map =="
+"$ROOT/scripts/build/generate-import-map.sh" --out "$ROOT/distribution/frontend/spa-assemble-config.json"
+
+echo "== collecting frontend runtime configuration =="
+"$ROOT/scripts/build/collect-frontend-config.sh" --site "$SITE" --demo "$DEMO" \
+  --out "$ROOT/distribution/frontend/config"
+
+# A config file is only loaded if it is BOTH in the image and named in SPA_CONFIG_URLS, and
+# the order there is the override order. Nothing fails at runtime when the two disagree —
+# O3 just quietly runs on the wrong configuration — so the drift is caught here instead.
+echo "== checking SPA_CONFIG_URLS against what was collected =="
+compose="$ROOT/distribution/compose/facility/docker-compose.yml"
+[[ "$DEMO" == "true" ]] && compose="$ROOT/distribution/compose/facility/docker-compose.demo.yml"
+declared="$(sed -n '/SPA_CONFIG_URLS/,/^ *[A-Za-z_]*:/p' "$compose" \
+  | grep -oE '/openmrs/spa/config/[A-Za-z0-9._-]+\.json')"
+if ! diff -u <(echo "$declared") "$ROOT/distribution/frontend/config/.config-urls" \
+     --label "SPA_CONFIG_URLS in ${compose#$ROOT/}" --label "collected in layer order"; then
+  echo "FAIL: SPA_CONFIG_URLS does not match the collected configuration" >&2
+  exit 1
+fi
+echo "  ok: $(echo "$declared" | wc -l | tr -d ' ') config files, in order"
+
+echo "== backend =="
+docker build \
+  -f "$ROOT/distribution/backend/Dockerfile" \
+  --build-arg "SITE_PACKAGE=liberiaemr-site-${SITE}" \
+  --build-arg "DEMO_PACKAGE=${demo_package}" \
+  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+  -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
+  "$ROOT"
+
+echo "== frontend =="
+spa_core="$(grep -E '^spa\.core=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
+[[ -n "$spa_core" ]] || { echo "spa.core is not pinned in distro.properties" >&2; exit 1; }
+# The app shell resolves its configuration from the list it was BUILT with; the compose
+# environment cannot add to it. Same order the files were collected in, which the check
+# above has already reconciled with SPA_CONFIG_URLS in the compose file.
+spa_config_urls="$(paste -sd, "$ROOT/distribution/frontend/config/.config-urls")"
+docker build \
+  -f "$ROOT/distribution/frontend/Dockerfile" \
+  --build-arg "SPA_CORE=${spa_core}" \
+  --build-arg "SPA_CONFIG_URLS=${spa_config_urls}" \
+  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+  -t "${REGISTRY}/liberia-emr-frontend${suffix}:${VERSION}" \
+  "$ROOT/distribution/frontend"
+
+echo "== gateway =="
+docker build \
+  -f "$ROOT/distribution/gateway/Dockerfile" \
+  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+  -t "${REGISTRY}/liberia-emr-gateway:${VERSION}" \
+  "$ROOT/distribution/gateway"
+
+echo
+echo "built ${VERSION} (site: ${SITE}, demo: ${DEMO})"

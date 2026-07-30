@@ -1,0 +1,49 @@
+# Demo/training overlay — TRAINING AND TEST ENVIRONMENTS ONLY.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
+#
+# This overlay swaps in a backend image built WITH content-demo (sample locations, test
+# users, demo patients, training data). content-demo is never listed in
+# distribution/distro.properties, so a production build cannot pick it up by accident.
+# See IMPLEMENTATION.md §2 and §11.
+name: liberiaemr-facility
+
+services:
+  backend:
+    image: ${REGISTRY}/liberia-emr-backend-demo:${LIBERIAEMR_VERSION}
+    environment:
+      # Loud, unmissable signal that this is not a production instance.
+      OMRS_CONFIG_INSTANCE_LABEL: "DEMO — NOT FOR PATIENT DATA"
+
+  frontend:
+    image: ${REGISTRY}/liberia-emr-frontend-demo:${LIBERIAEMR_VERSION}
+    environment:
+      # Kept in step with the production list above it, plus content-demo's own layer.
+      # config-demo.json comes from the lifted upstream tree and loads LAST, so demo values
+      # override the site configuration — build-distribution.sh diffs this list against what
+      # collect-frontend-config.sh actually collected.
+      SPA_CONFIG_URLS: >-
+        /openmrs/spa/config/config-core.json,
+        /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-site.json,
+        /openmrs/spa/config/config-demo.json
+
+  # The demo stack must never reach the central instance with fabricated patients.
+  #
+  # `profiles` does NOT replace the base list, it appends to it — the merged service ends up
+  # in BOTH "sync" and "disabled", so `--profile sync` on a training box would have started
+  # the real push service. Verify with:
+  #   docker compose -f docker-compose.yml -f docker-compose.demo.yml --profile sync config
+  # The three overrides below are what actually stops it, and each is sufficient alone.
+  sync:
+    profiles: ["disabled"]
+    scale: 0
+    restart: "no"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'echo "sync is disabled on a demo stack: fabricated patients must never reach central" >&2; exit 1'
+    environment:
+      # Nothing to push to even if a container is forced up by hand.
+      EIP_CENTRAL_URL: ""
