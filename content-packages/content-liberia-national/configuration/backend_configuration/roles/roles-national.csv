@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Role name,Description,Privileges,Inherited roles
+${var.role.ict-auditor.uuid},,ICT Auditor,ICT Unit read-only access to audit logs,View Audit Log;View Administration Functions,
+2f4a6c8e-0d19-4b3b-a5c7-e9012f4a6c8d,,National Reporting Officer,Generates MOH national indicator reports,Export National Report;Get Reports;Run Reports,
+4a6c8e02-2f3b-4d5d-87e9-0b234a6c8e0f,,Sync Administrator,Operates the facility-to-central sync queue,Manage Facility Sync;View Administration Functions,

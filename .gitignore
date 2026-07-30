@@ -33,3 +33,38 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### LiberiaEMR ###
+# scripts/build/ is SOURCE, not a Gradle/NetBeans output directory. The generic `build/`
+# rule above matched it at any depth, so every build script in the repository — the ones
+# README.md, CONTRIBUTING.md and both GitHub workflows invoke by path — was silently
+# untracked and missing from a fresh clone.
+!scripts/build/
+
+# Real environment files — only the .example templates are committed.
+*.env
+!*.env.example
+
+# TLS material is mounted at run time, never committed.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# CIEL dictionary exports: large, licensed, fetched at build time.
+content-packages/*/configuration/backend_configuration/ocl/*.zip
+
+# Generated build inputs — regenerated from distro.properties.
+distribution/frontend/spa-assemble-config.json
+distribution/frontend/config/
+distribution/backend/modules/
+
+# Upgrade-test fixtures are generated, and must never contain production data.
+qa/upgrade/fixtures/*.sql
+qa/upgrade/fixtures/*.sql.gz
+
+# Node
+node_modules/
+dist/
+.turbo/

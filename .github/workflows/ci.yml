@@ -1,0 +1,87 @@
+# Pull-request pipeline — IMPLEMENTATION.md §8, stages 1-5.
+# The release stages (upgrade test, publish, deploy) live in release.yml.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # no-secrets.sh uses git ls-files and git grep
+      - name: Validate JSON / CSV / version discipline / variables
+        run: ./scripts/validate/validate-content.sh
+      - name: Refuse secrets, keys and PHI
+        run: ./scripts/validate/no-secrets.sh
+      - name: Refuse demo content in a production distribution
+        run: ./scripts/validate/no-demo-in-release.sh
+      # content-demo is upstream's, vendored verbatim. A local edit there is invisible in
+      # review and lost at the next re-lift, so it is caught here instead. Needs network:
+      # it re-fetches the pinned tag and verifies the commit it resolves to.
+      - name: Refuse hand edits to the lifted demo content
+        run: ./scripts/build/lift-demo-content.sh --check
+
+  build-content:
+    name: Build content packages
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Build and validate against the Initializer schema
+        run: mvn -B clean verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: content-packages
+          path: content-packages/*/target/*.zip
+          if-no-files-found: error
+
+  initializer-clean-db:
+    name: Initializer against a clean database
+    runs-on: ubuntu-latest
+    needs: build-content
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: content-packages
+          path: content-packages
+      # Loading metadata into an empty database is the cheapest way to catch a broken CSV,
+      # an unresolved ${var.*} or a forward reference between layers.
+      - name: Load all metadata into an empty database
+        run: ./qa/upgrade/run-clean-install.sh
+      - name: API tests
+        run: 'echo "TODO: qa/api — see qa/api/README.md"'
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: initializer-clean-db
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cypress
+        run: 'echo "TODO: qa/e2e — see qa/e2e/README.md"'
+
+  frontend:
+    name: Custom Build ESMs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify e-partograph
+        working-directory: packages/esm-liberia-epartograph-app
+        run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'

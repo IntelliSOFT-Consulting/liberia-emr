@@ -1,0 +1,9 @@
+Uuid,Void/Retire,Name,Description
+${var.locationtag.login.uuid},,Login Location,Location a user may select at login
+${var.locationtag.visit-location.uuid},,Visit Location,Location a visit may be recorded against
+${var.locationtag.admission-location.uuid},,Admission Location,Ward or unit a patient may be admitted to
+${var.locationtag.transfer-location.uuid},,Transfer Location,Ward or unit a patient may be transferred to
+${var.locationtag.dispensing-location.uuid},,Dispensing Location,Pharmacy point that may dispense medication
+${var.locationtag.facility-location.uuid},,Facility Location,Facility a location belongs to
+${var.locationtag.queue-location.uuid},,Queue Location,Location a service queue may be run at
+${var.locationtag.appointment-location.uuid},,Appointment Location,Location an appointment may be booked at

@@ -1,0 +1,65 @@
+{
+  "_comment": [
+    "Shared O3 runtime configuration for every LiberiaEMR install.",
+    "Copying this file into the frontend image is not enough — it must also appear in",
+    "SPA_CONFIG_URLS (spa.configUrls) or O3 will ignore it. See IMPLEMENTATION.md §7.",
+    "Later layers (national -> programme -> site) are listed after this one in",
+    "SPA_CONFIG_URLS and therefore win on any key they redefine.",
+    "UUIDs here come from variables.properties as ${var.*} and are substituted at build",
+    "time — never paste a raw UUID into this file."
+  ],
+  "@openmrs/esm-primary-navigation-app": {
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/liberiaemr-logo.svg",
+      "alt": "LiberiaEMR"
+    }
+  },
+  "@openmrs/esm-login-app": {
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.svg",
+      "alt": "Ministry of Health, Republic of Liberia"
+    },
+    "chooseLocation": {
+      "enabled": true,
+      "useLoginLocationTag": true
+    }
+  },
+  "@openmrs/esm-patient-chart-app": {
+    "visitTypeResourceUrl": "/ws/rest/v1/visittype?v=default",
+    "showRecommendedVisitTypeTab": true,
+    "visitDiagnosisConceptUuid": "${var.concept.ciel.visit-diagnoses.uuid}"
+  },
+  "@openmrs/esm-patient-vitals-app": {
+    "concepts": {
+      "systolicBloodPressureUuid": "${var.concept.ciel.systolic-bp.uuid}",
+      "diastolicBloodPressureUuid": "${var.concept.ciel.diastolic-bp.uuid}",
+      "pulseUuid": "${var.concept.ciel.pulse.uuid}",
+      "temperatureUuid": "${var.concept.ciel.temperature.uuid}",
+      "oxygenSaturationUuid": "${var.concept.ciel.oxygen-saturation.uuid}",
+      "respiratoryRateUuid": "${var.concept.ciel.respiratory-rate.uuid}",
+      "heightUuid": "${var.concept.ciel.height.uuid}",
+      "weightUuid": "${var.concept.ciel.weight.uuid}",
+      "midUpperArmCircumferenceUuid": "${var.concept.ciel.muac.uuid}"
+    }
+  },
+  "@openmrs/esm-patient-registration-app": {
+    "defaultPatientIdentifierTypes": [],
+    "fieldConfigurations": {
+      "name": {
+        "displayMiddleName": true,
+        "allowUnidentifiedPatients": true
+      }
+    },
+    "_comment_registration": [
+      "Identifier types and address hierarchy are national concerns and are configured in",
+      "content-liberia-national/configuration/frontend_configuration/config-national.json."
+    ]
+  },
+  "@openmrs/esm-service-queues-app": {
+    "concepts": {}
+  },
+  "spa": {
+    "_comment_locale": "Liberia is anglophone; translations for MOH terminology ship in content-liberia-national.",
+    "defaultLocale": "en"
+  }
+}

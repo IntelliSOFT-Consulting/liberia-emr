@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "MOH-wide O3 runtime configuration. Loaded after config-core.json and before the",
+    "programme and site layers, so it overrides core and is overridden by site.",
+    "Must be listed in SPA_CONFIG_URLS — see IMPLEMENTATION.md §7."
+  ],
+  "@openmrs/esm-patient-registration-app": {
+    "defaultPatientIdentifierTypes": ["${var.identifiertype.moh-health-record.uuid}"],
+    "fieldDefinitions": [
+      {
+        "id": "nationalId",
+        "type": "identifier",
+        "identifierTypeUuid": "${var.identifiertype.national-id.uuid}",
+        "label": "Liberia National ID",
+        "showHeading": false
+      }
+    ],
+    "fieldConfigurations": {
+      "address": {
+        "useAddressHierarchy": {
+          "enabled": true,
+          "useQuickSearch": true,
+          "searchAddressByLevel": true
+        }
+      }
+    }
+  },
+  "@openmrs/esm-primary-navigation-app": {
+    "_comment_timeout": [
+      "MOH ICT SOP: 10-minute inactivity timeout. This client-side timer is HALF the",
+      "control — it ends the user's session in the browser but does not invalidate a",
+      "stolen server session. The matching server-side timeout is configured in the",
+      "backend image; both must be present. See the globalproperties/README.md table."
+    ],
+    "logoutIdleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "Careysburg Health Center runtime configuration. This is the LAST config in SPA_CONFIG_URLS, so it",
+    "wins on any key it redefines. Keep it small: anything true of both facilities belongs",
+    "in content-common or content-liberia-national, not here."
+  ],
+  "@openmrs/esm-primary-navigation-app": {
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/liberiaemr-logo.svg",
+      "alt": "LiberiaEMR — Careysburg Health Center"
+    }
+  },
+  "@openmrs/esm-login-app": {
+    "chooseLocation": {
+      "enabled": true,
+      "useLoginLocationTag": true,
+      "locationsPerRequest": 50
+    }
+  },
+  "@openmrs/esm-patient-registration-app": {
+    "registrationObs": {
+      "encounterTypeUuid": "${var.encountertype.registration.uuid}"
+    }
+  }
+}

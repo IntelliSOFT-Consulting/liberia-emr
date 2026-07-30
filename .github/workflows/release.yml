@@ -1,0 +1,124 @@
+# Release pipeline — IMPLEMENTATION.md §8.
+#
+#   validate -> build content -> Initializer on a clean DB -> metadata tests
+#   -> build distribution -> launch full stack -> API + Cypress
+#   -> TEST UPGRADE FROM PREVIOUS RELEASE   <- the critical stage
+#   -> publish -> deploy to staging -> approve production
+name: Release
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (x.y.z)
+        required: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/intellisoft-consulting
+
+jobs:
+  guard:
+    name: Release guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject latest / dynamic / -SNAPSHOT versions
+        run: |
+          version="${{ github.event.inputs.version || github.ref_name }}"
+          case "$version" in
+            *SNAPSHOT*|latest) echo "refusing to release '$version'"; exit 1 ;;
+          esac
+          grep -nE '=[[:space:]]*(latest|LATEST)|-SNAPSHOT' distribution/distro.properties \
+            && { echo "distro.properties contains a dynamic or snapshot version"; exit 1; }
+          echo "version discipline ok"
+      - run: ./scripts/validate/validate-content.sh
+      - run: ./scripts/validate/no-secrets.sh
+      - run: ./scripts/validate/no-demo-in-release.sh
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    needs: guard
+    strategy:
+      matrix:
+        site: [careysburg, barnersville]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Build immutable versioned images
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version "${{ github.event.inputs.version || github.ref_name }}" \
+            --site "${{ matrix.site }}"
+
+  full-stack-tests:
+    name: Full stack — API + Cypress
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Launch the complete Docker environment
+        run: 'echo "TODO: bring up distribution/compose/facility"'
+      - name: API tests
+        run: 'echo "TODO: qa/api"'
+      - name: Cypress
+        run: 'echo "TODO: qa/e2e"'
+
+  upgrade-test:
+    name: Upgrade from the previous release
+    runs-on: ubuntu-latest
+    needs: full-stack-tests
+    steps:
+      - uses: actions/checkout@v4
+      # THE critical stage. A clean install passes against an empty database, where there
+      # is nothing to collide with. Only this stage surfaces UUID collisions, changed
+      # concept datatypes, retired metadata still referenced by patient data, and altered
+      # workflow semantics. See qa/upgrade/README.md.
+      - name: Restore the previous release database and upgrade onto it
+        run: ./qa/upgrade/run-upgrade.sh
+
+  publish:
+    name: Publish images and packages
+    runs-on: ubuntu-latest
+    needs: upgrade-test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push images
+        run: 'echo "TODO: docker push the images built above"'
+
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: publish
+    environment: staging
+    steps:
+      - run: 'echo "TODO: deploy to staging"'
+
+  approve-production:
+    name: Production release
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    # Manual approval gate configured on the environment.
+    environment: production
+    steps:
+      - run: echo "Approved. Deploy per docs/runbooks/deploy.md."

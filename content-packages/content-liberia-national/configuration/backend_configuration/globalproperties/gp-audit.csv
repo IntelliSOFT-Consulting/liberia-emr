@@ -1,0 +1,3 @@
+Property,Value,Description
+auditlog.auditingStrategy,ALL,Audit every auditable type rather than a hand-picked subset
+auditlog.storeLastStateOfDeletedItems,true,Retain the final state of deleted records for investigation

@@ -1,0 +1,6 @@
+Uuid,Void/Retire,Concept,Frequency per day
+${var.orderfrequency.once-daily.uuid},,CIEL:160862,1
+${var.orderfrequency.twice-daily.uuid},,CIEL:160858,2
+${var.orderfrequency.three-times-daily.uuid},,CIEL:160866,3
+${var.orderfrequency.four-times-daily.uuid},,CIEL:160870,4
+${var.orderfrequency.stat.uuid},,CIEL:161000,1

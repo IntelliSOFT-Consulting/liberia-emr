@@ -1,0 +1,127 @@
+# LiberiaEMR — FACILITY stack (Careysburg / Barnersville)
+#
+# Offline-first: this stack runs a complete EMR with no dependency on the central
+# instance. Sync to central is a separate, unidirectional push service that queues
+# locally when the link is down (see integration/eip/routes/).
+#
+# Images are immutable and versioned — never mount a git checkout in production.
+#   docker compose --env-file ../../env/facility.env up -d
+name: liberiaemr-facility
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    command: >-
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_allowed_packet=1G
+    environment:
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [liberiaemr]
+
+  backend:
+    image: ${REGISTRY}/liberia-emr-backend:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      OMRS_CONFIG_CONNECTION_TYPE: mysql
+      OMRS_CONFIG_CONNECTION_SERVER: db
+      OMRS_CONFIG_CONNECTION_DATABASE: ${MYSQL_DATABASE}
+      OMRS_CONFIG_CONNECTION_USERNAME: ${MYSQL_USER}
+      OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
+      OMRS_CONFIG_CREATE_TABLES: "${OMRS_CREATE_TABLES:-false}"
+      OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
+      OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
+      # Fail the boot rather than half-apply metadata — a partially loaded configuration
+      # is far harder to diagnose than a refused startup.
+      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error=false
+      JAVA_OPTS: >-
+        -Xmx${BACKEND_HEAP:-3g}
+        -Duser.timezone=Africa/Monrovia
+    volumes:
+      - openmrs-data:/openmrs/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
+      interval: 20s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+    networks: [liberiaemr]
+
+  frontend:
+    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      SPA_PATH: /openmrs/spa
+      API_URL: /openmrs
+      # Every runtime config file must be listed here or O3 will not load it, even though
+      # the file is present in the image. See IMPLEMENTATION.md §7.
+      #
+      # This list must match, in order, what collect-frontend-config.sh actually collected;
+      # build-distribution.sh compares the two and fails on drift. The lab, pharmacy and
+      # opd-ipd layers carry no frontend config yet — add their entries here in layer order
+      # at the same time as the first config-<layer>.json.
+      SPA_CONFIG_URLS: >-
+        /openmrs/spa/config/config-core.json,
+        /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-site.json
+      SPA_DEFAULT_LOCALE: en
+    networks: [liberiaemr]
+
+  gateway:
+    image: ${REGISTRY}/liberia-emr-gateway:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on: [frontend, backend]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # TLS material is mounted, never baked into the image and never committed.
+      - ${TLS_CERT_DIR}:/etc/nginx/certs:ro
+    networks: [liberiaemr]
+
+  # Unidirectional facility -> central push. Queues locally while offline and drains when
+  # the link returns; see integration/eip/routes/README.md.
+  sync:
+    image: ${REGISTRY}/liberia-emr-sync:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      EIP_FACILITY_CODE: ${FACILITY_CODE}
+      EIP_CENTRAL_URL: ${CENTRAL_URL}
+      EIP_DB_HOST: db
+      EIP_DB_NAME: ${MYSQL_DATABASE}
+      EIP_DB_USER: ${MYSQL_USER}
+      EIP_DB_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - sync-queue:/opt/eip/queue
+    profiles: ["sync"]
+    networks: [liberiaemr]
+
+volumes:
+  db-data:
+  openmrs-data:
+  sync-queue:
+
+networks:
+  liberiaemr:

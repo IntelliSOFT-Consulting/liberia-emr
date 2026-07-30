@@ -1,0 +1,227 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>lr.gov.moh.liberiaemr</groupId>
+		<artifactId>liberiaemr</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<groupId>lr.gov.moh.liberiaemr.content</groupId>
+	<artifactId>liberiaemr-content-packages</artifactId>
+	<packaging>pom</packaging>
+	<name>LiberiaEMR :: Content Packages</name>
+	<description>
+		Layered content packages: common -&gt; programme -&gt; national -&gt; site. Each module
+		packages configuration/ plus content.properties as a Maven ZIP consumed by the
+		Initializer module and the O3 runtime. See IMPLEMENTATION.md §2.
+	</description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<configuration.dir>${project.basedir}/configuration</configuration.dir>
+		<openmrsPackagerPluginVersion>1.9.0</openmrsPackagerPluginVersion>
+	</properties>
+
+	<!-- Build order matters: later layers may reference variables from earlier ones. -->
+	<modules>
+		<module>content-common</module>
+		<module>content-liberia-national</module>
+		<module>content-liberia-mch</module>
+		<module>content-liberia-lab</module>
+		<module>content-liberia-pharmacy</module>
+		<module>content-liberia-opd-ipd</module>
+		<module>content-site-careysburg</module>
+		<module>content-site-barnersville</module>
+		<module>content-demo</module>
+	</modules>
+
+	<!--
+		This POM is both the aggregator and the parent of every content package. The
+		packaging plugins therefore live in pluginManagement, NOT in build/plugins:
+		declared in build/plugins they would also execute against this aggregator, which
+		has no content.properties, no configuration/ and no assembly.xml, and the reactor
+		fails before it reaches the first real package. Each content package opts in by
+		naming the three plugins in its own build/plugins with no configuration of its
+		own — the executions below are inherited.
+	-->
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.openmrs.maven.plugins</groupId>
+					<artifactId>openmrs-packager-maven-plugin</artifactId>
+					<version>${openmrsPackagerPluginVersion}</version>
+					<executions>
+						<execution>
+							<id>validate-content-package</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>validate-content-package</goal>
+							</goals>
+							<configuration>
+								<sourceFile>${project.basedir}/content.properties</sourceFile>
+							</configuration>
+						</execution>
+						<execution>
+							<id>validate-configurations</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>validate-configurations</goal>
+							</goals>
+							<configuration>
+								<sourceDir>${configuration.dir}/backend_configuration</sourceDir>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.3.1</version>
+					<executions>
+						<execution>
+							<id>copy-resources</id>
+							<phase>process-resources</phase>
+							<goals>
+								<!--
+									copy-resources, not resources: the `resources` goal takes its
+									resource list from build/resources and treats the `resources`
+									parameter below as read-only, so it filtered nothing and
+									target/content.properties was never written — which left
+									content.properties out of every assembled ZIP.
+								-->
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${project.basedir}</directory>
+										<includes>
+											<include>content.properties</include>
+										</includes>
+										<filtering>true</filtering>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+						<!--
+							Resolves ${var.*} in the configuration tree. Nothing else does: Initializer
+							has no variable syntax of its own, so an unsubstituted placeholder reaches
+							the database as a literal and every row carrying one is rejected
+							("'${var.location.opd.uuid}' did not pass the soft check for being a valid
+							OpenMRS UUID"). The packages therefore ship from target/configuration, NOT
+							from the source tree — see each assembly.xml.
+
+							Every layer's variables.properties is a filter, in layer order, so a later
+							layer can override an earlier one's UUID (IMPLEMENTATION.md §7) and a
+							programme package can reference a variable declared in content-common.
+							${project.basedir}/.. is content-packages/ for every module here.
+
+							Delimiters are restricted to ${...}: the default set also treats @…@ as a
+							placeholder, which would rewrite text inside the demo forms.
+						-->
+						<execution>
+							<id>filter-configuration</id>
+							<phase>process-resources</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${project.build.directory}/configuration</outputDirectory>
+								<useDefaultDelimiters>false</useDefaultDelimiters>
+								<delimiters>
+									<delimiter>${*}</delimiter>
+								</delimiters>
+								<!-- Filtering a ZIP corrupts it: OCL exports and metadatasharing packages. -->
+								<nonFilteredFileExtensions>
+									<nonFilteredFileExtension>zip</nonFilteredFileExtension>
+									<nonFilteredFileExtension>gz</nonFilteredFileExtension>
+									<nonFilteredFileExtension>jar</nonFilteredFileExtension>
+									<nonFilteredFileExtension>png</nonFilteredFileExtension>
+									<nonFilteredFileExtension>jpg</nonFilteredFileExtension>
+									<nonFilteredFileExtension>pdf</nonFilteredFileExtension>
+								</nonFilteredFileExtensions>
+								<filters>
+									<filter>${project.basedir}/../content-common/configuration/variables.properties</filter>
+									<filter>${project.basedir}/../content-liberia-national/configuration/variables.properties</filter>
+									<filter>${project.basedir}/../content-liberia-mch/configuration/variables.properties</filter>
+									<filter>${project.basedir}/../content-liberia-lab/configuration/variables.properties</filter>
+									<filter>${project.basedir}/../content-liberia-pharmacy/configuration/variables.properties</filter>
+									<filter>${project.basedir}/../content-liberia-opd-ipd/configuration/variables.properties</filter>
+									<filter>${project.basedir}/configuration/variables.properties</filter>
+								</filters>
+								<resources>
+									<resource>
+										<directory>${project.basedir}/configuration</directory>
+										<filtering>true</filtering>
+										<!--
+											README.md files explain a domain directory to whoever edits it.
+											They are not metadata, Initializer has no use for them, and two
+											layers carrying one at the same path collide in the resolved
+											image for no gain.
+										-->
+										<excludes>
+											<exclude>**/README.md</exclude>
+										</excludes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-assembly-plugin</artifactId>
+					<version>3.7.1</version>
+					<executions>
+						<execution>
+							<id>make-assembly</id>
+							<phase>package</phase>
+							<goals>
+								<goal>single</goal>
+							</goals>
+							<configuration>
+								<descriptors>
+									<descriptor>${project.basedir}/assembly.xml</descriptor>
+								</descriptors>
+								<!-- appendAssemblyId=false keeps the assembly ID out of the final artifact name -->
+								<appendAssemblyId>false</appendAssemblyId>
+								<finalName>${project.artifactId}-${project.version}</finalName>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Public Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>central</id>
+			<name>Maven Repository Switchboard</name>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>openmrs-releases</id>
+			<name>OpenMRS Public</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+</project>
