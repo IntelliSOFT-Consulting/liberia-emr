@@ -70,6 +70,11 @@ concepts → identifiers/locations/providers → visit & encounter model
 Starting with forms produces duplicated concepts and encounters that do not aggregate. This
 is not a style preference — it is the failure this ordering exists to prevent.
 
+Where the metadata comes from a DAK data element, follow
+[docs/runbooks/dak-to-iniz.md](docs/runbooks/dak-to-iniz.md) and record the row in
+[docs/dak/traceability-mch.csv](docs/dak/traceability-mch.csv). A concept with no traceable
+source cannot be defended in review.
+
 ### Layer order is a constraint, not a suggestion
 
 Layers load **common → national → programme → site**. A layer cannot forward-reference

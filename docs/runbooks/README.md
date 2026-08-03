@@ -12,6 +12,8 @@ fails it.
 | [backup-restore.md](backup-restore.md) | Backup schedule, encryption, restore procedure |
 | [disaster-recovery.md](disaster-recovery.md) | Rebuild a facility after total loss |
 | [go-live.md](go-live.md) | Go-live checklist and cutover |
+| [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
-a document, not a capability.
+a document, not a capability. `dak-to-iniz.md` is the one procedure here that has not been
+executed end to end, and it says so at the top: the DAK itself is not in this repository.
