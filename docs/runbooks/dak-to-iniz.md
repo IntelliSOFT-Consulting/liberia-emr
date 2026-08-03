@@ -235,6 +235,8 @@ specification, and it is written **before** forms. Keep it in step:
 
 ## 8. Validate, then load
 
+From the repository root:
+
 ```bash
 ./scripts/validate/validate-content.sh    # CSV comments, name collisions, undeclared ${var.*}
 mvn -B -q -DskipTests package             # resolves ${var.*} into */target/configuration
@@ -248,6 +250,7 @@ database in about two minutes.
 boot:
 
 ```bash
+cd distribution/compose/facility   # --env-file below is relative to this directory
 docker compose -f docker-compose.yml -f docker-compose.demo.yml \
   --env-file ../../env/demo.env logs backend | grep -iE 'ERROR|Exception' | head -40
 ```
