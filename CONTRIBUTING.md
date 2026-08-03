@@ -71,9 +71,11 @@ Starting with forms produces duplicated concepts and encounters that do not aggr
 is not a style preference — it is the failure this ordering exists to prevent.
 
 Where the metadata comes from a DAK data element, follow
-[docs/runbooks/dak-to-iniz.md](docs/runbooks/dak-to-iniz.md) and record the row in
-[docs/dak/traceability-mch.csv](docs/dak/traceability-mch.csv). A concept with no traceable
-source cannot be defended in review.
+[docs/runbooks/dak-to-iniz.md](docs/runbooks/dak-to-iniz.md) and record the row in that
+programme's traceability table, `docs/dak/traceability-<programme>.csv` — today only
+[traceability-mch.csv](docs/dak/traceability-mch.csv) exists; a new programme starts a new file
+with the same columns, documented in [docs/dak/](docs/dak/). A concept with no traceable source
+cannot be defended in review.
 
 ### Layer order is a constraint, not a suggestion
 

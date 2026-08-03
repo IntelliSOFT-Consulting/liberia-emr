@@ -28,9 +28,9 @@ classification, layer order).
 
 **The sheet is live and unversioned.** Metadata is append-only once released
 ([IMPLEMENTATION.md §9](../../IMPLEMENTATION.md)), so a concept extracted from a snapshot that
-later changes cannot simply be corrected — it has to be retired and migrated. Record the date
-you read the sheet on every row you add, and press for a frozen copy before the go-live scope
-is locked.
+later changes cannot simply be corrected — it has to be retired and migrated. Put the date you
+read the sheet in the `dak_read_date` column of every traceability row you add or re-read
+(§6), and press for a frozen copy before the go-live scope is locked.
 
 **Two structural warnings about this DAK**, both of which will bite step 2:
 
@@ -204,14 +204,21 @@ prevent.
 
 ## 6. Record the traceability row
 
-[`docs/dak/traceability-mch.csv`](../dak/traceability-mch.csv) already holds a row for every
-data element on the four MCH tabs, extracted from the sheet. For most of them the job is not
-to append a row but to **complete one**: fill `decision`, `layer`, `domain`,
-`liberiaemr_variable`, `concept_uuid_source` and move `status` off `pending`.
+Traceability lives in one table per programme, `docs/dak/traceability-<programme>.csv`, sharing
+the columns documented in [docs/dak/](../dak/). Only
+[`traceability-mch.csv`](../dak/traceability-mch.csv) exists so far; a new programme starts a
+new file with the same header rather than extending MCH.
+
+That table already holds a row for every data element on the four MCH tabs, extracted from the
+sheet. For most of them the job is not to append a row but to **complete one**: fill
+`decision`, `layer`, `domain`, `liberiaemr_variable`, `concept_uuid_source` and move `status`
+off `pending`. If you re-read the sheet to complete a row, update its `dak_read_date` to the
+date you read it — the row's DAK-side fields are only a claim about the sheet on that date.
 
 Append only when the DAK gains an element, or when you implement something the DAK does not
 source — those get a row with `dak_data_element_id` blank and `status` `no-dak-source`, so
-that "the DAK does not require this" and "we never got to it" stay distinguishable.
+that "the DAK does not require this" and "we never got to it" stay distinguishable. Even those
+carry a `dak_read_date`: "the DAK has no partograph" is a statement about a particular read.
 
 This is what answers the first review question, and the first MOH question after handover.
 Do it as you go: reconstructing it later means re-reading the DAK.
@@ -269,7 +276,8 @@ name the ones you left.
 - [ ] CIEL checked, and the outcome recorded (reused / mismatch / none exists)
 - [ ] UUID declared once in `variables.properties`; no bare UUID anywhere
 - [ ] CSV row written; `;` separators; package-specific file name; coded answers declared
-- [ ] Traceability row appended in `docs/dak/traceability-mch.csv`
+- [ ] Traceability row completed or appended in the programme's `docs/dak/traceability-*.csv`,
+      with `dak_read_date` set
 - [ ] Metadata spec updated, open questions listed in its Open items summary
 - [ ] `validate-content.sh` passes and the element loads without an error in the backend log
 - [ ] Nothing already released was modified in place (retire → add → migrate)

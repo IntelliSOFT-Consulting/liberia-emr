@@ -1,253 +1,253 @@
-dak_tab,dak_section,dak_data_element_id,dak_data_element_name,dak_answer_of,dak_data_type,dak_ciel,decision,layer,domain,liberiaemr_variable,concept_uuid_source,form_field,status,notes
-ANC,Obstetric history (PARA),LBR.EMR.DE.1,Gravida,,Integer,5624,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-ANC,Obstetric history (PARA),LBR.EMR.DE.2,Last menstrual period (LMP),,Date,1427,reuse-ciel,mch,concepts,var.concept.ciel.lmp.uuid,CIEL 1427,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-ANC,Obstetric history (PARA),LBR.EMR.DE.3,Full-term births (FT),,Integer,162557,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Obstetric history (PARA),LBR.EMR.DE.4,Preterm births (P),,Integer,160078,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Obstetric history (PARA),LBR.EMR.DE.5,Abortions (A),,Integer,1823,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Obstetric history (PARA),LBR.EMR.DE.6,Living children (LN),,Integer,1825,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Physical Examination,LBR.EMR.DE.7,Colour,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.8,Normal (N),Colour,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.9,Abnormal (ABN),Colour,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.10,Heart,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.11,Lungs,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.12,Breasts,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.13,Nipples,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.14,Abdomen,,Coding,1808,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Physical Examination,LBR.EMR.DE.15,Extremities,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Physical Examination,LBR.EMR.DE.16,Pelvic examination,,Coding,165372,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Physical Examination,LBR.EMR.DE.17,Explain abnormalities,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.18,Routine drugs,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.19,Date,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.20,Blood pressure (BP),,Quantity,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.21,Weight,,Quantity,165379,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Prenatal,LBR.EMR.DE.22,Gestational age,,Quantity,,reuse-ciel,mch,concepts,var.concept.ciel.gestational-age.uuid,CIEL 1438,,unverified,DAK leaves CIEL blank and gives LOINC 18185-9; our alias asserts CIEL 1438. Confirm 1438 is the right term before the forms are written.
-ANC,Prenatal,LBR.EMR.DE.23,Fundal height,,Quantity,1439,reuse-ciel,mch,concepts,var.concept.ciel.fundal-height.uuid,CIEL 1439,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-ANC,Prenatal,LBR.EMR.DE.24,Presentation,,Coding,160090,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Prenatal,LBR.EMR.DE.25,Colour (HGT),,String,165396,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Prenatal,LBR.EMR.DE.26,Fetal heart tone (FHT),,Quantity,1440,reuse-ciel,mch,concepts,var.concept.ciel.fetal-heart-rate.uuid,CIEL 1440,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-ANC,Prenatal,LBR.EMR.DE.27,Other findings,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.28,Treatment remarks,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Prenatal,LBR.EMR.DE.29,Return date,,Date,5096,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.30,Haemoglobin (Hb),,Quantity,1017,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.31,Malaria smear (M/S),,Coding,1366,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.32,Syphilis,,Coding,164801,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.33,Urine sugar,,Coding,159733,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.34,Hepatitis B,,Coding,1322,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.35,Hepatitis C,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Initial Lab Findings,LBR.EMR.DE.36,Blood group,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Initial Lab Findings,LBR.EMR.DE.37,Rh factor,,Coding,161470,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Initial Lab Findings,LBR.EMR.DE.38,Complete blood count (CBC),,String,1019,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.39,Pregnancy status,,Coding,5272,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.40,1st trimester,Pregnancy trimester,Code,140108,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.41,2nd trimester,Pregnancy trimester,Code,158737,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.42,3rd trimester,Pregnancy trimester,Code,159067,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.43,ANC visit number,,Coding,1425,reuse-ciel,mch,concepts,var.concept.ciel.anc-visit-number.uuid,CIEL 1425,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.44,1st,ANC visit number,Code,1724,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.45,2nd,ANC visit number,Code,166075,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.46,3rd,ANC visit number,Code,166076,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.47,4th,ANC visit number,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.48,IPT dose administered,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.49,1st IPT dose,IPT dose administered,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.50,2nd IPT dose,IPT dose administered,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.51,3rd IPT dose,IPT dose administered,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.52,4th IPT dose,IPT dose administered,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.53,Woman receiving IPT,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Intermittent Treatment (IPT),LBR.EMR.DE.54,LLIN received at ANC,,Boolean,160428,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Tetanus Toxoid,LBR.EMR.DE.55,Date of TT1,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Tetanus Toxoid,LBR.EMR.DE.56,Date of TT2,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Tetanus Toxoid,LBR.EMR.DE.57,Date of TT3,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Tetanus Toxoid,LBR.EMR.DE.58,Date of TT4,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Tetanus Toxoid,LBR.EMR.DE.59,Date of TT5,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.60,Name,,String,1593,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.61,Address,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.62,Issue date,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.63,Name of clinic,,String,162724,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.64,Age,,Integer,164168,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-ANC,Pregnant Woman Health Card,LBR.EMR.DE.65,Record number,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.1,Medical Record Number (MRN),,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.2,Date,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.3,Full name,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.4,Age,,Integer,164168,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.5,Oxygen saturation (SpO₂),,Quantity,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.6,Blood pressure (BP),,Quantity,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.7,Fetal heart rate,,Quantity,1440,reuse-ciel,mch,concepts,var.concept.ciel.fetal-heart-rate.uuid,CIEL 1440,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Labor and delivery,,LBR.LD.DE.8,Gravida,,Integer,5624,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Labor and delivery,,LBR.LD.DE.9,Parity,,Integer,1053,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Labor and delivery,,LBR.LD.DE.10,Adequate tetanus-diphtheria (TD2+) immunization,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.11,Adequate iron/folic acid supplementation (180 tablets),,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.12,Delivery method,,Coding,,unassigned,,,,,,pending,Duplicate of LBR.LD.DE.95 'Type of delivery' in the same tab; DE.95 carries CIEL 5630 and this one carries none. Resolve to ONE data element before implementing.
-Labor and delivery,,LBR.LD.DE.13,Spontaneous vaginal delivery (SVD),Delivery method,Code,1170,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.14,Caesarean section (C/S),Delivery method,Code,1171,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.15,Vacuum-assisted delivery,Delivery method,Code,167453,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.16,Forceps,Delivery method,Code,159901,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.17,Destructive,Delivery method,Code,164605,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.18,Other,Delivery method,Code,5622,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.19,Delivery conducted by unskilled provider,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.20,Perineum,,Coding,166322,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.22,Episiotomy,Perineum,Code,170322,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.23,Laceration,Perineum,Code,123620,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,,LBR.LD.DE.24,Anaesthesia,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.25,None,Anaesthesia,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.26,Local,Anaesthesia,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.27,General,Anaesthesia,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.28,Repair,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.29,Yes,Repair,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,,LBR.LD.DE.30,No,Repair,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Third Stage,LBR.LD.DE.31,Active management,,Coding,163452,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.32,Yes,Active management,Code,163452,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.33,No,Active management,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Third Stage,LBR.LD.DE.34,Medication,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Third Stage,LBR.LD.DE.35,Medication time,,Time,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Third Stage,LBR.LD.DE.36,Dose,,Quantity,165169,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.37,Placenta delivery time,,Time,161012,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.38,Placenta status,,Coding,166267,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.39,Complete,Placenta status,Code,163455,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.40,Incomplete,Placenta status,Code,163456,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.41,Blood loss amount,,Coding,161928,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.42,Small (Less than 250 cc),Blood loss amount,Code,160565,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Third Stage,LBR.LD.DE.43,Moderate (250–499 cc),Blood loss amount,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Third Stage,LBR.LD.DE.44,Large (More than 500 cc),Blood loss amount,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.45,Weight,,Quantity,,unassigned,,,,,,pending,"Duplicate of LBR.LD.DE.99 'Birth weight', which carries CIEL 5916 while this one carries none. Resolve to ONE data element before implementing."
-Labor and delivery,Baby,LBR.LD.DE.46,Length,,Quantity,5090,reuse-ciel,mch,concepts,var.concept.ciel.height.uuid,CIEL 5090,,review,"DAK maps newborn Length to CIEL 5090, aliased in content-common as var.concept.ciel.height.uuid (a vitals concept). Same CIEL term, different clinical use — confirm before reusing the vitals alias here."
-Labor and delivery,Baby,LBR.LD.DE.47,Sex,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.48,Male,Sex,Code,167865,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Baby,LBR.LD.DE.49,Female,Sex,Code,167866,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Baby,LBR.LD.DE.50,Baby presentation,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.51,Vertex,Baby presentation,Code,160091,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Baby,LBR.LD.DE.52,Breech,Baby presentation,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.53,Other,Baby presentation,Code,5622,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,APGAR,LBR.LD.DE.54,Assessment time,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,APGAR,LBR.LD.DE.55,1 minute,Assessment time,Code,159603,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,APGAR,LBR.LD.DE.56,5 minutes,Assessment time,Code,159604,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,APGAR,LBR.LD.DE.57,Colour (Appearance),,Integer,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,APGAR,LBR.LD.DE.58,Heart rate (Pulse),,Integer,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,APGAR,LBR.LD.DE.59,Muscle tone (Activity),,Integer,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,APGAR,LBR.LD.DE.60,Reflex irritability (Grimace),,Integer,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,APGAR,LBR.LD.DE.61,Respiration (Breathing),,Integer,170343,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,APGAR,LBR.LD.DE.62,Total APGAR score,,Integer,1504,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,APGAR,LBR.LD.DE.63,Time of delivery,,Time,161012,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.64,Complications of woman,,Coding,120240,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.65,None,Complications of woman,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.66,Other,Complications of woman,Code,5622,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.67,Complications of baby,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.68,None,Complications of baby,Code,1107,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.69,Other,Complications of baby,Code,5622,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.70,Monitoring frequency,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.71,Every 15 minutes for first 2 hours,Monitoring frequency,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.72,Every 30 minutes for 1 hour,Monitoring frequency,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.73,Observation time,,DateTime,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Woman,LBR.LD.DE.74,Blood pressure (BP),,Quantity,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Woman,LBR.LD.DE.75,Pulse,,Quantity,5087,reuse-ciel,mch,concepts,var.concept.ciel.pulse.uuid,CIEL 5087,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Labor and delivery,Woman,LBR.LD.DE.76,Fundus,,String,165298,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Woman,LBR.LD.DE.77,Bleeding,,String,147241,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Woman,LBR.LD.DE.78,Bladder,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.79,Breathing,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.80,Suck,,Boolean,162515,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Baby,LBR.LD.DE.81,Temperature status,,Coding,5088,unassigned,,,,,,conflict,"DAK maps a CODED element (Warm/Cold) to CIEL 5088, which is numeric Temperature. Datatype conflict — do not implement as mapped; needs a coded term or a numeric reading."
-Labor and delivery,Baby,LBR.LD.DE.82,Warm,Temperature status,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.83,Cold,Temperature status,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.84,Birth attendant,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Baby,LBR.LD.DE.85,Labor notes,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.86,Date,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.87,Time,,Time,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.88,Place,,String,163774,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.89,Length of labour,,Quantity,1503,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.90,Attended by,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.91,Certified Midwife (CM),Attended by,Code,1578,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.92,Registered Nurse (RN),Attended by,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.93,Medical Doctor (MD),Attended by,Code,162591,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.94,Other,Attended by,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.95,Type of delivery,,Coding,5630,reuse-ciel,mch,concepts,var.concept.ciel.delivery-mode.uuid,CIEL 5630,,verified,DAK CIEL code matches the alias already declared in variables.properties. Note LBR.LD.DE.12 'Delivery method' duplicates this element.
-Labor and delivery,Delivery Record,LBR.LD.DE.96,Sex,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.97,Male,Sex,Code,167865,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.98,Female,Sex,Code,167866,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.99,Birth weight,,Quantity,5916,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.100,Above 2500 g,Birth weight category,Code,164444,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.101,Below 2500 g,Birth weight category,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.102,APGAR score,,Integer,1504,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.103,Breastfeeding status at 1 month,,Coding,164819,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.104,Yes,Breastfeeding status at 1 month,Code,5526,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Labor and delivery,Delivery Record,LBR.LD.DE.105,No,Breastfeeding status at 1 month,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.106,Partial,Breastfeeding status at 1 month,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Labor and delivery,Delivery Record,LBR.LD.DE.107,LLIN received after delivery,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE1,Full Name,,String,1593,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE2,MRN,,Quantity,163530,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE3,Age,,Quantity,164168,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE4,Parity,,,1053,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-PNC,,EMR.PND.DE5,Date,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE6,Infant's date of birth,,Date,164802,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE7,Infant's sex,,Coding,166025,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE8,Post-partum care,,Coding,1623,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE9,PPC 1: Received within 24hrs,,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE10,PPC 2: Received within 7 days,,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE11,PPC 3: Received within 28 days,,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE12,PPC 4: Received within 42 days,,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE13,Place of Delivery,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE14,Complications,,Coding,144438,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE15,Identified & Managed,,String,164170,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE16,Referred,,String,164169,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE17,HIV Test Results,,Coding,164817,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-PNC,,EMR.PND.DE18,Results at initial PNC visit,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE19,Results at PNC re-test,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE20,Prevention Maternal,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE21,Vitamin A for mother at 6 wks,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE22,Counselled mother on danger signs,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE23,Counselled mother on breastfeeding,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE26,Breast,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE27,Fundal height,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE28,Hb,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE29,Perineum,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE30,Lochia,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE31,Vit A administered?,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE32,General health status,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE33,Intervention,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE34,Infant Assessment,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE35,Child ID,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE36,Temperature recording,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE37,Complications,,Coding,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE38,Identified and managed,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE39,Referred,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE40,Received Kangaroo care,,Boolean,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE41,Nevirapine start date,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE42,Chlorhexidine admnistration,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE43,Before 24hrs,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-PNC,,EMR.PND.DE44,After 24hrs,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE1,Name of the Health facility,,,162724,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE2,County,,,167131,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE3,District,,,161564,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE4,Date,,Date,163757,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE5,MRN,,Quantity,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE6,Full Name,,String,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE7,Age,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE8,Sex,,List - select one,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE9,Male,Sex,List value,167865,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE10,Female,Sex,List value,7182029,unassigned,,,,,,conflict,"DAK gives CIEL 7182029 for Female, which is not a plausible CIEL id (the L&D tab uses 167865/167866 for male/female). Verify before use."
-Family Planning,,EMR.FP.DE11,Gravida,,Quantity,5624,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Family Planning,,EMR.FP.DE12,Parity,,,1053,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Family Planning,,EMR.FP.DE13,New,,,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE14,Continue,,,159835,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE15,Counselling done,,Boolean,1382,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE16,Purpose of Visit,,List - select all that apply,1878,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE17,For Commodities,Purpose of visit,List value,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE18,Side effects,Purpose of visit,List value,163296,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE19,Jadelle/IUCD removal,Purpose of visit,List value,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE20,Post-partum FP,,,163159,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE21,Date of removal,,Date,,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE22,Family Planning method dispensed,,Coding,374,reuse-ciel,mch,concepts,var.concept.ciel.fp-method.uuid,CIEL 374,,verified,DAK CIEL code matches the alias already declared in variables.properties.
-Family Planning,,EMR.FP.DE23,Male Condoms,,Code,164813,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE24,Female Condoms,,Code,164814,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE25,Cycle beads,,Code,163759,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE26,Oral contraceptive pills (Microgynon),,Code,159783,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE27,Oral contraceptive pills (Microlut),,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE28,Injectables (Depo Provera),,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE29,IUCDS,,Code,5275,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-Family Planning,,EMR.FP.DE30,Implants,,Code,,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
-Family Planning,,EMR.FP.DE31,Sayana Press,,Code,170789,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
-(none),Antenatal Care,,Estimated date of delivery,,,,reuse-ciel,mch,concepts,var.concept.ciel.edd.uuid,CIEL 5596,,no-dak-source,No EDD data element anywhere in the DAK. Confirm it is intended as derived from LMP rather than recorded.
-(none),Labour and Delivery,,Birth outcome,,,,reuse-ciel,mch,concepts,var.concept.ciel.birth-outcome.uuid,CIEL 159917,,no-dak-source,"DAK carries live births and fresh/macerated stillbirths only as aggregate Reporting rows, not as an L&D data element."
-(none),Labour and Delivery,,Cervical Dilation,,,,implement-local,mch,concepts,var.concept.partograph.cervical-dilation.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
-(none),Labour and Delivery,,Descent of Fetal Head,,,,implement-local,mch,concepts,var.concept.partograph.descent-of-head.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
-(none),Labour and Delivery,,Uterine Contractions per 10 Minutes,,,,implement-local,mch,concepts,var.concept.partograph.contractions-per-10min.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
-(none),Labour and Delivery,,Uterine Contraction Duration,,,,implement-local,mch,concepts,var.concept.partograph.contraction-duration.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
-(none),Labour and Delivery,,Amniotic Fluid Character,,,,implement-local,mch,concepts,var.concept.partograph.amniotic-fluid.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
-(none),Labour and Delivery,,Fetal Skull Moulding,,,,implement-local,mch,concepts,var.concept.partograph.moulding.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+dak_tab,dak_section,dak_data_element_id,dak_data_element_name,dak_answer_of,dak_data_type,dak_ciel,dak_read_date,decision,layer,domain,liberiaemr_variable,concept_uuid_source,form_field,status,notes
+ANC,Obstetric history (PARA),LBR.EMR.DE.1,Gravida,,Integer,5624,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+ANC,Obstetric history (PARA),LBR.EMR.DE.2,Last menstrual period (LMP),,Date,1427,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.lmp.uuid,CIEL 1427,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+ANC,Obstetric history (PARA),LBR.EMR.DE.3,Full-term births (FT),,Integer,162557,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Obstetric history (PARA),LBR.EMR.DE.4,Preterm births (P),,Integer,160078,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Obstetric history (PARA),LBR.EMR.DE.5,Abortions (A),,Integer,1823,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Obstetric history (PARA),LBR.EMR.DE.6,Living children (LN),,Integer,1825,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Physical Examination,LBR.EMR.DE.7,Colour,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.8,Normal (N),Colour,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.9,Abnormal (ABN),Colour,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.10,Heart,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.11,Lungs,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.12,Breasts,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.13,Nipples,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.14,Abdomen,,Coding,1808,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Physical Examination,LBR.EMR.DE.15,Extremities,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Physical Examination,LBR.EMR.DE.16,Pelvic examination,,Coding,165372,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Physical Examination,LBR.EMR.DE.17,Explain abnormalities,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.18,Routine drugs,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.19,Date,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.20,Blood pressure (BP),,Quantity,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.21,Weight,,Quantity,165379,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Prenatal,LBR.EMR.DE.22,Gestational age,,Quantity,,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.gestational-age.uuid,CIEL 1438,,unverified,DAK leaves CIEL blank and gives LOINC 18185-9; our alias asserts CIEL 1438. Confirm 1438 is the right term before the forms are written.
+ANC,Prenatal,LBR.EMR.DE.23,Fundal height,,Quantity,1439,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.fundal-height.uuid,CIEL 1439,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+ANC,Prenatal,LBR.EMR.DE.24,Presentation,,Coding,160090,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Prenatal,LBR.EMR.DE.25,Colour (HGT),,String,165396,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Prenatal,LBR.EMR.DE.26,Fetal heart tone (FHT),,Quantity,1440,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.fetal-heart-rate.uuid,CIEL 1440,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+ANC,Prenatal,LBR.EMR.DE.27,Other findings,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.28,Treatment remarks,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Prenatal,LBR.EMR.DE.29,Return date,,Date,5096,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.30,Haemoglobin (Hb),,Quantity,1017,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.31,Malaria smear (M/S),,Coding,1366,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.32,Syphilis,,Coding,164801,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.33,Urine sugar,,Coding,159733,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.34,Hepatitis B,,Coding,1322,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.35,Hepatitis C,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Initial Lab Findings,LBR.EMR.DE.36,Blood group,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Initial Lab Findings,LBR.EMR.DE.37,Rh factor,,Coding,161470,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Initial Lab Findings,LBR.EMR.DE.38,Complete blood count (CBC),,String,1019,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.39,Pregnancy status,,Coding,5272,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.40,1st trimester,Pregnancy trimester,Code,140108,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.41,2nd trimester,Pregnancy trimester,Code,158737,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.42,3rd trimester,Pregnancy trimester,Code,159067,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.43,ANC visit number,,Coding,1425,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.anc-visit-number.uuid,CIEL 1425,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.44,1st,ANC visit number,Code,1724,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.45,2nd,ANC visit number,Code,166075,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.46,3rd,ANC visit number,Code,166076,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.47,4th,ANC visit number,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.48,IPT dose administered,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.49,1st IPT dose,IPT dose administered,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.50,2nd IPT dose,IPT dose administered,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.51,3rd IPT dose,IPT dose administered,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.52,4th IPT dose,IPT dose administered,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.53,Woman receiving IPT,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Intermittent Treatment (IPT),LBR.EMR.DE.54,LLIN received at ANC,,Boolean,160428,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Tetanus Toxoid,LBR.EMR.DE.55,Date of TT1,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Tetanus Toxoid,LBR.EMR.DE.56,Date of TT2,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Tetanus Toxoid,LBR.EMR.DE.57,Date of TT3,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Tetanus Toxoid,LBR.EMR.DE.58,Date of TT4,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Tetanus Toxoid,LBR.EMR.DE.59,Date of TT5,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.60,Name,,String,1593,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.61,Address,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.62,Issue date,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.63,Name of clinic,,String,162724,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.64,Age,,Integer,164168,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+ANC,Pregnant Woman Health Card,LBR.EMR.DE.65,Record number,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.1,Medical Record Number (MRN),,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.2,Date,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.3,Full name,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.4,Age,,Integer,164168,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.5,Oxygen saturation (SpO₂),,Quantity,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.6,Blood pressure (BP),,Quantity,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.7,Fetal heart rate,,Quantity,1440,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.fetal-heart-rate.uuid,CIEL 1440,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Labor and delivery,,LBR.LD.DE.8,Gravida,,Integer,5624,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Labor and delivery,,LBR.LD.DE.9,Parity,,Integer,1053,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Labor and delivery,,LBR.LD.DE.10,Adequate tetanus-diphtheria (TD2+) immunization,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.11,Adequate iron/folic acid supplementation (180 tablets),,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.12,Delivery method,,Coding,,2026-07-30,unassigned,,,,,,pending,Duplicate of LBR.LD.DE.95 'Type of delivery' in the same tab; DE.95 carries CIEL 5630 and this one carries none. Resolve to ONE data element before implementing.
+Labor and delivery,,LBR.LD.DE.13,Spontaneous vaginal delivery (SVD),Delivery method,Code,1170,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.14,Caesarean section (C/S),Delivery method,Code,1171,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.15,Vacuum-assisted delivery,Delivery method,Code,167453,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.16,Forceps,Delivery method,Code,159901,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.17,Destructive,Delivery method,Code,164605,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.18,Other,Delivery method,Code,5622,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.19,Delivery conducted by unskilled provider,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.20,Perineum,,Coding,166322,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.22,Episiotomy,Perineum,Code,170322,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.23,Laceration,Perineum,Code,123620,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,,LBR.LD.DE.24,Anaesthesia,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.25,None,Anaesthesia,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.26,Local,Anaesthesia,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.27,General,Anaesthesia,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.28,Repair,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.29,Yes,Repair,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,,LBR.LD.DE.30,No,Repair,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Third Stage,LBR.LD.DE.31,Active management,,Coding,163452,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.32,Yes,Active management,Code,163452,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.33,No,Active management,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Third Stage,LBR.LD.DE.34,Medication,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Third Stage,LBR.LD.DE.35,Medication time,,Time,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Third Stage,LBR.LD.DE.36,Dose,,Quantity,165169,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.37,Placenta delivery time,,Time,161012,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.38,Placenta status,,Coding,166267,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.39,Complete,Placenta status,Code,163455,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.40,Incomplete,Placenta status,Code,163456,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.41,Blood loss amount,,Coding,161928,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.42,Small (Less than 250 cc),Blood loss amount,Code,160565,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Third Stage,LBR.LD.DE.43,Moderate (250–499 cc),Blood loss amount,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Third Stage,LBR.LD.DE.44,Large (More than 500 cc),Blood loss amount,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.45,Weight,,Quantity,,2026-07-30,unassigned,,,,,,pending,"Duplicate of LBR.LD.DE.99 'Birth weight', which carries CIEL 5916 while this one carries none. Resolve to ONE data element before implementing."
+Labor and delivery,Baby,LBR.LD.DE.46,Length,,Quantity,5090,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.height.uuid,CIEL 5090,,review,"DAK maps newborn Length to CIEL 5090, aliased in content-common as var.concept.ciel.height.uuid (a vitals concept). Same CIEL term, different clinical use — confirm before reusing the vitals alias here."
+Labor and delivery,Baby,LBR.LD.DE.47,Sex,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.48,Male,Sex,Code,167865,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Baby,LBR.LD.DE.49,Female,Sex,Code,167866,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Baby,LBR.LD.DE.50,Baby presentation,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.51,Vertex,Baby presentation,Code,160091,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Baby,LBR.LD.DE.52,Breech,Baby presentation,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.53,Other,Baby presentation,Code,5622,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,APGAR,LBR.LD.DE.54,Assessment time,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,APGAR,LBR.LD.DE.55,1 minute,Assessment time,Code,159603,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,APGAR,LBR.LD.DE.56,5 minutes,Assessment time,Code,159604,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,APGAR,LBR.LD.DE.57,Colour (Appearance),,Integer,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,APGAR,LBR.LD.DE.58,Heart rate (Pulse),,Integer,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,APGAR,LBR.LD.DE.59,Muscle tone (Activity),,Integer,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,APGAR,LBR.LD.DE.60,Reflex irritability (Grimace),,Integer,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,APGAR,LBR.LD.DE.61,Respiration (Breathing),,Integer,170343,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,APGAR,LBR.LD.DE.62,Total APGAR score,,Integer,1504,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,APGAR,LBR.LD.DE.63,Time of delivery,,Time,161012,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.64,Complications of woman,,Coding,120240,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.65,None,Complications of woman,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.66,Other,Complications of woman,Code,5622,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.67,Complications of baby,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.68,None,Complications of baby,Code,1107,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.69,Other,Complications of baby,Code,5622,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.70,Monitoring frequency,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.71,Every 15 minutes for first 2 hours,Monitoring frequency,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.72,Every 30 minutes for 1 hour,Monitoring frequency,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Fourth Stage Monitoring for Woman and Baby,LBR.LD.DE.73,Observation time,,DateTime,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Woman,LBR.LD.DE.74,Blood pressure (BP),,Quantity,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Woman,LBR.LD.DE.75,Pulse,,Quantity,5087,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.pulse.uuid,CIEL 5087,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Labor and delivery,Woman,LBR.LD.DE.76,Fundus,,String,165298,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Woman,LBR.LD.DE.77,Bleeding,,String,147241,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Woman,LBR.LD.DE.78,Bladder,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.79,Breathing,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.80,Suck,,Boolean,162515,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Baby,LBR.LD.DE.81,Temperature status,,Coding,5088,2026-07-30,unassigned,,,,,,conflict,"DAK maps a CODED element (Warm/Cold) to CIEL 5088, which is numeric Temperature. Datatype conflict — do not implement as mapped; needs a coded term or a numeric reading."
+Labor and delivery,Baby,LBR.LD.DE.82,Warm,Temperature status,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.83,Cold,Temperature status,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.84,Birth attendant,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Baby,LBR.LD.DE.85,Labor notes,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.86,Date,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.87,Time,,Time,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.88,Place,,String,163774,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.89,Length of labour,,Quantity,1503,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.90,Attended by,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.91,Certified Midwife (CM),Attended by,Code,1578,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.92,Registered Nurse (RN),Attended by,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.93,Medical Doctor (MD),Attended by,Code,162591,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.94,Other,Attended by,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.95,Type of delivery,,Coding,5630,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.delivery-mode.uuid,CIEL 5630,,verified,DAK CIEL code matches the alias already declared in variables.properties. Note LBR.LD.DE.12 'Delivery method' duplicates this element.
+Labor and delivery,Delivery Record,LBR.LD.DE.96,Sex,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.97,Male,Sex,Code,167865,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.98,Female,Sex,Code,167866,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.99,Birth weight,,Quantity,5916,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.100,Above 2500 g,Birth weight category,Code,164444,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.101,Below 2500 g,Birth weight category,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.102,APGAR score,,Integer,1504,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.103,Breastfeeding status at 1 month,,Coding,164819,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.104,Yes,Breastfeeding status at 1 month,Code,5526,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Labor and delivery,Delivery Record,LBR.LD.DE.105,No,Breastfeeding status at 1 month,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.106,Partial,Breastfeeding status at 1 month,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Labor and delivery,Delivery Record,LBR.LD.DE.107,LLIN received after delivery,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE1,Full Name,,String,1593,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE2,MRN,,Quantity,163530,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE3,Age,,Quantity,164168,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE4,Parity,,,1053,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+PNC,,EMR.PND.DE5,Date,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE6,Infant's date of birth,,Date,164802,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE7,Infant's sex,,Coding,166025,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE8,Post-partum care,,Coding,1623,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE9,PPC 1: Received within 24hrs,,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE10,PPC 2: Received within 7 days,,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE11,PPC 3: Received within 28 days,,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE12,PPC 4: Received within 42 days,,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE13,Place of Delivery,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE14,Complications,,Coding,144438,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE15,Identified & Managed,,String,164170,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE16,Referred,,String,164169,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE17,HIV Test Results,,Coding,164817,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+PNC,,EMR.PND.DE18,Results at initial PNC visit,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE19,Results at PNC re-test,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE20,Prevention Maternal,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE21,Vitamin A for mother at 6 wks,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE22,Counselled mother on danger signs,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE23,Counselled mother on breastfeeding,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE26,Breast,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE27,Fundal height,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE28,Hb,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE29,Perineum,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE30,Lochia,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE31,Vit A administered?,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE32,General health status,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE33,Intervention,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE34,Infant Assessment,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE35,Child ID,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE36,Temperature recording,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE37,Complications,,Coding,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE38,Identified and managed,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE39,Referred,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE40,Received Kangaroo care,,Boolean,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE41,Nevirapine start date,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE42,Chlorhexidine admnistration,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE43,Before 24hrs,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+PNC,,EMR.PND.DE44,After 24hrs,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE1,Name of the Health facility,,,162724,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE2,County,,,167131,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE3,District,,,161564,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE4,Date,,Date,163757,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE5,MRN,,Quantity,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE6,Full Name,,String,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE7,Age,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE8,Sex,,List - select one,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE9,Male,Sex,List value,167865,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE10,Female,Sex,List value,7182029,2026-07-30,unassigned,,,,,,conflict,"DAK gives CIEL 7182029 for Female, which is not a plausible CIEL id (the L&D tab uses 167865/167866 for male/female). Verify before use."
+Family Planning,,EMR.FP.DE11,Gravida,,Quantity,5624,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.gravida.uuid,CIEL 5624,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Family Planning,,EMR.FP.DE12,Parity,,,1053,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.parity.uuid,CIEL 1053,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Family Planning,,EMR.FP.DE13,New,,,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE14,Continue,,,159835,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE15,Counselling done,,Boolean,1382,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE16,Purpose of Visit,,List - select all that apply,1878,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE17,For Commodities,Purpose of visit,List value,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE18,Side effects,Purpose of visit,List value,163296,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE19,Jadelle/IUCD removal,Purpose of visit,List value,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE20,Post-partum FP,,,163159,2026-07-30,unassigned,,,,,,pending,CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE21,Date of removal,,Date,,2026-07-30,unassigned,,,,,,pending,No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE22,Family Planning method dispensed,,Coding,374,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.fp-method.uuid,CIEL 374,,verified,DAK CIEL code matches the alias already declared in variables.properties.
+Family Planning,,EMR.FP.DE23,Male Condoms,,Code,164813,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE24,Female Condoms,,Code,164814,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE25,Cycle beads,,Code,163759,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE26,Oral contraceptive pills (Microgynon),,Code,159783,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE27,Oral contraceptive pills (Microlut),,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE28,Injectables (Depo Provera),,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE29,IUCDS,,Code,5275,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+Family Planning,,EMR.FP.DE30,Implants,,Code,,2026-07-30,unassigned,,,,,,pending,Answer code. No CIEL code in the DAK; terminology lookup required before declaring.
+Family Planning,,EMR.FP.DE31,Sayana Press,,Code,170789,2026-07-30,unassigned,,,,,,pending,Answer code. CIEL code supplied by the DAK; no concept declared in any content package yet.
+(none),Antenatal Care,,Estimated date of delivery,,,,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.edd.uuid,CIEL 5596,,no-dak-source,No EDD data element anywhere in the DAK. Confirm it is intended as derived from LMP rather than recorded.
+(none),Labour and Delivery,,Birth outcome,,,,2026-07-30,reuse-ciel,mch,concepts,var.concept.ciel.birth-outcome.uuid,CIEL 159917,,no-dak-source,"DAK carries live births and fresh/macerated stillbirths only as aggregate Reporting rows, not as an L&D data element."
+(none),Labour and Delivery,,Cervical Dilation,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.cervical-dilation.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+(none),Labour and Delivery,,Descent of Fetal Head,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.descent-of-head.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+(none),Labour and Delivery,,Uterine Contractions per 10 Minutes,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.contractions-per-10min.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+(none),Labour and Delivery,,Uterine Contraction Duration,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.contraction-duration.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+(none),Labour and Delivery,,Amniotic Fluid Character,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.amniotic-fluid.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."
+(none),Labour and Delivery,,Fetal Skull Moulding,,,,2026-07-30,implement-local,mch,concepts,var.concept.partograph.moulding.uuid,local,,no-dak-source,"The DAK has no partograph tab and no intrapartum monitoring elements. This concept has no DAK source and needs one, or an explicit decision that the WHO SMART Guidelines partograph governs instead."

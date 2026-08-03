@@ -13,11 +13,15 @@ citation instead:
 | --- | --- |
 | Title | **Liberia EMR data dictionary** |
 | Location | Google Sheets, file id `16fcIbZfCvjJxzo3Rp4y2gyX3Lh8beElZldfzlRXtQ-c` |
-| Owner | `mkamau@intellisoftkenya.com` (IntelliSOFT) |
-| Read for this table | 2026-07-30, sheet last modified 2026-07-30 |
+| Owner | IntelliSOFT Consulting — request access through the sheet's own sharing controls, which hold the current owner list |
+| Read for this table | 2026-07-30, sheet last modified 2026-07-30 — recorded per row in `dak_read_date` |
 | Shape | 21 tabs; ANC 65, Labour and delivery 106, PNC 42, Family Planning 31 data elements |
 
 ## Traceability
+
+One table per programme, named `traceability-<programme>.csv` and sharing the columns below.
+[`traceability-mch.csv`](traceability-mch.csv) is the only one so far; a second programme
+starts its own file rather than extending this one.
 
 [`traceability-mch.csv`](traceability-mch.csv) — one row per DAK data element, whether or
 not it produced metadata. Every concept in
@@ -38,6 +42,7 @@ a domain, or a concept for them.
 | `dak_answer_of` | For an answer code, the element it is an answer to |
 | `dak_data_type` | As the DAK gives it |
 | `dak_ciel` | The CIEL code **the DAK asserts** — evidence, not a decision |
+| `dak_read_date` | The date the sheet was read for that row. The sheet is live and unversioned, so a row is only a claim about the DAK as it stood on this date |
 | `decision` | `reuse-ciel` / `implement-local` / `derived` (computed, not stored) / `deferred` / `not-implemented` / `unassigned` |
 | `layer`, `domain` | Which content package and which Initializer directory |
 | `liberiaemr_variable` | The `var.*` key, never a bare UUID |
