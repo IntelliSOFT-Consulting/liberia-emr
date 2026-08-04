@@ -54,14 +54,27 @@ jobs:
     needs: build-content
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/setup-java@v4
         with:
-          name: content-packages
-          path: content-packages
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      # run-clean-install.sh starts a built distribution; it does not build one, and the
+      # image is not published from a pull request, so this job builds it. The backend image
+      # resolves the content packages from source in its own first stage, which is why the
+      # build-content artifact is not downloaded here — it would not be read.
+      #
+      # 0.0.0-ci, not 1.0.0-SNAPSHOT: build-distribution.sh refuses to build at a -SNAPSHOT
+      # or floating version, and rightly so. This is a fixed, obviously-not-a-release tag for
+      # a stack that is destroyed at the end of the job.
+      - name: Build the backend image under test
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version 0.0.0-ci --site careysburg --no-frontend
       # Loading metadata into an empty database is the cheapest way to catch a broken CSV,
       # an unresolved ${var.*} or a forward reference between layers.
       - name: Load all metadata into an empty database
-        run: ./qa/upgrade/run-clean-install.sh
+        run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 

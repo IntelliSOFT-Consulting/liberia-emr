@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
 # Clean-install test: empty database -> Initializer loads all metadata -> O3 launches.
 #
-#   qa/upgrade/run-clean-install.sh [--version 1.0.0]
+#   qa/upgrade/run-clean-install.sh [--version 1.0.0] [--no-frontend]
 #
 # This is the cheaper half of the release gate. It catches broken CSVs, unresolved
 # ${var.*} references and forward references between layers. It does NOT catch upgrade
 # failures — see run-upgrade.sh and README.md for why that distinction matters.
+#
+# The images it starts must already exist locally or be pullable: this script tests a built
+# distribution, it does not build one. See scripts/build/build-distribution.sh.
+# --no-frontend pairs with that script's flag of the same name — every assertion below is
+# about the backend, so a caller that skipped the frontend image skips starting it too.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE="$ROOT/distribution/compose/facility/docker-compose.yml"
 ENV_FILE="$ROOT/qa/upgrade/clean-install.env"
 VERSION="${LIBERIAEMR_VERSION:-1.0.0-SNAPSHOT}"
+FRONTEND="true"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --version) VERSION="$2"; shift 2 ;;
+    --version)     VERSION="$2"; shift 2 ;;
+    --no-frontend) FRONTEND="false"; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -74,8 +81,12 @@ if grep -q '\${var\.' <<<"$logs"; then
   exit 1
 fi
 
-echo "== starting the frontend =="
-docker compose -f "$COMPOSE" --env-file "$ENV_FILE" up -d frontend
+if [[ "$FRONTEND" == "true" ]]; then
+  echo "== starting the frontend =="
+  docker compose -f "$COMPOSE" --env-file "$ENV_FILE" up -d frontend
+else
+  echo "== frontend == SKIPPED (--no-frontend)"
+fi
 
 echo
 echo "clean install passed at ${VERSION}"

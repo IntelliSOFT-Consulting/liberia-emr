@@ -7,6 +7,14 @@ IMPLEMENTATION.md §5. Everything below is implemented by
 > Status: **first cut.** Sections marked ⚠ are open and must be closed with the clinical
 > team and the DAK before forms are written.
 
+Traceability to the DAK lives in
+[`../dak/traceability-mch.csv`](../dak/traceability-mch.csv), extracted from the data
+dictionary on 2026-07-30;
+[`../runbooks/dak-to-iniz.md`](../runbooks/dak-to-iniz.md) is the procedure for working it.
+**This spec covers a small fraction of what the DAK asks for**: 244 MCH data elements are in
+the DAK, 14 of them are implemented and verified here, and 226 have had no decision taken.
+The sections below are correct as far as they go — they are not the scope.
+
 ---
 
 ## 1. Concepts
@@ -146,13 +154,27 @@ PNC within 48 hours, FP new acceptors and continuing users.
 
 ## Open items summary
 
-1. CIEL mappings for the six partograph concepts.
-2. Declare or map the coded answers for amniotic fluid and moulding.
-3. Programme outcome concepts.
-4. Definition of the lost-to-follow-up interval.
+Updated against the DAK read on 2026-07-30 — see
+[`../dak/README.md`](../dak/README.md) for what that read found.
+
+1. CIEL mappings for the six partograph concepts. **The DAK cannot supply these**: it has no
+   partograph and no intrapartum monitoring elements at all. Look them up in OCL directly.
+2. Declare or map the coded answers for amniotic fluid and moulding — same position as item 1.
+3. Programme outcome concepts. **The DAK has no enrolment or exit model**, so this is a
+   clinical decision, not an extraction.
+4. Definition of the lost-to-follow-up interval. The DAK enumerates ANC visits 1st–4th
+   (`LBR.EMR.DE.43`–`.47`) but gives no interval.
 5. ANC Number format from the MOH.
 6. Orders section.
 7. Indicator definitions.
-8. WHO alert/action line geometry confirmed against the DAK.
+8. WHO alert/action line geometry. **Not in the DAK.** Either the DAK gains a partograph
+   section or it is recorded that WHO SMART Guidelines govern the partograph instead — that
+   decision is now the blocker, not the lookup.
+9. **New:** decide and record the 226 `pending` DAK elements. This is the bulk of the
+   remaining MCH metadata work and none of it is represented in the sections above.
+10. **New:** two DAK mappings are wrong at source (`LBR.LD.DE.81`, `EMR.FP.DE10`) and two
+    pairs of elements are duplicated (`LBR.LD.DE.12`/`.95`, `LBR.LD.DE.45`/`.99`). Raise with
+    whoever maintains the sheet.
 
-Items 1–3 block the forms. Item 8 blocks the e-partograph implementation.
+Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
+claim that MCH is specified.
