@@ -2,22 +2,32 @@
 # Builds the immutable, versioned LiberiaEMR images.
 #
 #   scripts/build/build-distribution.sh --version 1.0.0 [--site careysburg] [--demo]
+#                                       [--no-frontend]
 #
 # Images: liberia-emr-backend|-frontend|-gateway :<version>
 # A mutable git checkout is never mounted into a production container.
+#
+# --no-frontend skips ONLY the frontend image, whose assemble stage npm-installs the O3 app
+# shell and downloads every pinned ESM — minutes, and the largest single cost here. It is for
+# callers that exercise the backend alone, i.e. the clean-install gate in CI; a release must
+# never use it, because the three images are versioned as one distribution. Everything the
+# frontend image depends on still runs, so the SPA_CONFIG_URLS drift check below keeps its
+# value on every build.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VERSION=""
 SITE="careysburg"
 DEMO="false"
+FRONTEND="true"
 REGISTRY="${REGISTRY:-ghcr.io/intellisoft-consulting}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --version) VERSION="$2"; shift 2 ;;
-    --site)    SITE="$2";    shift 2 ;;
-    --demo)    DEMO="true";  shift ;;
+    --version)     VERSION="$2"; shift 2 ;;
+    --site)        SITE="$2";    shift 2 ;;
+    --demo)        DEMO="true";  shift ;;
+    --no-frontend) FRONTEND="false"; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -90,20 +100,24 @@ docker build \
   -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
   "$ROOT"
 
-echo "== frontend =="
-spa_core="$(grep -E '^spa\.core=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
-[[ -n "$spa_core" ]] || { echo "spa.core is not pinned in distro.properties" >&2; exit 1; }
-# The app shell resolves its configuration from the list it was BUILT with; the compose
-# environment cannot add to it. Same order the files were collected in, which the check
-# above has already reconciled with SPA_CONFIG_URLS in the compose file.
-spa_config_urls="$(paste -sd, "$ROOT/distribution/frontend/config/.config-urls")"
-docker build \
-  -f "$ROOT/distribution/frontend/Dockerfile" \
-  --build-arg "SPA_CORE=${spa_core}" \
-  --build-arg "SPA_CONFIG_URLS=${spa_config_urls}" \
-  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
-  -t "${REGISTRY}/liberia-emr-frontend${suffix}:${VERSION}" \
-  "$ROOT/distribution/frontend"
+if [[ "$FRONTEND" == "true" ]]; then
+  echo "== frontend =="
+  spa_core="$(grep -E '^spa\.core=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
+  [[ -n "$spa_core" ]] || { echo "spa.core is not pinned in distro.properties" >&2; exit 1; }
+  # The app shell resolves its configuration from the list it was BUILT with; the compose
+  # environment cannot add to it. Same order the files were collected in, which the check
+  # above has already reconciled with SPA_CONFIG_URLS in the compose file.
+  spa_config_urls="$(paste -sd, "$ROOT/distribution/frontend/config/.config-urls")"
+  docker build \
+    -f "$ROOT/distribution/frontend/Dockerfile" \
+    --build-arg "SPA_CORE=${spa_core}" \
+    --build-arg "SPA_CONFIG_URLS=${spa_config_urls}" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-frontend${suffix}:${VERSION}" \
+    "$ROOT/distribution/frontend"
+else
+  echo "== frontend == SKIPPED (--no-frontend)"
+fi
 
 echo "== gateway =="
 docker build \
@@ -113,4 +127,4 @@ docker build \
   "$ROOT/distribution/gateway"
 
 echo
-echo "built ${VERSION} (site: ${SITE}, demo: ${DEMO})"
+echo "built ${VERSION} (site: ${SITE}, demo: ${DEMO}, frontend: ${FRONTEND})"

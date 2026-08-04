@@ -28,9 +28,17 @@ place they get caught before a facility does.
 
 | Script | |
 | --- | --- |
-| `run-clean-install.sh` | Empty DB → up → assert Initializer completed and O3 serves |
+| `run-clean-install.sh` | Empty DB → up → assert Initializer completed with no error and no unresolved `${var.*}`, then start O3 |
 | `run-upgrade.sh` | Restore previous-release DB → up at the new release → assert data integrity |
 | `fixtures/` | Anonymised or synthetic previous-release database dumps |
+
+Both scripts start images; neither builds one. Build first with
+[`scripts/build/build-distribution.sh`](../../scripts/build/build-distribution.sh) at the
+same `--version`, or the stack tries to pull a tag that may not be published.
+
+`run-clean-install.sh --no-frontend` skips the last step. Every assertion it makes is about
+the backend — the frontend is only brought up, never waited on — so CI pairs it with
+`build-distribution.sh --no-frontend` and avoids assembling the SPA to prove a CSV loads.
 
 ## The fixture database
 
