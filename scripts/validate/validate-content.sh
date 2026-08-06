@@ -109,7 +109,15 @@ declared="$(cat "$PKG_DIR"/*/configuration/variables.properties 2>/dev/null \
   | grep -oE '^var\.[a-z0-9.\-]+' | sed 's/^var\.//' | sort -u)"
 referenced="$(grep_src -rhoE '\$\{var\.[a-z0-9.\-]+\}' "$PKG_DIR" \
   | sed -E 's/^\$\{var\.//; s/\}$//' | sort -u)"
-missing="$(comm -13 <(echo "$declared") <(echo "$referenced"))"
+#missing="$(comm -13 <(echo "$declared") <(echo "$referenced"))"
+missing="$(
+  awk '
+    NR==FNR { declared[$0]=1; next }
+    !($0 in declared)
+  ' \
+  <(printf '%s\n' "$declared") \
+  <(printf '%s\n' "$referenced")
+)"
 if [[ -n "$missing" ]]; then
   err "referenced but never declared in any variables.properties:"
   echo "$missing" | sed 's/^/       ${var./; s/$/}/' >&2
