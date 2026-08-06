@@ -1,0 +1,261 @@
+---
+name: Java DevSecOps Pipeline
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  checks: write
+
+env:
+  JAVA_VERSION: "17"
+  REGISTRY: intellisoftdev
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+  # BUILD + TEST + JACOCO + SONARQUBE
+
+  build-test:
+
+    name: Build, Test & SonarQube
+    runs-on: ubuntu-latest
+
+    outputs:
+      image-tag: ${{ github.sha }}
+
+    steps:
+      
+      # Checkout
+      
+
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      
+      # Setup Java
+      
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      
+      # Build + Test + JaCoCo + SonarQube
+      
+
+      - name: Build, Test & SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn -B clean verify sonar:sonar \
+            -Dsonar.projectKey=liberia-emr \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.token=${SONAR_TOKEN} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+      
+      # Upload JUnit Reports
+      
+
+      - name: Upload JUnit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: target/surefire-reports/
+          if-no-files-found: warn
+
+      
+      # Upload JaCoCo Report
+      
+      - name: Upload JaCoCo Report
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: warn
+
+  # SONARQUBE QUALITY GATE
+
+  quality-gate:
+
+    name: Sonar Quality Gate
+    runs-on: ubuntu-latest
+
+    needs:
+      - build-test
+
+    timeout-minutes: 15
+
+    steps:
+      
+      # Wait for SonarQube Quality Gate
+      
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  # SOFTWARE BILL OF MATERIALS (SBOM)
+  sbom:
+    name: Generate CycloneDX SBOM
+
+    runs-on: ubuntu-latest
+
+    needs:
+      - quality-gate
+
+    steps:
+      
+      # Checkout
+      
+
+      - uses: actions/checkout@v4
+
+      
+      # Setup Java
+      
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      
+      # Generate SBOM
+      
+
+      - name: Generate CycloneDX SBOM
+        run: |
+          mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
+
+      
+      # Upload SBOM
+      
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: |
+            target/bom.xml
+            target/bom.json
+          if-no-files-found: warn
+
+  # SOFTWARE COMPOSITION ANALYSIS (SCA)
+
+  dependency-check:
+    name: OWASP Dependency Check
+
+    runs-on: ubuntu-latest
+
+    needs:
+      - quality-gate
+
+    steps:
+      
+      # Checkout
+      
+
+      - uses: actions/checkout@v4
+
+      
+      # Setup Java
+      ########################################################################
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      
+      # Cache NVD Database
+      
+
+      - name: Cache Dependency Check Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-${{ runner.os }}
+
+      
+      # Dependency Check
+      
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: liberia-emr
+          path: .
+          format: ALL
+          out: reports
+
+      
+      # Upload Reports
+      
+
+      - name: Upload Dependency Check Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+          if-no-files-found: warn
+
+  # BUILD CONTAINER IMAGES
+
+  docker-build:
+
+    name: Build Docker Images
+
+    runs-on: ubuntu-latest
+
+    needs:
+      - sbom
+      - dependency-check
+
+    strategy:
+      matrix:
+        service:
+          - backend
+          - frontend
+          - gateway
+
+    steps:
+      
+      # Checkout
+      
+
+      - uses: actions/checkout@v4
+
+      
+      # Docker Buildx
+      
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      
+      # Build Image
+      
+
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: distribution/docker/${{ matrix.service }}/Dockerfile
+          tags: ${{ env.REGISTRY }}/liberia-emr-${{ matrix.service }}:${{ github.sha }}
+          push: false
+          load: true
