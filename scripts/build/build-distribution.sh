@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VERSION=""
 SITE="careysburg"
 DEMO="false"
-REGISTRY="${REGISTRY:-ghcr.io/intellisoft-consulting}"
+REGISTRY="${REGISTRY:-intellisoftdev}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
