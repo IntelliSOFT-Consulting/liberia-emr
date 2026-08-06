@@ -1,0 +1,150 @@
+{
+  "name": "TB Screening",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "TB Screening",
+      "sections": [
+        {
+          "label": "",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Contact of TB Patient",
+              "id": "contact_of_tb_patient",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "162276AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Previously Treated for TB",
+              "id": "previously_treated_for_tb",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "164800AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Coughing 2 Weeks or More - Score",
+              "id": "coughing_2_weeks_or_more_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "7c9ee8a4-7624-43fb-b410-bacf37ee4b2f"
+              }
+            },
+            {
+              "label": "Night Sweats - Score",
+              "id": "night_sweats_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "d0f7c810-f976-49f2-8012-29bffad6f1f7"
+              }
+            },
+            {
+              "label": "Weight Loss - Score",
+              "id": "weight_loss_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "d3a15213-65b9-4155-8c92-03fa9c90ef07"
+              }
+            },
+            {
+              "label": "Fever - Score",
+              "id": "fever_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "5dd633c9-c3d0-4cb4-9d87-ca3a72cd5f4d"
+              }
+            },
+            {
+              "label": "Swelling in Any Part of the Body - Score",
+              "id": "swelling_in_any_part_of_the_body_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "16eff3fc-d5e3-46c9-b848-6c06afe371e1"
+              }
+            },
+            {
+              "label": "Total Score",
+              "id": "total_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "9449a5aa-1bd6-440b-bf97-afc164007ed5"
+              }
+            },
+            {
+              "label": "Date the screening was conducted",
+              "id": "date_the_screening_was_conducted",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "11efc22d-87c1-4b79-916c-f02e6b6c18d4"
+              }
+            },
+            {
+              "label": "Result of the sputum test or other diagnostic evaluation",
+              "id": "result_of_the_sputum_test_or_other_diagnostic_evaluation",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "text",
+                "concept": "dab319be-8bed-4e15-bf72-a5a24c5a174c"
+              }
+            },
+            {
+              "label": "Date TB treatment was started for the person screened, if applicable",
+              "id": "date_tb_treatment_was_started",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "1113AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            },
+            {
+              "label": "Observation",
+              "id": "observation",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "processor": "EncounterFormProcessor",
+  "referencedForms": []
+}

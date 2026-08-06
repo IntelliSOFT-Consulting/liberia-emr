@@ -1,0 +1,142 @@
+Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers
+f5e6d7c8-b9a0-4123-e4f5-a6b7c8d9e0f2,,Date of Referral,Date of Referral,Date the referral was issued,Misc,Date,
+7c9ee8a4-7624-43fb-b410-bacf37ee4b2f,,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Question,Numeric,
+d0f7c810-f976-49f2-8012-29bffad6f1f7,,Night Sweats - Score,Night Sweats - Score,Night Sweats - Score,Question,Numeric,
+d3a15213-65b9-4155-8c92-03fa9c90ef07,,Weight Loss - Score,Weight Loss - Score,Weight Loss - Score,Question,Numeric,
+5dd633c9-c3d0-4cb4-9d87-ca3a72cd5f4d,,Fever - Score,Fever - Score,Fever - Score,Question,Numeric,
+16eff3fc-d5e3-46c9-b848-6c06afe371e1,,Swelling in Any Part of the Body - Score,Swelling in Any Part of the Body - Score,Swelling in Any Part of the Body - Score,Question,Numeric,
+9449a5aa-1bd6-440b-bf97-afc164007ed5,,Total Score,Total Score,Total Score,Question,Numeric,
+dab319be-8bed-4e15-bf72-a5a24c5a174c,,Result of the sputum test or other diagnostic evaluation,Result of the sputum test or other diagnostic evaluation,Result of the sputum test or other diagnostic evaluation,Question,Text,
+11efc22d-87c1-4b79-916c-f02e6b6c18d4,,Date the screening was conducted,Date the screening was conducted,Date the screening was conducted,Question,Date,
+162276AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,Contact of TB Patient,Contact of TB Patient,Contact of TB Patient,Question,Coded,
+164800AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,Previously Treated for TB,Previously Treated for TB,Previously Treated for TB,Question,Coded,
+1113AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,Date TB treatment was started,Date TB treatment was started,Date TB treatment was started,Question,Date,
+d954bf76-15ae-45e7-b766-152c60ad0ec7,,Gravida,Gravida,Gravida,Question,Numeric,
+0575e00d-1891-4237-8be4-61f60349c8fe,,Last menstrual period LMP,LMP,Last menstrual period LMP,Question,Date,
+a02355f4-8dbd-4f62-a147-137f3263ce5c,,Full-term births (F),Full-term births,Full-term births (F),Question,Numeric,
+48d67ab3-daf4-4e53-bc96-6e46aae1ad91,,Preterm births (P),Preterm births,Preterm births (P),Question,Numeric,
+0c37c9a6-53f4-434b-ba63-bc723951f56e,,Abortions (A),Abortions,Abortions (A),Question,Numeric,
+c1f73fad-4c78-4abf-aded-5de910bba2bb,,Living children (L/N),Living children,Living children (L/N),Question,Numeric,
+ce4cf3dd-4c5e-40a4-acf0-aea84d25f8b7,,Color,Color,Color,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+bfe3ebba-b0a8-41eb-9487-86eea3f4fac0,,Heart,Heart,Heart,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+0bfe7ca6-0698-47a6-91c5-1fa7b7c7862a,,Lungs,Lungs,Lungs,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+da28bf3d-9cd8-484d-9e1b-c0e255423255,,Breasts,Breasts,Breasts,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+67298259-f943-4b8c-920b-2c8a975015d1,,Nipples,Nipples,Nipples,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+ae1a6611-ff6e-47dc-9e65-bb7ba54bc845,,Abdomen,Abdomen,Abdomen,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+1c8c5d91-b6af-444b-84c4-465eb14044e4,,Extremities,Extremities,Extremities,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+a606ee41-fcb1-4d06-9081-ea5ef32beddc,,Pelvic examination,Pelvic exam,Pelvic examination,Question,Coded,fdd025f4-f9ec-4939-8bc9-f23dc4169a9b;ef10150e-e5b6-4ff7-9a55-57877063f651
+fdd025f4-f9ec-4939-8bc9-f23dc4169a9b,,Normal,Normal,Normal,Misc,N/A,
+ef10150e-e5b6-4ff7-9a55-57877063f651,,Abnormal,Abnormal,Abnormal,Misc,N/A,
+a51380ed-07c2-4ec6-a062-998b26769cad,,Explain abnormalities,Explain abnormalities,Explain abnormalities,Question,Text,
+f633cde2-2e75-4d87-84e9-f11344bf4e74,,Routine Drugs,Routine Drugs,Routine Drugs,Question,Text,
+8542beb1-b5b6-48d7-b606-720634983e4d,,Date of the ANC follow-up visit,ANC follow-up date,Date of the ANC follow-up visit,Question,Date,
+17b1204b-ce88-4a0d-9c2f-6ebcc73b219f,,Blood Pressure (Systolic),BP Systolic,Blood Pressure (Systolic),Question,Numeric,
+a7367960-91f3-4bba-875b-e7bdfa67f66d,,Blood Pressure (Diastolic),BP Diastolic,Blood Pressure (Diastolic),Question,Numeric,
+614b78af-0985-45ba-9c06-2076ce3ad783,,Weight (kg),Weight,Weight (kg),Question,Numeric,
+00663865-9680-476c-9033-60bd55e15970,,Gestational age (Weeks),Gestational age,Gestational age (Weeks),Question,Numeric,
+c696ec1b-25d0-4cd2-aa24-1329b4e815cd,,Fundal height (cm),Fundal height,Fundal height (cm),Question,Numeric,
+04a4661a-89fc-4e9f-9164-ae3d721fe96e,,Presentation,Presentation,Presentation,Question,Coded,5c60ffbd-f6de-4fdc-bdfa-e7dd39233606
+5c60ffbd-f6de-4fdc-bdfa-e7dd39233606,,Vertex,Vertex,Vertex,Misc,N/A,
+7e16a2ea-253b-46a3-9078-8b8308ed98dc,,Colour (HGT),Colour (HGT),Colour (HGT),Question,Text,
+d779b757-c75c-4f66-9efd-4e4a54ababcf,,Fetal heart tone (FHT),Fetal heart tone,Fetal heart tone (FHT),Question,Numeric,
+089e92cc-a536-4ebe-99dd-27e22f12e850,,Other findings,Other findings,Other findings,Question,Text,
+853d8b10-6906-489a-ac31-1fe33e71bc5f,,Treatment remarks,Treatment remarks,Treatment remarks,Question,Text,
+3145707c-d0c9-43db-9d55-424d6d18b2ec,,Scheduled date for next ANC visit,Next ANC visit date,Scheduled date for next ANC visit,Question,Date,
+7425aeea-340f-4f06-a155-c1c5decb37d4,,Pregnancy status,Pregnancy status,Pregnancy status,Question,Coded,5f0b5647-877e-4b44-82fe-0d4e049fed8c;0e8a8700-26e8-46f5-b4dd-7d8accc0f4a2;5750e3ac-2e65-4a09-a789-c9b87a952634
+5f0b5647-877e-4b44-82fe-0d4e049fed8c,,1st trimester,1st trimester,1st trimester,Misc,N/A,
+0e8a8700-26e8-46f5-b4dd-7d8accc0f4a2,,2nd trimester,2nd trimester,2nd trimester,Misc,N/A,
+5750e3ac-2e65-4a09-a789-c9b87a952634,,3rd trimester,3rd trimester,3rd trimester,Misc,N/A,
+94028f5e-cb44-48e6-b999-bccb71258cd7,,ANC visit number,ANC visit number,ANC visit number,Question,Coded,71efe859-c451-4023-a554-68e746dc16eb;1910d33d-d518-4a67-8835-fe5488028fd4;3e2df8f9-b5d3-4cc4-9c55-ca914704d4bd;7d8c9e6c-7cb5-4c13-bf55-5e527d328b4a
+71efe859-c451-4023-a554-68e746dc16eb,,1st,1st,1st,Misc,N/A,
+1910d33d-d518-4a67-8835-fe5488028fd4,,2nd,2nd,2nd,Misc,N/A,
+3e2df8f9-b5d3-4cc4-9c55-ca914704d4bd,,3rd,3rd,3rd,Misc,N/A,
+7d8c9e6c-7cb5-4c13-bf55-5e527d328b4a,,4th+,4th+,4th+,Misc,N/A,
+7d6e6ee9-7914-4d71-b84b-8383d39c30b9,,IPT dose administered,IPT dose administered,IPT dose administered,Question,Coded,6ff4c373-44ce-4730-8f29-6afacb1838a5;802e28be-badd-4926-913c-46aa5f06a0a5;dc083ea2-d018-4756-afe7-c08d5d44e488
+6ff4c373-44ce-4730-8f29-6afacb1838a5,,1st IPT dose,1st IPT dose,1st IPT dose,Misc,N/A,
+802e28be-badd-4926-913c-46aa5f06a0a5,,2nd IPT dose,2nd IPT dose,2nd IPT dose,Misc,N/A,
+dc083ea2-d018-4756-afe7-c08d5d44e488,,3rd IPT dose+,3rd IPT dose+,3rd IPT dose+,Misc,N/A,
+ed584a40-5ea6-4111-a41b-39fd65200d38,,Woman receiving IPT,Woman receiving IPT,Woman receiving IPT,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+a1fe2d79-6a7b-46db-8562-e6a11922d76e,,LLIN received at ANC,LLIN received at ANC,LLIN received at ANC,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+802c2676-19aa-42cc-8d59-cfe476bec769,,Date of TT1,Date of TT1,Date of TT1,Question,Date,
+3484e6ac-d2de-4af5-b895-d2f5e530dc83,,Date of TT2,Date of TT2,Date of TT2,Question,Date,
+cbe81b8c-7ec4-4542-a050-b640fbf2909f,,Date of TT3,Date of TT3,Date of TT3,Question,Date,
+4c0ed954-1e8d-4aae-84ef-f64fae956f35,,Date of TT4,Date of TT4,Date of TT4,Question,Date,
+17825f94-0aed-45af-9de4-925db15fe3fc,,Date of TT5,Date of TT5,Date of TT5,Question,Date,
+3f450290-37d2-4a00-8754-5f4aeb9470c1,,Spontaneous vaginal delivery (SVD),Spontaneous vaginal delivery (SVD),Spontaneous vaginal delivery (SVD),Misc,N/A,
+b281018f-1c9f-4f34-bd1a-123b3d22b74b,,Cesarean section,Cesarean section,Cesarean section,Misc,N/A,
+d7f43ebc-c07c-4d12-8790-362f7044b9f3,,By midwifery,By midwifery,By midwifery,Misc,N/A,
+9314928b-12a6-4223-bcfe-d7e1bd49ae90,,Episiotomy Answer,Episiotomy Answer,Episiotomy,Misc,N/A,
+c2d8c97b-86cd-4f18-aba9-4d13371a0547,,Complete,Complete,Complete,Misc,N/A,
+3b1e90f2-937e-4ff2-adbe-b30250df9a1f,,Incomplete,Incomplete,Incomplete,Misc,N/A,
+98163a7c-6564-491d-9f28-84b492e6819e,,Small (Less than 250 cc),Small (Less than 250 cc),Small (Less than 250 cc),Misc,N/A,
+b63b03b9-c489-4aa1-94db-67fb04e20790,,1 Minute,1 Minute,1 Minute,Misc,N/A,
+106bf080-005a-44c2-82bf-332235486b2a,,5 Minutes,5 Minutes,5 Minutes,Misc,N/A,
+25e41e96-85df-4a61-bcc7-a92510083636,,10 Minutes,10 Minutes,10 Minutes,Misc,N/A,
+a27bbadf-3165-45fc-b122-f668c434597a,,Oxygen saturation (SpO2),Oxygen saturation (SpO2),Oxygen saturation (SpO2),Question,Numeric,
+2ec73b90-b883-4591-ba2c-35dcc84b9768,,Fetal heart rate,Fetal heart rate,Fetal heart rate,Question,Numeric,
+b1cb7e65-1e51-40ce-bfd0-ba671896066b,,Adequate tetanus-diphtheria (TD2+) immunization,Adequate tetanus-diphtheria (TD2+) immunization,Adequate tetanus-diphtheria (TD2+) immunization,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+1b4f3a40-4cbd-4988-9602-74152ab64698,,Delivery method,Delivery method,Delivery method,Question,Coded,3f450290-37d2-4a00-8754-5f4aeb9470c1;b281018f-1c9f-4f34-bd1a-123b3d22b74b
+6b402f5f-c5c1-4cd1-a39d-1951f61ae58f,,Partogram,Partogram,Partogram,Question,Coded,d7f43ebc-c07c-4d12-8790-362f7044b9f3
+7869b7ba-c578-44f6-bcba-07894a01bfc1,,Episiotomy,Episiotomy,Episiotomy,Question,Coded,9314928b-12a6-4223-bcfe-d7e1bd49ae90
+4f6bd73d-1e5c-4445-8981-08618ee76144,,Fistula,Fistula,Fistula,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+4a5bf24d-113e-47ef-b8f7-4efb1781b647,,Active Management,Active Management,Active Management,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+3a5343b1-4204-4eb9-a7cf-63b4a3a4531c,,Medication administered during the third stage of labour,Medication administered during the third stage of labour,Medication administered during the third stage of labour,Question,Text,
+af114d6d-11d3-4322-89b5-6f67eb7f0272,,Medication time,Medication time,Medication time,Question,Time,
+e6062fe7-d156-45ab-9b1a-8d239f375d51,,Dose,Dose,Dose,Question,Numeric,
+73731e22-9e6d-4bc5-af42-02b158db3b65,,Placenta status,Placenta status,Placenta status,Question,Coded,c2d8c97b-86cd-4f18-aba9-4d13371a0547;3b1e90f2-937e-4ff2-adbe-b30250df9a1f
+5392e4a0-3507-42cc-9a57-862273c2e9ad,,Blood loss amount,Blood loss amount,Blood loss amount,Question,Coded,98163a7c-6564-491d-9f28-84b492e6819e
+c4874b45-b42e-4611-9717-653a0657cf08,,Length,Length,Length,Question,Numeric,
+277d2663-c1a0-4729-8f23-08b1c8265194,,Sex,Sex,Sex,Question,Coded,1534AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1535AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+78b5b679-9e21-4d90-aeca-e50f97fd0144,,Assessment Time,Assessment Time,Assessment Time,Question,Coded,b63b03b9-c489-4aa1-94db-67fb04e20790;106bf080-005a-44c2-82bf-332235486b2a;25e41e96-85df-4a61-bcc7-a92510083636
+e931bb6b-93f8-4b06-b2c9-37c6fd6eaf88,,Colour (Appearance),Colour (Appearance),Colour (Appearance),Question,Numeric,
+4b1c6420-247b-47f9-9298-d711f26b3aa7,,Heart rate (Pulse),Heart rate (Pulse),Heart rate (Pulse),Question,Numeric,
+7693d4f2-9011-4fdd-9037-db7f8ce42632,,Muscle tone (Activity),Muscle tone (Activity),Muscle tone (Activity),Question,Numeric,
+cea204f6-5893-4a8c-b939-10ac86874701,,Reflex irritability (Grimace),Reflex irritability (Grimace),Reflex irritability (Grimace),Question,Numeric,
+293fd794-8914-437f-83fd-0ebf9dd0e1ee,,Respiration (Breathing),Respiration (Breathing),Respiration (Breathing),Question,Numeric,
+6993151c-8211-4901-9513-036298af37ad,,Total APGAR score,Total APGAR score,Total APGAR score,Question,Numeric,
+8a045bc9-bcf8-44b7-988a-4f1cd8e30994,,Time at which the baby was delivered,Time at which the baby was delivered,Time at which the baby was delivered,Question,Time,
+b60efef6-7728-402c-922d-e8a137e7044c,,Parity,Parity,Parity,Question,Numeric,
+0717361a-8470-42ff-b457-f02eb48b432e,,PPC 1: Received within 24hrs,PPC 1: Received within 24hrs,PPC 1: Received within 24hrs,Misc,N/A,
+c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5,,Health facility,Health facility,Health facility,Misc,N/A,
+6a5aa30f-4bfa-4303-896a-9bfce969d9d6,,Before 24hrs,Before 24hrs,Before 24hrs,Misc,N/A,
+aab1b2ee-61a2-4d87-9aa6-6d50270d998d,,After 24hrs,After 24hrs,After 24hrs,Misc,N/A,
+1659ca4e-56a1-4dda-8668-8e9a0dcc571e,,Post-partum care,Post-partum care,Post-partum care,Question,Coded,0717361a-8470-42ff-b457-f02eb48b432e
+68bcf423-25ab-48a5-8c0e-5bd1ee6b7e02,,Place of Delivery,Place of Delivery,Place of Delivery,Question,Coded,c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5
+2d564238-249e-46fc-a8e2-dc6ea0ba7a7f,,Complications Identified and Managed,Complications Identified and Managed,Complications Identified and Managed,Question,Text,
+44c3494c-26c5-42d5-901d-bb79f04313d2,,Referral Complication,Referral Complication,Referral Complication,Question,Text,
+da0be8c8-ecd0-4680-b0f8-8fd4fcd40ddd,,HIV Test Results at initial PNC visit,HIV Test Results at initial PNC visit,HIV Test Results at initial PNC visit,Question,Coded,1304AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+c5a63b81-253a-486f-961f-6740e647645e,,HIV Test Results at 6 weeks,HIV Test Results at 6 weeks,HIV Test Results at 6 weeks,Question,Coded,1304AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+e6ab5fca-bf10-486a-ad47-1407b284b6a9,,Preventive interventions provided during the post-partum period,Preventive interventions provided during the post-partum period,Preventive interventions provided during the post-partum period,Question,Text,
+996b496d-1c9d-4492-bb84-a0106ea635d1,,Vitamin A for mother at 6 wks,Vitamin A for mother at 6 wks,Vitamin A for mother at 6 wks,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+8d4ec3fc-02ee-48a6-a81d-1139084bbc39,,Counselled mother on danger signs,Counselled mother on danger signs,Counselled mother on danger signs,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+0ba5cb49-e3b7-4691-97da-5fbfdeaea6e1,,Counselled mother on breastfeeding,Counselled mother on breastfeeding,Counselled mother on breastfeeding,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+c90bfabb-f548-47d7-a62e-f4b8a9765362,,Assessment findings of the mother's breasts,Assessment findings of the mother's breasts,Assessment findings of the mother's breasts,Question,Text,
+b92cb3da-518f-461f-992b-faaf992ace25,,Fundal Height Assessment,Fundal Height Assessment,Fundal Height Assessment,Question,Text,
+6a324316-8524-4dff-9938-a90b771f99e3,,Haemoglobin,Haemoglobin,Haemoglobin,Question,Numeric,
+0d494d1e-825f-410b-8113-68f3b00823d3,,Assessment of the condition of the perineum,Assessment of the condition of the perineum,Assessment of the condition of the perineum,Question,Text,
+6639987b-31f1-4e76-b579-b2e6f235cb55,,Lochia Assessment,Lochia Assessment,Lochia Assessment,Question,Text,
+c8edaf6b-f452-4c3d-a79e-5fd0ad8ba5e8,,Mebendazole administered?,Mebendazole administered?,Mebendazole administered?,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+e27162a2-b07f-4fa1-b794-c6a07ee06da1,,General health status,General health status,General health status,Question,Text,
+d2e68a76-2b09-4bed-96b4-13f94a34ef4e,,Intervention,Intervention,Intervention,Question,Text,
+6685720f-6508-4aca-b5e1-ffc249cf6e85,,Infant,Infant,Infant,Question,Text,
+f4679bad-2c34-499c-83a3-df191f9fe2dc,,Received Kangaroo care,Received Kangaroo care,Received Kangaroo care,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+8a2b0260-33be-4c5c-8d0d-b9dccc0b4cb1,,Nevirapine start date,Nevirapine start date,Nevirapine start date,Question,Date,
+868b2c48-af8b-4b21-a8c9-f7990c38213b,,Chlorhexidine administration,Chlorhexidine administration,Chlorhexidine administration,Question,Coded,6a5aa30f-4bfa-4303-896a-9bfce969d9d6;aab1b2ee-61a2-4d87-9aa6-6d50270d998d
+9e273e45-c0b5-4703-a684-7df9dbad7e1e,,Placenta delivery time,Placenta delivery time,Placenta delivery time,Question,Time,
+a43bf815-94e8-4a04-84c1-dced08b31a4f,,For Commodities,For Commodities,For Commodities,Misc,N/A,
+49faf61d-75b6-4442-ba13-43040e031be5,,IUDs,IUDs,IUDs,Misc,N/A,
+a987442c-4ffb-4af8-8279-8a9cdb5f31b9,,Counselling done,Counselling done,Counselling done,Question,Coded,1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ab70b62e-44ff-4f1a-83dc-1e4aa1070477,,Purpose of visit,Purpose of visit,Purpose of visit,Question,Coded,a43bf815-94e8-4a04-84c1-dced08b31a4f
+5ae99c97-384d-42ed-bbb1-f8ad1afa24a1,,Date when the family planning method was removed,Date when the family planning method was removed,Date when the family planning method was removed,Question,Date,
+6b3218a8-d692-4e0c-9b17-3477a33a2139,,Family Planning method dispensed,Family Planning method dispensed,Family Planning method dispensed,Question,Coded,49faf61d-75b6-4442-ba13-43040e031be5
+da5d743f-dd31-4641-9e5e-26800c2920c5,,OPV1,OPV1,OPV1,Misc,N/A,
+475fd453-e069-4284-8613-0cc448369716,,Oral,Oral,Oral,Misc,N/A,
+eb2f71a4-6689-464b-9d2c-76e84ef0cc76,,"Vit.-A.Blue 100,000iu","Vit.-A.Blue 100,000iu","Vit.-A.Blue 100,000iu",Misc,N/A,
+08ce78ff-a5bf-40ce-ada4-8fd8f26becf2,,Parent/Caregiver,Parent/Caregiver,Parent/Caregiver,Question,Text,
+ec2c08f4-1275-4dc4-ae37-b32740cdd0f8,,Vaccine Name,Vaccine Name,Vaccine Name,Question,Coded,da5d743f-dd31-4641-9e5e-26800c2920c5
+43c2ed1c-cdea-4585-a80c-eb225825e943,,AEFI Vaccine Name,AEFI Vaccine Name,AEFI Vaccine Name,Question,Text,
+12a2b5c0-50b4-4f4f-a619-abf71f3b6c03,,Route,Route,Route,Question,Coded,475fd453-e069-4284-8613-0cc448369716
+9014d952-c45f-4574-b7e5-75c8192e1c89,,Return date for the next vaccination,Return date for the next vaccination,Return date for the next vaccination,Question,Date,
+7b9409e2-1bec-452e-8f4f-be4848af19a9,,Supplementary immunization activities,Supplementary immunization activities,Supplementary immunization activities,Question,Coded,eb2f71a4-6689-464b-9d2c-76e84ef0cc76
+da8510e3-a4cf-4d78-bfba-a3bbe7d35435,,Date of onset of the adverse events,Date of onset of the adverse events,Date of onset of the adverse events,Question,Date,
+d4723169-b0f4-4a51-8c62-5a11920cdb82,,Complaint experienced,Complaint experienced,Complaint experienced,Question,Text,

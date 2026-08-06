@@ -1,0 +1,369 @@
+{
+  "name": "PNC",
+  "uuid": "1d1d2485-3acb-4430-81cf-124aafb00529",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "Mother's Assessment",
+      "sections": [
+        {
+          "label": "Mother's Assessment",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Infant",
+              "type": "obs",
+              "id": "mother_infant",
+              "questionOptions": {
+                "concept": "6685720f-6508-4aca-b5e1-ffc249cf6e85",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Parity",
+              "type": "obs",
+              "id": "parity",
+              "questionOptions": {
+                "concept": "b60efef6-7728-402c-922d-e8a137e7044c",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Post-partum care",
+              "type": "obs",
+              "id": "ppc",
+              "questionOptions": {
+                "concept": "1659ca4e-56a1-4dda-8668-8e9a0dcc571e",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "0717361a-8470-42ff-b457-f02eb48b432e",
+                    "label": "PPC 1: Received within 24hrs"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Place of Delivery",
+              "type": "obs",
+              "id": "place_delivery",
+              "questionOptions": {
+                "concept": "68bcf423-25ab-48a5-8c0e-5bd1ee6b7e02",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5",
+                    "label": "Health facility"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Complications Identified and Managed",
+              "type": "obs",
+              "id": "mother_complications",
+              "questionOptions": {
+                "concept": "2d564238-249e-46fc-a8e2-dc6ea0ba7a7f",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Referral Complication",
+              "type": "obs",
+              "id": "mother_referral",
+              "questionOptions": {
+                "concept": "44c3494c-26c5-42d5-901d-bb79f04313d2",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "HIV Test Results at initial PNC visit",
+              "type": "obs",
+              "id": "hiv_initial",
+              "questionOptions": {
+                "concept": "da0be8c8-ecd0-4680-b0f8-8fd4fcd40ddd",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Negative"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "HIV Test Results at 6 weeks",
+              "type": "obs",
+              "id": "hiv_6_weeks",
+              "questionOptions": {
+                "concept": "c5a63b81-253a-486f-961f-6740e647645e",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Negative"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Preventive interventions provided during the post-partum period",
+              "type": "obs",
+              "id": "preventive_interventions",
+              "questionOptions": {
+                "concept": "e6ab5fca-bf10-486a-ad47-1407b284b6a9",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Vitamin A for mother at 6 wks",
+              "type": "obs",
+              "id": "vitamin_a",
+              "questionOptions": {
+                "concept": "996b496d-1c9d-4492-bb84-a0106ea635d1",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Counselled mother on danger signs",
+              "type": "obs",
+              "id": "counselled_danger_signs",
+              "questionOptions": {
+                "concept": "8d4ec3fc-02ee-48a6-a81d-1139084bbc39",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Counselled mother on breastfeeding",
+              "type": "obs",
+              "id": "counselled_breastfeeding",
+              "questionOptions": {
+                "concept": "0ba5cb49-e3b7-4691-97da-5fbfdeaea6e1",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Assessment findings of the mother's breasts",
+              "type": "obs",
+              "id": "breast_assessment",
+              "questionOptions": {
+                "concept": "c90bfabb-f548-47d7-a62e-f4b8a9765362",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Fundal Height",
+              "type": "obs",
+              "id": "fundal_height_val",
+              "questionOptions": {
+                "concept": "c696ec1b-25d0-4cd2-aa24-1329b4e815cd",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Fundal Height Assessment",
+              "type": "obs",
+              "id": "fundal_height_assessment",
+              "questionOptions": {
+                "concept": "b92cb3da-518f-461f-992b-faaf992ace25",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Haemoglobin",
+              "type": "obs",
+              "id": "haemoglobin",
+              "questionOptions": {
+                "concept": "6a324316-8524-4dff-9938-a90b771f99e3",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Assessment of the condition of the perineum",
+              "type": "obs",
+              "id": "perineum_assessment",
+              "questionOptions": {
+                "concept": "0d494d1e-825f-410b-8113-68f3b00823d3",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Lochia Assessment",
+              "type": "obs",
+              "id": "lochia_assessment",
+              "questionOptions": {
+                "concept": "6639987b-31f1-4e76-b579-b2e6f235cb55",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Mebendazole administered?",
+              "type": "obs",
+              "id": "mebendazole",
+              "questionOptions": {
+                "concept": "c8edaf6b-f452-4c3d-a79e-5fd0ad8ba5e8",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "General health status",
+              "type": "obs",
+              "id": "general_health",
+              "questionOptions": {
+                "concept": "e27162a2-b07f-4fa1-b794-c6a07ee06da1",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Intervention",
+              "type": "obs",
+              "id": "intervention",
+              "questionOptions": {
+                "concept": "d2e68a76-2b09-4bed-96b4-13f94a34ef4e",
+                "rendering": "textarea"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Infant Assessment",
+      "sections": [
+        {
+          "label": "Infant Assessment",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Infant",
+              "type": "obs",
+              "id": "infant_infant",
+              "questionOptions": {
+                "concept": "6685720f-6508-4aca-b5e1-ffc249cf6e85",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Temperature recording",
+              "type": "obs",
+              "id": "temperature",
+              "questionOptions": {
+                "concept": "5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Complications Identified and Managed",
+              "type": "obs",
+              "id": "infant_complications",
+              "questionOptions": {
+                "concept": "2d564238-249e-46fc-a8e2-dc6ea0ba7a7f",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Referral Complication",
+              "type": "obs",
+              "id": "infant_referral",
+              "questionOptions": {
+                "concept": "44c3494c-26c5-42d5-901d-bb79f04313d2",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Received Kangaroo care",
+              "type": "obs",
+              "id": "kangaroo_care",
+              "questionOptions": {
+                "concept": "f4679bad-2c34-499c-83a3-df191f9fe2dc",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Nevirapine start date",
+              "type": "obs",
+              "id": "nevirapine_date",
+              "questionOptions": {
+                "concept": "8a2b0260-33be-4c5c-8d0d-b9dccc0b4cb1",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Chlorhexidine administration",
+              "type": "obs",
+              "id": "chlorhexidine",
+              "questionOptions": {
+                "concept": "868b2c48-af8b-4b21-a8c9-f7990c38213b",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "6a5aa30f-4bfa-4303-896a-9bfce969d9d6",
+                    "label": "Before 24hrs"
+                  },
+                  {
+                    "concept": "aab1b2ee-61a2-4d87-9aa6-6d50270d998d",
+                    "label": "After 24hrs"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

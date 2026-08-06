@@ -1,0 +1,71 @@
+{
+  "name": "Adverse Event Following Immunization (AEFI)",
+  "uuid": "3a60d3b5-1a28-4c8a-8ee7-8960587e8274",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "AEFIs",
+      "sections": [
+        {
+          "label": "Notice",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age <= 5"
+          },
+          "questions": [
+            {
+              "type": "markdown",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "id": "age_restriction_notice",
+              "value": [
+                "**Notice: This form is only applicable for children aged 5 and below.**"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "AEFIs",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age > 5"
+          },
+          "questions": [
+            {
+              "label": "Vaccine Name",
+              "type": "obs",
+              "id": "aefi_vaccine_name",
+              "questionOptions": {
+                "concept": "43c2ed1c-cdea-4585-a80c-eb225825e943",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Date of onset of the adverse events",
+              "type": "obs",
+              "id": "aefi_onset_date",
+              "questionOptions": {
+                "concept": "da8510e3-a4cf-4d78-bfba-a3bbe7d35435",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Complaint experienced",
+              "type": "obs",
+              "id": "aefi_complaint",
+              "questionOptions": {
+                "concept": "d4723169-b0f4-4a51-8c62-5a11920cdb82",
+                "rendering": "textarea"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

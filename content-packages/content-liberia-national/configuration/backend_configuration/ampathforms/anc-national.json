@@ -1,0 +1,560 @@
+{
+  "name": "ANC Form",
+  "uuid": "43924f79-673e-4869-92c2-8418ff02a98f",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "Obstetric history (PARA)",
+      "sections": [
+        {
+          "label": "Obstetric history (PARA)",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Gravida",
+              "type": "obs",
+              "id": "gravida",
+              "questionOptions": {
+                "concept": "d954bf76-15ae-45e7-b766-152c60ad0ec7",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Last menstrual period LMP",
+              "type": "obs",
+              "id": "lmp",
+              "questionOptions": {
+                "concept": "0575e00d-1891-4237-8be4-61f60349c8fe",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Full-term births (F)",
+              "type": "obs",
+              "id": "ftb",
+              "questionOptions": {
+                "concept": "a02355f4-8dbd-4f62-a147-137f3263ce5c",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Preterm births (P)",
+              "type": "obs",
+              "id": "ptb",
+              "questionOptions": {
+                "concept": "48d67ab3-daf4-4e53-bc96-6e46aae1ad91",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Abortions (A)",
+              "type": "obs",
+              "id": "abortions",
+              "questionOptions": {
+                "concept": "0c37c9a6-53f4-434b-ba63-bc723951f56e",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Living children (L/N)",
+              "type": "obs",
+              "id": "living_children",
+              "questionOptions": {
+                "concept": "c1f73fad-4c78-4abf-aded-5de910bba2bb",
+                "rendering": "number"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Physical Examination",
+      "sections": [
+        {
+          "label": "Physical Examination",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Color",
+              "type": "obs",
+              "id": "color",
+              "questionOptions": {
+                "concept": "ce4cf3dd-4c5e-40a4-acf0-aea84d25f8b7",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Heart",
+              "type": "obs",
+              "id": "heart",
+              "questionOptions": {
+                "concept": "bfe3ebba-b0a8-41eb-9487-86eea3f4fac0",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Lungs",
+              "type": "obs",
+              "id": "lungs",
+              "questionOptions": {
+                "concept": "0bfe7ca6-0698-47a6-91c5-1fa7b7c7862a",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Breasts",
+              "type": "obs",
+              "id": "breasts",
+              "questionOptions": {
+                "concept": "da28bf3d-9cd8-484d-9e1b-c0e255423255",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Nipples",
+              "type": "obs",
+              "id": "nipples",
+              "questionOptions": {
+                "concept": "67298259-f943-4b8c-920b-2c8a975015d1",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Abdomen",
+              "type": "obs",
+              "id": "abdomen",
+              "questionOptions": {
+                "concept": "ae1a6611-ff6e-47dc-9e65-bb7ba54bc845",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Extremities",
+              "type": "obs",
+              "id": "extremities",
+              "questionOptions": {
+                "concept": "1c8c5d91-b6af-444b-84c4-465eb14044e4",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Pelvic examination",
+              "type": "obs",
+              "id": "pelvic",
+              "questionOptions": {
+                "concept": "a606ee41-fcb1-4d06-9081-ea5ef32beddc",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Explain abnormalities",
+              "type": "obs",
+              "id": "abnormalities_explain",
+              "questionOptions": {
+                "concept": "a51380ed-07c2-4ec6-a062-998b26769cad",
+                "rendering": "textarea"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Prenatal",
+      "sections": [
+        {
+          "label": "Prenatal",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Routine Drugs",
+              "type": "obs",
+              "id": "routine_drugs",
+              "questionOptions": {
+                "concept": "f633cde2-2e75-4d87-84e9-f11344bf4e74",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Date of the ANC follow-up visit",
+              "type": "obs",
+              "id": "anc_follow_up",
+              "questionOptions": {
+                "concept": "8542beb1-b5b6-48d7-b606-720634983e4d",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Blood Pressure Systolic",
+              "type": "obs",
+              "id": "bp_systolic",
+              "questionOptions": {
+                "concept": "17b1204b-ce88-4a0d-9c2f-6ebcc73b219f",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Blood Pressure Diastolic",
+              "type": "obs",
+              "id": "bp_diastolic",
+              "questionOptions": {
+                "concept": "a7367960-91f3-4bba-875b-e7bdfa67f66d",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Weight (kg)",
+              "type": "obs",
+              "id": "weight",
+              "questionOptions": {
+                "concept": "614b78af-0985-45ba-9c06-2076ce3ad783",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Gestational age (Weeks)",
+              "type": "obs",
+              "id": "gestational_age",
+              "questionOptions": {
+                "concept": "00663865-9680-476c-9033-60bd55e15970",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Fundal height (cm)",
+              "type": "obs",
+              "id": "fundal_height",
+              "questionOptions": {
+                "concept": "c696ec1b-25d0-4cd2-aa24-1329b4e815cd",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Presentation",
+              "type": "obs",
+              "id": "presentation",
+              "questionOptions": {
+                "concept": "04a4661a-89fc-4e9f-9164-ae3d721fe96e",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "5c60ffbd-f6de-4fdc-bdfa-e7dd39233606",
+                    "label": "Vertex"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Colour (HGT)",
+              "type": "obs",
+              "id": "colour_hgt",
+              "questionOptions": {
+                "concept": "7e16a2ea-253b-46a3-9078-8b8308ed98dc",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Fetal heart tone (FHT)",
+              "type": "obs",
+              "id": "fht",
+              "questionOptions": {
+                "concept": "d779b757-c75c-4f66-9efd-4e4a54ababcf",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Other findings",
+              "type": "obs",
+              "id": "other_findings",
+              "questionOptions": {
+                "concept": "089e92cc-a536-4ebe-99dd-27e22f12e850",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Treatment remarks",
+              "type": "obs",
+              "id": "treatment_remarks",
+              "questionOptions": {
+                "concept": "853d8b10-6906-489a-ac31-1fe33e71bc5f",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Scheduled date for next ANC visit",
+              "type": "obs",
+              "id": "next_anc_visit",
+              "questionOptions": {
+                "concept": "3145707c-d0c9-43db-9d55-424d6d18b2ec",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Intermittent Treatment (IPT)",
+      "sections": [
+        {
+          "label": "Intermittent Treatment (IPT)",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Pregnancy status",
+              "type": "obs",
+              "id": "preg_status",
+              "questionOptions": {
+                "concept": "7425aeea-340f-4f06-a155-c1c5decb37d4",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "5f0b5647-877e-4b44-82fe-0d4e049fed8c",
+                    "label": "1st trimester"
+                  },
+                  {
+                    "concept": "0e8a8700-26e8-46f5-b4dd-7d8accc0f4a2",
+                    "label": "2nd trimester"
+                  },
+                  {
+                    "concept": "5750e3ac-2e65-4a09-a789-c9b87a952634",
+                    "label": "3rd trimester"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "ANC visit number",
+              "type": "obs",
+              "id": "anc_visit_num",
+              "questionOptions": {
+                "concept": "94028f5e-cb44-48e6-b999-bccb71258cd7",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "71efe859-c451-4023-a554-68e746dc16eb",
+                    "label": "1st"
+                  },
+                  {
+                    "concept": "1910d33d-d518-4a67-8835-fe5488028fd4",
+                    "label": "2nd"
+                  },
+                  {
+                    "concept": "3e2df8f9-b5d3-4cc4-9c55-ca914704d4bd",
+                    "label": "3rd"
+                  },
+                  {
+                    "concept": "7d8c9e6c-7cb5-4c13-bf55-5e527d328b4a",
+                    "label": "4th+"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "IPT dose administered",
+              "type": "obs",
+              "id": "ipt_dose",
+              "questionOptions": {
+                "concept": "7d6e6ee9-7914-4d71-b84b-8383d39c30b9",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "6ff4c373-44ce-4730-8f29-6afacb1838a5",
+                    "label": "1st IPT dose"
+                  },
+                  {
+                    "concept": "802e28be-badd-4926-913c-46aa5f06a0a5",
+                    "label": "2nd IPT dose"
+                  },
+                  {
+                    "concept": "dc083ea2-d018-4756-afe7-c08d5d44e488",
+                    "label": "3rd IPT dose+"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Woman receiving IPT",
+              "type": "obs",
+              "id": "woman_ipt",
+              "questionOptions": {
+                "concept": "ed584a40-5ea6-4111-a41b-39fd65200d38",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "LLIN received at ANC",
+              "type": "obs",
+              "id": "llin",
+              "questionOptions": {
+                "concept": "a1fe2d79-6a7b-46db-8562-e6a11922d76e",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "No"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Tetanus Toxoid",
+      "sections": [
+        {
+          "label": "Tetanus Toxoid",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Date of TT1",
+              "type": "obs",
+              "id": "tt1",
+              "questionOptions": {
+                "concept": "802c2676-19aa-42cc-8d59-cfe476bec769",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT2",
+              "type": "obs",
+              "id": "tt2",
+              "questionOptions": {
+                "concept": "3484e6ac-d2de-4af5-b895-d2f5e530dc83",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT3",
+              "type": "obs",
+              "id": "tt3",
+              "questionOptions": {
+                "concept": "cbe81b8c-7ec4-4542-a050-b640fbf2909f",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT4",
+              "type": "obs",
+              "id": "tt4",
+              "questionOptions": {
+                "concept": "4c0ed954-1e8d-4aae-84ef-f64fae956f35",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT5",
+              "type": "obs",
+              "id": "tt5",
+              "questionOptions": {
+                "concept": "17825f94-0aed-45af-9de4-925db15fe3fc",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
