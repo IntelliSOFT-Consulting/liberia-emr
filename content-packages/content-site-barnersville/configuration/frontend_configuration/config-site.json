@@ -6,7 +6,7 @@
   ],
   "@openmrs/esm-primary-navigation-app": {
     "logo": {
-      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.png",
+      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.svg",
       "alt": "Ministry of Health, Republic of Liberia — Barnersville Health Center"
     }
   },
