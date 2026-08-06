@@ -1,0 +1,2 @@
+Uuid,Identifier Type,Location,Identifier Source,Manual Entry Enabled,Auto Generation Enabled
+${var.autogenerationoption.moh-health-record.uuid},MOH Health Record Number,,${var.idgen.moh-health-record.uuid},false,true
