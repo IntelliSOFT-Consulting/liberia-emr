@@ -41,7 +41,7 @@
     <string>postalCode</string>
   </lineByLineFormat>
   <addressHierarchyFile>
-    <filename>addresshierarchy.csv</filename>
+    <filename>addresshierarchy-national.csv</filename>
     <entryDelimiter>,</entryDelimiter>
     <identifierDelimiter>%</identifierDelimiter>
   </addressHierarchyFile>

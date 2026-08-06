@@ -54,6 +54,15 @@ RUN set -eu; \
       (cd /tmp/pkg && jar xf "$zip"); \
       [ -d /tmp/pkg/configuration/backend_configuration ] \
         || { echo "no backend_configuration in ${pkg}" >&2; exit 1; }; \
+      # The demo layer loads last, which is right for values a trainee should see and wrong
+      # for the address format: addresshierarchy/addressConfiguration.xml has a name the
+      # module hardcodes, so demo's Cambodia hierarchy would REPLACE the national one — and
+      # <wipe>true</wipe> means replace, not merge. Registration would then teach the wrong
+      # form. Dropped here rather than deleted from content-demo, which is lifted verbatim
+      # from upstream (scripts/build/lift-demo-content.sh).
+      if [ "$pkg" = "${DEMO_PACKAGE}" ]; then \
+        rm -rf /tmp/pkg/configuration/backend_configuration/addresshierarchy; \
+      fi; \
       cp -R /tmp/pkg/configuration/backend_configuration/. /openmrs_config/; \
     done; \
     rm -rf /tmp/pkg; \
