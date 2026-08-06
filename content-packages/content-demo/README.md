@@ -57,6 +57,13 @@ types — the demo values are what a training instance shows. That is the point 
 stack, but it also means **the demo stack is not a rehearsal of production configuration**.
 Verify site behaviour on a non-demo build.
 
+One exception: `backend_configuration/addresshierarchy/` is dropped from this layer by
+`distribution/backend/Dockerfile`, so a training instance registers patients against the
+Liberia address hierarchy rather than upstream's Cambodian one. It has to be dropped at
+build time because `addressConfiguration.xml` has a name the addresshierarchy module
+hardcodes — it cannot be renamed out of the way — and the files stay here because this tree
+is lifted verbatim and is not ours to delete from.
+
 ## Running a training stack on it
 
 `docs/runbooks/demo-stack.md` — build with `--demo`, run both facility compose files, and
