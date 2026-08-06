@@ -10,14 +10,14 @@
   ],
   "@openmrs/esm-primary-navigation-app": {
     "logo": {
-      "src": "${openmrsSpaBase}/branding/liberiaemr-logo.svg",
-      "alt": "LiberiaEMR"
+      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.png",
+      "alt": "Ministry of Health, Republic of Liberia"
     }
   },
   "@openmrs/esm-login-app": {
     "logo": {
-      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.svg",
-      "alt": "Ministry of Health, Republic of Liberia"
+      "src": "${openmrsSpaBase}/branding/liberiaemr-logo.png",
+      "alt": "LiberiaEMR"
     },
     "chooseLocation": {
       "enabled": true,
