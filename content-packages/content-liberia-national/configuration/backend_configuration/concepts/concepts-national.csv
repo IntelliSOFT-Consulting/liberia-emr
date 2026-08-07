@@ -106,3 +106,6 @@ ${var.concept.national.route.uuid},,Route,Route,Route,Question,Coded,${var.conce
 ${var.concept.national.supplementary-immunization-activities.uuid},,Supplementary immunization activities,Supplementary immunization activities,Supplementary immunization activities,Question,Coded,${var.concept.national.vit-a-blue-100-000iu.uuid}${var.concept.national.date-of-onset-of-the-adverse-events.uuid},,Date of onset of the adverse events,Date of onset of the adverse events,Date of onset of the adverse events,Question,Date,
 ${var.concept.national.complaint-experienced.uuid},,Complaint experienced,Complaint experienced,Complaint experienced,Question,Text,
 ${var.concept.national.registration-fee.uuid},,Registration Fee,Registration Fee,Reg Fee,Misc,N/A,
+${var.concept.national.tb-screening-service.uuid},,TB Screening Service,TB Screening Service,Service for TB Screening queue,Misc,N/A
+${var.concept.national.anc-service.uuid},,ANC Service,ANC Service,Service for ANC queue,Misc,N/A
+${var.concept.national.general-consultation-service.uuid},,General Consultation Service,General Consultation Service,Service for General Consultation queue,Misc,N/A

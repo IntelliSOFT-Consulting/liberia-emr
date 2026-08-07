@@ -4,6 +4,9 @@
     "programme and site layers, so it overrides core and is overridden by site.",
     "Must be listed in SPA_CONFIG_URLS — see IMPLEMENTATION.md §7."
   ],
+  "@openmrs/esm-service-queues-app": {
+    "defaultInitialServiceQueue": "TB Screening"
+  },
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": ["${var.identifiertype.moh-health-record.uuid}"],
     "sections": [
