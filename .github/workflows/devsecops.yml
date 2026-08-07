@@ -61,9 +61,17 @@ jobs:
             -Dsonar.projectKey=liberia-emr \
             -Dsonar.host.url=${SONAR_HOST_URL} \
             -Dsonar.token=${SONAR_TOKEN} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            
 
-      
+
+     #upload scannerwork
+      - name: Upload Sonar Scanner Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: scannerwork
+          path: .scannerwork
+
       # Upload JUnit Reports
       
 
@@ -104,6 +112,8 @@ jobs:
 
       - name: SonarQube Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        with:
+          name: scannerwork
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
