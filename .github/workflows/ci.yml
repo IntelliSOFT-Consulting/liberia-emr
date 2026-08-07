@@ -129,6 +129,21 @@ jobs:
           path: content-packages/*/target/*.zip
           if-no-files-found: error
 
+      # Raw (unzipped) per-layer frontend config JSON, for docker-build's
+      # frontend leg to run collect-frontend-config.sh against without
+      # rebuilding the reactor. upload-artifact strips the common leading
+      # directory across the matched paths (here, "content-packages/"), so
+      # the artifact's internal paths start at <layer>/target/... —
+      # downloading it back with `path: content-packages` restores exactly
+      # content-packages/<layer>/target/configuration/frontend_configuration/,
+      # which is the path collect-frontend-config.sh expects.
+      - name: Upload Frontend Configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-config
+          path: content-packages/*/target/configuration/frontend_configuration/config-*.json
+          if-no-files-found: error
+
   # ---------------------------------------------------------------------
   # Stage 3 — software supply-chain checks, run in parallel off the same build
   # ---------------------------------------------------------------------
@@ -219,38 +234,60 @@ jobs:
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
   # ---------------------------------------------------------------------
-  # Stage 4b — generic container images for this commit (not pushed).
-  # Distinct purpose from initializer-clean-db's image: that one is built by
-  # build-distribution.sh for QA to load metadata into; these are the plain
-  # per-service images (backend/frontend/gateway). Runs in parallel with the
-  # security scans rather than behind them — the `gate` job at the end of
-  # this file enforces that sbom and dependency-check both passed before
-  # a merge is allowed, so nothing built here reaches production unscanned.
-  # ---------------------------------------------------------------------
+  # Stage 4b — the three distribution images for this commit (not pushed).
+  #
+  # This calls scripts/build/build-distribution.sh directly instead of
+  # hand-rolling the build — an earlier version of this job reimplemented
+  # its steps piecemeal (reading spa.core, computing SPA_CONFIG_URLS,
+  # collecting frontend config) and, in doing so, missed a step the script
+  # doesn't skip: resolving the 32 OMODs pinned in distro.properties into
+  # distribution/backend/modules/. Since that directory isn't git-tracked,
+  # a fresh checkout has it empty, and `COPY distribution/backend/modules/`
+  # on an empty directory does not error — it silently ships a backend
+  # image with zero OMODs. The script closes that gap, and also reconciles
+  # the collected frontend config order against SPA_CONFIG_URLS in the
+  # compose file, which nothing here was checking before.
+  #
+  # This is the same script initializer-clean-db calls and that a real
+  # release build runs too, so a green build-distribution.sh here is a
+  # meaningful signal, not just "the Dockerfiles happen to work in CI."
+  #
+  # Cost: the script runs its own `mvn package` and the backend Dockerfile
+  # runs a THIRD content-packages build inside its own build stage — on
+  # top of build-test's reactor build. Three Maven builds of the same
+  # module per pipeline run. Accepted for now in exchange for correctness;
+  # revisit if build time becomes a real problem.
   docker-build:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: build-test
-
-    strategy:
-      matrix:
-        service:
-          - backend
-          - frontend
-          - gateway
-
+    env:
+      # Overrides the script's own default (ghcr.io/intellisoft-consulting,
+      # which matches release.yml) so CI images land under intellisoftdev/
+      # instead, per this workflow's existing REGISTRY. Confirm this is
+      # actually the registry you want CI (as opposed to release) images
+      # tagged under — it was set this way before this job called the
+      # script directly, not a new decision made here.
+      REGISTRY: ${{ env.REGISTRY }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build ${{ matrix.service }}
-        uses: docker/build-push-action@v6
+      - uses: actions/setup-java@v4
         with:
-          context: .
-          file: distribution/${{ matrix.service }}/Dockerfile
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}
-          push: false
-          load: true
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      # Site is fixed to careysburg to match initializer-clean-db — this is
+      # a CI smoke build, not a per-site release artifact. Version is the
+      # commit SHA: build-distribution.sh refuses -SNAPSHOT/latest, and a
+      # SHA-tagged image (unlike a fixed placeholder) stays unique per run,
+      # which matters here since these images could later be inspected or
+      # cached across jobs — initializer-clean-db's own throwaway stack
+      # doesn't need that and uses a fixed 0.0.0-ci instead.
+      - name: Build backend, frontend and gateway images
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site careysburg
+          
 
   # ---------------------------------------------------------------------
   # Stage 5 — end to end
@@ -275,7 +312,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Verify e-partograph
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
