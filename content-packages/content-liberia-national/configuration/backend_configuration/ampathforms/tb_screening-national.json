@@ -62,7 +62,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue !== 0 && myValue !== 2",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 2",
                   "message": "Coughing score must be exactly 0 or 2"
                 }
               ]
@@ -78,7 +78,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
                   "message": "Score must be exactly 0 or 1"
                 }
               ]
@@ -94,7 +94,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
                   "message": "Score must be exactly 0 or 1"
                 }
               ]
@@ -110,7 +110,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
                   "message": "Score must be exactly 0 or 1"
                 }
               ]
@@ -126,7 +126,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
                   "message": "Score must be exactly 0 or 1"
                 }
               ]
@@ -142,7 +142,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 6",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 6)",
                   "message": "Total score must be between 0 and 6"
                 }
               ]

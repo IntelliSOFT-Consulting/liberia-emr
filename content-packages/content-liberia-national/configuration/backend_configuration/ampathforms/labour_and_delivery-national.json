@@ -356,7 +356,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.colour-appearance.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
             },
             {
               "label": "Heart rate (Pulse)",
@@ -365,7 +372,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.heart-rate-pulse.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
             },
             {
               "label": "Muscle tone (Activity)",
@@ -374,7 +388,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.muscle-tone-activity.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
             },
             {
               "label": "Reflex irritability (Grimace)",
@@ -383,7 +404,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.reflex-irritability-grimace.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
             },
             {
               "label": "Respiration (Breathing)",
@@ -392,7 +420,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.respiration-breathing.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
             },
             {
               "label": "Total APGAR score",
@@ -401,7 +436,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.total-apgar-score.uuid}",
                 "rendering": "number"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Total APGAR score must be between 0 and 10"
+                }
+              ]
             },
             {
               "label": "Time at which the baby was delivered",
