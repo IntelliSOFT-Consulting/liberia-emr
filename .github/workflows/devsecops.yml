@@ -17,11 +17,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-
-  # BUILD + TEST + JACOCO + SONARQUBE
-
+  # Build, Test, JaCoCo & SonarQube
   build-test:
-
     name: Build, Test & SonarQube
     runs-on: ubuntu-latest
 
@@ -29,17 +26,13 @@ jobs:
       image-tag: ${{ github.sha }}
 
     steps:
-      
       # Checkout
-      
-
       - name: Checkout Source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      
       # Setup Java
-      
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -47,34 +40,31 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      
-      # Build + Test + JaCoCo + SonarQube
-      
+      # Cache SonarQube packages
+      - name: Cache SonarQube Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: |
+            ${{ runner.os }}-sonar
 
+      # Build, test and analyze
       - name: Build, Test & SonarQube Analysis
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           mvn -B verify \
-            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
             -Dsonar.projectKey=liberia-emr \
             -Dsonar.host.url=${SONAR_HOST_URL} \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            
+            -Dsonar.qualitygate.wait=true
 
-
-     #upload scannerwork
-      - name: Upload Sonar Scanner Files
-        uses: actions/upload-artifact@v4
-        with:
-          name: scannerwork
-          path: .scannerwork
-
-      # Upload JUnit Reports
-      
-
+      # Upload JUnit results
       - name: Upload JUnit Results
         uses: actions/upload-artifact@v4
         with:
@@ -82,80 +72,39 @@ jobs:
           path: target/surefire-reports/
           if-no-files-found: warn
 
-      
-      # Upload JaCoCo Report
-      
+      # Upload JaCoCo report
       - name: Upload JaCoCo Report
-
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco
           if-no-files-found: warn
 
-  # SONARQUBE QUALITY GATE
-
-  quality-gate:
-
-    name: Sonar Quality Gate
+  # Software Bill of Materials
+  sbom:
+    name: Generate CycloneDX SBOM
     runs-on: ubuntu-latest
 
     needs:
       - build-test
 
-    timeout-minutes: 15
-
     steps:
-      
-      # Wait for SonarQube Quality Gate
-      
-
-      - name: SonarQube Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
-        with:
-          name: scannerwork
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-  # SOFTWARE BILL OF MATERIALS (SBOM)
-  sbom:
-    name: Generate CycloneDX SBOM
-
-    runs-on: ubuntu-latest
-
-    needs:
-      - quality-gate
-
-    steps:
-      
       # Checkout
-      
-
       - uses: actions/checkout@v4
 
-      
       # Setup Java
-      
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      
       # Generate SBOM
-      
-
       - name: Generate CycloneDX SBOM
         run: |
           mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
 
-      
       # Upload SBOM
-      
-
       - name: Upload CycloneDX SBOM
         uses: actions/upload-artifact@v4
         with:
@@ -165,47 +114,33 @@ jobs:
             target/bom.json
           if-no-files-found: warn
 
-  # SOFTWARE COMPOSITION ANALYSIS (SCA)
-
+  # Software Composition Analysis
   dependency-check:
     name: OWASP Dependency Check
-
     runs-on: ubuntu-latest
 
     needs:
-      - quality-gate
+      - build-test
 
     steps:
-      
       # Checkout
-      
-
       - uses: actions/checkout@v4
 
-      
       # Setup Java
-      ########################################################################
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      
-      # Cache NVD Database
-      
-
+      # Cache Dependency Check database
       - name: Cache Dependency Check Database
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: dependency-check-${{ runner.os }}
 
-      
-      # Dependency Check
-      
-
+      # Run Dependency Check
       - name: Run OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
@@ -214,10 +149,7 @@ jobs:
           format: ALL
           out: reports
 
-      
-      # Upload Reports
-      
-
+      # Upload reports
       - name: Upload Dependency Check Reports
         uses: actions/upload-artifact@v4
         with:
@@ -225,12 +157,9 @@ jobs:
           path: reports
           if-no-files-found: warn
 
-  # BUILD CONTAINER IMAGES
-
+  # Build Docker images
   docker-build:
-
     name: Build Docker Images
-
     runs-on: ubuntu-latest
 
     needs:
@@ -245,23 +174,14 @@ jobs:
           - gateway
 
     steps:
-      
       # Checkout
-      
-
       - uses: actions/checkout@v4
 
-      
-      # Docker Buildx
-      
-
+      # Setup Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      
-      # Build Image
-      
-
+      # Build image
       - name: Build ${{ matrix.service }}
         uses: docker/build-push-action@v6
         with:
