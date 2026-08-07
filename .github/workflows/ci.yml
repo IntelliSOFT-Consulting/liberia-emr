@@ -63,6 +63,14 @@ jobs:
     outputs:
       image-tag: ${{ github.sha }}
 
+    # Secrets can't be referenced directly inside a step's `if:` condition
+    # (GitHub Actions rejects it at parse time — "Unrecognized named-value:
+    # 'secrets'"). Routing them through job-level env first makes them
+    # readable from `if:` via the env context instead.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -90,11 +98,9 @@ jobs:
       # Sonar only runs if the secret is actually configured, so this
       # doesn't hard-fail on fork PRs (which never get repo secrets).
       - name: SonarQube Analysis
-        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
             -Dsonar.projectKey=liberia-emr \
