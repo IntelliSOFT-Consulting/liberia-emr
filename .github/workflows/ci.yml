@@ -1,15 +1,32 @@
-# Pull-request pipeline — IMPLEMENTATION.md §8, stages 1-5.
+# Pull-request pipeline — IMPLEMENTATION.md §8, stages 1-5, extended with
+# SBOM / dependency-check / container build (formerly a separate
+# "Java DevSecOps Pipeline" workflow, merged in to avoid building the
+# Maven reactor twice per run).
 # The release stages (upgrade test, publish, deploy) live in release.yml.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, "release/**", ci/devsecops-pipeline]
   pull_request:
-    branches: [main]
+    branches: [main, develop, ci/devsecops-pipeline]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  checks: write
+
+env:
+  JAVA_VERSION: "17"
+  REGISTRY: intellisoftdev
+  IMAGE_NAME: liberia-emr
+
 jobs:
+  # ---------------------------------------------------------------------
+  # Stage 1 — content validation (no build required)
+  # ---------------------------------------------------------------------
   validate:
     name: Validate content
     runs-on: ubuntu-latest
@@ -29,40 +46,157 @@ jobs:
       - name: Refuse hand edits to the lifted demo content
         run: ./scripts/build/lift-demo-content.sh --check
 
-  build-content:
-    name: Build content packages
+  # ---------------------------------------------------------------------
+  # Stage 2 — build, test, content packages, coverage, static analysis
+  #
+  # This single `mvn verify` builds the whole reactor, which includes the
+  # content-packages module — so this job produces both the JUnit/JaCoCo
+  # output AND the content package zips. There is deliberately no separate
+  # "build-content" job any more; running `mvn verify` twice against the
+  # same reactor wasted ~the whole build time for no extra coverage.
+  # ---------------------------------------------------------------------
+  build-test:
+    name: Build, Test & SonarQube
     runs-on: ubuntu-latest
     needs: validate
+
+    outputs:
+      image-tag: ${{ github.sha }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # sonar wants blame history
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-      - name: Build and validate against the Initializer schema
+
+      - name: Cache SonarQube Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: |
+            ${{ runner.os }}-sonar
+
+      - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
-      - uses: actions/upload-artifact@v4
+
+      # Sonar only runs if the secret is actually configured, so this
+      # doesn't hard-fail on fork PRs (which never get repo secrets).
+      - name: SonarQube Analysis
+        if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+            -Dsonar.projectKey=liberia-emr \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.token=${SONAR_TOKEN} \
+            -Dsonar.qualitygate.wait=true
+
+      - name: Upload JUnit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: target/surefire-reports/
+          if-no-files-found: warn
+
+      - name: Upload JaCoCo Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: warn
+
+      - name: Upload Content Packages
+        uses: actions/upload-artifact@v4
         with:
           name: content-packages
           path: content-packages/*/target/*.zip
           if-no-files-found: error
 
-  initializer-clean-db:
-    name: Initializer against a clean database
+  # ---------------------------------------------------------------------
+  # Stage 3 — software supply-chain checks, run in parallel off the same build
+  # ---------------------------------------------------------------------
+  sbom:
+    name: Generate CycloneDX SBOM
     runs-on: ubuntu-latest
-    needs: build-content
+    needs: build-test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Generate CycloneDX SBOM
+        run: mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: |
+            target/bom.xml
+            target/bom.json
+          if-no-files-found: warn
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Cache Dependency Check Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-${{ runner.os }}
+      - name: Run OWASP Dependency Check
+        run: mvn -B org.owasp:dependency-check-maven:12.1.8:check
+      - name: Upload Dependency Check Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: |
+            **/target/dependency-check-report.html
+            **/target/dependency-check-report.xml
+            **/target/dependency-check-report.json
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------
+  # Stage 4a — initializer smoke test against a clean database
+  # ---------------------------------------------------------------------
+  initializer-clean-db:
+    name: Initializer against a clean database
+    runs-on: ubuntu-latest
+    # Runs in parallel with the security scans rather than behind them —
+    # see the `gate` job at the end of this file for where sbom and
+    # dependency-check are actually enforced.
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       # run-clean-install.sh starts a built distribution; it does not build one, and the
       # image is not published from a pull request, so this job builds it. The backend image
       # resolves the content packages from source in its own first stage, which is why the
-      # build-content artifact is not downloaded here — it would not be read.
+      # build-test content-packages artifact is not downloaded here — it would not be read.
       #
       # 0.0.0-ci, not 1.0.0-SNAPSHOT: build-distribution.sh refuses to build at a -SNAPSHOT
       # or floating version, and rightly so. This is a fixed, obviously-not-a-release tag for
@@ -78,6 +212,43 @@ jobs:
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
+  # ---------------------------------------------------------------------
+  # Stage 4b — generic container images for this commit (not pushed).
+  # Distinct purpose from initializer-clean-db's image: that one is built by
+  # build-distribution.sh for QA to load metadata into; these are the plain
+  # per-service images (backend/frontend/gateway). Runs in parallel with the
+  # security scans rather than behind them — the `gate` job at the end of
+  # this file enforces that sbom and dependency-check both passed before
+  # a merge is allowed, so nothing built here reaches production unscanned.
+  # ---------------------------------------------------------------------
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: build-test
+
+    strategy:
+      matrix:
+        service:
+          - backend
+          - frontend
+          - gateway
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: distribution/${{ matrix.service }}/Dockerfile
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:${{ github.sha }}
+          push: false
+          load: true
+
+  # ---------------------------------------------------------------------
+  # Stage 5 — end to end
+  # ---------------------------------------------------------------------
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
@@ -87,6 +258,10 @@ jobs:
       - name: Cypress
         run: 'echo "TODO: qa/e2e — see qa/e2e/README.md"'
 
+  # ---------------------------------------------------------------------
+  # Frontend module build — independent of the Maven reactor, runs in
+  # parallel with everything above.
+  # ---------------------------------------------------------------------
   frontend:
     name: Custom Build ESMs
     runs-on: ubuntu-latest
@@ -98,3 +273,40 @@ jobs:
       - name: Verify e-partograph
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
+
+  # ---------------------------------------------------------------------
+  # Soft gate — the single required status check for branch protection.
+  #
+  # Everything above runs in parallel where possible (initializer-clean-db
+  # and docker-build no longer wait on sbom/dependency-check to finish, so
+  # a slow scan doesn't add latency to the smoke test or image build). This
+  # job is where that's clawed back: it needs every job whose failure
+  # should block a merge, and fails if any of them failed, was cancelled,
+  # or was skipped. Point branch protection at this one job instead of
+  # every job above — new jobs added later only need `gate` updated once.
+  # ---------------------------------------------------------------------
+  gate:
+    name: CI gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - validate
+      - build-test
+      - sbom
+      - dependency-check
+      - initializer-clean-db
+      - docker-build
+      - e2e
+      - frontend
+    steps:
+      - name: Require all jobs to have succeeded
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e '
+            to_entries | all(.value.result == "success")
+          ' || {
+            echo "One or more required jobs did not succeed:"
+            echo '${{ toJSON(needs) }}' | jq -r '
+              to_entries[] | select(.value.result != "success") | "  \(.key): \(.value.result)"
+            '
+            exit 1
+          }
