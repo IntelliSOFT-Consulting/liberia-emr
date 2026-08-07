@@ -1,3 +1,5 @@
+Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type
+${var.concept.date-of-referral.uuid},,Date of Referral,Date of Referral,Date the referral was issued,Misc,Date
 Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers
 f5e6d7c8-b9a0-4123-e4f5-a6b7c8d9e0f2,,Date of Referral,Date of Referral,Date the referral was issued,Misc,Date,
 7c9ee8a4-7624-43fb-b410-bacf37ee4b2f,,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Question,Numeric,

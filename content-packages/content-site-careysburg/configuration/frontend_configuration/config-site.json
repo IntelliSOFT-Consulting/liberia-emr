@@ -6,8 +6,8 @@
   ],
   "@openmrs/esm-primary-navigation-app": {
     "logo": {
-      "src": "${openmrsSpaBase}/branding/liberiaemr-logo.svg",
-      "alt": "LiberiaEMR — Careysburg Health Center"
+      "src": "${openmrsSpaBase}/branding/moh-liberia-logo.svg",
+      "alt": "Ministry of Health, Republic of Liberia — Careysburg Health Center"
     }
   },
   "@openmrs/esm-login-app": {

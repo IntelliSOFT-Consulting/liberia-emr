@@ -16,7 +16,7 @@ Verified end to end on 2026-07-30 against `1.0.0` built from this repository: 67
 
 - **Metadata, not patients.** Starter concepts, diagnoses, drugs, lab tests, demo forms
   (SOAP note, Covid 19, mental health assessment, test forms), queues, appointment
-  services, billing services and cash points, address hierarchy, training roles. The
+  services, billing services and cash points, training roles. The
   `referencedemodata` module that generates demo *patients* is not pinned in
   `distro.properties`, so the instance starts with an empty patient list and trainees
   create their own practice records.
@@ -24,7 +24,10 @@ Verified end to end on 2026-07-30 against `1.0.0` built from this repository: 67
   **demo**. Where upstream demo metadata collides with ours the demo values are what the
   training instance shows — the location picker, for example, lists Ward 1–3 and Site 1–50
   alongside the six Careysburg locations. A demo stack is **not a rehearsal of production
-  configuration**; verify site behaviour on a non-demo build.
+  configuration**; verify site behaviour on a non-demo build. The one exception is the
+  address hierarchy: the demo layer's `addresshierarchy/` is dropped at image build time, so
+  registration uses the Liberia counties and health districts, not upstream's Cambodian
+  provinces.
 - **It cannot sync.** The demo overlay neutralises the sync service three ways over, so
   fabricated patients cannot reach the central instance.
 

@@ -6,6 +6,26 @@
   ],
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": ["${var.identifiertype.moh-health-record.uuid}"],
+    "sections": [
+      "demographics",
+      "contact",
+      "referralDetails",
+      "relationships"
+    ],
+    "sectionDefinitions": [
+      {
+        "id": "referralDetails",
+        "name": "Referral Details",
+        "fields": [
+          "purposeOfVisit",
+          "referredFrom",
+          "referredBy",
+          "referralRefNumber",
+          "dateOfReferral",
+          "reasonForReferral"
+        ]
+      }
+    ],
     "fieldDefinitions": [
       {
         "id": "nationalId",
@@ -13,15 +33,69 @@
         "identifierTypeUuid": "${var.identifiertype.national-id.uuid}",
         "label": "Liberia National ID",
         "showHeading": false
+      },
+      {
+        "id": "purposeOfVisit",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.purpose-of-visit.uuid}",
+        "label": "Purpose of Visit",
+        "placeholder": "Purpose of Visit"
+      },
+      {
+        "id": "referredFrom",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.referred-from.uuid}",
+        "label": "Referred from",
+        "placeholder": "Referred from details"
+      },
+      {
+        "id": "referredBy",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.referred-by.uuid}",
+        "label": "Referred by",
+        "placeholder": "Referred by"
+      },
+      {
+        "id": "referralRefNumber",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.referral-ref-number.uuid}",
+        "label": "Referral reference number",
+        "placeholder": "1234567"
+      },
+      {
+        "id": "dateOfReferral",
+        "type": "obs",
+        "uuid": "${var.concept.date-of-referral.uuid}",
+        "label": "Date of Referral",
+        "placeholder": "Select Date",
+        "required": false
+      },
+      {
+        "id": "reasonForReferral",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.reason-for-referral.uuid}",
+        "label": "Reason for referral",
+        "placeholder": "Reason for referral",
+        "rendering": "textarea"
       }
     ],
     "fieldConfigurations": {
+      "name": {
+        "displayMiddleName": true
+      },
       "address": {
         "useAddressHierarchy": {
           "enabled": true,
           "useQuickSearch": true,
           "searchAddressByLevel": true
         }
+      },
+      "gender": [
+        { "value": "M", "label": "Male" },
+        { "value": "F", "label": "Female" }
+      ],
+      "relationships": {
+        "enabled": true
       }
     }
   },
@@ -33,5 +107,10 @@
       "backend image; both must be present. See the globalproperties/README.md table."
     ],
     "logoutIdleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+  },
+  "@openmrs/esm-styleguide": {
+    "Brand color #1": "#002A86",
+    "Brand color #2": "#001B56",
+    "Brand color #3": "#002A86"
   }
 }

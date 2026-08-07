@@ -1,0 +1,6 @@
+Uuid,Void/Retire,Name,Description,Format,Searchable
+${var.personattribute.purpose-of-visit.uuid},,Purpose of Visit,Purpose of visit at patient registration,java.lang.String,false
+${var.personattribute.referred-from.uuid},,Referred From,Facility or location patient was referred from,java.lang.String,false
+${var.personattribute.referred-by.uuid},,Referred By,Person or provider who referred the patient,java.lang.String,false
+${var.personattribute.referral-ref-number.uuid},,Referral Reference Number,Reference number on the referral slip,java.lang.String,false
+${var.personattribute.reason-for-referral.uuid},,Reason for Referral,Detailed reason for patient referral,java.lang.String,false
