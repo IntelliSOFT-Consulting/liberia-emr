@@ -58,7 +58,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue !== 0 && myValue !== 2",
+                  "message": "Coughing score must be exactly 0 or 2"
+                }
+              ]
             },
             {
               "label": "Night Sweats - Score",
@@ -67,7 +74,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.night-sweats-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
             },
             {
               "label": "Weight Loss - Score",
@@ -76,7 +90,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.weight-loss-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
             },
             {
               "label": "Fever - Score",
@@ -85,7 +106,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.fever-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
             },
             {
               "label": "Swelling in Any Part of the Body - Score",
@@ -94,7 +122,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
             },
             {
               "label": "Total Score",
@@ -103,7 +138,14 @@
               "questionOptions": {
                 "rendering": "number",
                 "concept": "${var.concept.national.total-score.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 6",
+                  "message": "Total score must be between 0 and 6"
+                }
+              ]
             },
             {
               "label": "Date the screening was conducted",
@@ -112,7 +154,13 @@
               "questionOptions": {
                 "rendering": "date",
                 "concept": "${var.concept.national.date-the-screening-was-conducted.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                }
+              ]
             },
             {
               "label": "Result of the sputum test or other diagnostic evaluation",
@@ -130,7 +178,13 @@
               "questionOptions": {
                 "rendering": "date",
                 "concept": "${var.concept.national.date-tb-treatment-was-started.uuid}"
-              }
+              },
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                }
+              ]
             },
             {
               "label": "Observation",
