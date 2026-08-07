@@ -32,6 +32,18 @@ trap 'rm -rf "$work"' EXIT
 
 # build-distro refuses to run outside a Maven project, but reads the module set from the
 # file named by -Ddistro rather than from this POM.
+#
+# The repositories are not optional here. This POM is synthetic and has no parent, so it
+# inherits nothing from content-packages/pom.xml, and Maven Central carries none of
+# org.openmrs — the SDK plugin itself, the platform WAR and every OMOD come from
+# mavenrepo.openmrs.org. Without them the goal fails on the WAR before it reaches a single
+# module:
+#
+#   Could not find artifact org.openmrs.web:openmrs-webapp:war:2.8.8 in central
+#
+# and a developer whose ~/.m2 already holds those artifacts, or whose settings.xml declares
+# the repository, will not reproduce it — it only shows up on a clean machine such as a CI
+# runner. Keep in step with the declarations in content-packages/pom.xml.
 cat > "$work/pom.xml" <<'POM'
 <project xmlns="http://maven.apache.org/POM/4.0.0">
 	<modelVersion>4.0.0</modelVersion>
@@ -39,6 +51,36 @@ cat > "$work/pom.xml" <<'POM'
 	<artifactId>liberiaemr-module-resolver</artifactId>
 	<version>1</version>
 	<packaging>pom</packaging>
+
+	<repositories>
+		<repository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Public Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<!--
+				Snapshots are ENABLED here and disabled everywhere else, for exactly one
+				reason: distribution/distro.properties pins omod.spa=3.1.0-SNAPSHOT, which
+				upstream RefApp does too and which that file already flags as VERIFY. There is
+				no released spa-omod 3.1.0 to move to — 3.0.0 is the newest release — so until
+				one exists the module set cannot be resolved without this. Turn it back off in
+				the same change that pins omod.spa to a release.
+			-->
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>openmrs-releases</id>
+			<name>OpenMRS Public</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 </project>
 POM
 

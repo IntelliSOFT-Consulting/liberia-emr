@@ -75,10 +75,18 @@ section "file name collisions between layers"
 # to load. Give each file a package-specific name.
 # README.md is excluded here for the same reason it is excluded from the package: it is
 # documentation for editors, never loaded, and never in the resolved image.
+#
+# addresshierarchy/addressConfiguration.xml is excluded because it CANNOT be renamed:
+# AddressConfigurationLoader (addresshierarchy 2.21.0) hardcodes that name, and a server has
+# exactly one address format anyway — the file wipes and replaces the hierarchy it finds. One
+# layer winning is the only possible outcome, so the rule above has nothing to protect here.
+# Which layer wins is decided in distribution/backend/Dockerfile, where the demo layer's
+# addresshierarchy/ is dropped so it cannot bury the national one.
 dupes="$(for pkg in "$PKG_DIR"/*/configuration/backend_configuration; do
            [[ -d "$pkg" ]] || continue
            name="${pkg#$PKG_DIR/}"; name="${name%%/*}"
-           find "$pkg" -type f ! -name '.gitkeep' ! -name 'README.md' | sed "s|^$pkg/|$name |"
+           find "$pkg" -type f ! -name '.gitkeep' ! -name 'README.md' \
+                ! -path '*/addresshierarchy/addressConfiguration.xml' | sed "s|^$pkg/|$name |"
          done | awk '{ print $2, $1 }' | sort | awk '
            { if ($1 == prev) { if (!shown) print prev ": " prevpkg; print prev ": " $2; shown=1 }
              else shown=0

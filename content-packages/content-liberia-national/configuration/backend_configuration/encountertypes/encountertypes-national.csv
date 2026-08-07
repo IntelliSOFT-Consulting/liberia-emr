@@ -1,0 +1,6 @@
+Uuid,Void/Retire,Name,Description
+${var.encountertype.anc.uuid},,ANC Encounter,Encounter for Antenatal Care (ANC)
+${var.encountertype.labor-delivery.uuid},,Labor & Delivery,Encounter for Labor and Delivery
+${var.encountertype.pnc.uuid},,PNC Encounter,Encounter for Postnatal Care (PNC)
+${var.encountertype.family-planning.uuid},,Family Planning,Encounter for Family Planning
+${var.encountertype.tb-screening.uuid},,TB Screening,Encounter for TB Screening

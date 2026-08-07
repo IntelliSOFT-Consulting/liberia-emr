@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type
+${var.concept.date-of-referral.uuid},,Date of Referral,Date of Referral,Date the referral was issued,Misc,Date

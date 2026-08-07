@@ -56,6 +56,11 @@ it actually used, so the compose value can be diffed against the build.
 Runs the validators first, refuses `-SNAPSHOT` and `latest`, and refuses to include
 `content-demo`.
 
+`--no-frontend` skips the frontend image only. Its assemble stage npm-installs the app shell
+and downloads every pinned ESM, which dominates the build, so CI's clean-install gate — which
+asserts nothing about the SPA — leaves it out. A release build must never use it: the three
+images carry one version and are meant to ship together.
+
 For a training stack, `--demo` builds `liberia-emr-{backend,frontend}-demo` with
 `content-demo` added as the last content layer, and
 `compose/facility/docker-compose.demo.yml` runs them with sync disabled. Full procedure:
