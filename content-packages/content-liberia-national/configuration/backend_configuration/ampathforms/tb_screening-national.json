@@ -1,5 +1,6 @@
 {
   "name": "TB Screening",
+  "uuid": "4f9b8c2d-7a1e-4321-b8f9-c6e7a8d9b0a1",
   "version": "1.0",
   "published": true,
   "retired": false,
@@ -18,14 +19,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "162276AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "concept": "${var.concept.national.contact-of-tb-patient.uuid}",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -37,14 +38,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "164800AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "concept": "${var.concept.national.previously-treated-for-tb.uuid}",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -56,7 +57,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "7c9ee8a4-7624-43fb-b410-bacf37ee4b2f"
+                "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}"
               }
             },
             {
@@ -65,7 +66,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "d0f7c810-f976-49f2-8012-29bffad6f1f7"
+                "concept": "${var.concept.national.night-sweats-score.uuid}"
               }
             },
             {
@@ -74,7 +75,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "d3a15213-65b9-4155-8c92-03fa9c90ef07"
+                "concept": "${var.concept.national.weight-loss-score.uuid}"
               }
             },
             {
@@ -83,7 +84,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "5dd633c9-c3d0-4cb4-9d87-ca3a72cd5f4d"
+                "concept": "${var.concept.national.fever-score.uuid}"
               }
             },
             {
@@ -92,7 +93,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "16eff3fc-d5e3-46c9-b848-6c06afe371e1"
+                "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}"
               }
             },
             {
@@ -101,7 +102,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "9449a5aa-1bd6-440b-bf97-afc164007ed5"
+                "concept": "${var.concept.national.total-score.uuid}"
               }
             },
             {
@@ -110,7 +111,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "11efc22d-87c1-4b79-916c-f02e6b6c18d4"
+                "concept": "${var.concept.national.date-the-screening-was-conducted.uuid}"
               }
             },
             {
@@ -119,7 +120,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "text",
-                "concept": "dab319be-8bed-4e15-bf72-a5a24c5a174c"
+                "concept": "${var.concept.national.result-of-the-sputum-test-or-other-diagnostic-evaluation.uuid}"
               }
             },
             {
@@ -128,7 +129,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "1113AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "concept": "${var.concept.national.date-tb-treatment-was-started.uuid}"
               }
             },
             {
@@ -137,7 +138,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                "concept": "${var.concept.ciel.comments.uuid}"
               }
             }
           ]

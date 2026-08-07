@@ -19,7 +19,7 @@
               "type": "obs",
               "id": "gravida",
               "questionOptions": {
-                "concept": "d954bf76-15ae-45e7-b766-152c60ad0ec7",
+                "concept": "${var.concept.national.gravida.uuid}",
                 "rendering": "number"
               }
             },
@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "parity",
               "questionOptions": {
-                "concept": "b60efef6-7728-402c-922d-e8a137e7044c",
+                "concept": "${var.concept.national.parity.uuid}",
                 "rendering": "number"
               }
             },
@@ -37,15 +37,15 @@
               "type": "obs",
               "id": "counselling_done",
               "questionOptions": {
-                "concept": "a987442c-4ffb-4af8-8279-8a9cdb5f31b9",
+                "concept": "${var.concept.national.counselling-done.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -56,11 +56,11 @@
               "type": "obs",
               "id": "purpose_of_visit",
               "questionOptions": {
-                "concept": "ab70b62e-44ff-4f1a-83dc-1e4aa1070477",
+                "concept": "${var.concept.national.purpose-of-visit.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "a43bf815-94e8-4a04-84c1-dced08b31a4f",
+                    "concept": "${var.concept.national.for-commodities.uuid}",
                     "label": "For Commodities"
                   }
                 ]
@@ -71,7 +71,7 @@
               "type": "obs",
               "id": "date_method_removed",
               "questionOptions": {
-                "concept": "5ae99c97-384d-42ed-bbb1-f8ad1afa24a1",
+                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}",
                 "rendering": "date"
               }
             },
@@ -80,11 +80,11 @@
               "type": "obs",
               "id": "method_dispensed",
               "questionOptions": {
-                "concept": "6b3218a8-d692-4e0c-9b17-3477a33a2139",
+                "concept": "${var.concept.national.family-planning-method-dispensed.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "49faf61d-75b6-4442-ba13-43040e031be5",
+                    "concept": "${var.concept.national.iuds.uuid}",
                     "label": "IUDs"
                   }
                 ]

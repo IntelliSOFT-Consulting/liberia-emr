@@ -19,7 +19,7 @@
               "type": "obs",
               "id": "gravida",
               "questionOptions": {
-                "concept": "d954bf76-15ae-45e7-b766-152c60ad0ec7",
+                "concept": "${var.concept.national.gravida.uuid}",
                 "rendering": "number"
               }
             },
@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "lmp",
               "questionOptions": {
-                "concept": "0575e00d-1891-4237-8be4-61f60349c8fe",
+                "concept": "${var.concept.national.last-menstrual-period-lmp.uuid}",
                 "rendering": "date"
               }
             },
@@ -37,7 +37,7 @@
               "type": "obs",
               "id": "ftb",
               "questionOptions": {
-                "concept": "a02355f4-8dbd-4f62-a147-137f3263ce5c",
+                "concept": "${var.concept.national.full-term-births-f.uuid}",
                 "rendering": "number"
               }
             },
@@ -46,7 +46,7 @@
               "type": "obs",
               "id": "ptb",
               "questionOptions": {
-                "concept": "48d67ab3-daf4-4e53-bc96-6e46aae1ad91",
+                "concept": "${var.concept.national.preterm-births-p.uuid}",
                 "rendering": "number"
               }
             },
@@ -55,7 +55,7 @@
               "type": "obs",
               "id": "abortions",
               "questionOptions": {
-                "concept": "0c37c9a6-53f4-434b-ba63-bc723951f56e",
+                "concept": "${var.concept.national.abortions-a.uuid}",
                 "rendering": "number"
               }
             },
@@ -64,7 +64,7 @@
               "type": "obs",
               "id": "living_children",
               "questionOptions": {
-                "concept": "c1f73fad-4c78-4abf-aded-5de910bba2bb",
+                "concept": "${var.concept.national.living-children-l-n.uuid}",
                 "rendering": "number"
               }
             }
@@ -84,15 +84,15 @@
               "type": "obs",
               "id": "color",
               "questionOptions": {
-                "concept": "ce4cf3dd-4c5e-40a4-acf0-aea84d25f8b7",
+                "concept": "${var.concept.national.color.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -103,15 +103,15 @@
               "type": "obs",
               "id": "heart",
               "questionOptions": {
-                "concept": "bfe3ebba-b0a8-41eb-9487-86eea3f4fac0",
+                "concept": "${var.concept.national.heart.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -122,15 +122,15 @@
               "type": "obs",
               "id": "lungs",
               "questionOptions": {
-                "concept": "0bfe7ca6-0698-47a6-91c5-1fa7b7c7862a",
+                "concept": "${var.concept.national.lungs.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -141,15 +141,15 @@
               "type": "obs",
               "id": "breasts",
               "questionOptions": {
-                "concept": "da28bf3d-9cd8-484d-9e1b-c0e255423255",
+                "concept": "${var.concept.national.breasts.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -160,15 +160,15 @@
               "type": "obs",
               "id": "nipples",
               "questionOptions": {
-                "concept": "67298259-f943-4b8c-920b-2c8a975015d1",
+                "concept": "${var.concept.national.nipples.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -179,15 +179,15 @@
               "type": "obs",
               "id": "abdomen",
               "questionOptions": {
-                "concept": "ae1a6611-ff6e-47dc-9e65-bb7ba54bc845",
+                "concept": "${var.concept.national.abdomen.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -198,15 +198,15 @@
               "type": "obs",
               "id": "extremities",
               "questionOptions": {
-                "concept": "1c8c5d91-b6af-444b-84c4-465eb14044e4",
+                "concept": "${var.concept.national.extremities.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -217,15 +217,15 @@
               "type": "obs",
               "id": "pelvic",
               "questionOptions": {
-                "concept": "a606ee41-fcb1-4d06-9081-ea5ef32beddc",
+                "concept": "${var.concept.national.pelvic-examination.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.national.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.national.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -236,7 +236,7 @@
               "type": "obs",
               "id": "abnormalities_explain",
               "questionOptions": {
-                "concept": "a51380ed-07c2-4ec6-a062-998b26769cad",
+                "concept": "${var.concept.national.explain-abnormalities.uuid}",
                 "rendering": "textarea"
               }
             }
@@ -256,7 +256,7 @@
               "type": "obs",
               "id": "routine_drugs",
               "questionOptions": {
-                "concept": "f633cde2-2e75-4d87-84e9-f11344bf4e74",
+                "concept": "${var.concept.national.routine-drugs.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -265,7 +265,7 @@
               "type": "obs",
               "id": "anc_follow_up",
               "questionOptions": {
-                "concept": "8542beb1-b5b6-48d7-b606-720634983e4d",
+                "concept": "${var.concept.national.date-of-the-anc-follow-up-visit.uuid}",
                 "rendering": "date"
               }
             },
@@ -274,7 +274,7 @@
               "type": "obs",
               "id": "bp_systolic",
               "questionOptions": {
-                "concept": "17b1204b-ce88-4a0d-9c2f-6ebcc73b219f",
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
                 "rendering": "number"
               }
             },
@@ -283,7 +283,7 @@
               "type": "obs",
               "id": "bp_diastolic",
               "questionOptions": {
-                "concept": "a7367960-91f3-4bba-875b-e7bdfa67f66d",
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
                 "rendering": "number"
               }
             },
@@ -292,7 +292,7 @@
               "type": "obs",
               "id": "weight",
               "questionOptions": {
-                "concept": "614b78af-0985-45ba-9c06-2076ce3ad783",
+                "concept": "${var.concept.national.weight-kg.uuid}",
                 "rendering": "number"
               }
             },
@@ -301,7 +301,7 @@
               "type": "obs",
               "id": "gestational_age",
               "questionOptions": {
-                "concept": "00663865-9680-476c-9033-60bd55e15970",
+                "concept": "${var.concept.national.gestational-age-weeks.uuid}",
                 "rendering": "number"
               }
             },
@@ -310,7 +310,7 @@
               "type": "obs",
               "id": "fundal_height",
               "questionOptions": {
-                "concept": "c696ec1b-25d0-4cd2-aa24-1329b4e815cd",
+                "concept": "${var.concept.national.fundal-height-cm.uuid}",
                 "rendering": "number"
               }
             },
@@ -319,11 +319,11 @@
               "type": "obs",
               "id": "presentation",
               "questionOptions": {
-                "concept": "04a4661a-89fc-4e9f-9164-ae3d721fe96e",
+                "concept": "${var.concept.national.presentation.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "5c60ffbd-f6de-4fdc-bdfa-e7dd39233606",
+                    "concept": "${var.concept.national.vertex.uuid}",
                     "label": "Vertex"
                   }
                 ]
@@ -334,7 +334,7 @@
               "type": "obs",
               "id": "colour_hgt",
               "questionOptions": {
-                "concept": "7e16a2ea-253b-46a3-9078-8b8308ed98dc",
+                "concept": "${var.concept.national.colour-hgt.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -343,7 +343,7 @@
               "type": "obs",
               "id": "fht",
               "questionOptions": {
-                "concept": "d779b757-c75c-4f66-9efd-4e4a54ababcf",
+                "concept": "${var.concept.national.fetal-heart-tone-fht.uuid}",
                 "rendering": "number"
               }
             },
@@ -352,7 +352,7 @@
               "type": "obs",
               "id": "other_findings",
               "questionOptions": {
-                "concept": "089e92cc-a536-4ebe-99dd-27e22f12e850",
+                "concept": "${var.concept.national.other-findings.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -361,7 +361,7 @@
               "type": "obs",
               "id": "treatment_remarks",
               "questionOptions": {
-                "concept": "853d8b10-6906-489a-ac31-1fe33e71bc5f",
+                "concept": "${var.concept.national.treatment-remarks.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -370,7 +370,7 @@
               "type": "obs",
               "id": "next_anc_visit",
               "questionOptions": {
-                "concept": "3145707c-d0c9-43db-9d55-424d6d18b2ec",
+                "concept": "${var.concept.national.scheduled-date-for-next-anc-visit.uuid}",
                 "rendering": "date"
               }
             }
@@ -390,19 +390,19 @@
               "type": "obs",
               "id": "preg_status",
               "questionOptions": {
-                "concept": "7425aeea-340f-4f06-a155-c1c5decb37d4",
+                "concept": "${var.concept.national.pregnancy-status.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "5f0b5647-877e-4b44-82fe-0d4e049fed8c",
+                    "concept": "${var.concept.national.1st-trimester.uuid}",
                     "label": "1st trimester"
                   },
                   {
-                    "concept": "0e8a8700-26e8-46f5-b4dd-7d8accc0f4a2",
+                    "concept": "${var.concept.national.2nd-trimester.uuid}",
                     "label": "2nd trimester"
                   },
                   {
-                    "concept": "5750e3ac-2e65-4a09-a789-c9b87a952634",
+                    "concept": "${var.concept.national.3rd-trimester.uuid}",
                     "label": "3rd trimester"
                   }
                 ]
@@ -413,23 +413,23 @@
               "type": "obs",
               "id": "anc_visit_num",
               "questionOptions": {
-                "concept": "94028f5e-cb44-48e6-b999-bccb71258cd7",
+                "concept": "${var.concept.national.anc-visit-number.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "71efe859-c451-4023-a554-68e746dc16eb",
+                    "concept": "${var.concept.national.1st.uuid}",
                     "label": "1st"
                   },
                   {
-                    "concept": "1910d33d-d518-4a67-8835-fe5488028fd4",
+                    "concept": "${var.concept.national.2nd.uuid}",
                     "label": "2nd"
                   },
                   {
-                    "concept": "3e2df8f9-b5d3-4cc4-9c55-ca914704d4bd",
+                    "concept": "${var.concept.national.3rd.uuid}",
                     "label": "3rd"
                   },
                   {
-                    "concept": "7d8c9e6c-7cb5-4c13-bf55-5e527d328b4a",
+                    "concept": "${var.concept.national.4th.uuid}",
                     "label": "4th+"
                   }
                 ]
@@ -440,19 +440,19 @@
               "type": "obs",
               "id": "ipt_dose",
               "questionOptions": {
-                "concept": "7d6e6ee9-7914-4d71-b84b-8383d39c30b9",
+                "concept": "${var.concept.national.ipt-dose-administered.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "6ff4c373-44ce-4730-8f29-6afacb1838a5",
+                    "concept": "${var.concept.national.1st-ipt-dose.uuid}",
                     "label": "1st IPT dose"
                   },
                   {
-                    "concept": "802e28be-badd-4926-913c-46aa5f06a0a5",
+                    "concept": "${var.concept.national.2nd-ipt-dose.uuid}",
                     "label": "2nd IPT dose"
                   },
                   {
-                    "concept": "dc083ea2-d018-4756-afe7-c08d5d44e488",
+                    "concept": "${var.concept.national.3rd-ipt-dose.uuid}",
                     "label": "3rd IPT dose+"
                   }
                 ]
@@ -463,15 +463,15 @@
               "type": "obs",
               "id": "woman_ipt",
               "questionOptions": {
-                "concept": "ed584a40-5ea6-4111-a41b-39fd65200d38",
+                "concept": "${var.concept.national.woman-receiving-ipt.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -482,15 +482,15 @@
               "type": "obs",
               "id": "llin",
               "questionOptions": {
-                "concept": "a1fe2d79-6a7b-46db-8562-e6a11922d76e",
+                "concept": "${var.concept.national.llin-received-at-anc.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -512,7 +512,7 @@
               "type": "obs",
               "id": "tt1",
               "questionOptions": {
-                "concept": "802c2676-19aa-42cc-8d59-cfe476bec769",
+                "concept": "${var.concept.national.date-of-tt1.uuid}",
                 "rendering": "date"
               }
             },
@@ -521,7 +521,7 @@
               "type": "obs",
               "id": "tt2",
               "questionOptions": {
-                "concept": "3484e6ac-d2de-4af5-b895-d2f5e530dc83",
+                "concept": "${var.concept.national.date-of-tt2.uuid}",
                 "rendering": "date"
               }
             },
@@ -530,7 +530,7 @@
               "type": "obs",
               "id": "tt3",
               "questionOptions": {
-                "concept": "cbe81b8c-7ec4-4542-a050-b640fbf2909f",
+                "concept": "${var.concept.national.date-of-tt3.uuid}",
                 "rendering": "date"
               }
             },
@@ -539,7 +539,7 @@
               "type": "obs",
               "id": "tt4",
               "questionOptions": {
-                "concept": "4c0ed954-1e8d-4aae-84ef-f64fae956f35",
+                "concept": "${var.concept.national.date-of-tt4.uuid}",
                 "rendering": "date"
               }
             },
@@ -548,7 +548,7 @@
               "type": "obs",
               "id": "tt5",
               "questionOptions": {
-                "concept": "17825f94-0aed-45af-9de4-925db15fe3fc",
+                "concept": "${var.concept.national.date-of-tt5.uuid}",
                 "rendering": "date"
               }
             }

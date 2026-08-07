@@ -19,7 +19,7 @@
               "type": "obs",
               "id": "mother_infant",
               "questionOptions": {
-                "concept": "6685720f-6508-4aca-b5e1-ffc249cf6e85",
+                "concept": "${var.concept.national.infant.uuid}",
                 "rendering": "text"
               }
             },
@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "parity",
               "questionOptions": {
-                "concept": "b60efef6-7728-402c-922d-e8a137e7044c",
+                "concept": "${var.concept.national.parity.uuid}",
                 "rendering": "number"
               }
             },
@@ -37,11 +37,11 @@
               "type": "obs",
               "id": "ppc",
               "questionOptions": {
-                "concept": "1659ca4e-56a1-4dda-8668-8e9a0dcc571e",
+                "concept": "${var.concept.national.post-partum-care.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "0717361a-8470-42ff-b457-f02eb48b432e",
+                    "concept": "${var.concept.national.ppc-1-received-within-24hrs.uuid}",
                     "label": "PPC 1: Received within 24hrs"
                   }
                 ]
@@ -52,11 +52,11 @@
               "type": "obs",
               "id": "place_delivery",
               "questionOptions": {
-                "concept": "68bcf423-25ab-48a5-8c0e-5bd1ee6b7e02",
+                "concept": "${var.concept.national.place-of-delivery.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5",
+                    "concept": "${var.concept.national.health-facility.uuid}",
                     "label": "Health facility"
                   }
                 ]
@@ -67,7 +67,7 @@
               "type": "obs",
               "id": "mother_complications",
               "questionOptions": {
-                "concept": "2d564238-249e-46fc-a8e2-dc6ea0ba7a7f",
+                "concept": "${var.concept.national.complications-identified-and-managed.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -76,7 +76,7 @@
               "type": "obs",
               "id": "mother_referral",
               "questionOptions": {
-                "concept": "44c3494c-26c5-42d5-901d-bb79f04313d2",
+                "concept": "${var.concept.national.referral-complication.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -85,7 +85,7 @@
               "type": "obs",
               "id": "hiv_initial",
               "questionOptions": {
-                "concept": "da0be8c8-ecd0-4680-b0f8-8fd4fcd40ddd",
+                "concept": "${var.concept.national.hiv-test-results-at-initial-pnc-visit.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -100,7 +100,7 @@
               "type": "obs",
               "id": "hiv_6_weeks",
               "questionOptions": {
-                "concept": "c5a63b81-253a-486f-961f-6740e647645e",
+                "concept": "${var.concept.national.hiv-test-results-at-6-weeks.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -115,7 +115,7 @@
               "type": "obs",
               "id": "preventive_interventions",
               "questionOptions": {
-                "concept": "e6ab5fca-bf10-486a-ad47-1407b284b6a9",
+                "concept": "${var.concept.national.preventive-interventions-provided-during-the-post-partum-period.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -124,15 +124,15 @@
               "type": "obs",
               "id": "vitamin_a",
               "questionOptions": {
-                "concept": "996b496d-1c9d-4492-bb84-a0106ea635d1",
+                "concept": "${var.concept.national.vitamin-a-for-mother-at-6-wks.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -143,15 +143,15 @@
               "type": "obs",
               "id": "counselled_danger_signs",
               "questionOptions": {
-                "concept": "8d4ec3fc-02ee-48a6-a81d-1139084bbc39",
+                "concept": "${var.concept.national.counselled-mother-on-danger-signs.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -162,15 +162,15 @@
               "type": "obs",
               "id": "counselled_breastfeeding",
               "questionOptions": {
-                "concept": "0ba5cb49-e3b7-4691-97da-5fbfdeaea6e1",
+                "concept": "${var.concept.national.counselled-mother-on-breastfeeding.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -181,7 +181,7 @@
               "type": "obs",
               "id": "breast_assessment",
               "questionOptions": {
-                "concept": "c90bfabb-f548-47d7-a62e-f4b8a9765362",
+                "concept": "${var.concept.national.assessment-findings-of-the-mother-s-breasts.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -190,7 +190,7 @@
               "type": "obs",
               "id": "fundal_height_val",
               "questionOptions": {
-                "concept": "c696ec1b-25d0-4cd2-aa24-1329b4e815cd",
+                "concept": "${var.concept.national.fundal-height-cm.uuid}",
                 "rendering": "number"
               }
             },
@@ -199,7 +199,7 @@
               "type": "obs",
               "id": "fundal_height_assessment",
               "questionOptions": {
-                "concept": "b92cb3da-518f-461f-992b-faaf992ace25",
+                "concept": "${var.concept.national.fundal-height-assessment.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -208,7 +208,7 @@
               "type": "obs",
               "id": "haemoglobin",
               "questionOptions": {
-                "concept": "6a324316-8524-4dff-9938-a90b771f99e3",
+                "concept": "${var.concept.national.haemoglobin.uuid}",
                 "rendering": "number"
               }
             },
@@ -217,7 +217,7 @@
               "type": "obs",
               "id": "perineum_assessment",
               "questionOptions": {
-                "concept": "0d494d1e-825f-410b-8113-68f3b00823d3",
+                "concept": "${var.concept.national.assessment-of-the-condition-of-the-perineum.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -226,7 +226,7 @@
               "type": "obs",
               "id": "lochia_assessment",
               "questionOptions": {
-                "concept": "6639987b-31f1-4e76-b579-b2e6f235cb55",
+                "concept": "${var.concept.national.lochia-assessment.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -235,15 +235,15 @@
               "type": "obs",
               "id": "mebendazole",
               "questionOptions": {
-                "concept": "c8edaf6b-f452-4c3d-a79e-5fd0ad8ba5e8",
+                "concept": "${var.concept.national.mebendazole-administered.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -254,7 +254,7 @@
               "type": "obs",
               "id": "general_health",
               "questionOptions": {
-                "concept": "e27162a2-b07f-4fa1-b794-c6a07ee06da1",
+                "concept": "${var.concept.national.general-health-status.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -263,7 +263,7 @@
               "type": "obs",
               "id": "intervention",
               "questionOptions": {
-                "concept": "d2e68a76-2b09-4bed-96b4-13f94a34ef4e",
+                "concept": "${var.concept.national.intervention.uuid}",
                 "rendering": "textarea"
               }
             }
@@ -283,7 +283,7 @@
               "type": "obs",
               "id": "infant_infant",
               "questionOptions": {
-                "concept": "6685720f-6508-4aca-b5e1-ffc249cf6e85",
+                "concept": "${var.concept.national.infant.uuid}",
                 "rendering": "text"
               }
             },
@@ -292,7 +292,7 @@
               "type": "obs",
               "id": "temperature",
               "questionOptions": {
-                "concept": "5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "concept": "${var.concept.ciel.temperature.uuid}",
                 "rendering": "number"
               }
             },
@@ -301,7 +301,7 @@
               "type": "obs",
               "id": "infant_complications",
               "questionOptions": {
-                "concept": "2d564238-249e-46fc-a8e2-dc6ea0ba7a7f",
+                "concept": "${var.concept.national.complications-identified-and-managed.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -310,7 +310,7 @@
               "type": "obs",
               "id": "infant_referral",
               "questionOptions": {
-                "concept": "44c3494c-26c5-42d5-901d-bb79f04313d2",
+                "concept": "${var.concept.national.referral-complication.uuid}",
                 "rendering": "textarea"
               }
             },
@@ -319,15 +319,15 @@
               "type": "obs",
               "id": "kangaroo_care",
               "questionOptions": {
-                "concept": "f4679bad-2c34-499c-83a3-df191f9fe2dc",
+                "concept": "${var.concept.national.received-kangaroo-care.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.yes.uuid}",
                     "label": "Yes"
                   },
                   {
-                    "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
                 ]
@@ -338,7 +338,7 @@
               "type": "obs",
               "id": "nevirapine_date",
               "questionOptions": {
-                "concept": "8a2b0260-33be-4c5c-8d0d-b9dccc0b4cb1",
+                "concept": "${var.concept.national.nevirapine-start-date.uuid}",
                 "rendering": "date"
               }
             },
@@ -347,15 +347,15 @@
               "type": "obs",
               "id": "chlorhexidine",
               "questionOptions": {
-                "concept": "868b2c48-af8b-4b21-a8c9-f7990c38213b",
+                "concept": "${var.concept.national.chlorhexidine-administration.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "6a5aa30f-4bfa-4303-896a-9bfce969d9d6",
+                    "concept": "${var.concept.national.before-24hrs.uuid}",
                     "label": "Before 24hrs"
                   },
                   {
-                    "concept": "aab1b2ee-61a2-4d87-9aa6-6d50270d998d",
+                    "concept": "${var.concept.national.after-24hrs.uuid}",
                     "label": "After 24hrs"
                   }
                 ]
