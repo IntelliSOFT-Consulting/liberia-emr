@@ -107,5 +107,10 @@
       "backend image; both must be present. See the globalproperties/README.md table."
     ],
     "logoutIdleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+  },
+  "@openmrs/esm-styleguide": {
+    "Brand color #1": "#002A86",
+    "Brand color #2": "#001B56",
+    "Brand color #3": "#002A86"
   }
 }
