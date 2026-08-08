@@ -325,14 +325,14 @@ jobs:
       # exit-code: '1' (with a --severity filter) once there's been a
       # chance to review what it actually finds.
       - name: Trivy scan — backend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-backend:${{ github.sha }}
           format: sarif
           output: trivy-backend.sarif
           exit-code: '0'
       - name: Trivy scan — frontend
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-frontend:${{ github.sha }}
           format: sarif
