@@ -1,0 +1,98 @@
+{
+  "name": "Family Planning",
+  "uuid": "d82ce32c-65fa-4ec5-b644-6517a8359133",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "Family Planning",
+      "sections": [
+        {
+          "label": "Family Planning",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Gravida",
+              "type": "obs",
+              "id": "gravida",
+              "questionOptions": {
+                "concept": "${var.concept.national.gravida.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Parity",
+              "type": "obs",
+              "id": "parity",
+              "questionOptions": {
+                "concept": "${var.concept.national.parity.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Counselling done",
+              "type": "obs",
+              "id": "counselling_done",
+              "questionOptions": {
+                "concept": "${var.concept.national.counselling-done.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Purpose of visit",
+              "type": "obs",
+              "id": "purpose_of_visit",
+              "questionOptions": {
+                "concept": "${var.concept.national.purpose-of-visit.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.for-commodities.uuid}",
+                    "label": "For Commodities"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Date when the family planning method was removed",
+              "type": "obs",
+              "id": "date_method_removed",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Family Planning method dispensed",
+              "type": "obs",
+              "id": "method_dispensed",
+              "questionOptions": {
+                "concept": "${var.concept.national.family-planning-method-dispensed.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.iuds.uuid}",
+                    "label": "IUDs"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

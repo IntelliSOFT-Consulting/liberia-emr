@@ -1,0 +1,560 @@
+{
+  "name": "ANC Form",
+  "uuid": "43924f79-673e-4869-92c2-8418ff02a98f",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "Obstetric history (PARA)",
+      "sections": [
+        {
+          "label": "Obstetric history (PARA)",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Gravida",
+              "type": "obs",
+              "id": "gravida",
+              "questionOptions": {
+                "concept": "${var.concept.national.gravida.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Last menstrual period LMP",
+              "type": "obs",
+              "id": "lmp",
+              "questionOptions": {
+                "concept": "${var.concept.national.last-menstrual-period-lmp.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Full-term births (F)",
+              "type": "obs",
+              "id": "ftb",
+              "questionOptions": {
+                "concept": "${var.concept.national.full-term-births-f.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Preterm births (P)",
+              "type": "obs",
+              "id": "ptb",
+              "questionOptions": {
+                "concept": "${var.concept.national.preterm-births-p.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Abortions (A)",
+              "type": "obs",
+              "id": "abortions",
+              "questionOptions": {
+                "concept": "${var.concept.national.abortions-a.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Living children (L/N)",
+              "type": "obs",
+              "id": "living_children",
+              "questionOptions": {
+                "concept": "${var.concept.national.living-children-l-n.uuid}",
+                "rendering": "number"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Physical Examination",
+      "sections": [
+        {
+          "label": "Physical Examination",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Color",
+              "type": "obs",
+              "id": "color",
+              "questionOptions": {
+                "concept": "${var.concept.national.color.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Heart",
+              "type": "obs",
+              "id": "heart",
+              "questionOptions": {
+                "concept": "${var.concept.national.heart.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Lungs",
+              "type": "obs",
+              "id": "lungs",
+              "questionOptions": {
+                "concept": "${var.concept.national.lungs.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Breasts",
+              "type": "obs",
+              "id": "breasts",
+              "questionOptions": {
+                "concept": "${var.concept.national.breasts.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Nipples",
+              "type": "obs",
+              "id": "nipples",
+              "questionOptions": {
+                "concept": "${var.concept.national.nipples.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Abdomen",
+              "type": "obs",
+              "id": "abdomen",
+              "questionOptions": {
+                "concept": "${var.concept.national.abdomen.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Extremities",
+              "type": "obs",
+              "id": "extremities",
+              "questionOptions": {
+                "concept": "${var.concept.national.extremities.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Pelvic examination",
+              "type": "obs",
+              "id": "pelvic",
+              "questionOptions": {
+                "concept": "${var.concept.national.pelvic-examination.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.normal.uuid}",
+                    "label": "Normal"
+                  },
+                  {
+                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "label": "Abnormal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Explain abnormalities",
+              "type": "obs",
+              "id": "abnormalities_explain",
+              "questionOptions": {
+                "concept": "${var.concept.national.explain-abnormalities.uuid}",
+                "rendering": "textarea"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Prenatal",
+      "sections": [
+        {
+          "label": "Prenatal",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Routine Drugs",
+              "type": "obs",
+              "id": "routine_drugs",
+              "questionOptions": {
+                "concept": "${var.concept.national.routine-drugs.uuid}",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Date of the ANC follow-up visit",
+              "type": "obs",
+              "id": "anc_follow_up",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-the-anc-follow-up-visit.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Blood Pressure Systolic",
+              "type": "obs",
+              "id": "bp_systolic",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Blood Pressure Diastolic",
+              "type": "obs",
+              "id": "bp_diastolic",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Weight (kg)",
+              "type": "obs",
+              "id": "weight",
+              "questionOptions": {
+                "concept": "${var.concept.national.weight-kg.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Gestational age (Weeks)",
+              "type": "obs",
+              "id": "gestational_age",
+              "questionOptions": {
+                "concept": "${var.concept.national.gestational-age-weeks.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Fundal height (cm)",
+              "type": "obs",
+              "id": "fundal_height",
+              "questionOptions": {
+                "concept": "${var.concept.national.fundal-height-cm.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Presentation",
+              "type": "obs",
+              "id": "presentation",
+              "questionOptions": {
+                "concept": "${var.concept.national.presentation.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.vertex.uuid}",
+                    "label": "Vertex"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Colour (HGT)",
+              "type": "obs",
+              "id": "colour_hgt",
+              "questionOptions": {
+                "concept": "${var.concept.national.colour-hgt.uuid}",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Fetal heart tone (FHT)",
+              "type": "obs",
+              "id": "fht",
+              "questionOptions": {
+                "concept": "${var.concept.national.fetal-heart-tone-fht.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Other findings",
+              "type": "obs",
+              "id": "other_findings",
+              "questionOptions": {
+                "concept": "${var.concept.national.other-findings.uuid}",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Treatment remarks",
+              "type": "obs",
+              "id": "treatment_remarks",
+              "questionOptions": {
+                "concept": "${var.concept.national.treatment-remarks.uuid}",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Scheduled date for next ANC visit",
+              "type": "obs",
+              "id": "next_anc_visit",
+              "questionOptions": {
+                "concept": "${var.concept.national.scheduled-date-for-next-anc-visit.uuid}",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Intermittent Treatment (IPT)",
+      "sections": [
+        {
+          "label": "Intermittent Treatment (IPT)",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Pregnancy status",
+              "type": "obs",
+              "id": "preg_status",
+              "questionOptions": {
+                "concept": "${var.concept.national.pregnancy-status.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1st-trimester.uuid}",
+                    "label": "1st trimester"
+                  },
+                  {
+                    "concept": "${var.concept.national.2nd-trimester.uuid}",
+                    "label": "2nd trimester"
+                  },
+                  {
+                    "concept": "${var.concept.national.3rd-trimester.uuid}",
+                    "label": "3rd trimester"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "ANC visit number",
+              "type": "obs",
+              "id": "anc_visit_num",
+              "questionOptions": {
+                "concept": "${var.concept.national.anc-visit-number.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1st.uuid}",
+                    "label": "1st"
+                  },
+                  {
+                    "concept": "${var.concept.national.2nd.uuid}",
+                    "label": "2nd"
+                  },
+                  {
+                    "concept": "${var.concept.national.3rd.uuid}",
+                    "label": "3rd"
+                  },
+                  {
+                    "concept": "${var.concept.national.4th.uuid}",
+                    "label": "4th+"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "IPT dose administered",
+              "type": "obs",
+              "id": "ipt_dose",
+              "questionOptions": {
+                "concept": "${var.concept.national.ipt-dose-administered.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1st-ipt-dose.uuid}",
+                    "label": "1st IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.national.2nd-ipt-dose.uuid}",
+                    "label": "2nd IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.national.3rd-ipt-dose.uuid}",
+                    "label": "3rd IPT dose+"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Woman receiving IPT",
+              "type": "obs",
+              "id": "woman_ipt",
+              "questionOptions": {
+                "concept": "${var.concept.national.woman-receiving-ipt.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "LLIN received at ANC",
+              "type": "obs",
+              "id": "llin",
+              "questionOptions": {
+                "concept": "${var.concept.national.llin-received-at-anc.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Tetanus Toxoid",
+      "sections": [
+        {
+          "label": "Tetanus Toxoid",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Date of TT1",
+              "type": "obs",
+              "id": "tt1",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-tt1.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT2",
+              "type": "obs",
+              "id": "tt2",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-tt2.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT3",
+              "type": "obs",
+              "id": "tt3",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-tt3.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT4",
+              "type": "obs",
+              "id": "tt4",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-tt4.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Date of TT5",
+              "type": "obs",
+              "id": "tt5",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-tt5.uuid}",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
