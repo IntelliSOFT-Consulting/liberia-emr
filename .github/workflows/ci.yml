@@ -329,21 +329,21 @@ jobs:
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-backend:${{ github.sha }}
           format: sarif
-          output: trivy-backend.sarif
+          output: trivy-${{ matrix.service }}.sarif
           exit-code: '0'
       - name: Trivy scan — frontend
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-frontend:${{ github.sha }}
           format: sarif
-          output: trivy-frontend.sarif
+          output: trivy-${{ matrix.service }}.sarif
           exit-code: '0'
       - name: Trivy scan — gateway
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-gateway:${{ github.sha }}
           format: sarif
-          output: trivy-gateway.sarif
+          output: trivy-${{ matrix.service }}.sarif
           exit-code: '0'
 
       # Uploads to the repo's Security tab (Code scanning). Needs
