@@ -578,8 +578,14 @@ jobs:
   # redirects (no -L), so an unexpected redirect fails loudly rather than
   # silently passing through.
   #
-  # Timing: up to 10 attempts, 15s apart = up to 150s (2.5 min) total
-  # before giving up and failing the job.
+  # Timing: up to 20 attempts, 15s apart = up to 300s (5 min) total
+  # before giving up and failing the job. Widened from an initial 150s —
+  # OpenMRS-based backends commonly take well over a minute to become
+  # healthy even on a routine restart (32 OMODs + Spring context init),
+  # and a false-positive failure here doesn't just fail a job quietly —
+  # it triggers rollback-dev, which undoes a perfectly good deploy. Better
+  # to wait longer on a genuinely slow-but-fine boot than roll back one
+  # that just needed more time.
   # ---------------------------------------------------------------------
   smoke-test:
     name: Smoke test (dev)
@@ -590,7 +596,7 @@ jobs:
       - name: Wait for the SPA to respond
         run: |
           url="https://${{ secrets.DEV_HOST }}/openmrs/spa/"
-          for i in $(seq 1 10); do
+          for i in $(seq 1 20); do
             code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
             [ "$code" = "200" ] && { echo "ok: $url -> 200"; exit 0; }
             echo "attempt $i: got $code, retrying in 15s..."
@@ -666,7 +672,7 @@ jobs:
       - name: Verify the rollback came back up
         run: |
           url="https://${{ secrets.DEV_HOST }}/openmrs/spa/"
-          for i in $(seq 1 10); do
+          for i in $(seq 1 20); do
             code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
             [ "$code" = "200" ] && { echo "ok: rollback restored service ($url -> 200)"; exit 0; }
             echo "attempt $i: got $code, retrying in 15s..."
