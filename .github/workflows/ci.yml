@@ -6,10 +6,14 @@
 name: CI
 
 on:
+  # No branches: filter — fires on a push to ANY branch, not just
+  # main/develop/release/**. publish-latest and deploy-dev stay gated to
+  # main specifically via their own if:, so this doesn't change what
+  # actually gets published/deployed — it just means every branch gets
+  # validate/build/security/test feedback on push, not only PRs.
   push:
-    branches: [main, develop, "release/**", ci/devsecops-pipeline]
   pull_request:
-    branches: [main, develop, ci/devsecops-pipeline]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -261,8 +265,14 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: build-test
-    
-    
+    env:
+      # Overrides the script's own default (ghcr.io/intellisoft-consulting,
+      # which matches release.yml) so CI images land under intellisoftdev/
+      # instead, per this workflow's existing REGISTRY. Confirm this is
+      # actually the registry you want CI (as opposed to release) images
+      # tagged under — it was set this way before this job called the
+      # script directly, not a new decision made here.
+      REGISTRY: ${{ env.REGISTRY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -281,7 +291,7 @@ jobs:
         run: |
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site careysburg
-          
+            SPA_CONFIG_URLS=${{ steps.spa-config.outputs.urls }}
 
   # ---------------------------------------------------------------------
   # Stage 5 — end to end
@@ -347,3 +357,105 @@ jobs:
             '
             exit 1
           }
+
+  # ---------------------------------------------------------------------
+  # Merge-to-main only, from here down — see the numbered convention:
+  #   1. PR: validate, build, security checks, tests           (everything above)
+  #   2. PR merged: 1, plus publish :latest images and update dev
+  #   3. Release: separate pipeline, see release.yml
+  #
+  # Both jobs below are gated on `needs: gate` (so they only start once
+  # the entire PR-equivalent pipeline has actually passed on main) AND
+  # their own `if:` (so they never run on a PR, even though gate itself
+  # does run there). If gate is skipped or fails, needs: gate causes both
+  # of these to skip automatically — the if: is there for clarity as much
+  # as enforcement.
+  # ---------------------------------------------------------------------
+
+  publish-latest:
+    name: Publish :latest images
+    runs-on: ubuntu-latest
+    needs: gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - uses: docker/login-action@v3
+        with:
+          # REGISTRY is "intellisoftdev" (a Docker Hub org, not GHCR), so
+          # this is a plain Docker Hub login, not docker/login-action's
+          # ghcr.io default. DOCKERHUB_USERNAME / DOCKERHUB_TOKEN need
+          # creating as repo secrets — DOCKERHUB_TOKEN should be a Docker
+          # Hub access token, not your account password.
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # build-distribution.sh explicitly refuses --version latest (it's in
+      # the same guard as -SNAPSHOT), so this builds under the commit SHA
+      # like docker-build does, then re-tags as :latest afterward. Both
+      # tags get pushed — :latest for the dev deploy below, :<sha> so a
+      # specific merge's image stays inspectable/rollback-able later.
+      - name: Build images
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site careysburg
+
+      - name: Tag and push :latest alongside :${{ github.sha }}
+        run: |
+          for service in backend frontend gateway; do
+            image="${REGISTRY}/liberia-emr-${service}"
+            docker tag "${image}:${{ github.sha }}" "${image}:latest"
+            docker push "${image}:${{ github.sha }}"
+            docker push "${image}:latest"
+          done
+
+  deploy-dev:
+    name: Update dev environment
+    runs-on: ubuntu-latest
+    needs: publish-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      # Deploy secrets needed (none of these exist yet — create them under
+      # Settings > Secrets and variables > Actions):
+      #   DEV_SSH_PRIVATE_KEY  the PRIVATE half of a keypair generated for
+      #                        CI deploys specifically (not a personal key).
+      #                        The PUBLIC half goes into
+      #                        ~/.ssh/authorized_keys for DEV_USER on
+      #                        DEV_HOST — the private key here is what lets
+      #                        the runner authenticate as that trusted key.
+      #   DEV_HOST             the dev server's hostname or IP.
+      #   DEV_USER             the SSH user (e.g. mnyagah).
+      #   DEV_COMPOSE_DIR      absolute path on the server to the directory
+      #                        containing docker-compose.yml and
+      #                        facility.env (where `docker compose pull`
+      #                        was run manually before).
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+
+      - name: Trust the dev host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEV_HOST }}" >> ~/.ssh/known_hosts
+
+      # Overrides LIBERIAEMR_VERSION inline rather than editing the
+      # server's persistent facility.env, so this doesn't silently change
+      # what a manual `docker compose up` would use later. ASSUMPTION:
+      # facility.env uses a LIBERIAEMR_VERSION variable to select the image
+      # tag, inferred from the demo.env table (same variable name, no -demo
+      # suffix) — not yet confirmed against the actual facility.env.example
+      # or docker-compose.yml. Flag if that variable name is wrong.
+      - name: Pull and restart on the dev server
+        run: |
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
+            set -e
+            cd "${{ secrets.DEV_COMPOSE_DIR }}"
+            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env pull
+            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+          '
