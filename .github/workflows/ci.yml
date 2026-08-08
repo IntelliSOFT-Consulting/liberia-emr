@@ -177,6 +177,12 @@ jobs:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
     needs: build-test
+    # Only needed to read the secret at runtime inside a bash if-check —
+    # secrets can't be referenced directly in a step's `if:` (same parse
+    # restriction we hit with SONAR_TOKEN earlier), so this routes it
+    # through job-level env instead.
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -184,13 +190,37 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
+
+      - name: Compute cache week
+        id: date
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
       - name: Cache Dependency Check Database
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: dependency-check-${{ runner.os }}
+          # Rotates weekly: a fresh cache once a week forces a full DB
+          # rebuild occasionally (the DB format can change between plugin
+          # versions), but restore-keys falls back to last week's cache on
+          # a miss, so most days still get a fast incremental update
+          # instead of a cold download.
+          key: dependency-check-${{ runner.os }}-${{ steps.date.outputs.week }}
+          restore-keys: |
+            dependency-check-${{ runner.os }}-
+
+      # Without an API key, NVD heavily rate-limits update requests — this
+      # is usually the actual bottleneck, more than caching alone fixes.
+      # Get a free key at https://nvd.nist.gov/developers/request-an-api-key
+      # and add it as the NVD_API_KEY repo secret; this step just uses it
+      # if present and warns (without failing) if it's missing.
       - name: Run OWASP Dependency Check
-        run: mvn -B org.owasp:dependency-check-maven:12.1.8:check
+        run: |
+          if [ -n "$NVD_API_KEY" ]; then
+            mvn -B org.owasp:dependency-check-maven:12.1.8:check -Dnvd.api.key="$NVD_API_KEY"
+          else
+            echo "::warning::NVD_API_KEY not set — NVD updates will be rate-limited and slow. See https://nvd.nist.gov/developers/request-an-api-key"
+            mvn -B org.owasp:dependency-check-maven:12.1.8:check
+          fi
       - name: Upload Dependency Check Reports
         uses: actions/upload-artifact@v4
         with:
@@ -283,7 +313,63 @@ jobs:
         run: |
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site careysburg
-            SPA_CONFIG_URLS=${{ steps.spa-config.outputs.urls }}
+
+      # Trivy scans the images already built above — no separate job, no
+      # artifact transfer, since the images only exist on this runner's
+      # local Docker daemon (build-distribution.sh uses plain `docker
+      # build`, not buildx, so there's nothing pushed to pull from
+      # elsewhere). exit-code: '0' means this reports findings without
+      # failing the job — a first rollout of a new base-image scan would
+      # almost certainly turn up existing CVEs in openmrs/openmrs-core,
+      # nginx:1.27-alpine etc. that haven't been triaged yet. Tighten to
+      # exit-code: '1' (with a --severity filter) once there's been a
+      # chance to review what it actually finds.
+      - name: Trivy scan — backend
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/liberia-emr-backend:${{ github.sha }}
+          format: sarif
+          output: trivy-backend.sarif
+          exit-code: '0'
+      - name: Trivy scan — frontend
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/liberia-emr-frontend:${{ github.sha }}
+          format: sarif
+          output: trivy-frontend.sarif
+          exit-code: '0'
+      - name: Trivy scan — gateway
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/liberia-emr-gateway:${{ github.sha }}
+          format: sarif
+          output: trivy-gateway.sarif
+          exit-code: '0'
+
+      # Uploaded as three separate calls, each with its own category —
+      # GitHub Code Scanning rejects multiple SARIF runs sharing a category
+      # in one upload (as of the 2025-07-21 change), and Trivy doesn't
+      # differentiate categories on its own, so uploading all three files
+      # via sarif_file: . collided. Needs security-events: write, already
+      # granted at the workflow level.
+      - name: Upload Trivy results — backend
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+      - name: Upload Trivy results — frontend
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
+      - name: Upload Trivy results — gateway
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-gateway.sarif
+          category: trivy-gateway
 
   # ---------------------------------------------------------------------
   # Stage 5 — end to end
@@ -411,6 +497,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: publish-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
+      frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
+      gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
     steps:
       # Deploy secrets needed (none of these exist yet — create them under
       # Settings > Secrets and variables > Actions):
@@ -436,13 +526,33 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "${{ secrets.DEV_HOST }}" >> ~/.ssh/known_hosts
 
+      # Captures the exact digest (immutable content hash) of each of the
+      # THREE running images independently — not just backend's, and not
+      # a tag or a label we invented. A tag (even a "unique" one like
+      # :<sha>) is a mutable pointer; nothing guarantees it can't later
+      # point at different bytes (a re-run of the same commit, a manual
+      # overwrite). The digest is what the registry actually hashed the
+      # content to — it can't drift. Runs before the risky pull+restart
+      # below so it's still captured even if that step fails outright.
+      - name: Capture currently-running image digests
+        id: previous-version
+        run: |
+          output=$(ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
+            for service in backend frontend gateway; do
+              digest=$(docker inspect --format="{{index .RepoDigests 0}}" "liberiaemr-facility-${service}-1" 2>/dev/null || echo unknown)
+              echo "${service}: ${digest}"
+            done
+          ')
+          echo "$output"
+          echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+
       # Overrides LIBERIAEMR_VERSION inline rather than editing the
       # server's persistent facility.env, so this doesn't silently change
-      # what a manual `docker compose up` would use later. ASSUMPTION:
-      # facility.env uses a LIBERIAEMR_VERSION variable to select the image
-      # tag, inferred from the demo.env table (same variable name, no -demo
-      # suffix) — not yet confirmed against the actual facility.env.example
-      # or docker-compose.yml. Flag if that variable name is wrong.
+      # what a manual `docker compose up` would use later. Confirmed
+      # against the real facility.env: LIBERIAEMR_VERSION is exactly the
+      # variable that selects the image tag.
       - name: Pull and restart on the dev server
         run: |
           ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
@@ -451,3 +561,146 @@ jobs:
             LIBERIAEMR_VERSION=latest docker compose --env-file facility.env pull
             LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
           '
+
+  # ---------------------------------------------------------------------
+  # Smoke test — the cheapest possible confirmation that the just-deployed
+  # dev instance actually came up, before spending time on a DAST scan
+  # against something that might just be crash-looping. Deliberately
+  # unauthenticated: an authenticated check (e.g. the REST session
+  # endpoint) would need real dev admin credentials as a new secret, and
+  # I didn't want to invent a credential rather than ask for one. Happy to
+  # add an authenticated check once there's a secret for it.
+  #
+  # Confirmed reachable: https://liberiaemrfacilitydev.intellisoftkenya.com
+  # /openmrs/spa/ (with trailing slash) returns a real 200 with the actual
+  # app shell, self-signed cert (hence -k). Note: /openmrs/spa WITHOUT the
+  # trailing slash 301-redirects — this check deliberately does NOT follow
+  # redirects (no -L), so an unexpected redirect fails loudly rather than
+  # silently passing through.
+  #
+  # Timing: up to 20 attempts, 15s apart = up to 300s (5 min) total
+  # before giving up and failing the job. Widened from an initial 150s —
+  # OpenMRS-based backends commonly take well over a minute to become
+  # healthy even on a routine restart (32 OMODs + Spring context init),
+  # and a false-positive failure here doesn't just fail a job quietly —
+  # it triggers rollback-dev, which undoes a perfectly good deploy. Better
+  # to wait longer on a genuinely slow-but-fine boot than roll back one
+  # that just needed more time.
+  # ---------------------------------------------------------------------
+  smoke-test:
+    name: Smoke test (dev)
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Wait for the SPA to respond
+        run: |
+          url="https://${{ secrets.DEV_HOST }}/openmrs/spa/"
+          for i in $(seq 1 20); do
+            code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
+            [ "$code" = "200" ] && { echo "ok: $url -> 200"; exit 0; }
+            echo "attempt $i: got $code, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::$url never returned 200 after restart" >&2
+          exit 1
+
+  # ---------------------------------------------------------------------
+  # Rollback — fires only when deploy-dev itself succeeded (containers
+  # actually restarted) but smoke-test then caught that the new version
+  # isn't healthy. Deliberately does NOT fire if deploy-dev itself failed
+  # (e.g. the SSH command errored outright) — in that case we don't
+  # actually know what state the server is in, and blindly redeploying
+  # "the previous version" on top of an unknown, possibly-still-old state
+  # could make things worse rather than better. That failure mode needs a
+  # human to look at the server directly.
+  # ---------------------------------------------------------------------
+  rollback-dev:
+    name: Roll back dev environment
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, smoke-test]
+    if: >
+      always() &&
+      needs.deploy-dev.result == 'success' &&
+      needs.smoke-test.result == 'failure' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+
+      - name: Trust the dev host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEV_HOST }}" >> ~/.ssh/known_hosts
+
+      # Pulls each image by its exact digest (not a tag), re-tags it
+      # locally on the server as :latest, then restarts WITHOUT calling
+      # `docker compose pull` — pulling again here would just re-fetch the
+      # broken :latest from the registry and undo the retag. Compose picks
+      # up whatever :latest already resolves to in the local Docker daemon,
+      # which is now the known-good digest we just pulled.
+      - name: Roll back to the previously-running images
+        run: |
+          backend="${{ needs.deploy-dev.outputs.backend_digest }}"
+          frontend="${{ needs.deploy-dev.outputs.frontend_digest }}"
+          gateway="${{ needs.deploy-dev.outputs.gateway_digest }}"
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway"; do
+            svc="${pair%%:*}"; digest="${pair#*:}"
+            if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
+              echo "::error::No previous digest captured for ${svc} — cannot roll back automatically. Manual intervention required on the dev server."
+              exit 1
+            fi
+          done
+          echo "rolling back to:"
+          echo "  backend:  $backend"
+          echo "  frontend: $frontend"
+          echo "  gateway:  $gateway"
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" "
+            set -e
+            docker pull '$backend'
+            docker pull '$frontend'
+            docker pull '$gateway'
+            docker tag '$backend'  '${{ env.REGISTRY }}/liberia-emr-backend:latest'
+            docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend:latest'
+            docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
+            cd '${{ secrets.DEV_COMPOSE_DIR }}'
+            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+          "
+
+      - name: Verify the rollback came back up
+        run: |
+          url="https://${{ secrets.DEV_HOST }}/openmrs/spa/"
+          for i in $(seq 1 20); do
+            code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
+            [ "$code" = "200" ] && { echo "ok: rollback restored service ($url -> 200)"; exit 0; }
+            echo "attempt $i: got $code, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::Rollback itself did not bring the SPA back up — this needs a human now." >&2
+          exit 1
+
+  # ---------------------------------------------------------------------
+  # DAST — OWASP ZAP baseline scan against the live dev instance. Only
+  # runs if smoke-test passed (needs: smoke-test), so it never scans a
+  # broken/rolled-back instance. Report only for now (cmd_options: '-I' +
+  # continue-on-error): a first-ever scan of an app this size will almost
+  # certainly surface findings that need triage before this can safely
+  # block a deploy. Tighten once there's a baseline to compare against.
+  # allow_issue_writing is off so this doesn't start auto-filing GitHub
+  # issues without you deciding you want that.
+  # ---------------------------------------------------------------------
+  dast:
+    name: DAST scan (dev)
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        continue-on-error: true
+        with:
+          target: https://${{ secrets.DEV_HOST }}/openmrs/spa/
+          cmd_options: '-I'
+          allow_issue_writing: false
