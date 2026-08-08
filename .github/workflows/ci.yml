@@ -1,15 +1,36 @@
-# Pull-request pipeline — IMPLEMENTATION.md §8, stages 1-5.
+# Pull-request pipeline — IMPLEMENTATION.md §8, stages 1-5, extended with
+# SBOM / dependency-check / container build (formerly a separate
+# "Java DevSecOps Pipeline" workflow, merged in to avoid building the
+# Maven reactor twice per run).
 # The release stages (upgrade test, publish, deploy) live in release.yml.
 name: CI
 
 on:
+  # No branches: filter — fires on a push to ANY branch, not just
+  # main/develop/release/**. publish-latest and deploy-dev stay gated to
+  # main specifically via their own if:, so this doesn't change what
+  # actually gets published/deployed — it just means every branch gets
+  # validate/build/security/test feedback on push, not only PRs.
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  checks: write
+
+env:
+  JAVA_VERSION: "17"
+  REGISTRY: intellisoftdev
+  IMAGE_NAME: liberia-emr
+
 jobs:
+  # ---------------------------------------------------------------------
+  # Stage 1 — content validation (no build required)
+  # ---------------------------------------------------------------------
   validate:
     name: Validate content
     runs-on: ubuntu-latest
@@ -29,40 +50,178 @@ jobs:
       - name: Refuse hand edits to the lifted demo content
         run: ./scripts/build/lift-demo-content.sh --check
 
-  build-content:
-    name: Build content packages
+  # ---------------------------------------------------------------------
+  # Stage 2 — build, test, content packages, coverage, static analysis
+  #
+  # This single `mvn verify` builds the whole reactor, which includes the
+  # content-packages module — so this job produces both the JUnit/JaCoCo
+  # output AND the content package zips. There is deliberately no separate
+  # "build-content" job any more; running `mvn verify` twice against the
+  # same reactor wasted ~the whole build time for no extra coverage.
+  # ---------------------------------------------------------------------
+  build-test:
+    name: Build, Test & SonarQube
     runs-on: ubuntu-latest
     needs: validate
+
+    outputs:
+      image-tag: ${{ github.sha }}
+
+    # Secrets can't be referenced directly inside a step's `if:` condition
+    # (GitHub Actions rejects it at parse time — "Unrecognized named-value:
+    # 'secrets'"). Routing them through job-level env first makes them
+    # readable from `if:` via the env context instead.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # sonar wants blame history
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-      - name: Build and validate against the Initializer schema
+
+      - name: Cache SonarQube Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: |
+            ${{ runner.os }}-sonar
+
+      - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
-      - uses: actions/upload-artifact@v4
+
+      # Sonar only runs if the secret is actually configured, so this
+      # doesn't hard-fail on fork PRs (which never get repo secrets).
+      - name: SonarQube Analysis
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+            -Dsonar.projectKey=liberia-emr \
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.token=${SONAR_TOKEN} \
+            -Dsonar.qualitygate.wait=true
+
+      - name: Upload JUnit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: target/surefire-reports/
+          if-no-files-found: warn
+
+      - name: Upload JaCoCo Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: warn
+
+      - name: Upload Content Packages
+        uses: actions/upload-artifact@v4
         with:
           name: content-packages
           path: content-packages/*/target/*.zip
           if-no-files-found: error
 
-  initializer-clean-db:
-    name: Initializer against a clean database
+      # Raw (unzipped) per-layer frontend config JSON, for docker-build's
+      # frontend leg to run collect-frontend-config.sh against without
+      # rebuilding the reactor. upload-artifact strips the common leading
+      # directory across the matched paths (here, "content-packages/"), so
+      # the artifact's internal paths start at <layer>/target/... —
+      # downloading it back with `path: content-packages` restores exactly
+      # content-packages/<layer>/target/configuration/frontend_configuration/,
+      # which is the path collect-frontend-config.sh expects.
+      - name: Upload Frontend Configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-config
+          path: content-packages/*/target/configuration/frontend_configuration/config-*.json
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------
+  # Stage 3 — software supply-chain checks, run in parallel off the same build
+  # ---------------------------------------------------------------------
+  sbom:
+    name: Generate CycloneDX SBOM
     runs-on: ubuntu-latest
-    needs: build-content
+    needs: build-test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Generate CycloneDX SBOM
+        run: mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: |
+            target/bom.xml
+            target/bom.json
+          if-no-files-found: warn
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Cache Dependency Check Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-${{ runner.os }}
+      - name: Run OWASP Dependency Check
+        run: mvn -B org.owasp:dependency-check-maven:12.1.8:check
+      - name: Upload Dependency Check Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: |
+            **/target/dependency-check-report.html
+            **/target/dependency-check-report.xml
+            **/target/dependency-check-report.json
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------
+  # Stage 4a — initializer smoke test against a clean database
+  # ---------------------------------------------------------------------
+  initializer-clean-db:
+    name: Initializer against a clean database
+    runs-on: ubuntu-latest
+    # Runs in parallel with the security scans rather than behind them —
+    # see the `gate` job at the end of this file for where sbom and
+    # dependency-check are actually enforced.
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       # run-clean-install.sh starts a built distribution; it does not build one, and the
       # image is not published from a pull request, so this job builds it. The backend image
       # resolves the content packages from source in its own first stage, which is why the
-      # build-content artifact is not downloaded here — it would not be read.
+      # build-test content-packages artifact is not downloaded here — it would not be read.
       #
       # 0.0.0-ci, not 1.0.0-SNAPSHOT: build-distribution.sh refuses to build at a -SNAPSHOT
       # or floating version, and rightly so. This is a fixed, obviously-not-a-release tag for
@@ -78,6 +237,57 @@ jobs:
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
+  # ---------------------------------------------------------------------
+  # Stage 4b — the three distribution images for this commit (not pushed).
+  #
+  # This calls scripts/build/build-distribution.sh directly instead of
+  # hand-rolling the build — an earlier version of this job reimplemented
+  # its steps piecemeal (reading spa.core, computing SPA_CONFIG_URLS,
+  # collecting frontend config) and, in doing so, missed a step the script
+  # doesn't skip: resolving the 32 OMODs pinned in distro.properties into
+  # distribution/backend/modules/. Since that directory isn't git-tracked,
+  # a fresh checkout has it empty, and `COPY distribution/backend/modules/`
+  # on an empty directory does not error — it silently ships a backend
+  # image with zero OMODs. The script closes that gap, and also reconciles
+  # the collected frontend config order against SPA_CONFIG_URLS in the
+  # compose file, which nothing here was checking before.
+  #
+  # This is the same script initializer-clean-db calls and that a real
+  # release build runs too, so a green build-distribution.sh here is a
+  # meaningful signal, not just "the Dockerfiles happen to work in CI."
+  #
+  # Cost: the script runs its own `mvn package` and the backend Dockerfile
+  # runs a THIRD content-packages build inside its own build stage — on
+  # top of build-test's reactor build. Three Maven builds of the same
+  # module per pipeline run. Accepted for now in exchange for correctness;
+  # revisit if build time becomes a real problem.
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      # Site is fixed to careysburg to match initializer-clean-db — this is
+      # a CI smoke build, not a per-site release artifact. Version is the
+      # commit SHA: build-distribution.sh refuses -SNAPSHOT/latest, and a
+      # SHA-tagged image (unlike a fixed placeholder) stays unique per run,
+      # which matters here since these images could later be inspected or
+      # cached across jobs — initializer-clean-db's own throwaway stack
+      # doesn't need that and uses a fixed 0.0.0-ci instead.
+      - name: Build backend, frontend and gateway images
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site careysburg
+            SPA_CONFIG_URLS=${{ steps.spa-config.outputs.urls }}
+
+  # ---------------------------------------------------------------------
+  # Stage 5 — end to end
+  # ---------------------------------------------------------------------
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
@@ -87,6 +297,10 @@ jobs:
       - name: Cypress
         run: 'echo "TODO: qa/e2e — see qa/e2e/README.md"'
 
+  # ---------------------------------------------------------------------
+  # Frontend module build — independent of the Maven reactor, runs in
+  # parallel with everything above.
+  # ---------------------------------------------------------------------
   frontend:
     name: Custom Build ESMs
     runs-on: ubuntu-latest
@@ -94,7 +308,146 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Verify e-partograph
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
+
+  # ---------------------------------------------------------------------
+  # Soft gate — the single required status check for branch protection.
+  #
+  # Everything above runs in parallel where possible (initializer-clean-db
+  # and docker-build no longer wait on sbom/dependency-check to finish, so
+  # a slow scan doesn't add latency to the smoke test or image build). This
+  # job is where that's clawed back: it needs every job whose failure
+  # should block a merge, and fails if any of them failed, was cancelled,
+  # or was skipped. Point branch protection at this one job instead of
+  # every job above — new jobs added later only need `gate` updated once.
+  # ---------------------------------------------------------------------
+  gate:
+    name: CI gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - validate
+      - build-test
+      - sbom
+      - dependency-check
+      - initializer-clean-db
+      - docker-build
+      - e2e
+      - frontend
+    steps:
+      - name: Require all jobs to have succeeded
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -e '
+            to_entries | all(.value.result == "success")
+          ' || {
+            echo "One or more required jobs did not succeed:"
+            echo '${{ toJSON(needs) }}' | jq -r '
+              to_entries[] | select(.value.result != "success") | "  \(.key): \(.value.result)"
+            '
+            exit 1
+          }
+
+  # ---------------------------------------------------------------------
+  # Merge-to-main only, from here down — see the numbered convention:
+  #   1. PR: validate, build, security checks, tests           (everything above)
+  #   2. PR merged: 1, plus publish :latest images and update dev
+  #   3. Release: separate pipeline, see release.yml
+  #
+  # Both jobs below are gated on `needs: gate` (so they only start once
+  # the entire PR-equivalent pipeline has actually passed on main) AND
+  # their own `if:` (so they never run on a PR, even though gate itself
+  # does run there). If gate is skipped or fails, needs: gate causes both
+  # of these to skip automatically — the if: is there for clarity as much
+  # as enforcement.
+  # ---------------------------------------------------------------------
+
+  publish-latest:
+    name: Publish :latest images
+    runs-on: ubuntu-latest
+    needs: gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - uses: docker/login-action@v3
+        with:
+          # REGISTRY is "intellisoftdev" (a Docker Hub org, not GHCR), so
+          # this is a plain Docker Hub login, not docker/login-action's
+          # ghcr.io default. DOCKERHUB_USERNAME / DOCKERHUB_TOKEN need
+          # creating as repo secrets — DOCKERHUB_TOKEN should be a Docker
+          # Hub access token, not your account password.
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # build-distribution.sh explicitly refuses --version latest (it's in
+      # the same guard as -SNAPSHOT), so this builds under the commit SHA
+      # like docker-build does, then re-tags as :latest afterward. Both
+      # tags get pushed — :latest for the dev deploy below, :<sha> so a
+      # specific merge's image stays inspectable/rollback-able later.
+      - name: Build images
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site careysburg
+
+      - name: Tag and push :latest alongside :${{ github.sha }}
+        run: |
+          for service in backend frontend gateway; do
+            image="${REGISTRY}/liberia-emr-${service}"
+            docker tag "${image}:${{ github.sha }}" "${image}:latest"
+            docker push "${image}:${{ github.sha }}"
+            docker push "${image}:latest"
+          done
+
+  deploy-dev:
+    name: Update dev environment
+    runs-on: ubuntu-latest
+    needs: publish-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      # Deploy secrets needed (none of these exist yet — create them under
+      # Settings > Secrets and variables > Actions):
+      #   DEV_SSH_PRIVATE_KEY  the PRIVATE half of a keypair generated for
+      #                        CI deploys specifically (not a personal key).
+      #                        The PUBLIC half goes into
+      #                        ~/.ssh/authorized_keys for DEV_USER on
+      #                        DEV_HOST — the private key here is what lets
+      #                        the runner authenticate as that trusted key.
+      #   DEV_HOST             the dev server's hostname or IP.
+      #   DEV_USER             the SSH user (e.g. mnyagah).
+      #   DEV_COMPOSE_DIR      absolute path on the server to the directory
+      #                        containing docker-compose.yml and
+      #                        facility.env (where `docker compose pull`
+      #                        was run manually before).
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+
+      - name: Trust the dev host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEV_HOST }}" >> ~/.ssh/known_hosts
+
+      # Overrides LIBERIAEMR_VERSION inline rather than editing the
+      # server's persistent facility.env, so this doesn't silently change
+      # what a manual `docker compose up` would use later. ASSUMPTION:
+      # facility.env uses a LIBERIAEMR_VERSION variable to select the image
+      # tag, inferred from the demo.env table (same variable name, no -demo
+      # suffix) — not yet confirmed against the actual facility.env.example
+      # or docker-compose.yml. Flag if that variable name is wrong.
+      - name: Pull and restart on the dev server
+        run: |
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
+            set -e
+            cd "${{ secrets.DEV_COMPOSE_DIR }}"
+            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env pull
+            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+          '
