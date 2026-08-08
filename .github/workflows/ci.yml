@@ -339,7 +339,7 @@ jobs:
           output: trivy-frontend.sarif
           exit-code: '0'
       - name: Trivy scan — gateway
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-gateway:${{ github.sha }}
           format: sarif
