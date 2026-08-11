@@ -1,0 +1,2 @@
+uuid,Void/Retire,name,attributes
+${var.paymentmode.cash.uuid},,Cash,

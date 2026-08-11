@@ -1,0 +1,205 @@
+{
+  "name": "TB Screening",
+  "uuid": "4f9b8c2d-7a1e-4321-b8f9-c6e7a8d9b0a1",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "TB Screening",
+      "sections": [
+        {
+          "label": "",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Contact of TB Patient",
+              "id": "contact_of_tb_patient",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.contact-of-tb-patient.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Previously Treated for TB",
+              "id": "previously_treated_for_tb",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.previously-treated-for-tb.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Coughing 2 Weeks or More - Score",
+              "id": "coughing_2_weeks_or_more_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 2",
+                  "message": "Coughing score must be exactly 0 or 2"
+                }
+              ]
+            },
+            {
+              "label": "Night Sweats - Score",
+              "id": "night_sweats_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.night-sweats-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
+            },
+            {
+              "label": "Weight Loss - Score",
+              "id": "weight_loss_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.weight-loss-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
+            },
+            {
+              "label": "Fever - Score",
+              "id": "fever_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.fever-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
+            },
+            {
+              "label": "Swelling in Any Part of the Body - Score",
+              "id": "swelling_in_any_part_of_the_body_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
+                  "message": "Score must be exactly 0 or 1"
+                }
+              ]
+            },
+            {
+              "label": "Total Score",
+              "id": "total_score",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.total-score.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 6)",
+                  "message": "Total score must be between 0 and 6"
+                }
+              ]
+            },
+            {
+              "label": "Date the screening was conducted",
+              "id": "date_the_screening_was_conducted",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.national.date-the-screening-was-conducted.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                }
+              ]
+            },
+            {
+              "label": "Result of the sputum test or other diagnostic evaluation",
+              "id": "result_of_the_sputum_test_or_other_diagnostic_evaluation",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "text",
+                "concept": "${var.concept.national.result-of-the-sputum-test-or-other-diagnostic-evaluation.uuid}"
+              }
+            },
+            {
+              "label": "Date TB treatment was started for the person screened, if applicable",
+              "id": "date_tb_treatment_was_started",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.national.date-tb-treatment-was-started.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                }
+              ]
+            },
+            {
+              "label": "Observation",
+              "id": "observation",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.ciel.comments.uuid}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "processor": "EncounterFormProcessor",
+  "referencedForms": []
+}
