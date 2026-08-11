@@ -85,8 +85,16 @@
                             "label": "Primary Diagnosis",
                             "type": "obs",
                             "questionOptions": {
-                                "rendering": "text",
-                                "concept": "159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "rendering": "problem",
+                                "concept": "161602AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                                "diagnosis": {
+                                    "rank": 1,
+                                    "isConfirmed": true,
+                                    "conceptClasses": [
+                                        "Diagnosis"
+                                    ],
+                                    "conceptSet": "160170AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                }
                             },
                             "required": true,
                             "id": "primary_diagnosis"
