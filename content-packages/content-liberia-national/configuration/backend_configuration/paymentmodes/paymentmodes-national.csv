@@ -1,2 +1,2 @@
-uuid, Void/Retire, name, attributes
-${var.paymentmode.cash.uuid},, Cash,
+uuid,Void/Retire,name,attributes
+${var.paymentmode.cash.uuid},,Cash,

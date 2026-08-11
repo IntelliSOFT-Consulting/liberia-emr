@@ -1,2 +1,2 @@
-Uuid, Void/Retire, Service Name, Short Name, Concept, Service Type, Service Status
-${var.billableservice.national.registration.uuid},, Registration, REG, ${var.concept.national.registration-fee.uuid}, Registration Services, Enabled
+Uuid,Void/Retire,Service Name,Short Name,Concept,Service Type,Service Status
+${var.billableservice.national.registration.uuid},,Registration,REG,${var.concept.national.registration-fee.uuid},Registration Services,Enabled
