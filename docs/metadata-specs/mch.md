@@ -26,21 +26,21 @@ CIEL concept fragments reporting and breaks the FHIR and DHIS2 mappings downstre
 
 | Concept | Variable | Type |
 | --- | --- | --- |
-| Last menstrual period | `concept.ciel.lmp.uuid` | Date |
-| Estimated date of delivery | `concept.ciel.edd.uuid` | Date |
-| Gravida | `concept.ciel.gravida.uuid` | Numeric |
-| Parity | `concept.ciel.parity.uuid` | Numeric |
-| Full-term births | `concept.ciel.full-term-births.uuid` | Numeric |
-| Preterm births | `concept.ciel.preterm-births.uuid` | Numeric |
-| Abortions | `concept.ciel.abortions.uuid` | Numeric |
-| Living children | `concept.ciel.living-children.uuid` | Numeric |
-| Gestational age | `concept.ciel.gestational-age.uuid` | Numeric (weeks) |
-| Fundal height | `concept.ciel.fundal-height.uuid` | Numeric (cm) |
-| Fetal heart rate | `concept.ciel.fetal-heart-rate.uuid` | Numeric (bpm) |
-| ANC visit number | `concept.ciel.anc-visit-number.uuid` | Numeric |
-| Mode of delivery | `concept.ciel.delivery-mode.uuid` | Coded |
-| Birth outcome | `concept.ciel.birth-outcome.uuid` | Coded |
-| Family planning method | `concept.ciel.fp-method.uuid` | Coded |
+| Last menstrual period | `var.concept.ciel.lmp.uuid` | Date |
+| Estimated date of delivery | `var.concept.ciel.edd.uuid` | Date |
+| Gravida | `var.concept.ciel.gravida.uuid` | Numeric |
+| Parity | `var.concept.ciel.parity.uuid` | Numeric |
+| Full-term births | `var.concept.ciel.full-term-births.uuid` | Numeric |
+| Preterm births | `var.concept.ciel.preterm-births.uuid` | Numeric |
+| Abortions | `var.concept.ciel.abortions.uuid` | Numeric |
+| Living children | `var.concept.ciel.living-children.uuid` | Numeric |
+| Gestational age | `var.concept.ciel.gestational-age.uuid` | Numeric (weeks) |
+| Fundal height | `var.concept.ciel.fundal-height.uuid` | Numeric (cm) |
+| Fetal heart rate | `var.concept.ciel.fetal-heart-rate.uuid` | Numeric (bpm) |
+| ANC visit number | `var.concept.ciel.anc-visit-number.uuid` | Numeric |
+| Mode of delivery | `var.concept.ciel.delivery-mode.uuid` | Coded |
+| Birth outcome | `var.concept.ciel.birth-outcome.uuid` | Coded |
+| Family planning method | `var.concept.ciel.fp-method.uuid` | Coded |
 
 ### ANC obstetric history (PARA)
 
