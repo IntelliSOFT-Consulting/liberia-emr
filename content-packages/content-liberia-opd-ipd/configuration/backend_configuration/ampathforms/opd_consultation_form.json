@@ -1,0 +1,141 @@
+{
+    "name": "OPD Consultation Form",
+    "uuid": "96b72a44-f8b8-472e-8d8d-327c73708eeb",
+    "version": "1.0",
+    "published": true,
+    "retired": false,
+    "encounter": "Consultation",
+    "processor": "EncounterFormProcessor",
+    "pages": [
+        {
+            "label": "Consultation",
+            "sections": [
+                {
+                    "label": "History",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "Presenting Complaint",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "text",
+                                "concept": "160531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "required": true,
+                            "id": "presenting_complaint"
+                        },
+                        {
+                            "label": "History of Presenting Complaint",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "1390AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "hpc"
+                        },
+                        {
+                            "label": "Past Medical History",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "1633AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "pmh"
+                        },
+                        {
+                            "label": "Known Allergies",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "text",
+                                "concept": "b5860d5b-fc13-41c3-aec5-b1a7ab5ef4ea"
+                            },
+                            "id": "allergies"
+                        },
+                        {
+                            "label": "Current Medications",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "5cfb7294-b778-43d9-9529-6de7892182ff"
+                            },
+                            "id": "current_meds"
+                        }
+                    ]
+                },
+                {
+                    "label": "Physical Examination",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "General Examination Findings",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "1119AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "general_exam"
+                        }
+                    ]
+                },
+                {
+                    "label": "Assessment & Plan",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "Primary Diagnosis",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "text",
+                                "concept": "159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "required": true,
+                            "id": "primary_diagnosis"
+                        },
+                        {
+                            "label": "Investigations Ordered",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "1271AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "investigations"
+                        },
+                        {
+                            "label": "Disposition",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "radio",
+                                "concept": "159488AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                                "answers": [
+                                    {
+                                        "label": "Discharge",
+                                        "concept": "162646AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                    },
+                                    {
+                                        "label": "Admit to Hospital",
+                                        "concept": "162647AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                    },
+                                    {
+                                        "label": "Refer Out",
+                                        "concept": "164284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                    }
+                                ]
+                            },
+                            "required": true,
+                            "id": "disposition"
+                        },
+                        {
+                            "label": "Follow-up Date",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "date",
+                                "concept": "5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "followup"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,181 @@
+{
+    "name": "Triage Form",
+    "uuid": "cc825000-8dc4-4d87-b9ba-a47d2b4f9712",
+    "version": "1.0",
+    "published": true,
+    "retired": false,
+    "encounter": "Triage",
+    "processor": "EncounterFormProcessor",
+    "pages": [
+        {
+            "label": "Triage Assessment",
+            "sections": [
+                {
+                    "label": "Vital Signs",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "Temperature (°C)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "temp"
+                        },
+                        {
+                            "label": "Heart Rate (bpm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "hr"
+                        },
+                        {
+                            "label": "Respiratory Rate (bpm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "rr"
+                        },
+                        {
+                            "label": "Systolic BP (mmHg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "sbp"
+                        },
+                        {
+                            "label": "Diastolic BP (mmHg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "dbp"
+                        },
+                        {
+                            "label": "Oxygen Saturation (%)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "spo2"
+                        },
+                        {
+                            "label": "Weight (kg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "weight"
+                        },
+                        {
+                            "label": "Height (cm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "height"
+                        },
+                        {
+                            "label": "MUAC (cm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                            },
+                            "id": "muac"
+                        }
+                    ]
+                },
+                {
+                    "label": "Priority and Emergency Signs",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "Ebola Screening Result",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "radio",
+                                "concept": "a7f5a894-3a05-4f32-84db-6c5847e923e2",
+                                "answers": [
+                                    {
+                                        "label": "Negative",
+                                        "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                    },
+                                    {
+                                        "label": "Positive",
+                                        "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                    }
+                                ]
+                            },
+                            "required": true,
+                            "id": "ebola_screen"
+                        },
+                        {
+                            "label": "Red Emergency Signs",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "text",
+                                "concept": "a2247ba8-61eb-4bde-8f8f-fb4e18af2b0c"
+                            },
+                            "id": "red_signs"
+                        },
+                        {
+                            "label": "Yellow Priority Signs",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "text",
+                                "concept": "5712169b-3d60-4966-9b50-fba40733d02a"
+                            },
+                            "id": "yellow_signs"
+                        }
+                    ]
+                },
+                {
+                    "label": "Triage Category",
+                    "isExpanded": true,
+                    "questions": [
+                        {
+                            "label": "Triage Category",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "radio",
+                                "concept": "e82a93c7-1a87-4340-bb7f-2782b8109d94",
+                                "answers": [
+                                    {
+                                        "label": "Green",
+                                        "concept": "d7ebda1c-c764-4e7d-ab10-67a6e1a499d3"
+                                    },
+                                    {
+                                        "label": "Yellow",
+                                        "concept": "e37a28e5-3e2b-4e00-8f92-5eb329a28c50"
+                                    },
+                                    {
+                                        "label": "Orange",
+                                        "concept": "b90b1b11-9a70-4bc3-a843-02f06871c82e"
+                                    },
+                                    {
+                                        "label": "Red",
+                                        "concept": "c4b18c65-276f-42e7-8b01-e2c342f026a7"
+                                    }
+                                ]
+                            },
+                            "required": true,
+                            "id": "triage_category"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

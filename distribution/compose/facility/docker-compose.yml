@@ -82,6 +82,7 @@ services:
         /openmrs/spa/config/config-core.json,
         /openmrs/spa/config/config-national.json,
         /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-opd.json,
         /openmrs/spa/config/config-site.json
       SPA_DEFAULT_LOCALE: en
     networks: [liberiaemr]
