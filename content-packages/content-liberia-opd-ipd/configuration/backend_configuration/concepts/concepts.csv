@@ -4,7 +4,7 @@ ${var.concept.triage-yellow.uuid},,Misc,N/A,Yellow,Urgent priority.,
 ${var.concept.triage-orange.uuid},,Misc,N/A,Orange,Very urgent priority.,
 ${var.concept.triage-red.uuid},,Misc,N/A,Red,Emergency priority.,
 ${var.concept.triage-category.uuid},,Question,Coded,Triage Category,Overall triage priority colour assigned to the child.,${var.concept.triage-green.uuid};${var.concept.triage-yellow.uuid};${var.concept.triage-orange.uuid};${var.concept.triage-red.uuid}
-${var.concept.ebola-screening-result.uuid},,Question,Coded,Ebola Screening Result,Outcome of the Ebola / VHF screen completed at triage.,1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+${var.concept.ebola-screening-result.uuid},,Question,Coded,Ebola Screening Result,Outcome of the Ebola / VHF screen completed at triage.,${var.concept.ciel.no.uuid};${var.concept.ciel.yes.uuid}
 ${var.concept.yellow-priority-signs.uuid},,Question,Text,Yellow Priority Signs,One or more yellow (urgent) clinical signs observed at triage.,
 ${var.concept.red-emergency-signs.uuid},,Question,Text,Red Emergency Signs,One or more red (emergency) clinical signs observed at triage.,
 ${var.concept.known-allergies.uuid},,Question,Text,Known Allergies,Known drug, food, or other allergies.,

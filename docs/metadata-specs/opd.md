@@ -116,9 +116,3 @@ Two main schemas will be needed:
 | FHIR | Encounters will map to FHIR Encounter resources. |
 | DHIS2 | ⚠ Blocked on MOH mappings (e.g., HMIS 105 or similar OPD summary). |
 
----
-
-## Open items summary
-
-1. Need to ensure CIEL mappings exist for all the systemic examinations (HEENT, Cardiovascular, Respiratory, Gastrointestinal, CNS, Musculoskeletal, Genitourinary).
-2. Do we need a separate "TB Screening" form prior to the Triage/Vitals, or is it combined? The DAK Workflow B (TB Screening) precedes Workflow C (Screening Room).
