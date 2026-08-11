@@ -1,0 +1,4 @@
+UUID,Name,Service,Location,Status Concept Set,Priority Concept Set
+${var.queue.national.tb-screening.uuid},TB Screening,${var.concept.national.tb-screening-service.uuid},44c3efb0-2583-4c80-a79e-1f756a03c0a1,,
+${var.queue.national.anc.uuid},ANC,${var.concept.national.anc-service.uuid},44c3efb0-2583-4c80-a79e-1f756a03c0a1,,
+${var.queue.national.general-consultation.uuid},General Consultation,${var.concept.national.general-consultation-service.uuid},44c3efb0-2583-4c80-a79e-1f756a03c0a1,,

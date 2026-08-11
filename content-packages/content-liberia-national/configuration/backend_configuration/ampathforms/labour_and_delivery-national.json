@@ -1,0 +1,462 @@
+{
+  "name": "Labour and Delivery Form",
+  "uuid": "8b79fa19-7680-4aed-aca1-4c2e2530eee8",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "First and Second Stage",
+      "sections": [
+        {
+          "label": "First and Second Stage",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Oxygen saturation (SpO2)",
+              "type": "obs",
+              "id": "spo2",
+              "questionOptions": {
+                "concept": "${var.concept.national.oxygen-saturation-spo2.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Blood Pressure Systolic",
+              "type": "obs",
+              "id": "bp_sys",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Blood Pressure Diastolic",
+              "type": "obs",
+              "id": "bp_dia",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Fetal heart rate",
+              "type": "obs",
+              "id": "fhr",
+              "questionOptions": {
+                "concept": "${var.concept.national.fetal-heart-rate.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Gravida",
+              "type": "obs",
+              "id": "gravida",
+              "questionOptions": {
+                "concept": "${var.concept.national.gravida.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Parity",
+              "type": "obs",
+              "id": "parity",
+              "questionOptions": {
+                "concept": "${var.concept.national.parity.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Adequate tetanus-diphtheria (TD2+) immunization",
+              "type": "obs",
+              "id": "td2",
+              "questionOptions": {
+                "concept": "${var.concept.national.adequate-tetanus-diphtheria-td2-immunization.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Delivery method",
+              "type": "obs",
+              "id": "delivery_method",
+              "questionOptions": {
+                "concept": "${var.concept.national.delivery-method.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.spontaneous-vaginal-delivery-svd.uuid}",
+                    "label": "Spontaneous vaginal delivery (SVD)"
+                  },
+                  {
+                    "concept": "${var.concept.national.cesarean-section.uuid}",
+                    "label": "Cesarean section"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Partogram",
+              "type": "obs",
+              "id": "partogram",
+              "questionOptions": {
+                "concept": "${var.concept.national.partogram.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.by-midwifery.uuid}",
+                    "label": "By midwifery"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Episiotomy",
+              "type": "obs",
+              "id": "episiotomy",
+              "questionOptions": {
+                "concept": "${var.concept.national.episiotomy.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.episiotomy-answer.uuid}",
+                    "label": "Episiotomy Answer"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Fistula",
+              "type": "obs",
+              "id": "fistula",
+              "questionOptions": {
+                "concept": "${var.concept.national.fistula.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Third Stage",
+      "sections": [
+        {
+          "label": "Third Stage",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Active Management",
+              "type": "obs",
+              "id": "active_management",
+              "questionOptions": {
+                "concept": "${var.concept.national.active-management.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Medication administered during the third stage of labour",
+              "type": "obs",
+              "id": "med_administered",
+              "questionOptions": {
+                "concept": "${var.concept.national.medication-administered-during-the-third-stage-of-labour.uuid}",
+                "rendering": "textarea"
+              }
+            },
+            {
+              "label": "Medication time",
+              "type": "obs",
+              "id": "med_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.medication-time.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Dose",
+              "type": "obs",
+              "id": "dose",
+              "questionOptions": {
+                "concept": "${var.concept.national.dose.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Placenta delivery time",
+              "type": "obs",
+              "id": "placenta_delivery_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.placenta-delivery-time.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Placenta status",
+              "type": "obs",
+              "id": "placenta_status",
+              "questionOptions": {
+                "concept": "${var.concept.national.placenta-status.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.complete.uuid}",
+                    "label": "Complete"
+                  },
+                  {
+                    "concept": "${var.concept.national.incomplete.uuid}",
+                    "label": "Incomplete"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Blood loss amount",
+              "type": "obs",
+              "id": "blood_loss",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-loss-amount.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.small-less-than-250-cc.uuid}",
+                    "label": "Small (Less than 250 cc)"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Baby",
+      "sections": [
+        {
+          "label": "Baby",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "markdown",
+              "id": "registration_alert",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "value": [
+                "**Registration is the Next Step**",
+                "",
+                "Once the baby details have been saved, the next step is patient registration. You will be redirected automatically."
+              ]
+            },
+            {
+              "label": "Weight",
+              "type": "obs",
+              "id": "weight",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.weight.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Length",
+              "type": "obs",
+              "id": "length",
+              "questionOptions": {
+                "concept": "${var.concept.national.length.uuid}",
+                "rendering": "number"
+              }
+            },
+            {
+              "label": "Sex",
+              "type": "obs",
+              "id": "sex",
+              "questionOptions": {
+                "concept": "${var.concept.national.sex.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "1534AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Male"
+                  },
+                  {
+                    "concept": "1535AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "label": "Female"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "APGAR",
+      "sections": [
+        {
+          "label": "APGAR",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Assessment Time",
+              "type": "obs",
+              "id": "assessment_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.assessment-time.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1-minute.uuid}",
+                    "label": "1 Minute"
+                  },
+                  {
+                    "concept": "${var.concept.national.5-minutes.uuid}",
+                    "label": "5 Minutes"
+                  },
+                  {
+                    "concept": "${var.concept.national.10-minutes.uuid}",
+                    "label": "10 Minutes"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Colour (Appearance)",
+              "type": "obs",
+              "id": "apgar_colour",
+              "questionOptions": {
+                "concept": "${var.concept.national.colour-appearance.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
+            },
+            {
+              "label": "Heart rate (Pulse)",
+              "type": "obs",
+              "id": "apgar_hr",
+              "questionOptions": {
+                "concept": "${var.concept.national.heart-rate-pulse.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
+            },
+            {
+              "label": "Muscle tone (Activity)",
+              "type": "obs",
+              "id": "apgar_muscle",
+              "questionOptions": {
+                "concept": "${var.concept.national.muscle-tone-activity.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
+            },
+            {
+              "label": "Reflex irritability (Grimace)",
+              "type": "obs",
+              "id": "apgar_reflex",
+              "questionOptions": {
+                "concept": "${var.concept.national.reflex-irritability-grimace.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
+            },
+            {
+              "label": "Respiration (Breathing)",
+              "type": "obs",
+              "id": "apgar_respiration",
+              "questionOptions": {
+                "concept": "${var.concept.national.respiration-breathing.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1 && myValue !== 2",
+                  "message": "APGAR component score must be exactly 0, 1, or 2"
+                }
+              ]
+            },
+            {
+              "label": "Total APGAR score",
+              "type": "obs",
+              "id": "apgar_total",
+              "questionOptions": {
+                "concept": "${var.concept.national.total-apgar-score.uuid}",
+                "rendering": "number"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Total APGAR score must be between 0 and 10"
+                }
+              ]
+            },
+            {
+              "label": "Time at which the baby was delivered",
+              "type": "obs",
+              "id": "delivery_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.time-at-which-the-baby-was-delivered.uuid}",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

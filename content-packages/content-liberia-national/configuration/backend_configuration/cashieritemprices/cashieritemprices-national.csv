@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Name,Price,Payment Mode,Billable Service
+${var.cashieritemprice.national.registration.uuid},,Registration Fee Price,200.00,${var.paymentmode.cash.uuid},${var.billableservice.national.registration.uuid}

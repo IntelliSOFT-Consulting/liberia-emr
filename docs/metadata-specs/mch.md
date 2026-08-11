@@ -8,11 +8,11 @@ IMPLEMENTATION.md §5. Everything below is implemented by
 > team and the DAK before forms are written.
 
 Traceability to the DAK lives in
-[`../dak/traceability-mch.csv`](../dak/traceability-mch.csv), extracted from the data
-dictionary on 2026-07-30;
+[`../dak/traceability-mch.csv`](../dak/traceability-mch.csv), re-read from the data
+dictionary on 2026-08-06 (prior full extract 2026-07-30);
 [`../runbooks/dak-to-iniz.md`](../runbooks/dak-to-iniz.md) is the procedure for working it.
-**This spec covers a small fraction of what the DAK asks for**: 244 MCH data elements are in
-the DAK, 14 of them are implemented and verified here, and 226 have had no decision taken.
+**This spec covers a small fraction of what the DAK asks for**: 245 MCH data elements are in
+the DAK, 18 of them are implemented and verified here, and 223 have had no decision taken.
 The sections below are correct as far as they go — they are not the scope.
 
 ---
@@ -26,17 +26,42 @@ CIEL concept fragments reporting and breaks the FHIR and DHIS2 mappings downstre
 
 | Concept | Variable | Type |
 | --- | --- | --- |
-| Last menstrual period | `concept.ciel.lmp.uuid` | Date |
-| Estimated date of delivery | `concept.ciel.edd.uuid` | Date |
-| Gravida | `concept.ciel.gravida.uuid` | Numeric |
-| Parity | `concept.ciel.parity.uuid` | Numeric |
-| Gestational age | `concept.ciel.gestational-age.uuid` | Numeric (weeks) |
-| Fundal height | `concept.ciel.fundal-height.uuid` | Numeric (cm) |
-| Fetal heart rate | `concept.ciel.fetal-heart-rate.uuid` | Numeric (bpm) |
-| ANC visit number | `concept.ciel.anc-visit-number.uuid` | Numeric |
-| Mode of delivery | `concept.ciel.delivery-mode.uuid` | Coded |
-| Birth outcome | `concept.ciel.birth-outcome.uuid` | Coded |
-| Family planning method | `concept.ciel.fp-method.uuid` | Coded |
+| Last menstrual period | `var.concept.ciel.lmp.uuid` | Date |
+| Estimated date of delivery | `var.concept.ciel.edd.uuid` | Date |
+| Gravida | `var.concept.ciel.gravida.uuid` | Numeric |
+| Parity | `var.concept.ciel.parity.uuid` | Numeric |
+| Full-term births | `var.concept.ciel.full-term-births.uuid` | Numeric |
+| Preterm births | `var.concept.ciel.preterm-births.uuid` | Numeric |
+| Abortions | `var.concept.ciel.abortions.uuid` | Numeric |
+| Living children | `var.concept.ciel.living-children.uuid` | Numeric |
+| Gestational age | `var.concept.ciel.gestational-age.uuid` | Numeric (weeks) |
+| Fundal height | `var.concept.ciel.fundal-height.uuid` | Numeric (cm) |
+| Fetal heart rate | `var.concept.ciel.fetal-heart-rate.uuid` | Numeric (bpm) |
+| ANC visit number | `var.concept.ciel.anc-visit-number.uuid` | Numeric |
+| Mode of delivery | `var.concept.ciel.delivery-mode.uuid` | Coded |
+| Birth outcome | `var.concept.ciel.birth-outcome.uuid` | Coded |
+| Family planning method | `var.concept.ciel.fp-method.uuid` | Coded |
+
+### ANC obstetric history (PARA)
+
+Obstetric history elements from the ANC tab. Aliases reuse CIEL; no local concepts.
+
+| DAK element | Implemented CIEL | Variable |
+| --- | --- | --- |
+| `LBR.EMR.DE.1` Gravida | 5624 | `var.concept.ciel.gravida.uuid` |
+| `LBR.EMR.DE.2` Last menstrual period (LMP) | 1427 | `var.concept.ciel.lmp.uuid` |
+| `LBR.EMR.DE.3` Full-term births (FT) | **160080** | `var.concept.ciel.full-term-births.uuid` |
+| `LBR.EMR.DE.4` Preterm births (P) | 160078 | `var.concept.ciel.preterm-births.uuid` |
+| `LBR.EMR.DE.5` Abortions (A) | 1823 | `var.concept.ciel.abortions.uuid` |
+| `LBR.EMR.DE.6` Living children (LN) | 1825 | `var.concept.ciel.living-children.uuid` |
+
+⚠ The DAK currently states CIEL `162557` for Full-term births. Implementation intentionally
+uses CIEL `160080` (“Number of full term pregnancies”) following OCL terminology review and
+clinical approval: OCL shows `162557` as total delivered births across outcomes, not
+full-term count. Traceability keeps `dak_ciel=162557` and records `concept_uuid_source=CIEL 160080`.
+
+The existing general Parity concept (`var.concept.ciel.parity.uuid`, CIEL 1053) remains in
+use; how it relates to FT/P/A/LN is still an open clinical question (see Open items).
 
 ### Declared locally
 
@@ -154,7 +179,7 @@ PNC within 48 hours, FP new acceptors and continuing users.
 
 ## Open items summary
 
-Updated against the DAK read on 2026-07-30 — see
+Updated against the DAK read on 2026-08-06 — see
 [`../dak/README.md`](../dak/README.md) for what that read found.
 
 1. CIEL mappings for the six partograph concepts. **The DAK cannot supply these**: it has no
@@ -170,11 +195,20 @@ Updated against the DAK read on 2026-07-30 — see
 8. WHO alert/action line geometry. **Not in the DAK.** Either the DAK gains a partograph
    section or it is recorded that WHO SMART Guidelines govern the partograph instead — that
    decision is now the blocker, not the lookup.
-9. **New:** decide and record the 226 `pending` DAK elements. This is the bulk of the
-   remaining MCH metadata work and none of it is represented in the sections above.
-10. **New:** two DAK mappings are wrong at source (`LBR.LD.DE.81`, `EMR.FP.DE10`) and two
-    pairs of elements are duplicated (`LBR.LD.DE.12`/`.95`, `LBR.LD.DE.45`/`.99`). Raise with
-    whoever maintains the sheet.
+9. Decide and record the 223 `pending` DAK elements. This is the bulk of the remaining MCH
+   metadata work and none of it is represented in the sections above.
+10. Two DAK mappings are wrong at source (`LBR.LD.DE.81`, `EMR.FP.DE10`) and two pairs of
+    elements are duplicated (`LBR.LD.DE.12`/`.95`, `LBR.LD.DE.45`/`.99`). Raise with whoever
+    maintains the sheet. The ANC Full-term births DAK claim (`162557` vs implemented
+    `160080`) is a related source discrepancy already resolved in metadata.
+11. **Clinical decision on how the PARA components relate to the existing general Parity
+    concept** (CIEL 1053 / `var.concept.ciel.parity.uuid`): replace, complement, or derive.
+12. **Decision on whether EDD is derived from LMP or separately recorded.** EDD is declared
+    here; the DAK has no EDD data element.
+13. **Review of `LBR.LD.DE.21 Intact` as a coded answer under Perineum**
+    (`LBR.LD.DE.20`), including the full Perineum answer set (Intact / Episiotomy /
+    Laceration). Source row is structurally misaligned and needs correction plus terminology
+    and clinical approval.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified.

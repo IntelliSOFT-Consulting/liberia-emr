@@ -1,0 +1,121 @@
+{
+  "name": "Immunization",
+  "uuid": "72af7bb9-3863-4209-926d-4c14b6229246",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "Vaccination",
+      "sections": [
+        {
+          "label": "Notice",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age <= 18"
+          },
+          "questions": [
+            {
+              "type": "markdown",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "id": "age_restriction_notice",
+              "value": [
+                "**Notice: This form is only applicable for children aged 18 and below.**"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Vaccination",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age > 18"
+          },
+          "questions": [
+            {
+              "label": "Parent/Caregiver",
+              "type": "obs",
+              "id": "parent_caregiver",
+              "questionOptions": {
+                "concept": "${var.concept.national.parent-caregiver.uuid}",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Vaccine Name",
+              "type": "obs",
+              "id": "vaccine_name",
+              "questionOptions": {
+                "concept": "${var.concept.national.vaccine-name.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.opv1.uuid}",
+                    "label": "OPV1"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Route",
+              "type": "obs",
+              "id": "route",
+              "questionOptions": {
+                "concept": "${var.concept.national.route.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.oral.uuid}",
+                    "label": "Oral"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Return date for the next vaccination",
+              "type": "obs",
+              "id": "return_date",
+              "questionOptions": {
+                "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
+                "rendering": "date"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Supplementary Immunization",
+      "sections": [
+        {
+          "label": "Supplementary Immunization",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age > 18"
+          },
+          "questions": [
+            {
+              "label": "Supplementary immunization activities",
+              "type": "obs",
+              "id": "supp_activities",
+              "questionOptions": {
+                "concept": "${var.concept.national.supplementary-immunization-activities.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.vit-a-blue-100-000iu.uuid}",
+                    "label": "Vit.-A.Blue 100,000iu"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,8 +14,17 @@ citation instead:
 | Title | **Liberia EMR data dictionary** |
 | Location | Google Sheets, file id `16fcIbZfCvjJxzo3Rp4y2gyX3Lh8beElZldfzlRXtQ-c` |
 | Owner | IntelliSOFT Consulting — request access through the sheet's own sharing controls, which hold the current owner list |
-| Read for this table | 2026-07-30, sheet last modified 2026-07-30 — recorded per row in `dak_read_date` |
-| Shape | 21 tabs; ANC 65, Labour and delivery 106, PNC 42, Family Planning 31 data elements |
+| Read for this table | 2026-08-06 (prior full extract 2026-07-30) — recorded per row in `dak_read_date` |
+| Shape | 21 tabs; ANC 65, Labour and delivery 107, PNC 42, Family Planning 31 data elements (245 MCH total) |
+
+Workbook changes observed since the 2026-07-30 read (neither mapping is verified):
+
+1. `LBR.LD.DE.21 Intact` was present in the source sheet but skipped in the first extract
+   because its row is structurally misaligned (`Intact` sits in the Activity ID column; the
+   data-element label cell is empty). It is now recorded as a pending answer under
+   `LBR.LD.DE.20 Perineum`.
+2. `LBR.EMR.DE.8 Normal (N)` now carries the DAK CIEL claim `1115`. The claim remains
+   unverified.
 
 ## Traceability
 
@@ -29,9 +38,9 @@ not it produced metadata. Every concept in
 here, and any concept that does not carries a recorded reason. Without this, the first
 review question — "where does this field come from?" — has no answer.
 
-252 rows: the 244 data elements on the four MCH tabs, plus 8 rows for metadata we hold that
+253 rows: the 245 data elements on the four MCH tabs, plus 8 rows for metadata we hold that
 the DAK does not source. The DAK side is extracted mechanically and is complete; the
-**decisions are not made** — 226 rows are `pending`, meaning nobody has yet chosen a layer,
+**decisions are not made** — 223 rows are `pending`, meaning nobody has yet chosen a layer,
 a domain, or a concept for them.
 
 | Column | |
@@ -56,11 +65,11 @@ implementation agreeing is the good case; where they differ, both have to stay v
 
 | `status` | Meaning | Count |
 | --- | --- | --- |
-| `verified` | DAK CIEL code and our declared alias are the same term | 14 |
+| `verified` | Implemented and confirmed (usually DAK CIEL matches the alias; see notes when they diverge) | 18 |
 | `unverified` | We assert a mapping the DAK does not confirm | 1 |
 | `review` | Same CIEL term, different clinical use — needs a human | 1 |
 | `conflict` | The DAK's own mapping is wrong or impossible | 2 |
-| `pending` | DAK element, no decision taken yet | 226 |
+| `pending` | DAK element, no decision taken yet | 223 |
 | `no-dak-source` | We hold metadata the DAK does not source | 8 |
 
 A `deferred` or `not-implemented` row is as important as an implemented one: without it,
@@ -68,7 +77,7 @@ A `deferred` or `not-implemented` row is as important as an implemented one: wit
 
 ## What the first pass found
 
-- **The DAK carries a CIEL column.** 117 of the 244 MCH elements arrive with a CIEL code
+- **The DAK carries a CIEL column.** 118 of the 245 MCH elements arrive with a CIEL code
   already proposed. That is a large part of the concept work done, and it is why
   `dak_ciel` exists as its own column — but a code in the DAK is a claim, not a verified
   mapping. Two of them are already known wrong.
@@ -90,6 +99,9 @@ A `deferred` or `not-implemented` row is as important as an implemented one: wit
 - **The ANC tab's columns do not match its own headers.** Values sit one column left of where
   the header says: the real data type is under *Multiple Choice Type*, optionality is under
   *Validation Condition*. The other MCH tabs are aligned. Read ANC by position, not by header.
+- **Labor and delivery has at least one structurally misaligned answer row.**
+  `LBR.LD.DE.21 Intact` places the label in the Activity ID column and leaves the data-element
+  label empty. Traceability records the inference; the source sheet still needs correction.
 - **Duplicated elements within a tab.** `LBR.LD.DE.12` Delivery method vs `LBR.LD.DE.95` Type
   of delivery; `LBR.LD.DE.45` Weight vs `LBR.LD.DE.99` Birth weight. Each pair needs resolving
   to one element before implementation.
@@ -105,7 +117,7 @@ the DAK is ambiguous.
 
 ## Known DAK dependencies
 
-| Item | Blocks | Status against the DAK read on 2026-07-30 |
+| Item | Blocks | Status against the DAK read on 2026-08-06 |
 | --- | --- | --- |
 | WHO partograph alert/action line geometry | `esm-liberia-epartograph-app` implementation | **Absent** — nothing intrapartum in the DAK |
 | ANC contact schedule | ANC follow-up form and lost-to-follow-up interval | Partial — visits enumerated 1st–4th (`LBR.EMR.DE.43`–`.47`), no interval or LTFU definition |

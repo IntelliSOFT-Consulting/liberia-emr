@@ -1,0 +1,71 @@
+{
+  "name": "Adverse Event Following Immunization (AEFI)",
+  "uuid": "3a60d3b5-1a28-4c8a-8ee7-8960587e8274",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Consultation",
+  "pages": [
+    {
+      "label": "AEFIs",
+      "sections": [
+        {
+          "label": "Notice",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age <= 18"
+          },
+          "questions": [
+            {
+              "type": "markdown",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "id": "age_restriction_notice",
+              "value": [
+                "**Notice: This form is only applicable for children aged 18 and below.**"
+              ]
+            }
+          ]
+        },
+        {
+          "label": "AEFIs",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age > 18"
+          },
+          "questions": [
+            {
+              "label": "Vaccine Name",
+              "type": "obs",
+              "id": "aefi_vaccine_name",
+              "questionOptions": {
+                "concept": "${var.concept.national.aefi-vaccine-name.uuid}",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Date of onset of the adverse events",
+              "type": "obs",
+              "id": "aefi_onset_date",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-of-onset-of-the-adverse-events.uuid}",
+                "rendering": "date"
+              }
+            },
+            {
+              "label": "Complaint experienced",
+              "type": "obs",
+              "id": "aefi_complaint",
+              "questionOptions": {
+                "concept": "${var.concept.national.complaint-experienced.uuid}",
+                "rendering": "textarea"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
