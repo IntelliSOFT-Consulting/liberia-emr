@@ -3,17 +3,5 @@
     "OPD / IPD runtime configuration.",
     "Loaded after config-mch.json and before config-site.json. Must be listed in",
     "SPA_CONFIG_URLS or O3 will not read it (IMPLEMENTATION.md §7)."
-  ],
-  "@openmrs/esm-patient-forms-app": {
-    "forms": [
-      {
-        "name": "Triage Form",
-        "category": "Outpatient"
-      },
-      {
-        "name": "OPD Consultation Form",
-        "category": "Outpatient"
-      }
-    ]
-  }
+  ]
 }

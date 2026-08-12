@@ -126,6 +126,13 @@
         ]
       },
       {
+        "name": "Triage",
+        "forms": [
+          "Triage Form",
+          "OPD Consultation Form"
+        ]
+      },
+      {
         "name": "Maternal and Child Health",
         "forms": [
           "ANC Form",
