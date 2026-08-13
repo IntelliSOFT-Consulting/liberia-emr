@@ -1,0 +1,20 @@
+<config>
+    <globalProperties>
+        <globalProperty>
+            <property>order.drugDosingUnitsConceptUuid</property>
+            <value>${var.concept.dosing-units.uuid}</value>
+        </globalProperty>
+        <globalProperty>
+            <property>order.drugRoutesConceptUuid</property>
+            <value>${var.concept.drug-routes.uuid}</value>
+        </globalProperty>
+        <globalProperty>
+            <property>order.drugDispensingUnitsConceptUuid</property>
+            <value>${var.concept.dispensing-units.uuid}</value>
+        </globalProperty>        <globalProperty>
+            <property>order.durationUnitsConceptUuid</property>
+            <value>${var.concept.duration-units.uuid}</value>
+        </globalProperty>
+    </globalProperties>
+    
+</config>

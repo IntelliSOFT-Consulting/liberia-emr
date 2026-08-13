@@ -61,5 +61,10 @@
   "spa": {
     "_comment_locale": "Liberia is anglophone; translations for MOH terminology ship in content-liberia-national.",
     "defaultLocale": "en"
+  },
+  "@openmrs/esm-billing-app": {
+    "postBilledItems": {
+      "cashier": "${var.provider.admin.uuid}"
+    }
   }
 }

@@ -1,0 +1,7 @@
+Uuid,Concept Numeric uuid,Label,Absolute Low,Critical Low,Normal Low,Normal High,Critical High,Absolute High,Criteria
+${var.conceptreferencerange.bmi.children-and-infant-0-5-yrs-male.uuid},CIEL:1342,Children and Infant (0 - 5 yrs) Male,0,13,13.8,17.3,18,100,"$patient.getAge() >= 0 && $patient.getAge() < 5 && $patient.getGender() == ""M"""
+${var.conceptreferencerange.bmi.children-and-infant-0-5-yrs-female.uuid},CIEL:1342,Children and Infant (0 - 5 yrs) Female,0,12.7,13.3,17.1,17.8,100,"$patient.getAge() >= 0 && $patient.getAge() < 5 && $patient.getGender() == ""F"""
+${var.conceptreferencerange.bmi.children-and-teen-5-19-yrs-male.uuid},CIEL:1342,Children and Teen (5 - 19 yrs) Male,0,13.3,13.7,18.5,19.3,100,"$patient.getAge() >= 5 && $patient.getAge() < 20 && $patient.getGender() == ""M"""
+${var.conceptreferencerange.bmi.children-and-teen-5-19-yrs-female.uuid},CIEL:1342,Children and Teen (5 - 19 yrs) Female,0,13.1,13.5,19,20,100,"$patient.getAge() >= 5 && $patient.getAge() < 20 && $patient.getGender() == ""F"""
+${var.conceptreferencerange.bmi.adult-20-male.uuid},CIEL:1342,Adult ≥20 Male,0,16,18.5,24.9,30,100,"$patient.getAge() >= 20 && $patient.getGender() == ""M"""
+${var.conceptreferencerange.bmi.adult-20-female.uuid},CIEL:1342,Adult ≥20 Female,0,16,18.5,24.9,30,100,"$patient.getAge() >= 20 && $patient.getGender() == ""F"""

@@ -1,0 +1,6 @@
+Uuid,Void/Retire,Same as mappings,Fully specified name:en,Fully specified name:fr,Fully specified name:es,Short name:en,Short name:fr,Short name:es,Description:en,Description:fr,Description:es,Data class,Data type,Answers,_version:1,_order:1000
+${var.concept.ciel.1067.uuid},,CIEL:1067;PIH:1067;AMPATH:1067;SNOMED CT:261665006,Unknown,Ne sait pas,Desconocido,,,,Generic answer to a question.,,,Misc,N/A,,,
+${var.concept.national.on-time.uuid},,,On time,À temps,On time,À temps,,,,,,Misc,N/A,,,
+${var.concept.national.late.uuid},,,Late,En retard,Late,En retard,,,,,,Misc,N/A,,,
+${var.concept.national.early.uuid},,,Early,Tôt,Early,Tôt,,,,,,Misc,N/A,,,
+${var.concept.national.visit-punctuality.uuid},,,Visit Punctuality,Visite Ponctualité,Visit Punctuality,Visite Ponctualité,,,,,,Question,Coded,On time;Late;Early,,

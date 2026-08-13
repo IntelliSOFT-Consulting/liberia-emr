@@ -48,6 +48,12 @@ if [[ "$DEMO" == "false" ]]; then
   "$ROOT/scripts/validate/no-demo-in-release.sh"
   suffix=""
   demo_package=""
+  # content-common OCL exports are gitignored — fetch them from the pinned upstream tag
+  # if they are not already present in the working copy (fresh checkout or after clean).
+  if ! compgen -G "$ROOT/content-packages/content-common/configuration/backend_configuration/ocl/*.zip" >/dev/null; then
+    echo "== fetching the common OCL exports =="
+    "$ROOT/scripts/build/lift-common-content.sh"
+  fi
 else
   echo "WARNING: building DEMO images — training and test use only."
   suffix="-demo"
@@ -59,6 +65,7 @@ else
     "$ROOT/scripts/build/lift-demo-content.sh" --ocl-only
   fi
 fi
+
 
 # Builds the content ZIPs and, with them, target/configuration — the tree with ${var.*}
 # resolved. The backend image builds these again inside its own content stage; the local

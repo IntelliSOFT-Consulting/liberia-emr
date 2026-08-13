@@ -4,3 +4,5 @@ ${var.personattribute.referred-from.uuid},,Referred From,Facility or location pa
 ${var.personattribute.referred-by.uuid},,Referred By,Person or provider who referred the patient,java.lang.String,false
 ${var.personattribute.referral-ref-number.uuid},,Referral Reference Number,Reference number on the referral slip,java.lang.String,false
 ${var.personattribute.reason-for-referral.uuid},,Reason for Referral,Detailed reason for patient referral,java.lang.String,false
+${var.personattributetypes.telephone-number.uuid},0,Telephone Number,The telephone number for the person,java.lang.String,
+${var.personattributetypes.unknown-patient.uuid},0,Unknown patient,Used to flag patients that cannot be identified during the check-in process,java.lang.String,

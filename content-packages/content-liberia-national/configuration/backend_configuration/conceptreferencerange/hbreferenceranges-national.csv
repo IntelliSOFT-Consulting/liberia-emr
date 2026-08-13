@@ -1,0 +1,17 @@
+Uuid,Concept Numeric uuid,Label,Absolute low,Critical low,Normal low,Normal high,Critical high,Absolute high,Criteria
+${var.conceptreferencerange.hb.hb-newborn-0-7-days-32-weeks-gestation.uuid},CIEL:21,"HB Newborn (0-7 days, >=32 weeks gestation)",0,11,14.5,18.5,24,,"$patient.getAgeInDays() >= 0 && $patient.getAgeInDays() <= 7 && $fn.getObsWeeks('CIEL:1427', $patient) >= 32"
+${var.conceptreferencerange.hb.hb-newborn-8-14-days-35-weeks-gestation.uuid},CIEL:21,"HB Newborn (8-14 days, >=35 weeks gestation)",0,7,13.4,16.6,22,,"$patient.getAgeInDays() >= 8 && $patient.getAgeInDays() <= 14 && $fn.getObsWeeks('CIEL:1427', $patient) >= 35"
+${var.conceptreferencerange.hb.hb-newborn-8-14-days-32-35-weeks-gestation.uuid},CIEL:21,"HB Newborn (8-14 days, 32-35 weeks gestation)",0,10,13.4,16.6,22,,"$patient.getAgeInDays() >= 8 && $patient.getAgeInDays() <= 14 && $fn.getObsWeeks('CIEL:1427', $patient) >= 32 && $fn.getObsWeeks('CIEL:1427', $patient) < 35"
+${var.conceptreferencerange.hb.hb-newborn-15-days-35-weeks-gestation.uuid},CIEL:21,"HB Newborn (>15 days, >=35 weeks gestation)",0,7,13.5,15.5,22,,"$patient.getAgeInDays() > 15 && $fn.getObsWeeks('CIEL:1427', $patient) >= 35"
+${var.conceptreferencerange.hb.hb-newborn-15-days-32-35-weeks-gestation.uuid},CIEL:21,"HB Newborn (>15 days, 32-35 weeks gestation)",0,8,13.5,15.5,22,,"$patient.getAgeInDays() > 15 && $fn.getObsWeeks('CIEL:1427', $patient) >= 32 && $fn.getObsWeeks('CIEL:1427', $patient) < 35"
+${var.conceptreferencerange.hb.hb-1-3-days.uuid},CIEL:21,HB 1 - 3 days,0,7,14.5,18.5,24,,$patient.getAgeInDays() >= 1 && $patient.getAgeInDays() <= 3
+${var.conceptreferencerange.hb.hb-2-weeks.uuid},CIEL:21,HB 2 weeks,0,7,13.4,16.6,22,,$patient.getAgeInWeeks() == 2
+${var.conceptreferencerange.hb.hb-newborn-1-month.uuid},CIEL:21,HB Newborn (1 month),0,7,10.0,14,20,,$patient.getAgeInMonths() == 1
+${var.conceptreferencerange.hb.hb-children-2-months-5-months.uuid},CIEL:21,HB Children (2 months - 5 months),0,7,9.5,13.5,18,,$patient.getAgeInMonths() >= 2 && $patient.getAgeInMonths() < 6
+${var.conceptreferencerange.hb.hb-children-6-months-2-years.uuid},CIEL:21,HB Children (6 months - 2 years),0,7,10.5,13.5,18,,$patient.getAgeInMonths() >= 6 && $patient.getAge() < 2 
+${var.conceptreferencerange.hb.hb-children-2-6-years.uuid},CIEL:21,HB Children (2 - 6 years),0,7,11.5,13.5,17,,$patient.getAge() >= 2 && $patient.getAge() < 6
+${var.conceptreferencerange.hb.hb-children-6-12-years.uuid},CIEL:21,HB Children (6 - 12 years),0,7,11.5,13.5,19,,$patient.getAge() >= 6 && $patient.getAge() < 12
+${var.conceptreferencerange.hb.hb-adolescents-12-18-years-f.uuid},CIEL:21,HB Adolescents (12 - 18 years) - F,0,7,12,14,18,,"$patient.getAge() >= 12 && $patient.getAge() <= 18 && $patient.getGender() == ""F"""
+${var.conceptreferencerange.hb.hb-adolescents-12-18-years-m.uuid},CIEL:21,HB Adolescents (12 - 18 years) - M,0,7,13,14.5,20,,"$patient.getAge() >= 12 && $patient.getAge() <= 18 && $patient.getGender() == ""M"""
+${var.conceptreferencerange.hb.hb-adult-men-18-years.uuid},CIEL:21,HB Adult Men (>18 years),0,7,13.5,15.5,22,,"$patient.getAge() > 18 && $patient.getGender() == ""M"""
+${var.conceptreferencerange.hb.hb-adult-women-18-years-non-pregnant.uuid},CIEL:21,"HB Adult Women (>18 years, Non-Pregnant)",0,7,12,14,20,,"$patient.getAge() > 18 && $patient.getGender() == ""F"" && !($fn.isObsValueCodedAnswer(""CIEL:45"", $patient, ""CIEL:703"") || $fn.isObsValueCodedAnswer(""CIEL:1945"", $patient, ""CIEL:703"") || $fn.isObsValueCodedAnswer(""CIEL:5272"", $patient, ""CIEL:1065""))"

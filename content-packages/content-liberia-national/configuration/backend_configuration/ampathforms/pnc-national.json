@@ -89,7 +89,7 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.664.uuid}",
                     "label": "Negative"
                   }
                 ]
@@ -104,7 +104,7 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.664.uuid}",
                     "label": "Negative"
                   }
                 ]

@@ -1,0 +1,2 @@
+Uuid,Identifier Type,Location,Identifier Source,Manual Entry Enabled,Auto Generation Enabled,_order:2000
+${var.autogenerationoptions.openmrs-id.uuid},OpenMRS ID,,8549f706-7e85-4c1d-9424-217d50a2988b,false,true,

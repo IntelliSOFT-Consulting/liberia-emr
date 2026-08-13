@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Name,Description,_version:1
+${var.visittype.outpatient.uuid},,Outpatient,Patient seen and discharged the same day,
+${var.visittype.inpatient.uuid},,Inpatient,Patient admitted to a ward,
+${var.visittype.emergency.uuid},,Emergency,Unscheduled presentation requiring immediate assessment,

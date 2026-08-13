@@ -21,5 +21,10 @@
     "registrationObs": {
       "encounterTypeUuid": "${var.encountertype.registration.uuid}"
     }
+  },
+  "@openmrs/esm-billing-app": {
+    "postBilledItems": {
+      "cashPoint": "${var.billing.cashPoint.uuid}"
+    }
   }
 }

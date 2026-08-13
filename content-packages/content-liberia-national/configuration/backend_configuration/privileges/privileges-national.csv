@@ -1,5 +1,5 @@
 Uuid,Void/Retire,Privilege name,Description
-4c8e0a12-6b3d-4f95-8e27-a0c2e4f6b8d1,,View Audit Log,Read the audit log. Granted to the ICT Unit only per the MOH ICT SOPs.
-6e0a2c34-8d5f-4a17-b049-c2e4f608a3b5,,Export National Report,Generate and export MOH national indicator reports
-8a2c4e56-0f71-4b39-826b-e406a82ac5d7,,Manage Facility Sync,Inspect and retry the facility-to-central sync queue
-a4e6082a-2b93-4c5b-a48d-06282ca4e7f9,,Register Maternal Program,"Enrol a patient in ANC, L&D, PNC or Family Planning"
+${var.privilege.view-audit-log.uuid},,View Audit Log,Read the audit log. Granted to the ICT Unit only per the MOH ICT SOPs.
+${var.privilege.export-national-report.uuid},,Export National Report,Generate and export MOH national indicator reports
+${var.privilege.manage-facility-sync.uuid},,Manage Facility Sync,Inspect and retry the facility-to-central sync queue
+${var.privilege.register-maternal-program.uuid},,Register Maternal Program,"Enrol a patient in ANC, L&D, PNC or Family Planning"
