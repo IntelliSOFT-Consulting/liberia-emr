@@ -15,3 +15,8 @@ ${var.concept.partograph.contractions-per-10min.uuid},,Uterine Contractions per 
 ${var.concept.partograph.contraction-duration.uuid},,Uterine Contraction Duration,Contraction Duration,Mean duration of a uterine contraction,Finding,Numeric,,,0,180,seconds
 ${var.concept.partograph.amniotic-fluid.uuid},,Amniotic Fluid Character,Amniotic Fluid,Character of the amniotic fluid on examination,Finding,Coded,"Membranes Intact;Clear Liquor;Meconium Stained Liquor;Blood Stained Liquor;Absent Liquor",,,,
 ${var.concept.partograph.moulding.uuid},,Fetal Skull Moulding,Moulding,Degree of fetal skull moulding,Finding,Coded,"No Moulding;Moulding Grade 1;Moulding Grade 2;Moulding Grade 3",,,,
+${var.concept.partograph.membranes-intact.uuid},,Membranes Intact,Membranes Intact,Amniotic membranes are intact,State,N/A,,,,,
+${var.concept.partograph.clear-liquor.uuid},,Clear Liquor,Clear Liquor,Amniotic fluid is clear,State,N/A,,,,,
+${var.concept.partograph.meconium-liquor.uuid},,Meconium Stained Liquor,Meconium Liquor,Amniotic fluid is meconium stained,State,N/A,,,,,
+${var.concept.partograph.blood-liquor.uuid},,Blood Stained Liquor,Blood Liquor,Amniotic fluid is blood stained,State,N/A,,,,,
+${var.concept.partograph.absent-liquor.uuid},,Absent Liquor,Absent Liquor,Amniotic fluid is absent,State,N/A,,,,,

@@ -1,0 +1,253 @@
+{
+  "name": "Delivery Summary",
+  "uuid": "3a6ae087-a246-4aab-6e91-e2a09fb7ec19",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "encounter": "Delivery",
+  "processor": "EncounterFormProcessor",
+  "pages": [
+    {
+      "label": "Admission Assessment",
+      "sections": [
+        {
+          "label": "Vitals & Presentation",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Systolic BP",
+              "id": "sbp",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.systolic-bp.uuid}"
+              }
+            },
+            {
+              "label": "Diastolic BP",
+              "id": "dbp",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.diastolic-bp.uuid}"
+              }
+            },
+            {
+              "label": "Pulse",
+              "id": "pulse",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.pulse.uuid}"
+              }
+            },
+            {
+              "label": "Temperature (°C)",
+              "id": "temp",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.temperature.uuid}"
+              }
+            },
+            {
+              "label": "Gestational Age (weeks)",
+              "id": "ga",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.gestational-age.uuid}"
+              }
+            },
+            {
+              "label": "Cervical Dilation (cm)",
+              "id": "cervical_dilation",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.partograph.cervical-dilation.uuid}",
+                "min": "0",
+                "max": "10"
+              }
+            },
+            {
+              "label": "Membranes",
+              "id": "membranes",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.partograph.amniotic-fluid.uuid}",
+                "answers": [
+                  { "label": "Membranes Intact", "concept": "${var.concept.partograph.membranes-intact.uuid}" },
+                  { "label": "Clear Liquor", "concept": "${var.concept.partograph.clear-liquor.uuid}" },
+                  { "label": "Meconium Stained Liquor", "concept": "${var.concept.partograph.meconium-liquor.uuid}" },
+                  { "label": "Blood Stained Liquor", "concept": "${var.concept.partograph.blood-liquor.uuid}" },
+                  { "label": "Absent Liquor", "concept": "${var.concept.partograph.absent-liquor.uuid}" }
+                ]
+              }
+            },
+            {
+              "label": "Fetal Station (fifths)",
+              "id": "fetal_station",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.partograph.descent-of-head.uuid}",
+                "min": "0",
+                "max": "5"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Delivery Outcome",
+      "sections": [
+        {
+          "label": "Delivery Details",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Delivery Method",
+              "id": "delivery_method",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ciel.delivery-mode.uuid}",
+                "answers": [
+                  { "label": "Spontaneous Vaginal Delivery (SVD)", "concept": "1170AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+                  { "label": "Caesarean Section (C/S)", "concept": "1171AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+                  { "label": "Vacuum", "concept": "167453AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+                  { "label": "Forceps", "concept": "159901AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }
+                ]
+              }
+            },
+            {
+              "label": "Date and Time of Delivery",
+              "id": "datetime_delivery",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "datetime",
+                "concept": "${var.concept.ciel.date-and-time-of-delivery.uuid}"
+              }
+            },
+            {
+              "label": "Birth Weight (kg)",
+              "id": "birth_weight",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.birth-weight.uuid}",
+                "min": "0.3",
+                "max": "7.0"
+              }
+            },
+            {
+              "label": "Sex",
+              "id": "sex",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ciel.sex.uuid}",
+                "answers": [
+                  { "label": "Male", "concept": "1534AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+                  { "label": "Female", "concept": "1535AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "label": "APGAR Scores",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "APGAR Score at 1 minute",
+              "id": "apgar_1_min",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.apgar-1-min.uuid}",
+                "max": "10",
+                "min": "0"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue <= 6",
+                  "message": "Neonatal Resuscitation Checklist required."
+                }
+              ]
+            },
+            {
+              "label": "APGAR Score at 5 minutes",
+              "id": "apgar_5_min",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.apgar-5-min.uuid}",
+                "max": "10",
+                "min": "0"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue <= 3",
+                  "message": "Neonatal Emergency Alert!"
+                }
+              ]
+            },
+            {
+              "label": "Total APGAR Score",
+              "id": "apgar_score_total",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.apgar-score.uuid}",
+                "max": "10",
+                "min": "0"
+              }
+            }
+          ]
+        },
+        {
+          "label": "Postpartum Checks",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Estimated Blood Loss",
+              "id": "blood_loss",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ciel.blood-loss.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.blood-loss-small.uuid}",
+                    "label": "Small (<250 cc)"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.blood-loss-moderate.uuid}",
+                    "label": "Moderate (250-499 cc)"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.blood-loss-large.uuid}",
+                    "label": "Large (>= 500 cc)"
+                  }
+                ]
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue === '${var.concept.ciel.blood-loss-large.uuid}'",
+                  "message": "Postpartum Haemorrhage Alert! Protocol Activated."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
