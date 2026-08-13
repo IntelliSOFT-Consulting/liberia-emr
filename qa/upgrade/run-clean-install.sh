@@ -115,10 +115,18 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
 
   # Silence for an hour is indistinguishable from a hang, and the import itself logs
   # nothing per concept — so report the row count that is actually moving.
-  loaded="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
-    mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
-    'select count(*) from openmrs.concept;' 2>/dev/null | tr -d '[:space:]')"
-  echo "   ${SECONDS}s elapsed — concepts loaded: ${loaded:-0}"
+  #
+  # This must not be able to fail the run. For the first minutes of a CLEAN install the
+  # concept table does not exist yet, so mariadb exits non-zero; under `set -euo pipefail`
+  # that killed the script silently, one iteration in — the gate died on exactly the case it
+  # exists to test. Keep the query out of the exit-status path entirely.
+  loaded=""
+  if query_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+       mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
+       'select count(*) from openmrs.concept;' 2>/dev/null)"; then
+    loaded="$(printf '%s' "$query_out" | tr -d '[:space:]')"
+  fi
+  echo "   ${SECONDS}s elapsed — concepts loaded: ${loaded:-(schema not created yet)}"
   sleep 30
 done
 
@@ -184,8 +192,13 @@ if [[ "$FRONTEND" == "true" ]]; then
   done
 
   # Plain HTTP must redirect rather than serve: TLS is contractual for this deployment.
-  code="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
-    curl -s -o /dev/null -w '%{http_code}' http://gateway/ 2>/dev/null | tr -d '[:space:]')"
+  # Same rule as the progress query above: a non-zero exec must not kill the run before the
+  # assertion below can report what actually happened.
+  code=""
+  if code_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+       curl -s -o /dev/null -w '%{http_code}' http://gateway/ 2>/dev/null)"; then
+    code="$(printf '%s' "$code_out" | tr -d '[:space:]')"
+  fi
   if [[ "$code" != "301" ]]; then
     echo "FAIL: gateway answered plain HTTP with ${code}, expected a 301 redirect to TLS" >&2
     exit 1
