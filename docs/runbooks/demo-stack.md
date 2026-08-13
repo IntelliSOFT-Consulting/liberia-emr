@@ -184,7 +184,7 @@ needs the real data shape and lives in [deploy.md](deploy.md) and `qa/upgrade/`.
 
 Expected in the backend log; none of them stop the stack or the training path.
 
-- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=… scripts/build/fetch-ciel.sh`
+- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`
   before the build if you want the `LIB/mch` export locally. Otherwise concepts that map to a
   CIEL source fail with `conceptMappings[n].conceptReferenceTerm.conceptSource: Concept Source
   is required`, and parts of the MCH programme content (partograph numerics, workflow states)
