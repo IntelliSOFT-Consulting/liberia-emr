@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+    <changeSet id="liberiaemr-admin-provider-1" author="intellisoft">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM provider WHERE identifier = 'ADMIN-PROV'
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            INSERT INTO provider (person_id, identifier, creator, date_created, retired, uuid)
+            SELECT person_id, 'ADMIN-PROV', 1, NOW(), 0, '55bc2590-ceb2-4832-8148-d163fbdebee3'
+            FROM person WHERE uuid = '5f87c042-6814-11e8-923f-e9a88dcb533f';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

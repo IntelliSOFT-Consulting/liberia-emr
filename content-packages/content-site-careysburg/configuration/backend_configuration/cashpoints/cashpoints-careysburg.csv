@@ -1,0 +1,2 @@
+uuid,Void/Retire,name,description,location
+${var.billing.cashPoint.uuid},, Careysburg OPD Cash Point, Cash point for billing at Careysburg OPD, Careysburg OPD

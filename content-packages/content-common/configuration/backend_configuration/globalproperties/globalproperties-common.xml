@@ -1,0 +1,13 @@
+<config>
+    <globalProperties>
+        <globalProperty>
+            <property>concept.causeOfDeath</property>
+            <value>${var.concept.cause-of-death.uuid}</value>
+        </globalProperty>
+
+        <globalProperty>
+            <property>attachments.allowedFileExtensions</property>
+            <value>jpeg,jpg,png,pdf</value>
+        </globalProperty>
+    </globalProperties>
+</config>

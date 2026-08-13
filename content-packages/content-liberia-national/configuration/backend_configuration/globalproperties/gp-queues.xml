@@ -1,0 +1,20 @@
+<config>
+    <globalProperties>
+        <globalProperty>
+            <property>queue.serviceConceptSetName</property>
+            <value>${var.concept.national.service.uuid}</value>
+        </globalProperty>
+        <globalProperty>
+            <property>queue.priorityConceptSetName</property>
+            <value>${var.concept.national.queue-priority-set.uuid}</value>
+        </globalProperty>
+        <globalProperty>
+            <property>queue.statusConceptSetName</property>
+            <value>${var.concept.national.queue-status-set.uuid}</value>
+        </globalProperty>
+        <globalProperty>
+            <property>queue.sortWeightGenerator</property>
+            <value>basicPrioritySortWeightGenerator</value>
+        </globalProperty>
+    </globalProperties>
+</config>

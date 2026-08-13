@@ -1,2 +1,2 @@
 Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Members
-a8f3f64a-11d5-4a09-b0fb-c8118fa349f3,,Service,Service,Queue Service Concept Set,ConvSet,N/A,"d62d58e9-ec91-4108-9643-00f5f23bf51c;e96e2ce6-e326-46f2-8015-17572689c401;${var.concept.national.tb-screening-service.uuid};${var.concept.national.anc-service.uuid};${var.concept.national.general-consultation-service.uuid}"
+${var.concept.national.service.uuid},,Service,Service,Queue Service Concept Set,ConvSet,N/A,${var.concept.national.tb-screening-service.uuid};${var.concept.national.anc-service.uuid};${var.concept.national.general-consultation-service.uuid}

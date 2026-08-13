@@ -1,0 +1,3 @@
+Uuid,Void/Retire,Name,Description
+${var.encounterroles.unknown.uuid},,Unknown,Unknown encounter role for legacy providers with no encounter role set
+${var.encounterroles.clinician.uuid},,Clinician,"Doctor or Nurse who is the primary provider for an encounter, and will sign the note"

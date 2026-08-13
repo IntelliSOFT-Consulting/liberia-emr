@@ -19,7 +19,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.temperature.uuid}"
                             },
                             "id": "temp"
                         },
@@ -28,7 +28,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.pulse.uuid}"
                             },
                             "id": "hr"
                         },
@@ -37,7 +37,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.respiratory-rate.uuid}"
                             },
                             "id": "rr"
                         },
@@ -46,7 +46,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.systolic-bp.uuid}"
                             },
                             "id": "sbp"
                         },
@@ -55,7 +55,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.diastolic-bp.uuid}"
                             },
                             "id": "dbp"
                         },
@@ -64,7 +64,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.oxygen-saturation.uuid}"
                             },
                             "id": "spo2"
                         },
@@ -73,7 +73,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.weight.uuid}"
                             },
                             "id": "weight"
                         },
@@ -82,7 +82,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.height.uuid}"
                             },
                             "id": "height"
                         },
@@ -91,7 +91,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
-                                "concept": "1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                "concept": "${var.concept.ciel.muac.uuid}"
                             },
                             "id": "muac"
                         }
@@ -110,11 +110,11 @@
                                 "answers": [
                                     {
                                         "label": "Negative",
-                                        "concept": "1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                        "concept": "${var.concept.ciel.no.uuid}"
                                     },
                                     {
                                         "label": "Positive",
-                                        "concept": "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                                        "concept": "${var.concept.ciel.yes.uuid}"
                                     }
                                 ]
                             },

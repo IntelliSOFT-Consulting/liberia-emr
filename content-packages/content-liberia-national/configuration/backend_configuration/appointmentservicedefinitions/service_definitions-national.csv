@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Name,Description,Duration,Start Time,End Time,Max Load,Speciality,Location,Label Colour
+${var.appointmentservicedefinitions.general-medicine-service.uuid},,General Medicine service,,,,,,9f2a8cd0-32c6-4844-8df7-1ac9c4d79943,,#feecae
+${var.appointmentservicedefinitions.outpatient-department.uuid},,Outpatient Department,,,,,,9f2a8cd0-32c6-4844-8df7-1ac9c4d79943,,#defbe6
+${var.appointmentservicedefinitions.rehabilitation-service.uuid},,Rehabilitation service,,,,,,9f2a8cd0-32c6-4844-8df7-1ac9c4d79943,,#9ef0f0

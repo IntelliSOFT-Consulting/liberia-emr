@@ -1,0 +1,8 @@
+<config>
+    <globalProperties>
+        <globalProperty>
+            <property>fhir2.administeringEncounterRoleUuid</property>
+		    <value>${var.encounterroles.clinician.uuid}</value>
+        </globalProperty>
+    </globalProperties>
+</config>

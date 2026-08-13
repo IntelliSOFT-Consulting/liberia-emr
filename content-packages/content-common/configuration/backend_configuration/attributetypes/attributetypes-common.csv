@@ -1,0 +1,7 @@
+Uuid,Void/Retire,Entity name,Name,Description,Min occurs,Max occurs,Datatype classname,Datatype config,Preferred handler classname,Handler config,_order:1000
+${var.visitattributetype.punctuality.uuid},,Visit,Punctuality,,0,1,org.openmrs.customdatatype.datatype.ConceptDatatype,${var.concept.visit-punctuality.uuid},,,
+${var.visitattributetype.insurance-policy-number.uuid},,Visit,Insurance Policy Number,,0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.visitattributetype.insurance-scheme.uuid},,Visit,Insurance Scheme,"The insurance scheme the patient is using to settle payment for services, expects a uuid",0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.visitattributetype.payment-method.uuid},,Visit,Payment Method,"The payment method used by the patient to settle payment, expects a uuid",0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.visitattributetype.patient-type.uuid},,Visit,Patient Type,"If the patient will be paying or receives services for free, expects a uuid",0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.visitattributetype.visit-queue-number.uuid},,Visit,Visit Queue Number,The visit queue number used to identify patients on the queue screen,0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,

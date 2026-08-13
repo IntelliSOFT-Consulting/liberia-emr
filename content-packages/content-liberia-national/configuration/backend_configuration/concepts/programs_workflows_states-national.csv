@@ -1,0 +1,7 @@
+Uuid,Void/Retire,Same as mappings,Fully specified name:en,Fully specified name:fr,Fully specified name:es,Short name:en,Short name:fr,Short name:es,Description:en,Description:fr,Description:es,Data class,Data type,_version:1,_order:1000
+${var.concept.national.prevention-of-maternal-to-child-hiv-transmission.uuid},,SNOMED MVP:PMTCT,Prevention of Maternal to Child HIV transmission,,,PMTCT,,,Prevention of Maternal to Child HIV transmission program,,,Misc,N/A,,
+${var.concept.national.hiv-treatment-status.uuid},,SNOMED MVP:HIV_TS,HIV treatment status,,,Treatment status (HIV),,,HIV treatment status program workflow,,,Misc,N/A,,
+${var.concept.national.program-status.uuid},,SNOMED MVP:PROGRAM_STATUS,Program status,,,Program status,,,Program status program workflow,,,Misc,N/A,,
+${var.concept.national.on-antiretrovirals-treatment.uuid},,SNOMED MVP:OATT,On Antiretrovirals Treatment,,,On Antiretrovirals,,,On Antiretrovirals Treatment program workflow state,,,Misc,N/A,,
+${var.concept.national.lost-to-follow-up.uuid},,SNOMED MVP:LTFU,Lost to follow-up,,,Lost follow-up,,,Lost to follow-up program workflow state,,,Misc,N/A,,
+${var.concept.national.never-started.uuid},,SNOMED MVP:NS,Never started,,,Never started,,,Never started program workflow state,,,Misc,N/A,,

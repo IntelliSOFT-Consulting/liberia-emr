@@ -305,11 +305,11 @@
                 "rendering": "radio",
                 "answers": [
                   {
-                    "concept": "1534AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.1534.uuid}",
                     "label": "Male"
                   },
                   {
-                    "concept": "1535AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                    "concept": "${var.concept.ciel.1535.uuid}",
                     "label": "Female"
                   }
                 ]

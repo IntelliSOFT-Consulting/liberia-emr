@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Name,Description,Parent,Tag|Login Location,Tag|Visit Location,Tag|Facility Location,Tag|Queue Location,Tag|Admission Location,Tag|Appointment Location,Tag|Transfer Location,Address 1,Address 2,Address 3,Address 4,Address 5,Address 6,City/Village,County/District,State/Province,Postal Code,Country,_order:1000
+${var.locations.unknown-location.uuid},,Unknown Location,Unknown Location,,,,,,,,,,,,,,,,,,,,

@@ -1,0 +1,9 @@
+<config>
+    <globalProperties>
+        <globalProperty>
+            <property>@openmrs/esm-fast-data-entry-app.groupSessionVisitTypeUuid</property>
+            <value>${var.visittype.outpatient.uuid}</value>
+            <description>UUID of the visit type used by Fast Data Entry to create visits when in 'group sessions' entry workflow</description>
+        </globalProperty>
+    </globalProperties>
+</config>

@@ -1,0 +1,18 @@
+Uuid,Privilege name,Description,_order:1000
+${var.privilege.app-stockmanagement-dashboard.uuid},App: stockmanagement.dashboard,Able to view stock management application dashboard
+${var.privilege.app-stockmanagement-stockitems.uuid},App: stockmanagement.stockItems,Able to view stock items
+${var.privilege.task-stockmanagement-stockitems-mutate.uuid},Task: stockmanagement.stockItems.mutate,Able to create and update stock items
+${var.privilege.task-stockmanagement-stockitems-dispense-qty.uuid},Task: stockmanagement.stockItems.dispense.qty,Able to view stock item quantities at dispensing locations
+${var.privilege.task-stockmanagement-stockitems-dispense.uuid},Task: stockmanagement.stockItems.dispense,Able to dispense stock items
+${var.privilege.app-stockmanagement-userrolescopes.uuid},App: stockmanagement.userRoleScopes,Able to view stock management user role scope
+${var.privilege.task-stockmanagement-userrolescopes-mutate.uuid},Task: stockmanagement.userRoleScopes.mutate,Able to create and update user role scopes
+${var.privilege.app-stockmanagement-stockoperations.uuid},App: stockmanagement.stockoperations,Able to view stock operations
+${var.privilege.task-stockmanagement-stockoperations-mutate.uuid},Task: stockmanagement.stockoperations.mutate,Able to create and update stock operations
+${var.privilege.task-stockmanagement-stockoperations-approve.uuid},Task: stockmanagement.stockoperations.approve,Able to approve stock operations
+${var.privilege.task-stockmanagement-stockoperations-receiveitems.uuid},Task: stockmanagement.stockoperations.receiveitems,Able to receive dispatched stock items
+${var.privilege.app-stockmanagement-stocksources.uuid},App: stockmanagement.stockSources,Able to view stock sources
+${var.privilege.task-stockmanagement-stocksources-mutate.uuid},Task: stockmanagement.stockSources.mutate,Able to create and update stock sources
+${var.privilege.app-stockmanagement-stockoperationtype.uuid},App: stockmanagement.stockOperationType,Able to view stock operation types
+${var.privilege.task-stockmanagement-party-read.uuid},Task: stockmanagement.party.read,Able to read party information
+${var.privilege.app-stockmanagement-reports.uuid},App: stockmanagement.reports,Able to view stock reports
+${var.privilege.task-stockmanagement-reports-mutate.uuid},Task: stockmanagement.reports.mutate,Able to create stock reports
