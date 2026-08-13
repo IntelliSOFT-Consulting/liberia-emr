@@ -54,6 +54,8 @@ if [[ "$DEMO" == "false" ]]; then
     echo "== fetching the common OCL exports =="
     "$ROOT/scripts/build/lift-common-content.sh"
   fi
+  "$ROOT/scripts/build/sanitize-ocl-export.sh" \
+    "$ROOT"/content-packages/content-common/configuration/backend_configuration/ocl/*.zip
 else
   echo "WARNING: building DEMO images — training and test use only."
   suffix="-demo"
@@ -64,6 +66,8 @@ else
     echo "== fetching the demo OCL exports =="
     "$ROOT/scripts/build/lift-demo-content.sh" --ocl-only
   fi
+  "$ROOT/scripts/build/sanitize-ocl-export.sh" \
+    "$ROOT"/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip
 fi
 
 
@@ -71,7 +75,7 @@ fi
 # resolved. The backend image builds these again inside its own content stage; the local
 # build is what the frontend config collection below reads.
 echo "== building content packages =="
-mvn -B -q -DskipTests -f "$ROOT/pom.xml" package
+mvn -B -q -DskipTests -f "$ROOT/pom.xml" clean package
 
 echo "== resolving OMODs from distro.properties =="
 "$ROOT/scripts/build/resolve-modules.sh" --out "$ROOT/distribution/backend/modules"

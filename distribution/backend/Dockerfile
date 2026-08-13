@@ -14,7 +14,7 @@ WORKDIR /build
 # Dependency resolution first so the layer caches across content edits.
 COPY pom.xml /build/pom.xml
 COPY content-packages /build/content-packages
-RUN mvn -B -q -DskipTests package
+RUN mvn -B -q -DskipTests clean package
 
 # Layer order is load order: later layers override earlier ones.
 # The site layer is chosen at build time; default is Careysburg.
@@ -110,5 +110,19 @@ COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/
 
-# Initializer runs in the safest mode: fail the startup rather than half-apply metadata.
-ENV OMRS_CONFIG_INITIALIZER_STARTUP_LOAD=continue_on_error=false
+# initializer.startup.load takes ONE of three literal values — continue_on_error,
+# fail_on_error, disabled. It was set to 'continue_on_error=false', which is not a negation
+# of the first: it is an unrecognised value that fell through to continuing anyway. The
+# behaviour was therefore always continue_on_error, and this now says so.
+#
+# fail_on_error is NOT the safer setting it sounds like, and is deliberately not used here.
+# InitializerServiceImpl.loadUnsafe iterates the loaders with no try/catch, so the first
+# domain that reports an error propagates out and EVERY LATER DOMAIN IS SKIPPED. With the
+# duplicate CIEL drug concepts this distribution currently ships, that aborts at concepts
+# (order 500) and silently drops programs, drugs, order frequencies, queues and forms —
+# strictly worse than loading past the failures.
+#
+# The metadata gate does not depend on this setting: qa/upgrade/run-clean-install.sh asserts
+# on Initializer's own log, which records the failures under either mode. Switch this to
+# fail_on_error only once that gate is green.
+ENV OMRS_CONFIG_INITIALIZER_STARTUP_LOAD=continue_on_error

@@ -4,11 +4,27 @@
     "programme and site layers, so it overrides core and is overridden by site.",
     "Must be listed in SPA_CONFIG_URLS — see IMPLEMENTATION.md §7."
   ],
+  "_comment_service_queues": [
+    "concepts MUST be set. Every key below has a built-in default in",
+    "esm-service-queues-app pointing at a RefApp demo concept that does not exist in this",
+    "database, and the app sends those UUIDs straight to the backend — queue-entry?status=",
+    "<uuid> then answers 500 'Unable to find concept' and the dashboard renders an error.",
+    "Leaving the block empty is NOT the same as leaving it unset: the defaults still apply."
+  ],
   "@openmrs/esm-service-queues-app": {
-    "defaultInitialServiceQueue": "TB Screening"
+    "defaultInitialServiceQueue": "TB Screening",
+    "concepts": {
+      "defaultStatusConceptUuid": "${var.concept.national.queue-waiting.uuid}",
+      "defaultTransitionStatus": "${var.concept.national.queue-in-progress.uuid}",
+      "defaultPriorityConceptUuid": "${var.concept.national.queue-routine.uuid}",
+      "emergencyPriorityConceptUuid": "${var.concept.national.queue-emergency.uuid}"
+    }
   },
   "@openmrs/esm-patient-registration-app": {
-    "defaultPatientIdentifierTypes": ["${var.identifiertype.moh-health-record.uuid}"],
+    "defaultPatientIdentifierTypes": [
+      "${var.identifiertype.moh-health-record.uuid}",
+      "${var.identifiertype.national-id.uuid}"
+    ],
     "sections": [
       "demographics",
       "contact",
@@ -30,13 +46,6 @@
       }
     ],
     "fieldDefinitions": [
-      {
-        "id": "nationalId",
-        "type": "identifier",
-        "identifierTypeUuid": "${var.identifiertype.national-id.uuid}",
-        "label": "Liberia National ID",
-        "showHeading": false
-      },
       {
         "id": "purposeOfVisit",
         "type": "person attribute",
@@ -71,15 +80,16 @@
         "uuid": "${var.concept.date-of-referral.uuid}",
         "label": "Date of Referral",
         "placeholder": "Select Date",
-        "required": false
+        "validation": {
+          "required": false
+        }
       },
       {
         "id": "reasonForReferral",
         "type": "person attribute",
         "uuid": "${var.personattribute.reason-for-referral.uuid}",
         "label": "Reason for referral",
-        "placeholder": "Reason for referral",
-        "rendering": "textarea"
+        "placeholder": "Reason for referral"
       }
     ],
     "fieldConfigurations": {
@@ -94,12 +104,15 @@
         }
       },
       "gender": [
-        { "value": "M", "label": "Male" },
-        { "value": "F", "label": "Female" }
-      ],
-      "relationships": {
-        "enabled": true
-      }
+        {
+          "value": "male",
+          "label": "Male"
+        },
+        {
+          "value": "female",
+          "label": "Female"
+        }
+      ]
     }
   },
   "@openmrs/esm-primary-navigation-app": {
