@@ -3,6 +3,7 @@ vulnerabilities:
     purls:
       - pkg:maven/org.springframework/spring-web@5.3.30
     paths:
+      - /openmrs/distribution/openmrs_core/openmrs.war/WEB-INF/lib/spring-web-5.3.30.jar
       - openmrs/distribution/openmrs_core/openmrs.war/WEB-INF/lib/spring-web-5.3.30.jar
     expired_at: 2027-02-13
     statement: |
