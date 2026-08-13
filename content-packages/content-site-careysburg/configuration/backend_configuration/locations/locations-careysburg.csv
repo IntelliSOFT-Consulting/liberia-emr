@@ -1,7 +1,7 @@
-Uuid,Void/Retire,Name,Description,Parent,Tags,Address 1,City/village,State/province,Country
-${var.location.facility-root.uuid},,Careysburg Health Center,MOH health center serving Careysburg District,,Health Facility;Facility Location;Login Location;Visit Location,,Careysburg,Montserrado,Liberia
-${var.location.opd.uuid},,Careysburg OPD,Outpatient department,Careysburg Health Center,Login Location;Visit Location,,,,
-${var.location.maternity.uuid},,Careysburg Maternity,"Labour, delivery and postnatal unit",Careysburg Health Center,Login Location;Visit Location;Admission Location;Transfer Location,,,,
-${var.location.ward.uuid},,Careysburg Inpatient Ward,General inpatient ward,Careysburg Health Center,Login Location;Admission Location;Transfer Location,,,,
-${var.location.laboratory.uuid},,Careysburg Laboratory,Facility laboratory,Careysburg Health Center,Login Location,,,,
-${var.location.pharmacy.uuid},,Careysburg Pharmacy,Facility pharmacy and dispensing point,Careysburg Health Center,Login Location;Dispensing Location,,,,
+Uuid,Void/Retire,Name,Description,Parent,Tag|Login Location,Tag|Visit Location,Tag|Facility Location,Tag|Health Facility,Tag|Admission Location,Tag|Transfer Location,Tag|Dispensing Location,Address 1,City/village,State/province,Country
+${var.location.facility-root.uuid},,Careysburg Health Center,MOH health center serving Careysburg District,,TRUE,TRUE,TRUE,TRUE,,,,,Careysburg,Montserrado,Liberia
+${var.location.opd.uuid},,Careysburg OPD,Outpatient department,Careysburg Health Center,TRUE,TRUE,,,,,,,,,
+${var.location.maternity.uuid},,Careysburg Maternity,"Labour, delivery and postnatal unit",Careysburg Health Center,TRUE,TRUE,,,TRUE,TRUE,,,,,
+${var.location.ward.uuid},,Careysburg Inpatient Ward,General inpatient ward,Careysburg Health Center,TRUE,,,,TRUE,TRUE,,,,,
+${var.location.laboratory.uuid},,Careysburg Laboratory,Facility laboratory,Careysburg Health Center,TRUE,,,,,,,,,,
+${var.location.pharmacy.uuid},,Careysburg Pharmacy,Facility pharmacy and dispensing point,Careysburg Health Center,TRUE,,,,,,TRUE,,,,
