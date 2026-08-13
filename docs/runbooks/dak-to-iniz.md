@@ -22,7 +22,7 @@ classification, layer order).
 | You need | Where it comes from |
 | --- | --- |
 | The DAK data dictionary | The **Liberia EMR data dictionary** Google Sheet — cited in full in [docs/dak/](../dak/). Export it as `.xlsx` and read the sheets; a text or Markdown export silently truncates every tab at ~50 rows. |
-| A CIEL dictionary you can search | OCL. `scripts/build/fetch-ciel.sh` is unimplemented pending MOH OCL credentials, so **CIEL does not load locally** ([local-development.md §5](local-development.md)). Until it does, look concepts up in the OCL web UI. |
+| A CIEL dictionary you can search | OCL. If you have an OCL token, run `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh` to pull the `LIB/mch` export into the local checkout; otherwise **CIEL does not load locally** ([local-development.md §5](local-development.md)) and you should look concepts up in the OCL web UI. |
 | A running local stack | [local-development.md](local-development.md) §1 |
 | The clinical decision-maker's time | Steps 4 and 9. Most of the cost of this job is unanswered clinical questions, not typing. |
 
