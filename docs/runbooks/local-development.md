@@ -154,9 +154,10 @@ The checkout must be under `$HOME` for Colima to mount it.
   goal starts a testcontainer whose bundled JNA is x86-only, and Colima's socket is not at
   `/var/run/docker.sock`. It fails identically for every package. Locally use
   `mvn package` plus the validate scripts; CI on ubuntu-latest runs the real goal.
-- **CIEL is not loaded.** `scripts/build/fetch-ciel.sh` is unimplemented (it needs the MOH's
-  OCL credentials), so concepts mapping to a CIEL source fail and parts of the MCH content
-  do not load. The demo package's own OCL exports do load.
+- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=… scripts/build/fetch-ciel.sh`
+  to download the `LIB/mch` OCL export into the gitignored `content-common/.../ocl/`
+  directory. Until you do, concepts mapping to a CIEL source fail and parts of the MCH
+  content do not load. The demo package's own OCL exports do load.
 - **Nothing is pushed to the registry.** Every local run builds its own images; `--local`
   on the deploy script exists for exactly that.
 

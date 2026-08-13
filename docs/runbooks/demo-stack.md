@@ -184,11 +184,12 @@ needs the real data shape and lives in [deploy.md](deploy.md) and `qa/upgrade/`.
 
 Expected in the backend log; none of them stop the stack or the training path.
 
-- **CIEL is not loaded.** `scripts/build/fetch-ciel.sh` is unimplemented, so concepts that
-  map to a CIEL source fail with `conceptMappings[n].conceptReferenceTerm.conceptSource:
-  Concept Source is required`, and parts of the MCH programme content (partograph numerics,
-  workflow states) do not load. The demo package's own OCL exports do load, which is why
-  there are still 4,176 concepts.
+- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=… scripts/build/fetch-ciel.sh`
+  before the build if you want the `LIB/mch` export locally. Otherwise concepts that map to a
+  CIEL source fail with `conceptMappings[n].conceptReferenceTerm.conceptSource: Concept Source
+  is required`, and parts of the MCH programme content (partograph numerics, workflow states)
+  do not load. The demo package's own OCL exports do load, which is why there are still 4,176
+  concepts.
 - **`Bad concept class name 'State'`** in the MCH package — a content bug, not a build one.
 - **`OMRS_CONFIG_INITIALIZER_STARTUP_LOAD=continue_on_error=false`** in the compose files is
   not a value Initializer recognises. It falls back to continuing on error, which is why a
