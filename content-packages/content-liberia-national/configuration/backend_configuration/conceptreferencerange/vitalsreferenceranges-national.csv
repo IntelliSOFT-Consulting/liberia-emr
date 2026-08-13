@@ -40,5 +40,5 @@ ${var.conceptreferencerange.vitals.bp-diastolic-preschool.uuid},CIEL:5086,BP Dia
 ${var.conceptreferencerange.vitals.bp-diastolic-school-age.uuid},CIEL:5086,BP Diastolic School-age,0,35,59,80,100,150,$patient.getAge() >= 6 && $patient.getAge() < 13
 ${var.conceptreferencerange.vitals.bp-diastolic-adolescent.uuid},CIEL:5086,BP Diastolic Adolescent,0,30,64,80,105,150,$patient.getAge() >= 13 && $patient.getAge() < 19
 ${var.conceptreferencerange.vitals.bp-diastolic-adult.uuid},CIEL:5086,BP Diastolic Adult,0,50,60,80,110,150,$patient.getAge() >= 19
-${var.conceptreferencerange.vitals.temp-celsius-3mos.uuid},CIEL:5088,Temp Celsius <3mos,25,35,36,37.7,38.1,47,$patient.getAgeInMonths() < 3
-${var.conceptreferencerange.vitals.temp-celsius-3mos.uuid},CIEL:5088,Temp Celsius >3mos,25,35,36,37.7,38,47,$patient.getAgeInMonths() >= 3
+${var.conceptreferencerange.vitals.temp-celsius-lt-3mos.uuid},CIEL:5088,Temp Celsius <3mos,25,35,36,37.7,38.1,47,$patient.getAgeInMonths() < 3
+${var.conceptreferencerange.vitals.temp-celsius-gte-3mos.uuid},CIEL:5088,Temp Celsius >=3mos,25,35,36,37.7,38,47,$patient.getAgeInMonths() >= 3

@@ -28,7 +28,6 @@ ${var.privilege.manage-report-definitions.uuid},Manage Report Definitions,Add/Ed
 ${var.privilege.manage-data-set-definitions.uuid},Manage Data Set Definitions,Add/Edit/Remove Data Set Definitions,
 ${var.privilege.manage-indicator-definitions.uuid},Manage Indicator Definitions,Add/Edit/Remove Indicator Definitions,
 ${var.privilege.manage-dimension-definitions.uuid},Manage Dimension Definitions,Add/Edit/Remove Dimension Definitions,
-${var.privilege.manage-cohort-definitions.uuid},Manage Cohort Definitions,Add/Edit/Remove Cohort Definitions,
 ${var.privilege.manage-report-designs.uuid},Manage Report Designs,Add/Edit/Remove Report Designs,
 ${var.privilege.manage-scheduled-report-tasks.uuid},Manage Scheduled Report Tasks,Manage Task Scheduling in Reporting Module,
 ${var.privilege.run-reports.uuid},Run Reports,Schedule the running of a report,

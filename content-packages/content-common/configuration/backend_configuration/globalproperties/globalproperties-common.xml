@@ -1,11 +1,6 @@
 <config>
     <globalProperties>
         <globalProperty>
-            <property>referencedemodata.createDemoPatientsOnNextStartup</property>
-            <value>50</value>
-        </globalProperty>
-
-        <globalProperty>
             <property>concept.causeOfDeath</property>
             <value>${var.concept.cause-of-death.uuid}</value>
         </globalProperty>
