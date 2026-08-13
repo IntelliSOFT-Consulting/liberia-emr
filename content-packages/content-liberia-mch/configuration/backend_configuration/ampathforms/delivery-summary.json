@@ -175,7 +175,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue <= 6",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue <= 6",
                   "message": "Neonatal Resuscitation Checklist required."
                 }
               ]
@@ -193,7 +193,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue <= 3",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue <= 3",
                   "message": "Neonatal Emergency Alert!"
                 }
               ]
@@ -240,7 +240,7 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "myValue === '${var.concept.ciel.blood-loss-large.uuid}'",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue === '${var.concept.ciel.blood-loss-large.uuid}'",
                   "message": "Postpartum Haemorrhage Alert! Protocol Activated."
                 }
               ]
