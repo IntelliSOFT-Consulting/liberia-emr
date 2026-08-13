@@ -48,12 +48,50 @@ if [[ "$DEMO" == "false" ]]; then
   "$ROOT/scripts/validate/no-demo-in-release.sh"
   suffix=""
   demo_package=""
-  # content-common OCL exports are gitignored — fetch them from the pinned upstream tag
-  # if they are not already present in the working copy (fresh checkout or after clean).
-  if ! compgen -G "$ROOT/content-packages/content-common/configuration/backend_configuration/ocl/*.zip" >/dev/null; then
+  ocl_dir="$ROOT/content-packages/content-common/configuration/backend_configuration/ocl"
+
+  # Two different dictionaries land here and they are NOT interchangeable, so each is guarded
+  # by its own file name. A single "any *.zip present" guard made them mutually exclusive:
+  # whichever ran first satisfied it and the other never ran at all.
+  #
+  # 1. The upstream reference-application exports (*-common.zip) — no credentials needed.
+  if ! compgen -G "$ocl_dir/*-common.zip" >/dev/null; then
     echo "== fetching the common OCL exports =="
     "$ROOT/scripts/build/lift-common-content.sh"
   fi
+
+  # 2. The MOH's own curated CIEL collections (lib-<collection>-ciel-*.zip). This is the
+  # subset the ocl/ README means by "Do not load all of CIEL": a build that skips it still
+  # produces images, but every concept mapping to a CIEL source fails to load, so say so
+  # rather than let it pass silently.
+  ocl_org="$(sed -n 's/^ocl\.org=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+  ocl_collections="$(sed -n 's/^ocl\.collections=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+  ocl_version="$(sed -n 's/^ocl\.collection\.version=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+
+  if [[ -z "${OCL_API_TOKEN:-}" ]]; then
+    echo "WARNING: OCL_API_TOKEN is not set — skipping the MOH CIEL collections." >&2
+    echo "         Concepts that map to a CIEL source will not load in these images." >&2
+    echo "         See content-packages/content-common/configuration/backend_configuration/ocl/README.md" >&2
+  else
+    if [[ -z "$ocl_version" ]]; then
+      echo "WARNING: ocl.collection.version is empty in distro.properties — exporting HEAD." >&2
+      echo "         A release must pin a published collection version; HEAD is not reproducible." >&2
+    fi
+    for collection in ${ocl_collections//,/ }; do
+      if compgen -G "$ocl_dir/lib-${collection}-ciel-*.zip" >/dev/null; then
+        echo "== OCL collection ${collection} already present =="
+        continue
+      fi
+      echo "== fetching the OCL collection ${ocl_org}/${collection} =="
+      # Only MCH has smoke-test expectations in fetch-ciel.sh.
+      smoke=()
+      [[ "$collection" == "mch" ]] || smoke=(--no-smoke-test)
+      OCL_ORG="$ocl_org" OCL_COLLECTION="$collection" \
+        "$ROOT/scripts/build/fetch-ciel.sh" \
+          ${ocl_version:+--version "$ocl_version"} "${smoke[@]}"
+    done
+  fi
+
   "$ROOT/scripts/build/sanitize-ocl-export.sh" \
     "$ROOT"/content-packages/content-common/configuration/backend_configuration/ocl/*.zip
 else

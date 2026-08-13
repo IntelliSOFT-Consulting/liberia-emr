@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
-# Fetches the LIB/mch OCL collection export into content-common's gitignored ocl/ directory.
+# Fetches an OCL collection export into content-common's gitignored ocl/ directory.
 #
 #   OCL_API_TOKEN=... scripts/build/fetch-ciel.sh
 #   OCL_API_TOKEN=... scripts/build/fetch-ciel.sh --version 2026-08-13
+#   OCL_API_TOKEN=... OCL_COLLECTION=lab scripts/build/fetch-ciel.sh --no-smoke-test
+#
+# Normally you do not run this by hand: scripts/build/build-distribution.sh calls it for each
+# collection in distro.properties (ocl.collections) at the version pinned there
+# (ocl.collection.version), which is what keeps two builds of one tag identical. Run it
+# directly to get a dictionary into a local checkout — see docs/runbooks/local-development.md.
 #
 # The caller should pin a released collection version with --version (or OCL_COLLECTION_VERSION)
 # for repeatable builds. HEAD remains the default to keep local smoke-testing simple.
+#
+# Environment: OCL_API_TOKEN (required), OCL_ORG (default LIB), OCL_COLLECTION (default mch),
+# OCL_API_URL, OCL_COLLECTION_VERSION, OCL_EXPORT_POLL_SECONDS, OCL_EXPORT_POLL_ATTEMPTS.
 set -euo pipefail
 
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly DST_DIR="$ROOT/content-packages/content-common/configuration/backend_configuration/ocl"
 readonly OCL_API_URL="${OCL_API_URL:-https://api.openconceptlab.org}"
-readonly OCL_ORG="LIB"
-readonly OCL_COLLECTION="mch"
+readonly OCL_ORG="${OCL_ORG:-LIB}"
+# One collection per run. The ocl/ README plans three — MCH first, then Laboratory and
+# Pharmacy — so this is overridable rather than fixed; build-distribution.sh fetches each
+# name in OCL_COLLECTIONS. The smoke test below only knows MCH concepts, so a non-MCH
+# collection needs --no-smoke-test until this grows per-collection expectations.
+readonly OCL_COLLECTION="${OCL_COLLECTION:-mch}"
 readonly DEFAULT_VERSION="${OCL_COLLECTION_VERSION:-HEAD}"
 readonly DEFAULT_POLL_SECONDS="${OCL_EXPORT_POLL_SECONDS:-15}"
 readonly DEFAULT_POLL_ATTEMPTS="${OCL_EXPORT_POLL_ATTEMPTS:-40}"
@@ -44,8 +57,17 @@ Options:
   --version <version>          Collection version to export. Defaults to OCL_COLLECTION_VERSION or HEAD.
   --poll-seconds <seconds>     Poll interval while waiting for OCL to build the export.
   --poll-attempts <count>      Maximum polling attempts before failing.
-  --no-smoke-test              Skip the post-download concept presence checks.
+  --no-smoke-test              Skip the post-download concept presence checks. Required for
+                               any collection other than mch — the checks look for MCH
+                               concepts and would fail on a lab or pharmacy export.
   -h, --help                   Show this help text.
+
+Environment:
+  OCL_ORG                      OCL organisation. Defaults to LIB.
+  OCL_COLLECTION               Collection to export. Defaults to mch.
+
+build-distribution.sh drives this from distro.properties (ocl.org, ocl.collections,
+ocl.collection.version); prefer changing it there over calling this script by hand.
 EOF
 }
 
@@ -261,9 +283,12 @@ if ! unzip -tqq "$body" >/dev/null 2>&1; then
   exit 1
 fi
 
-dest_name="lib-mch-ciel-$(sanitize_version "$version").zip"
+# The collection is part of the name so several collections can sit side by side, and the
+# sweep below is scoped to this one — it must never delete another collection's export.
+dest_name="lib-$(sanitize_version "$OCL_COLLECTION")-ciel-$(sanitize_version "$version").zip"
 dest_path="$DST_DIR/$dest_name"
-find "$DST_DIR" -maxdepth 1 -type f -name 'lib-mch-ciel-*.zip' ! -name "$dest_name" -delete
+find "$DST_DIR" -maxdepth 1 -type f \
+  -name "lib-$(sanitize_version "$OCL_COLLECTION")-ciel-*.zip" ! -name "$dest_name" -delete
 mv "$body" "$dest_path"
 
 if [[ "$skip_smoke_test" != "true" ]]; then

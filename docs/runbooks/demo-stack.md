@@ -184,17 +184,28 @@ needs the real data shape and lives in [deploy.md](deploy.md) and `qa/upgrade/`.
 
 Expected in the backend log; none of them stop the stack or the training path.
 
-- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`
-  before the build if you want the `LIB/mch` export locally. Otherwise concepts that map to a
-  CIEL source fail with `conceptMappings[n].conceptReferenceTerm.conceptSource: Concept Source
-  is required`, and parts of the MCH programme content (partograph numerics, workflow states)
-  do not load. The demo package's own OCL exports do load, which is why there are still 4,176
-  concepts.
+- **CIEL is not loaded unless you have an OCL token.** `build-distribution.sh` fetches the
+  collections in `distro.properties` when `OCL_API_TOKEN` is set, and warns and carries on
+  when it is not. Without it, concepts that map to a CIEL source fail with
+  `conceptMappings[n].conceptReferenceTerm.conceptSource: Concept Source is required`, and
+  parts of the MCH programme content (partograph numerics, workflow states) do not load. The
+  demo package's own OCL exports do load, which is why there are still 4,176 concepts. To
+  pull one into an existing checkout by hand:
+  `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`.
 - **`Bad concept class name 'State'`** in the MCH package — a content bug, not a build one.
-- **`OMRS_CONFIG_INITIALIZER_STARTUP_LOAD=continue_on_error=false`** in the compose files is
-  not a value Initializer recognises. It falls back to continuing on error, which is why a
-  boot with the errors above still reports healthy. The intended value is `fail_on_error`;
-  do not change it without first clearing the errors above, or no stack will boot at all.
+- **A healthy stack does not mean the metadata loaded.** Initializer records a rejected row
+  and carries on, and its module failing to start does not stop the web application, so
+  OpenMRS answers `/health/started` with 200 while whole CSVs sit rejected. Read
+  `/openmrs/data/initializer.log` inside the backend container — that, not the log noise
+  above, is what says whether the configuration applied. `qa/upgrade/run-clean-install.sh`
+  asserts on it.
+- **Do not "fix" `initializer.startup.load` to `fail_on_error`.** It reads as the safer
+  setting and is not. `InitializerServiceImpl.loadUnsafe` iterates the loaders with no
+  `try`/`catch`, so the first domain that reports an error propagates out and every later
+  domain is skipped — on a build with any concept failure that silently drops programs,
+  drugs, order frequencies, queues and forms. The compose files and the backend image set
+  `continue_on_error` deliberately. (They previously said `continue_on_error=false`, which is
+  not one of the three values the property accepts and fell through to continuing anyway.)
 
 ## Guardrails
 

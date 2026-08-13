@@ -154,10 +154,18 @@ The checkout must be under `$HOME` for Colima to mount it.
   goal starts a testcontainer whose bundled JNA is x86-only, and Colima's socket is not at
   `/var/run/docker.sock`. It fails identically for every package. Locally use
   `mvn package` plus the validate scripts; CI on ubuntu-latest runs the real goal.
-- **CIEL is not loaded until you fetch it.** Run `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`
-  to download the `LIB/mch` OCL export into the gitignored `content-common/.../ocl/`
-  directory. Until you do, concepts mapping to a CIEL source fail and parts of the MCH
-  content do not load. The demo package's own OCL exports do load.
+- **CIEL is not loaded without an OCL token.** `build-distribution.sh` fetches the
+  collections pinned in `distribution/distro.properties` when `OCL_API_TOKEN` is set, and
+  warns and continues when it is not. To pull one into an existing checkout by hand, run
+  `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh` — it writes a gitignored
+  `lib-<collection>-ciel-*.zip` into `content-common/.../ocl/`. Until you do, concepts
+  mapping to a CIEL source fail and parts of the MCH content do not load. The demo package's
+  own OCL exports do load.
+- **A full CIEL export makes a clean install take hours.** ~59,000 concepts and ~300,000
+  mappings are imported on first boot before the backend answers `/health/started`; the
+  curated collections in `distro.properties` exist to avoid exactly that. If a first boot
+  looks hung, check whether the concept count is still climbing before assuming a failure —
+  `qa/upgrade/run-clean-install.sh` prints it while it waits.
 - **Nothing is pushed to the registry.** Every local run builds its own images; `--local`
   on the deploy script exists for exactly that.
 
