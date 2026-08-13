@@ -158,6 +158,24 @@ if grep -q 'ERROR' <<<"$iniz_log"; then
   echo "FAIL: Initializer rejected metadata" >&2
   echo "  $(grep -c 'ERROR' <<<"$iniz_log") error lines; first failures:" >&2
   grep -A6 'ERROR' <<<"$iniz_log" | head -40 >&2
+
+  # An OCL failure arrives here as the single word-pair "Errors found" and nothing else:
+  # openconceptlab's ImportServiceImpl.failImport() marks the whole import failed on any
+  # item error, with that message and no detail, and Initializer's OpenConceptLabLoader
+  # rethrows it verbatim. Naming neither the export nor the item, it is unactionable — it
+  # cost a decompile of two modules to trace the first time. The detail is in the database,
+  # so print it. Best-effort, and never allowed to change the exit path: the FAIL above has
+  # already been decided.
+  if grep -q 'Errors found' <<<"$iniz_log"; then
+    echo >&2
+    echo "  'Errors found' is an OCL import failure. Failed items:" >&2
+    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+      mariadb -uroot -p"$DB_ROOT_PASSWORD" -t -e \
+      'select i.type, left(i.url, 60) as url, left(i.error_message, 90) as error
+         from openmrs.openconceptlab_item i
+        where i.state = 4
+        limit 20;' >&2 2>/dev/null || echo "  (could not query the import items)" >&2
+  fi
   exit 1
 fi
 

@@ -29,6 +29,26 @@ accident, and the build says so. Pin it before cutting a release and record it i
 release notes — a floating CIEL version makes two builds of the same tag produce different
 metadata.
 
+## Upstream defects are repaired at build time
+
+`scripts/build/sanitize-ocl-export.sh` rewrites every ZIP in this directory before the
+content packages are assembled, repairing two defects we do not control upstream:
+
+- **Duplicate concept names** in the same locale on one concept. OpenMRS 2.8 rejects the
+  concept outright with `DuplicateConceptNameException`, even when one of the pair is
+  retired.
+- **Orphan mappings** — `from_concept_url` empty, so the mapping names no source concept.
+
+The second matters more than its size suggests. openconceptlab marks the **entire** import
+failed on any single item error, with the message `Errors found`; Initializer rethrows it,
+and the release gate fails the build. CIEL v2026-07-20 carries 10 such mappings out of
+300,246 — enough to fail every clean install, and unfixable from our own content. Both
+repairs are idempotent, so re-running on an already-clean export is a no-op.
+
+If a future export fails the gate with `Errors found`, the failing items are printed by
+`qa/upgrade/run-clean-install.sh` from `openconceptlab_item`; extend the sanitizer rather
+than editing an export by hand.
+
 ## Choosing the subset
 
 Do not load all of CIEL. Subscribe to the collection covering the deployed programmes:
