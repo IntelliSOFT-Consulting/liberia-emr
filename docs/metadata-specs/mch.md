@@ -12,8 +12,7 @@ Traceability to the DAK lives in
 dictionary on 2026-08-06 (prior full extract 2026-07-30);
 [`../runbooks/dak-to-iniz.md`](../runbooks/dak-to-iniz.md) is the procedure for working it.
 **This spec covers a small fraction of what the DAK asks for**: 245 MCH data elements are in
-the DAK, 18 of them are implemented and verified here, and 223 have had no decision taken.
-The sections below are correct as far as they go — they are not the scope.
+the DAK; the sections below record the decisions taken so far and are not the full scope.
 
 ---
 
@@ -60,10 +59,116 @@ uses CIEL `160080` (“Number of full term pregnancies”) following OCL termino
 clinical approval: OCL shows `162557` as total delivered births across outcomes, not
 full-term count. Traceability keeps `dak_ciel=162557` and records `concept_uuid_source=CIEL 160080`.
 
-The existing general Parity concept (`var.concept.ciel.parity.uuid`, CIEL 1053) remains in
-use; how it relates to FT/P/A/LN is still an open clinical question (see Open items).
+Parity (`var.concept.ciel.parity.uuid` / national Parity) exists in repository metadata for
+other programmes (L&D, PNC, FP) but is **not** part of the ANC Initial Form Builder
+contract. Capture Gravida, LMP, FT, P, A, and LN only.
+
+### ANC physical examination Colour (`LBR.EMR.DE.7`)
+
+| DAK element | Implemented | Variable | Status |
+| --- | --- | --- | --- |
+| `LBR.EMR.DE.7` Colour | Existing national Color (Coded Normal/Abnormal) | `var.concept.national.color.uuid` | Runtime confirmed |
+
+Distinct from `LBR.EMR.DE.25` Colour (HGT) (`var.concept.national.colour-hgt.uuid`, Text).
+Do not substitute Colour (HGT) for physical-exam Colour.
+
+### ANC prenatal presentation
+
+| DAK element | Implemented | Variable | Status |
+| --- | --- | --- | --- |
+| `LBR.EMR.DE.24` Presentation | Local MCH coded (traced to CIEL 160090) | `var.concept.mch.fetal-presentation.uuid` | Runtime fallback |
+
+Required clinical answers: Vertex, Breech, Transverse, Oblique, Other. CIEL 160090 is not
+present in the local dictionary and national Presentation is Vertex-only, so ANC uses a
+self-contained MCH value set. Parent FSN: Fetal Presentation at ANC; short name Presentation.
+`Same-as CIEL:160090` was attempted but omitted: without a CIEL concept source, Initializer
+rejects the mapping (`Concept Source is required`). Approved CIEL 160090 remains in
+traceability. Answer concepts are local only — CIEL answer IDs were not invented. The
+national Presentation concept is not used for new MCH forms.
+
+| Answer (UI label) | Variable |
+| --- | --- |
+| Vertex | `var.concept.mch.presentation-vertex.uuid` |
+| Breech | `var.concept.mch.presentation-breech.uuid` |
+| Transverse | `var.concept.mch.presentation-transverse.uuid` |
+| Oblique | `var.concept.mch.presentation-oblique.uuid` |
+| Other | `var.concept.mch.presentation-other.uuid` |
+
+### ANC IPT model
+
+Signed dictionary semantics (preserve; do not replace with Administered/Deferred):
+
+1. Woman receiving IPT? → Boolean (true / false)
+2. If true → IPT dose administered → 1st / 2nd / 3rd / 4th
+3. If false and deferred → IPTp deferral reason → Malaria treatment initiated
+
+| Element | Home | Variable |
+| --- | --- | --- |
+| Woman receiving IPT (`LBR.EMR.DE.53`) | Local MCH Boolean fallback | `var.concept.mch.woman-receiving-ipt.uuid` |
+| IPT dose administered (`LBR.EMR.DE.48`) | New MCH coded question | `var.concept.mch.ipt-dose-administered.uuid` |
+| 1st IPT dose | New MCH answer | `var.concept.mch.1st-ipt-dose.uuid` |
+| 2nd IPT dose | New MCH answer | `var.concept.mch.2nd-ipt-dose.uuid` |
+| 3rd IPT dose | New MCH answer | `var.concept.mch.3rd-ipt-dose.uuid` |
+| 4th IPT dose | New MCH answer | `var.concept.mch.4th-ipt-dose.uuid` |
+| IPTp deferral reason | New MCH coded question | `var.concept.mch.iptp-deferral-reason.uuid` |
+| Malaria treatment initiated | New MCH answer | `var.concept.mch.iptp-deferred-malaria-treatment.uuid` |
+| LLIN received at ANC (`LBR.EMR.DE.54`) | Local MCH Boolean fallback | `var.concept.mch.llin-received-at-anc.uuid` |
+
+National Woman receiving IPT / LLIN received at ANC Yes/No concepts are left unchanged and
+are not used for new MCH ANC forms (they fail to load without CIEL Yes/No). FSN for the IPT
+Boolean is `Woman Receiving IPT at ANC`; for LLIN `LLIN Received During ANC Contact`. Form
+Builder labels stay `Woman receiving IPT` and `LLIN received at ANC`.
+
+The national IPT dose question (1st / 2nd / 3rd+) is left unchanged and is not used for the
+new MCH ANC forms. The MCH dose value set is entirely self-contained (no national answer
+UUID references) because `concepts-mch.csv` is processed before `concepts-national.csv`.
+FSNs use the `… at ANC` / `IPTp …` wording to avoid colliding with national FSNs; short
+names and Form Builder labels stay clinically concise (`IPT dose administered`,
+`1st IPT dose`, …). Do not reuse national `3rd IPT dose+` for exact 3rd. No additional
+deferral reasons in this increment.
+
+Fatima acceptance representation: Woman receiving IPT = false; IPTp deferral reason = Malaria
+treatment initiated. Form conditionals are not implemented in this increment.
+
+### Pregnant Woman Health Card
+
+| DAK element | Implemented | Variable |
+| --- | --- | --- |
+| `LBR.EMR.DE.62` Issue date | Local MCH Date | `var.concept.mch.health-card-issue-date.uuid` |
+
+No other health-card concepts in this increment (name, address, clinic, age, record number
+remain outside concept metadata).
+
+### Form Builder contract (ANC observation forms)
+
+| Area | Use |
+| --- | --- |
+| Obstetric history | Gravida, LMP, Full-term births, Preterm births, Abortions, Living children — **no Parity row** |
+| Physical exam Colour (`DE.7`) | National `Color` + national Normal / Abnormal — not Colour (HGT) |
+| Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions + national Normal / Abnormal |
+| Colour (HGT) (`DE.25`) | National Text — prenatal/HGT only; do not use for physical-exam Colour |
+| SBP / DBP / Weight | National Blood Pressure (Systolic/Diastolic) / Weight (kg) |
+| Gestational age / Fundal height / Fetal heart tone | Prefer existing national equivalents at Form Builder time if MCH CIEL aliases are absent from the local dictionary |
+| Other findings / Routine drugs / Treatment remarks | Existing national text (drugs/remarks supplemental only) |
+| Trimester | Existing national Pregnancy status question/value set — do **not** alias CIEL 5272 |
+| Woman receiving IPT / LLIN received at ANC | Local MCH Boolean fallbacks below |
+| Presentation | Local MCH value set — do **not** use national Vertex-only Presentation |
 
 ### Declared locally
+
+ANC IPT / LLIN / presentation / health-card concepts:
+
+| Concept (FSN) | Type | Answers / notes |
+| --- | --- | --- |
+| Woman Receiving IPT at ANC | Boolean | signed DE.53 Boolean semantics |
+| LLIN Received During ANC Contact | Boolean | signed DE.54 Boolean semantics |
+| IPTp Dose Administered at ANC | Coded | MCH 1st–4th only |
+| First / Second / Third / Fourth IPTp Dose at ANC | N/A | answers |
+| IPTp deferral reason | Coded | Malaria treatment initiated |
+| Malaria treatment initiated | N/A | answer |
+| Fetal Presentation at ANC | Coded | Vertex; Breech; Transverse; Oblique; Other (CIEL 160090 traced in docs only) |
+| Vertex / Breech / Transverse / Oblique / Other Fetal Presentation at ANC | N/A | answers; no CIEL answer mappings |
+| Pregnant Woman Health Card Issue Date | Date | — |
 
 Partograph observations (no adequate CIEL term found — ⚠ each still needs a CIEL lookup
 recorded or an explicit "none exists" note):
@@ -195,20 +300,28 @@ Updated against the DAK read on 2026-08-06 — see
 8. WHO alert/action line geometry. **Not in the DAK.** Either the DAK gains a partograph
    section or it is recorded that WHO SMART Guidelines govern the partograph instead — that
    decision is now the blocker, not the lookup.
-9. Decide and record the 223 `pending` DAK elements. This is the bulk of the remaining MCH
-   metadata work and none of it is represented in the sections above.
+9. Decide and record the remaining `pending` DAK elements. This is the bulk of the remaining
+   MCH metadata work and none of it is represented in the sections above.
 10. Two DAK mappings are wrong at source (`LBR.LD.DE.81`, `EMR.FP.DE10`) and two pairs of
     elements are duplicated (`LBR.LD.DE.12`/`.95`, `LBR.LD.DE.45`/`.99`). Raise with whoever
     maintains the sheet. The ANC Full-term births DAK claim (`162557` vs implemented
     `160080`) is a related source discrepancy already resolved in metadata.
-11. **Clinical decision on how the PARA components relate to the existing general Parity
-    concept** (CIEL 1053 / `var.concept.ciel.parity.uuid`): replace, complement, or derive.
+11. ~~Parity on the ANC Initial form.~~ Closed for Form Builder: ANC captures Gravida / LMP /
+    FT / P / A / LN only. Repository Parity concepts remain for L&D / PNC / FP; they are not
+    selected on the ANC observation forms.
 12. **Decision on whether EDD is derived from LMP or separately recorded.** EDD is declared
     here; the DAK has no EDD data element.
 13. **Review of `LBR.LD.DE.21 Intact` as a coded answer under Perineum**
     (`LBR.LD.DE.20`), including the full Perineum answer set (Intact / Episiotomy /
     Laceration). Source row is structurally misaligned and needs correction plus terminology
     and clinical approval.
+14. ~~Runtime confirmation that CIEL 160090 Presentation exposes Vertex / Breech /
+    Transverse / Oblique / Other.~~ Closed: local MCH Presentation value set created;
+    CIEL 160090 retained in traceability (Same-as omitted until CIEL source exists);
+    answer CIEL IDs not invented.
+15. ~~OpenMRS fully-specified-name collision risk~~ between national and MCH IPT dose
+    concepts. Closed: MCH FSNs use distinct `IPTp … at ANC` wording; short names remain
+    concise for Form Builder labels.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified.
