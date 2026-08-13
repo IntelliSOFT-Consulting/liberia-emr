@@ -330,6 +330,7 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/liberia-emr-backend:${{ github.sha }}
           format: sarif
           output: trivy-backend.sarif
+          trivyignores: .trivyignore.yaml
           exit-code: '0'
       - name: Trivy scan — frontend
         uses: aquasecurity/trivy-action@v0.36.0
