@@ -102,6 +102,11 @@ done
   exit 2
 }
 
+[[ "$version" =~ ^[A-Za-z0-9._-]+$ ]] || {
+  echo "FAIL: --version must contain only letters, digits, '.', '_', or '-' (got: ${version})." >&2
+  exit 2
+}
+
 sanitize_version() {
   printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed 's#[^a-z0-9._-]#-#g'
 }
