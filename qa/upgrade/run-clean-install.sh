@@ -164,7 +164,8 @@ logs="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend)"
 # and moves on, and its module failing to start does not stop the web application, so
 # OpenMRS answers /health/started with 200 while whole CSVs sit rejected — measured at 410
 # failed rows on a healthy instance. Assert on Initializer's dedicated log instead, which it
-# writes to the app data directory and which is complete by the time the backend is up.
+# writes to the app data directory. That log is NOT complete when the backend reports
+# started — see the wait below.
 #
 # The pattern this replaces, 'initializer.*(error|failed|exception)', matched NONE of those
 # 410: the failures read 'ERROR - BaseCsvLoader ... could not be constructed or saved',
@@ -175,6 +176,48 @@ logs="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend)"
 # lift this assertion into a test that RESTARTS a backend — Initializer was observed leaving
 # the file untouched on a restart (mtime and line count unchanged) while still applying
 # changed files, so there the log describes the first boot and a stale pass looks green.
+# A started backend does NOT mean Initializer has finished. OpenMRS answers
+# /health/started once the web application is up, while module startup — and the whole OCL
+# import inside it — continues on a daemon thread. Reading the log at that moment caught it
+# before it existed at all ("Initializer wrote no log"), on a run whose concept and OCL item
+# counts were still visibly climbing. Earlier runs only passed this because the import
+# happened to finish first; growing the dictionary changed the timing and exposed it.
+#
+# So wait for the log to appear AND stop growing, rather than assuming either.
+echo "   waiting for Initializer to finish writing its log"
+iniz_deadline=$(( SECONDS + 3600 ))
+prev_size=-1
+stable=0
+while true; do
+  # `wc -c <file`, not `stat -c %s`: stat's format flag differs between GNU and BSD/busybox,
+  # and a stat that errors would read as "still 0 bytes" forever — waiting out the whole
+  # deadline on a file that was actually finished.
+  size=0
+  if size_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+       sh -c 'wc -c < /openmrs/data/initializer.log' 2>/dev/null)"; then
+    size="$(printf '%s' "$size_out" | tr -d '[:space:]')"
+    [[ "$size" =~ ^[0-9]+$ ]] || size=0
+  fi
+  # Require the size to repeat three times over (four equal readings, ~80s): Initializer
+  # writes continuously while it loads, so a size that stops moving for that long is the end
+  # of the run rather than a pause between domains. A zero never counts, so a log that is
+  # never created runs out the deadline and fails rather than settling at "0 bytes, stable".
+  if [[ "$size" != "0" && "$size" == "$prev_size" ]]; then
+    stable=$(( stable + 1 ))
+    (( stable >= 3 )) && { echo "   Initializer log settled at ${size} bytes"; break; }
+  else
+    stable=0
+  fi
+  if (( SECONDS > iniz_deadline )); then
+    echo "FAIL: Initializer never finished writing its log within 60 minutes" >&2
+    echo "  last observed size: ${size} bytes" >&2
+    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 60 backend >&2
+    exit 1
+  fi
+  prev_size="$size"
+  sleep 20
+done
+
 iniz_log="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
   cat /openmrs/data/initializer.log 2>/dev/null || true)"
 if [[ -z "$iniz_log" ]]; then
