@@ -5,4 +5,3 @@ ${var.locationtag.admission-location.uuid},,Admission Location,Ward or unit a pa
 ${var.locationtag.transfer-location.uuid},,Transfer Location,Ward or unit a patient may be transferred to
 ${var.locationtag.dispensing-location.uuid},,Dispensing Location,Pharmacy point that may dispense medication
 ${var.locationtag.facility-location.uuid},,Facility Location,Facility a location belongs to
-${var.locationtag.health-facility.uuid},,Health Facility,MOH health facility a location belongs to

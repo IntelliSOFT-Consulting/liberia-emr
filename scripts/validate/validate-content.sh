@@ -219,6 +219,62 @@ if [[ -n "$missing" ]]; then
 fi
 ok "variable references"
 
+section "location tags"
+# Two failures live here, and both cost a full install cycle to find the hard way.
+#
+# A missing tag: LocationLineProcessor resolves every Tag|<Name> header with
+# getLocationTagByName and THROWS when it returns null, so an unknown tag rejects the whole
+# location row — and with it the parent reference of every location beneath it.
+#
+# A duplicate tag: location_tag.name is unique, so two packages declaring the same name
+# under different UUIDs do not merge — the second one fails with a
+# ConstraintViolationException. Tags owned by a module must therefore NOT be declared in
+# content at all; the module creates them at startup, before Initializer runs.
+python3 - "$PKG_DIR" <<'PY' || err "location tag problems (see above)"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+
+# Tags created by modules at startup. Content must not redeclare these.
+MODULE_OWNED = {
+    "Queue Location": "queue module",
+    "Appointment Location": "appointments module",
+}
+
+defined = {}
+for f in glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/locationtags/*.csv"):
+    package = f.split("/")[-5]
+    with open(f, newline="") as fh:
+        for row in csv.DictReader(fh):
+            name = (row.get("Name") or "").strip()
+            if name:
+                defined.setdefault(name, []).append(package)
+
+problems = []
+for name, packages in sorted(defined.items()):
+    if len(packages) > 1:
+        problems.append(f"'{name}' declared by {len(packages)} packages: {', '.join(packages)}")
+    if name in MODULE_OWNED:
+        problems.append(f"'{name}' is created by the {MODULE_OWNED[name]}; declaring it in "
+                        f"{packages[0]} collides on the unique name")
+
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/locations/*.csv")):
+    with open(f, newline="") as fh:
+        header = next(csv.reader(fh), [])
+    for column in header:
+        if not column.startswith("Tag|"):
+            continue
+        tag = column[4:].strip()
+        if tag not in defined and tag not in MODULE_OWNED:
+            problems.append(f"{os.path.basename(f)} references Tag|{tag}, "
+                            f"which no package declares and no module creates")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "location tags resolve and are declared once"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2
