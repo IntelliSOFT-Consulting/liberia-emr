@@ -1,7 +1,7 @@
-Uuid,Void/Retire,Name,Description,Parent,Address 1,City/village,State/province,Country
-${var.location.facility-root.uuid},,Barnersville Health Center,MOH health center serving Barnersville,,,Barnersville,Montserrado,Liberia
-${var.location.opd.uuid},,Barnersville OPD,Outpatient department,Barnersville Health Center,,,,
-${var.location.maternity.uuid},,Barnersville Maternity,"Labour, delivery and postnatal unit",Barnersville Health Center,,,,
-${var.location.ward.uuid},,Barnersville Inpatient Ward,General inpatient ward,Barnersville Health Center,,,,
-${var.location.laboratory.uuid},,Barnersville Laboratory,Facility laboratory,Barnersville Health Center,,,,
-${var.location.pharmacy.uuid},,Barnersville Pharmacy,Facility pharmacy and dispensing point,Barnersville Health Center,,,,
+Uuid,Void/Retire,Name,Description,Parent,Tag|Login Location,Tag|Visit Location,Tag|Facility Location,Tag|Health Facility,Tag|Admission Location,Tag|Transfer Location,Tag|Dispensing Location,Tag|Queue Location,Tag|Appointment Location,Address 1,City/village,State/province,Country
+${var.location.facility-root.uuid},,Barnersville Health Center,MOH health center serving Barnersville,,TRUE,TRUE,TRUE,TRUE,,,,,,,Barnersville,Montserrado,Liberia
+${var.location.opd.uuid},,Barnersville OPD,Outpatient department,Barnersville Health Center,TRUE,TRUE,,,,,,TRUE,TRUE,,,,
+${var.location.maternity.uuid},,Barnersville Maternity,"Labour, delivery and postnatal unit",Barnersville Health Center,TRUE,TRUE,,,TRUE,TRUE,,TRUE,TRUE,,,,
+${var.location.ward.uuid},,Barnersville Inpatient Ward,General inpatient ward,Barnersville Health Center,TRUE,,,,TRUE,TRUE,,,,,,,
+${var.location.laboratory.uuid},,Barnersville Laboratory,Facility laboratory,Barnersville Health Center,TRUE,,,,,,,TRUE,,,,,,
+${var.location.pharmacy.uuid},,Barnersville Pharmacy,Facility pharmacy and dispensing point,Barnersville Health Center,TRUE,,,,,,TRUE,TRUE,,,,,

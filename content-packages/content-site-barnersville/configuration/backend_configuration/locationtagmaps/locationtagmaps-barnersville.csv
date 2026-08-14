@@ -1,7 +1,0 @@
-Location,Login Location,Visit Location,Facility Location,Health Facility,Admission Location,Transfer Location,Dispensing Location,Queue Location
-Barnersville Health Center,TRUE,TRUE,TRUE,TRUE,,,,
-Barnersville OPD,TRUE,TRUE,,,,,,TRUE
-Barnersville Maternity,TRUE,TRUE,,,TRUE,TRUE,,
-Barnersville Inpatient Ward,TRUE,,,,TRUE,TRUE,,
-Barnersville Laboratory,TRUE,,,,,,,
-Barnersville Pharmacy,TRUE,,,,,,TRUE,

@@ -1,7 +1,0 @@
-Location,Login Location,Visit Location,Facility Location,Health Facility,Admission Location,Transfer Location,Dispensing Location,Queue Location
-Careysburg Health Center,TRUE,TRUE,TRUE,TRUE,,,,
-Careysburg OPD,TRUE,TRUE,,,,,,TRUE
-Careysburg Maternity,TRUE,TRUE,,,TRUE,TRUE,,
-Careysburg Inpatient Ward,TRUE,,,,TRUE,TRUE,,
-Careysburg Laboratory,TRUE,,,,,,,
-Careysburg Pharmacy,TRUE,,,,,,TRUE,
