@@ -183,8 +183,30 @@ if [[ -z "$iniz_log" ]]; then
 fi
 if grep -q 'ERROR' <<<"$iniz_log"; then
   echo "FAIL: Initializer rejected metadata" >&2
-  echo "  $(grep -c 'ERROR' <<<"$iniz_log") error lines; first failures:" >&2
-  grep -A6 'ERROR' <<<"$iniz_log" | head -40 >&2
+
+  # Keep the whole log. cleanup() destroys the volume it lives on, so without this the only
+  # record of WHY the run failed is the excerpt below — and an Initializer rejection prints a
+  # full ASCII table per row, so 40 lines is often a single failure. Diagnosing the rest then
+  # costs another full install.
+  if cp_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+       cat /openmrs/data/initializer.log 2>/dev/null)"; then
+    printf '%s\n' "$cp_out" > "$ROOT/qa/upgrade/initializer-failure.log"
+    echo "  full log saved to qa/upgrade/initializer-failure.log" >&2
+  fi
+
+  # Per-file totals first: this is the shape of the failure, and it is what the ASCII tables
+  # bury. Initializer prints one of these summaries per rejected CSV.
+  echo "  $(grep -c 'ERROR' <<<"$iniz_log") error lines" >&2
+  summary="$(grep -oE "[^ ]+\.csv \('[a-z]+' domain\) was processed and [0-9]+ out of [0-9]+ entities were not saved" <<<"$iniz_log" | sort -u || true)"
+  [[ -n "$summary" ]] && { echo "  rejected files:" >&2; sed 's/^/      /' <<<"$summary" >&2; }
+  causes="$(grep -oE '(java\.lang\.[A-Za-z]+|org\.(openmrs|hibernate)[a-zA-Z.]*)(Exception|Error): [^|]*' <<<"$iniz_log" | sed 's/ for line:.*//' | sort | uniq -c | sort -rn || true)"
+  [[ -n "$causes" ]] && { echo "  distinct causes:" >&2; sed 's/^/      /' <<<"$causes" >&2; }
+
+  echo "  first failures:" >&2
+  # `|| true` on the whole pipeline: head exits after 40 lines and SIGPIPEs grep, which under
+  # `set -euo pipefail` aborted the script with 141 before it could reach its own `exit 1`.
+  # A diagnostic must never decide the exit status of the thing it is diagnosing.
+  { grep -A6 'ERROR' <<<"$iniz_log" | head -40 >&2; } || true
 
   # An OCL failure arrives here as the single word-pair "Errors found" and nothing else:
   # openconceptlab's ImportServiceImpl.failImport() marks the whole import failed on any
