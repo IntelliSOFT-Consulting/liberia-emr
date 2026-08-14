@@ -15,9 +15,5 @@ ${var.concept.ciel.history-presenting-complaint.uuid},,Question,Text,History of 
 ${var.concept.ciel.past-medical-history.uuid},,Question,Text,Past Medical History,Patient's past medical conditions and illnesses.,
 ${var.concept.ciel.general-exam-findings.uuid},,Question,Text,General Exam Findings,General physical examination findings.,
 ${var.concept.ciel.primary-diagnosis.uuid},,Diagnosis,Coded,Primary Diagnosis,The primary diagnosis for the encounter.,
-${var.concept.diagnosis-set.uuid},,ConvSet,N/A,Diagnosis Set,Concept set for diagnoses.,
-${var.concept.disposition-discharge.uuid},,Misc,N/A,Discharge,Discharged from the facility.,
-${var.concept.disposition-admit.uuid},,Misc,N/A,Admit to Inpatient Care,Admitted to the hospital for further care.,
-${var.concept.disposition-refer.uuid},,Misc,N/A,Refer Out,Referred to another facility.,
-${var.concept.ciel.disposition.uuid},,Question,Coded,Disposition,The planned outcome or next step for the patient.,${var.concept.disposition-discharge.uuid};${var.concept.disposition-admit.uuid};${var.concept.disposition-refer.uuid}
+${var.concept.ciel.disposition.uuid},,Question,Coded,Inpatient patient disposition,The planned outcome or next step for the patient.,${var.concept.ciel.disposition-discharge.uuid};${var.concept.ciel.disposition-admit.uuid};${var.concept.ciel.disposition-refer.uuid}
 ${var.concept.ciel.followup-date.uuid},,Question,Date,Follow-up Date,The date the patient should return for a follow-up visit.,

@@ -93,7 +93,7 @@
                                     "conceptClasses": [
                                         "Diagnosis"
                                     ],
-                                    "conceptSet": "${var.concept.diagnosis-set.uuid}"
+                                    "conceptSet": "${var.concept.ciel.visit-diagnoses.uuid}"
                                 }
                             },
                             "required": true,
@@ -117,15 +117,15 @@
                                 "answers": [
                                     {
                                         "label": "Discharge",
-                                        "concept": "${var.concept.disposition-discharge.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-discharge.uuid}"
                                     },
                                     {
                                         "label": "Admit to Hospital",
-                                        "concept": "${var.concept.disposition-admit.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-admit.uuid}"
                                     },
                                     {
                                         "label": "Refer Out",
-                                        "concept": "${var.concept.disposition-refer.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-refer.uuid}"
                                     }
                                 ]
                             },
