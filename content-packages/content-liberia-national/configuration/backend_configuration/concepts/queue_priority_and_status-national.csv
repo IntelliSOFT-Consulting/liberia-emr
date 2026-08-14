@@ -1,4 +1,6 @@
 Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Members
 ${var.concept.national.queue-routine.uuid},,Routine,Routine,Routine queue priority,Misc,N/A,
+${var.concept.national.queue-emergency.uuid},,Emergency,Emergency,Emergency queue priority,Misc,N/A,
+${var.concept.national.queue-waiting.uuid},,Waiting,Waiting,Waiting queue status,Misc,N/A,
 ${var.concept.national.queue-priority-set.uuid},,Queue Priority Set,Queue Priority Set,Set of queue priorities,ConvSet,N/A,${var.concept.national.queue-routine.uuid};${var.concept.national.queue-emergency.uuid}
 ${var.concept.national.queue-status-set.uuid},,Queue Status Set,Queue Status Set,Set of queue statuses,ConvSet,N/A,${var.concept.national.queue-waiting.uuid};CIEL:163723;CIEL:1267
