@@ -86,9 +86,14 @@ if [[ "$DEMO" == "false" ]]; then
       # Only MCH has smoke-test expectations in fetch-ciel.sh.
       smoke=()
       [[ "$collection" == "mch" ]] || smoke=(--no-smoke-test)
+      # ${smoke[@]+"${smoke[@]}"}, not "${smoke[@]}": under `set -u` bash 3.2 — which is
+      # what macOS still ships — treats expanding an EMPTY array as an unbound variable and
+      # aborts. That is precisely the mch case, where smoke stays empty, so the fetch died
+      # the first time a token made this branch reachable at all. bash 4.4+ (every CI runner
+      # here) is happy either way, so this would have stayed a macOS-only failure.
       OCL_ORG="$ocl_org" OCL_COLLECTION="$collection" \
         "$ROOT/scripts/build/fetch-ciel.sh" \
-          ${ocl_version:+--version "$ocl_version"} "${smoke[@]}"
+          ${ocl_version:+--version "$ocl_version"} ${smoke[@]+"${smoke[@]}"}
     done
   fi
 
