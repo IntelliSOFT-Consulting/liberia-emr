@@ -155,6 +155,18 @@ request_export() {
     "$(export_url)"
 }
 
+# The name of the ZIP OCL is currently serving, e.g.
+#   LIB_mch_vHEAD_autoexpand-HEAD.2026-07-18_184701.zip
+# taken from the 302 Location that request_export follows. It carries the timestamp of the
+# build, so it is what distinguishes a freshly generated export from the cached one — a bare
+# 200 does not, because OCL keeps serving the old ZIP while the new one is still building.
+export_object_name() {
+  [[ -s "$headers" ]] || return 0
+  tr -d '\r' < "$headers" \
+    | sed -n 's#^[Ll]ocation:.*/\([^/?]*\.zip\).*#\1#p' \
+    | tail -1
+}
+
 show_error_body() {
   if [[ -s "$body" ]]; then
     echo "----- response body -----" >&2
@@ -223,7 +235,64 @@ if [[ "$version" == "HEAD" ]]; then
 fi
 
 echo "== requesting OCL export for ${OCL_ORG}/${OCL_COLLECTION} version ${version} =="
-status="$(request_export GET)"
+
+# A released version is immutable, so its cached export is always correct and reusing it is
+# the whole point. HEAD is not: it moves every time anyone edits the collection, and OCL
+# keeps serving the export ZIP built the last time someone asked. Accepting that cache meant
+# adding five concepts to LIB/mch and then building against a snapshot from three weeks
+# earlier — the fetch reported success, the export was 785 concepts, and the five were
+# absent. Nothing downstream could tell the difference between that and a collection that
+# had never been updated.
+#
+# So for HEAD, discard the cached export and build a new one.
+#
+# POST alone does not do it: while a cached export exists OCL answers POST with 303 See
+# Other — "there is already one, use that" — and never rebuilds. The cached artifact has to
+# be deleted first. That is safe: it is a generated ZIP, not collection data, and the POST
+# immediately below regenerates it from the live collection.
+stale_object=""
+if [[ "$version" == "HEAD" ]]; then
+  echo "== HEAD is mutable; rebuilding the export rather than reusing the cached one =="
+  # Remember which ZIP is being served now, so the poll below can tell the new export from
+  # this one. Without it, a GET that still returns the OLD ZIP would break the poll
+  # immediately — reintroducing exactly the staleness this avoids.
+  request_export GET >/dev/null || true
+  stale_object="$(export_object_name)"
+  [[ -n "$stale_object" ]] && echo "   discarding cached export: ${stale_object}"
+
+  delete_status="$(request_export DELETE)"
+  case "$delete_status" in
+    # 204 deleted, 404 there was nothing cached. Either way there is now no export to reuse.
+    204|404) ;;
+    *)
+      echo "FAIL: could not discard the cached HEAD export (HTTP ${delete_status})." >&2
+      echo "  Without discarding it, OCL answers POST with 303 and keeps serving the old" >&2
+      echo "  ZIP, so the build would silently use a stale dictionary." >&2
+      show_error_body
+      exit 1
+      ;;
+  esac
+
+  queue_status="$(request_export POST)"
+  case "$queue_status" in
+    # 409 means one is already building — that is fine, the poll below waits for it.
+    202|204|409)
+      status=208
+      ;;
+    303)
+      echo "FAIL: OCL still reports a cached export after it was deleted (HTTP 303)." >&2
+      echo "  Retry; if it persists the export may have been rebuilt concurrently." >&2
+      exit 1
+      ;;
+    *)
+      echo "FAIL: could not queue export (HTTP ${queue_status})." >&2
+      show_error_body
+      exit 1
+      ;;
+  esac
+else
+  status="$(request_export GET)"
+fi
 
 case "$status" in
   200)
@@ -258,7 +327,15 @@ if [[ "$status" == "208" ]]; then
     status="$(request_export GET)"
     case "$status" in
       200)
-        break
+        # A 200 alone is not "ready": while the new export builds, OCL keeps serving the
+        # previous ZIP. Only accept it once the object name has actually changed.
+        current_object="$(export_object_name)"
+        if [[ -n "$stale_object" && "$current_object" == "$stale_object" ]]; then
+          echo "  attempt ${attempt}/${poll_attempts}: still serving the cached export (${current_object})"
+        else
+          [[ -n "$current_object" ]] && echo "   new export ready: ${current_object}"
+          break
+        fi
         ;;
       204|208)
         echo "  attempt ${attempt}/${poll_attempts}: export not ready yet"

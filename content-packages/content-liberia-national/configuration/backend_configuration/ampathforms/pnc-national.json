@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "parity",
               "questionOptions": {
-                "concept": "${var.concept.national.parity.uuid}",
+                "concept": "${var.concept.ciel.parity.uuid}",
                 "rendering": "number"
               }
             },
@@ -56,7 +56,7 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.health-facility.uuid}",
+                    "concept": "${var.concept.ciel.health-facility.uuid}",
                     "label": "Health facility"
                   }
                 ]
@@ -208,7 +208,7 @@
               "type": "obs",
               "id": "haemoglobin",
               "questionOptions": {
-                "concept": "${var.concept.national.haemoglobin.uuid}",
+                "concept": "${var.concept.ciel.haemoglobin.uuid}",
                 "rendering": "number"
               }
             },

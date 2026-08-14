@@ -1,3 +1,3 @@
 Uuid,Void/Retire,Program,Workflow concept,States
 ${var.workflow.anc-status.uuid},,${var.program.anc.uuid},${var.concept.workflow.anc-status.uuid},"${var.state.anc.active.uuid};${var.state.anc.delivered.uuid};${var.state.anc.lost-to-followup.uuid};${var.state.anc.transferred-out.uuid}"
-${var.workflow.fp-method.uuid},,${var.program.family-planning.uuid},${var.concept.workflow.fp-method.uuid},"${var.state.fp.on-method.uuid};${var.state.fp.discontinued.uuid}"
+${var.workflow.fp-method.uuid},,${var.program.family-planning.uuid},${var.concept.ciel.workflow.fp-method.uuid},"${var.state.fp.on-method.uuid};${var.state.fp.discontinued.uuid}"

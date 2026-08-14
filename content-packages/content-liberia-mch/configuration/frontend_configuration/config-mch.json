@@ -30,7 +30,7 @@
       "contractionsPerTenMinutesUuid": "${var.concept.partograph.contractions-per-10min.uuid}",
       "contractionDurationUuid": "${var.concept.partograph.contraction-duration.uuid}",
       "amnioticFluidUuid": "${var.concept.partograph.amniotic-fluid.uuid}",
-      "mouldingUuid": "${var.concept.partograph.moulding.uuid}",
+      "mouldingUuid": "${var.concept.ciel.moulding.uuid}",
       "fetalHeartRateUuid": "${var.concept.ciel.fetal-heart-rate.uuid}",
       "systolicBloodPressureUuid": "${var.concept.ciel.systolic-bp.uuid}",
       "diastolicBloodPressureUuid": "${var.concept.ciel.diastolic-bp.uuid}",

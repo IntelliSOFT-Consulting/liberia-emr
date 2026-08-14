@@ -46,7 +46,7 @@
               "type": "obs",
               "id": "fhr",
               "questionOptions": {
-                "concept": "${var.concept.national.fetal-heart-rate.uuid}",
+                "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "rendering": "number"
               }
             },
@@ -55,7 +55,7 @@
               "type": "obs",
               "id": "gravida",
               "questionOptions": {
-                "concept": "${var.concept.national.gravida.uuid}",
+                "concept": "${var.concept.ciel.gravida.uuid}",
                 "rendering": "number"
               }
             },
@@ -64,7 +64,7 @@
               "type": "obs",
               "id": "parity",
               "questionOptions": {
-                "concept": "${var.concept.national.parity.uuid}",
+                "concept": "${var.concept.ciel.parity.uuid}",
                 "rendering": "number"
               }
             },
@@ -100,7 +100,7 @@
                     "label": "Spontaneous vaginal delivery (SVD)"
                   },
                   {
-                    "concept": "${var.concept.national.cesarean-section.uuid}",
+                    "concept": "${var.concept.ciel.cesarean-section.uuid}",
                     "label": "Cesarean section"
                   }
                 ]
@@ -141,7 +141,7 @@
               "type": "obs",
               "id": "fistula",
               "questionOptions": {
-                "concept": "${var.concept.national.fistula.uuid}",
+                "concept": "${var.concept.ciel.fistula.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
@@ -234,7 +234,7 @@
                     "label": "Complete"
                   },
                   {
-                    "concept": "${var.concept.national.incomplete.uuid}",
+                    "concept": "${var.concept.ciel.incomplete.uuid}",
                     "label": "Incomplete"
                   }
                 ]

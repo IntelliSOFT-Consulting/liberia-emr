@@ -19,7 +19,7 @@
               "type": "obs",
               "id": "gravida",
               "questionOptions": {
-                "concept": "${var.concept.national.gravida.uuid}",
+                "concept": "${var.concept.ciel.gravida.uuid}",
                 "rendering": "number"
               }
             },
@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "parity",
               "questionOptions": {
-                "concept": "${var.concept.national.parity.uuid}",
+                "concept": "${var.concept.ciel.parity.uuid}",
                 "rendering": "number"
               }
             },

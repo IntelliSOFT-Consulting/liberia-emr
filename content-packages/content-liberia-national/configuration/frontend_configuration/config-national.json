@@ -14,10 +14,10 @@
   "@openmrs/esm-service-queues-app": {
     "defaultInitialServiceQueue": "TB Screening",
     "concepts": {
-      "defaultStatusConceptUuid": "${var.concept.national.queue-waiting.uuid}",
-      "defaultTransitionStatus": "${var.concept.national.queue-in-progress.uuid}",
+      "defaultStatusConceptUuid": "${var.concept.ciel.queue-waiting.uuid}",
+      "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
       "defaultPriorityConceptUuid": "${var.concept.national.queue-routine.uuid}",
-      "emergencyPriorityConceptUuid": "${var.concept.national.queue-emergency.uuid}"
+      "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
     }
   },
   "@openmrs/esm-patient-registration-app": {

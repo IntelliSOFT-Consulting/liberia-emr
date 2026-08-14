@@ -19,7 +19,7 @@
               "type": "obs",
               "id": "gravida",
               "questionOptions": {
-                "concept": "${var.concept.national.gravida.uuid}",
+                "concept": "${var.concept.ciel.gravida.uuid}",
                 "rendering": "number"
               }
             },
@@ -88,11 +88,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -107,11 +107,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -126,11 +126,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -145,11 +145,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -164,11 +164,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -179,15 +179,15 @@
               "type": "obs",
               "id": "abdomen",
               "questionOptions": {
-                "concept": "${var.concept.national.abdomen.uuid}",
+                "concept": "${var.concept.ciel.abdomen.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -202,11 +202,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -221,11 +221,11 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.normal.uuid}",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   },
                   {
-                    "concept": "${var.concept.national.abnormal.uuid}",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   }
                 ]
@@ -292,7 +292,7 @@
               "type": "obs",
               "id": "weight",
               "questionOptions": {
-                "concept": "${var.concept.national.weight-kg.uuid}",
+                "concept": "${var.concept.ciel.weight-kg.uuid}",
                 "rendering": "number"
               }
             },
@@ -390,7 +390,7 @@
               "type": "obs",
               "id": "preg_status",
               "questionOptions": {
-                "concept": "${var.concept.national.pregnancy-status.uuid}",
+                "concept": "${var.concept.ciel.pregnancy-status.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
