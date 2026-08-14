@@ -157,9 +157,14 @@ request_export() {
 
 # The name of the ZIP OCL is currently serving, e.g.
 #   LIB_mch_vHEAD_autoexpand-HEAD.2026-07-18_184701.zip
-# taken from the 302 Location that request_export follows. It carries the timestamp of the
-# build, so it is what distinguishes a freshly generated export from the cached one — a bare
-# 200 does not, because OCL keeps serving the old ZIP while the new one is still building.
+# taken from the 302 Location that request_export follows. Reported for the log only.
+#
+# It looks like a build timestamp and is NOT one: OCL derives it from the collection
+# version's creation date, so it is byte-identical across rebuilds of HEAD. Do not use it to
+# decide whether an export is fresh — that was tried, and every poll announced "still
+# serving the cached export" about a ZIP that had already been regenerated, burning the full
+# ten-minute poll budget before downloading that same correct file. Freshness comes from
+# DELETEing the cached export first, after which 204 means building and 200 means ready.
 export_object_name() {
   [[ -s "$headers" ]] || return 0
   tr -d '\r' < "$headers" \
@@ -250,15 +255,14 @@ echo "== requesting OCL export for ${OCL_ORG}/${OCL_COLLECTION} version ${versio
 # Other — "there is already one, use that" — and never rebuilds. The cached artifact has to
 # be deleted first. That is safe: it is a generated ZIP, not collection data, and the POST
 # immediately below regenerates it from the live collection.
-stale_object=""
 if [[ "$version" == "HEAD" ]]; then
   echo "== HEAD is mutable; rebuilding the export rather than reusing the cached one =="
   # Remember which ZIP is being served now, so the poll below can tell the new export from
   # this one. Without it, a GET that still returns the OLD ZIP would break the poll
   # immediately — reintroducing exactly the staleness this avoids.
   request_export GET >/dev/null || true
-  stale_object="$(export_object_name)"
-  [[ -n "$stale_object" ]] && echo "   discarding cached export: ${stale_object}"
+  cached="$(export_object_name)"
+  [[ -n "$cached" ]] && echo "   discarding cached export: ${cached}"
 
   delete_status="$(request_export DELETE)"
   case "$delete_status" in
@@ -327,15 +331,16 @@ if [[ "$status" == "208" ]]; then
     status="$(request_export GET)"
     case "$status" in
       200)
-        # A 200 alone is not "ready": while the new export builds, OCL keeps serving the
-        # previous ZIP. Only accept it once the object name has actually changed.
-        current_object="$(export_object_name)"
-        if [[ -n "$stale_object" && "$current_object" == "$stale_object" ]]; then
-          echo "  attempt ${attempt}/${poll_attempts}: still serving the cached export (${current_object})"
-        else
-          [[ -n "$current_object" ]] && echo "   new export ready: ${current_object}"
-          break
-        fi
+        # Safe to accept: the cached export was DELETEd above, so OCL answers 204 until the
+        # new one finishes building and a 200 can only be the new one.
+        #
+        # Do NOT gate this on the object name changing. OCL names the HEAD export after the
+        # collection version's creation date, not the build time, so the name is identical
+        # across rebuilds — an earlier attempt to compare it spent all 40 polls announcing
+        # "still serving the cached export" about a ZIP that had already been regenerated,
+        # then downloaded that same correct file anyway, ten minutes later.
+        [[ -n "$(export_object_name)" ]] && echo "   export ready: $(export_object_name)"
+        break
         ;;
       204|208)
         echo "  attempt ${attempt}/${poll_attempts}: export not ready yet"
