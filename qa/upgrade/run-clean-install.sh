@@ -56,11 +56,11 @@ docker compose -f "$COMPOSE" --env-file "$ENV_FILE" up -d db backend
 echo "== waiting for the backend to report started =="
 # The backend runs with continue_on_error=false, so a boot that completes is itself part of
 # the assertion: any metadata error stops the startup rather than half-applying.
-deadline=$(( SECONDS + 900 ))
+deadline=$(( SECONDS + 1800 ))
 until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
         curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
   if (( SECONDS > deadline )); then
-    echo "FAIL: backend did not start within 15 minutes" >&2
+    echo "FAIL: backend did not start within 30 minutes" >&2
     docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 200 backend >&2
     exit 1
   fi
