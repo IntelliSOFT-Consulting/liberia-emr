@@ -50,6 +50,13 @@ jobs:
     strategy:
       matrix:
         site: [careysburg, barnersville]
+    # Without this the release images ship without the MOH's curated CIEL
+    # collections, and build-distribution.sh only WARNS about that — so the
+    # release would build green and fail at the facility instead. Pin
+    # ocl.collection.version in distro.properties before cutting a release
+    # too: an empty value exports HEAD, so two builds of one tag can differ.
+    env:
+      OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
