@@ -99,6 +99,50 @@ if [[ "$DEMO" == "false" ]]; then
 
   "$ROOT/scripts/build/sanitize-ocl-export.sh" \
     "$ROOT"/content-packages/content-common/configuration/backend_configuration/ocl/*.zip
+
+  # Every ${var.*} holding a CIEL-style UUID must match the external_id the export actually
+  # carries. Most CIEL concepts use <id> padded with A to 36 characters, so that convention
+  # gets assumed — but it is NOT universal: newer concepts (the 167xxx-169xxx range at least)
+  # have random UUIDs. Padding one of those yields a UUID no concept has, and the failure
+  # surfaces an hour later as "The object identified by '169401AAAA...' could not be found in
+  # database" on whichever row referenced it, naming neither the variable nor the file.
+  #
+  # Only checkable here: the exports are gitignored, so validate-content.sh cannot see them.
+  echo "== checking CIEL variables against the shipped exports =="
+  python3 - "$ROOT" <<'PY' || { echo "FAIL: CIEL UUID mismatch (see above)" >&2; exit 1; }
+import glob, json, os, re, sys, zipfile
+
+root = sys.argv[1]
+ext = {}
+for z in glob.glob(f"{root}/content-packages/*/configuration/backend_configuration/ocl/*.zip"):
+    try:
+        with zipfile.ZipFile(z) as f:
+            if "export.json" not in f.namelist():
+                continue
+            d = json.loads(f.read("export.json"))
+    except Exception:
+        continue
+    for c in d.get("concepts") or []:
+        cid, e = str(c.get("id") or ""), str(c.get("external_id") or "")
+        if cid and e:
+            ext.setdefault(cid, e)
+
+bad = []
+for vf in sorted(glob.glob(f"{root}/content-packages/*/configuration/variables.properties")):
+    for line in open(vf):
+        s = line.strip()
+        if s.startswith("#") or "=" not in s:
+            continue
+        k, v = (p.strip() for p in s.split("=", 1))
+        m = re.fullmatch(r"(\d+)A+", v)
+        if m and m.group(1) in ext and ext[m.group(1)] != v:
+            bad.append((os.path.basename(os.path.dirname(os.path.dirname(vf))), k, m.group(1), v, ext[m.group(1)]))
+
+for pkg, k, cid, declared, actual in bad:
+    print(f"  {k}  [{pkg}]", file=sys.stderr)
+    print(f"      CIEL:{cid} is {actual}, not {declared}", file=sys.stderr)
+sys.exit(1 if bad else 0)
+PY
 else
   echo "WARNING: building DEMO images — training and test use only."
   suffix="-demo"
