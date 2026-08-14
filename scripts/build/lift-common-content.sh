@@ -11,7 +11,6 @@
 #   DemoQueueConcepts  — queue status/priority concepts only valid in demo
 #   DemoPrograms       — demo training programme concepts
 #   GenericDemoForm    — demo form placeholder concepts
-#   IPD-DEMO           — IPD demo inpatient concepts
 #
 # Every ZIP is renamed to end in -common.zip so that validate-content.sh's
 # layer file-name uniqueness check never sees the same bare name in both
@@ -30,7 +29,6 @@ DEMO_ONLY_PATTERNS=(
   "DemoQueueConcepts"
   "DemoPrograms"
   "GenericDemoForm"
-  "IPD-DEMO"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
