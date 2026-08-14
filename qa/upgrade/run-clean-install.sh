@@ -13,6 +13,21 @@
 # about the backend, so a caller that skipped the frontend image skips starting it too.
 set -euo pipefail
 
+# Hold the machine awake for the duration. The deadline below is wall-clock, but a suspended
+# host makes no progress — so an idle Mac spends the budget sleeping and the run fails on a
+# timeout that says nothing about the build. Measured: a laptop left alone overnight slept
+# for 2h30m of a 4h deadline and failed an import that was still advancing normally, having
+# processed more rows than the passing run before it.
+# Re-exec rather than backgrounding an assertion, so the whole process tree is covered.
+# No-op off macOS, where caffeinate does not exist.
+# Through "$BASH" rather than "$0" directly: invoked as `bash run-clean-install.sh` the
+# script need not carry the execute bit, and exec'ing it as a program would then die with
+# "Permission denied" — turning a convenience into a hard failure.
+if [[ "${CLEAN_INSTALL_CAFFEINATED:-}" != "1" ]] && command -v caffeinate >/dev/null 2>&1; then
+  export CLEAN_INSTALL_CAFFEINATED=1
+  exec caffeinate -is "${BASH:-/bin/bash}" "$0" "$@"
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE="$ROOT/distribution/compose/facility/docker-compose.yml"
 ENV_FILE="$ROOT/qa/upgrade/clean-install.env"
@@ -92,11 +107,16 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
         curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
   if (( SECONDS > deadline )); then
     echo "FAIL: backend did not start within $(( TIMEOUT / 60 )) minutes" >&2
-    echo "  A large OCL export can legitimately exceed this — check whether the concept" >&2
-    echo "  count below was still climbing before treating it as a hang." >&2
+    echo "  This is a deadline, not a diagnosis. Before treating it as a hang, check the" >&2
+    echo "  progress lines above: if the OCL item count was still climbing, the import was" >&2
+    echo "  healthy and only needed longer (CLEAN_INSTALL_TIMEOUT raises the budget)." >&2
+    echo "  A suspended host burns wall-clock without doing work; this script holds macOS" >&2
+    echo "  awake, but a VM or CI runner that suspends will fail here for the same reason." >&2
     docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
       mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
-      'select concat("concepts loaded: ", count(*)) from openmrs.concept;' >&2 2>/dev/null || true
+      'select concat("concepts: ", count(*),
+                     ", OCL items: ", (select count(*) from openmrs.openconceptlab_item))
+         from openmrs.concept;' >&2 2>/dev/null || true
     docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 200 backend >&2
     exit 1
   fi
@@ -120,13 +140,20 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
   # concept table does not exist yet, so mariadb exits non-zero; under `set -euo pipefail`
   # that killed the script silently, one iteration in — the gate died on exactly the case it
   # exists to test. Keep the query out of the exit-status path entirely.
+  # Report OCL items alongside concepts. The concept count alone is misleading: it reaches
+  # its final value early and then sits flat for over an hour while the 300,000 mappings
+  # import, which reads as a hang and is not one. The item count keeps moving throughout.
   loaded=""
   if query_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
        mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
-       'select count(*) from openmrs.concept;' 2>/dev/null)"; then
-    loaded="$(printf '%s' "$query_out" | tr -d '[:space:]')"
+       'select concat(count(*), " concepts, ",
+                      (select count(*) from openmrs.openconceptlab_item), " OCL items, ",
+                      (select count(*) from openmrs.openconceptlab_item where state = 4),
+                      " errored")
+          from openmrs.concept;' 2>/dev/null)"; then
+    loaded="$(printf '%s' "$query_out" | tr -s '[:space:]' ' ' | sed 's/^ *//;s/ *$//')"
   fi
-  echo "   ${SECONDS}s elapsed — concepts loaded: ${loaded:-(schema not created yet)}"
+  echo "   ${SECONDS}s elapsed — ${loaded:-(schema not created yet)}"
   sleep 30
 done
 
