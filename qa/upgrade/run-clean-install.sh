@@ -184,46 +184,70 @@ logs="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend)"
 # happened to finish first; growing the dictionary changed the timing and exposed it.
 #
 # So wait for the log to appear AND stop growing, rather than assuming either.
-echo "   waiting for Initializer to finish writing its log"
+# Wait for Initializer to FINISH, which is not the same as the backend being up: OpenMRS
+# answers /health/started once the web application is running, while module startup — and
+# the whole OCL import inside it — continues on a daemon thread. Reading the log at that
+# moment caught it before Initializer had written anything.
+#
+# Do NOT wait on the log growing. On a clean run Initializer writes NOTHING to
+# initializer.log — the file is created and stays 0 bytes, because it only receives the
+# rejection reports. Waiting for it to "settle at a non-zero size" therefore times out on
+# exactly the runs that should pass. Measured: a fully clean install leaves a 0-byte log,
+# 18 completed OCL imports and every domain applied.
+#
+# Wait on the work instead: every OCL import finished, and a late Initializer domain has
+# produced rows. Order frequencies are loaded well after concepts, so their presence means
+# the CSV domains are done.
+echo "   waiting for Initializer to finish applying metadata"
 iniz_deadline=$(( SECONDS + 3600 ))
-prev_size=-1
-stable=0
 while true; do
-  # `wc -c <file`, not `stat -c %s`: stat's format flag differs between GNU and BSD/busybox,
-  # and a stat that errors would read as "still 0 bytes" forever — waiting out the whole
-  # deadline on a file that was actually finished.
-  size=0
-  if size_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
-       sh -c 'wc -c < /openmrs/data/initializer.log' 2>/dev/null)"; then
-    size="$(printf '%s' "$size_out" | tr -d '[:space:]')"
-    [[ "$size" =~ ^[0-9]+$ ]] || size=0
+  state=""
+  if state_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+       mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
+       'select concat((select count(*) from openmrs.openconceptlab_import where local_date_stopped is null),
+                      ":", (select count(*) from openmrs.order_frequency));' 2>/dev/null)"; then
+    state="$(printf '%s' "$state_out" | tr -d '[:space:]')"
   fi
-  # Require the size to repeat three times over (four equal readings, ~80s): Initializer
-  # writes continuously while it loads, so a size that stops moving for that long is the end
-  # of the run rather than a pause between domains. A zero never counts, so a log that is
-  # never created runs out the deadline and fails rather than settling at "0 bytes, stable".
-  if [[ "$size" != "0" && "$size" == "$prev_size" ]]; then
-    stable=$(( stable + 1 ))
-    (( stable >= 3 )) && { echo "   Initializer log settled at ${size} bytes"; break; }
-  else
-    stable=0
+  running="${state%%:*}"
+  freqs="${state##*:}"
+  if [[ "$running" == "0" && "$freqs" =~ ^[0-9]+$ && "$freqs" -gt 0 ]]; then
+    echo "   Initializer finished (no import running, ${freqs} order frequencies loaded)"
+    break
   fi
   if (( SECONDS > iniz_deadline )); then
-    echo "FAIL: Initializer never finished writing its log within 60 minutes" >&2
-    echo "  last observed size: ${size} bytes" >&2
+    echo "FAIL: Initializer did not finish within 60 minutes" >&2
+    echo "  imports still running: ${running:-?}, order frequencies: ${freqs:-0}" >&2
     docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 60 backend >&2
     exit 1
   fi
-  prev_size="$size"
   sleep 20
 done
 
 iniz_log="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
   cat /openmrs/data/initializer.log 2>/dev/null || true)"
-if [[ -z "$iniz_log" ]]; then
-  echo "FAIL: Initializer wrote no log — it did not run" >&2
-  exit 1
-fi
+
+# An EMPTY log is a pass, not a failure. This used to read "no log means it did not run",
+# which was true only while every run still had rejections to report — the moment the
+# content came clean, success started failing the gate. What actually proves Initializer ran
+# is metadata in the database that nothing else creates, so assert that directly.
+echo "== asserting Initializer applied its metadata =="
+sentinels="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+  mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
+  'select concat((select count(*) from openmrs.order_frequency), " ",
+                 (select count(*) from openmrs.location_tag_map), " ",
+                 (select count(*) from openmrs.program), " ",
+                 (select count(*) from openmrs.concept_class
+                    where name in ("Program","Workflow","State")));' 2>/dev/null || true)"
+read -r n_freq n_tagmap n_prog n_class <<<"$(printf '%s' "$sentinels" | tr -s '[:space:]' ' ')"
+for probe in "order frequencies:${n_freq:-0}" "location tag maps:${n_tagmap:-0}" \
+             "programs:${n_prog:-0}" "Program/Workflow/State classes:${n_class:-0}"; do
+  if [[ "${probe##*:}" == "0" ]]; then
+    echo "FAIL: Initializer applied no ${probe%%:*} — it did not run, or its CSVs were rejected wholesale" >&2
+    echo "  sentinels (freq tagmap prog class): ${sentinels:-<none>}" >&2
+    exit 1
+  fi
+done
+echo "   ${n_freq} order frequencies, ${n_tagmap} location tag maps, ${n_prog} programs, ${n_class}/3 concept classes"
 if grep -q 'ERROR' <<<"$iniz_log"; then
   echo "FAIL: Initializer rejected metadata" >&2
 
