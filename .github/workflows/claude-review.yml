@@ -1,0 +1,86 @@
+# Advisory LiberiaEMR review — IMPLEMENTATION.md guardrails, on every PR.
+#
+# This is deliberately a SEPARATE workflow from ci.yml, not another job in it:
+#   - It is advisory. It posts review comments and never blocks a merge. It is
+#     not in ci.yml's `gate` needs list and cannot be, by construction — there
+#     is no edge from here into the required status check.
+#   - It only makes sense on a pull request (it reviews a diff against a base),
+#     whereas ci.yml fires on a push to any branch. Keeping it here avoids
+#     entangling that model, the branch-keyed concurrency group, and the gate.
+#   - It runs an external action against an API key, which nothing else in
+#     ci.yml does.
+#
+# It reviews using the project skill in .claude/skills/liberia-review/SKILL.md,
+# so a reviewer running `/liberia-review` locally and this CI job apply exactly
+# the same guardrails from one source of truth.
+name: Claude advisory review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+
+# One review per PR: a new push cancels the review still running for the
+# previous commit rather than stacking a second one on top of it. Safe to
+# cancel unconditionally here (unlike ci.yml's main exemption) — this workflow
+# never publishes or deploys, it only comments.
+concurrency:
+  group: claude-review-${{ github.head_ref }}
+  cancel-in-progress: true
+
+# Overrides the repo default: the action needs to write PR review comments.
+# Scoped to just this workflow; ci.yml's permissions are unaffected.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  liberia-review:
+    name: LiberiaEMR guardrail review
+    runs-on: ubuntu-latest
+    # Advisory to the last: even an outright failure of the action (a bad
+    # response, a transient API error) must not show up as a red required
+    # check. It isn't required anywhere, and this makes that explicit.
+    continue-on-error: true
+    # Secrets can't be read directly in a step's `if:` (GitHub rejects it at
+    # parse time — the same "Unrecognized named-value: 'secrets'" limitation
+    # ci.yml documents for SONAR_TOKEN), so route the key through job-level env
+    # and gate on the env context instead. A repo without ANTHROPIC_API_KEY set
+    # (including every fork PR, which never receives repo secrets) skips the
+    # review cleanly instead of erroring — matching how ci.yml treats a missing
+    # SONAR_TOKEN / OCL_API_TOKEN.
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Note when the review is skipped
+        if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        run: |
+          echo "::notice::ANTHROPIC_API_KEY is not set — skipping the advisory LiberiaEMR review. Add it under Settings > Secrets and variables > Actions to enable it."
+
+      - name: Checkout
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the review reads the full diff against the base
+
+      - name: Review the diff against the LiberiaEMR guardrails
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The skill file is the single definition of what to check; this
+          # prompt just points the action at it and fixes the output shape.
+          prompt: |
+            Review this pull request against the LiberiaEMR guardrails by
+            reading and following .claude/skills/liberia-review/SKILL.md in
+            full, then applying it to this PR's diff against its base branch.
+
+            Post a single PR review. Put each finding as an inline comment on
+            the offending line, most-severe first, and cite the
+            IMPLEMENTATION.md rule it breaks (e.g. "§7 — hard-coded UUID").
+            Call out separately anything that needs a second reviewer
+            (security/RBAC) or that only the upgrade test would catch.
+
+            This review is advisory. Do not request changes and do not fail —
+            if nothing blocks, leave a short comment saying so and list the
+            deterministic validators a human should still run locally.
