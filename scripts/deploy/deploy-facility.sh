@@ -3,6 +3,7 @@
 #
 #   scripts/deploy/deploy-facility.sh --env distribution/env/facility.env
 #   scripts/deploy/deploy-facility.sh --env distribution/env/demo.env --demo --local
+#   scripts/deploy/deploy-facility.sh --env distribution/env/demo.env --local
 #
 # Follow docs/runbooks/deploy.md — this script automates the mechanics, not the
 # preconditions. In particular it will NOT take your backup for you.
@@ -11,8 +12,10 @@
 # content-demo) and disables sync. Training only: docs/runbooks/demo-stack.md.
 #
 # --local skips the registry pull and runs whatever build-distribution.sh just put in the
-# local daemon. Without it a training box that built its own images fails on `pull`, which
-# cannot find a tag nobody has pushed.
+# local daemon. Without it a box that built its own images fails on `pull`, which cannot
+# find a tag nobody has pushed. It works with or without --demo, so a site layer can be
+# simulated locally without demo metadata — but the images it runs are unpublished and
+# unreproducible, so a real facility must still deploy a published tag (ADR 0001).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -28,13 +31,6 @@ while [[ $# -gt 0 ]]; do
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
-
-# A production instance must run a published, immutable tag — "it works on this machine"
-# is the whole failure mode the two-artefact model exists to prevent (ADR 0001).
-if [[ "$LOCAL" == "true" && "$DEMO" == "false" ]]; then
-  echo "--local is for demo/training stacks only; a facility deploys a published tag" >&2
-  exit 2
-fi
 
 [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]] || { echo "--env <file> is required" >&2; exit 2; }
 
@@ -61,6 +57,27 @@ Before continuing, confirm:
   * the database in this env file is a throwaway, not a facility database
   * no real patient data will be entered here — everything typed in is synthetic
 PROMPT
+elif [[ "$LOCAL" == "true" ]]; then
+  # Site layer without demo metadata: the closest simulation of a facility you can get on a
+  # workstation. The images are local builds, so this is a rehearsal, never the real thing.
+  cat <<'PROMPT'
+LOCAL SIMULATION — this instance loads the site layer WITHOUT content-demo, but runs
+images built on this machine rather than a published release tag.
+
+Before continuing, confirm:
+  * this is your own machine or a test box, not a facility production machine
+  * the database in this env file is a throwaway, not a facility database
+  * you are NOT treating this as the deploy of a release (ADR 0001: a facility runs a
+    published, immutable tag — never "it works on this machine")
+PROMPT
+
+  # Sync is not started here (no --profile sync), but the env file is usually a copy of
+  # facility.env.example, so say out loud where this stack would sync to if it were.
+  if grep -qiE '^[[:space:]]*CENTRAL_URL[[:space:]]*=.*(central\.moh\.gov\.lr|https://)' "$ENV_FILE"; then
+    echo
+    echo "  WARNING: ${ENV_FILE##*/} points CENTRAL_URL at a real central instance."
+    echo "           Do not start the sync profile against it from simulated data."
+  fi
 else
   cat <<'PROMPT'
 Before continuing, confirm:
@@ -88,6 +105,8 @@ echo "  docker compose ${compose_args[*]} --env-file $ENV_FILE logs -f backend"
 echo
 if [[ "$DEMO" == "true" ]]; then
   echo "Then run the verification steps in docs/runbooks/demo-stack.md."
+elif [[ "$LOCAL" == "true" ]]; then
+  echo "Then run the verification steps in docs/runbooks/local-development.md."
 else
   echo "Then run the post-deploy checks in docs/runbooks/deploy.md."
 fi

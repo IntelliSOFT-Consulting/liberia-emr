@@ -28,12 +28,24 @@ cp distribution/env/demo.env.example distribution/env/demo.env   # then edit it
 ./scripts/deploy/deploy-facility.sh --env distribution/env/demo.env --demo --local
 ```
 
-15–25 minutes to build cold, 5–10 for the first boot. Drop `--demo` from both commands (and
-use `facility.env`) for a production-shaped stack with no demo content — which is what you
-want when checking how the Liberia configuration behaves on its own.
+15–25 minutes to build cold, 5–10 for the first boot. Drop `--demo` from both commands for a
+production-shaped stack with no demo content — which is what you want when checking how the
+Liberia configuration behaves on its own:
 
-`--local` matters: without it the deploy pulls from the registry and fails on a tag nobody
-has pushed.
+```bash
+./scripts/build/build-distribution.sh --version 1.0.0 --site careysburg
+./scripts/deploy/deploy-facility.sh --env distribution/env/demo.env --local
+```
+
+The env file still wants to be a throwaway (`demo.env`, or a copy of `facility.env.example`
+with the database and `CENTRAL_URL` pointed somewhere local) — without `--demo` the compose
+overlay that neutralises sync is not applied. The deploy prompts you to confirm that, and
+warns if `CENTRAL_URL` still points at the real central instance.
+
+`--local` matters in both cases: without it the deploy pulls from the registry and fails on a
+tag nobody has pushed. It is the flag that says "run what this daemon already has", so the
+images it starts are unpublished — a facility still deploys a published tag ([ADR
+0001](../adr/0001-two-artefact-model.md)).
 
 ## 2. Content changes — the loop you will live in
 
