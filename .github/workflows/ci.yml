@@ -16,6 +16,24 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+# A push to a branch that already has a PR fires this workflow TWICE — once for
+# the push, once for the pull_request — and both ran to completion side by side.
+# That is the whole reactor, Sonar, dependency-check and the container build,
+# twice per commit, reporting the same check name twice on the PR.
+#
+# Grouping on the BRANCH rather than the event is what collapses them: on a
+# pull_request event github.head_ref is the source branch, on a push it is empty
+# and ref_name is that same branch, so both events land in one group and only one
+# survives. The same group then makes a new commit cancel the run still going for
+# the previous one, instead of queueing behind it.
+concurrency:
+  group: ci-${{ github.head_ref || github.ref_name }}
+  # Never on main. publish-latest, deploy-dev, smoke-test, rollback-dev and dast
+  # only run there, so cancelling a run in flight could abort a publish halfway,
+  # or leave a deploy half-applied with the rollback job cancelled along with it.
+  # Superseded main builds are cheap by comparison.
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
 permissions:
   contents: read
   security-events: write
