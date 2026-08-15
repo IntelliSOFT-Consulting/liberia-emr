@@ -263,6 +263,11 @@ Pull request
   → approve production release
 ```
 
+The stages above are what a change to the distribution must pass, not a list of jobs that
+run unconditionally. The clean-database stage is the expensive one, so `ci.yml` runs it on
+any commit that could affect what Initializer loads and stands it down on one that cannot —
+failing open whenever it cannot tell. See [`distribution/ci/README.md`](distribution/ci/README.md).
+
 Build **immutable, versioned Docker images** (`liberia-emr-backend:x.y.z`,
 `-frontend:x.y.z`, `-gateway:x.y.z`); never mount a mutable git checkout into a production
 container. Backend image = OpenMRS WAR + exact OMOD versions + Initializer + resolved content
