@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
-# Fetches the LIB/mch OCL collection export into content-common's gitignored ocl/ directory.
+# Fetches an OCL collection export into content-common's gitignored ocl/ directory.
 #
 #   OCL_API_TOKEN=... scripts/build/fetch-ciel.sh
 #   OCL_API_TOKEN=... scripts/build/fetch-ciel.sh --version 2026-08-13
+#   OCL_API_TOKEN=... OCL_COLLECTION=lab scripts/build/fetch-ciel.sh --no-smoke-test
+#
+# Normally you do not run this by hand: scripts/build/build-distribution.sh calls it for each
+# collection in distro.properties (ocl.collections) at the version pinned there
+# (ocl.collection.version), which is what keeps two builds of one tag identical. Run it
+# directly to get a dictionary into a local checkout — see docs/runbooks/local-development.md.
 #
 # The caller should pin a released collection version with --version (or OCL_COLLECTION_VERSION)
 # for repeatable builds. HEAD remains the default to keep local smoke-testing simple.
+#
+# Environment: OCL_API_TOKEN (required), OCL_ORG (default LIB), OCL_COLLECTION (default mch),
+# OCL_API_URL, OCL_COLLECTION_VERSION, OCL_EXPORT_POLL_SECONDS, OCL_EXPORT_POLL_ATTEMPTS.
 set -euo pipefail
 
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly DST_DIR="$ROOT/content-packages/content-common/configuration/backend_configuration/ocl"
 readonly OCL_API_URL="${OCL_API_URL:-https://api.openconceptlab.org}"
-readonly OCL_ORG="LIB"
-readonly OCL_COLLECTION="mch"
+readonly OCL_ORG="${OCL_ORG:-LIB}"
+# One collection per run. The ocl/ README plans three — MCH first, then Laboratory and
+# Pharmacy — so this is overridable rather than fixed; build-distribution.sh fetches each
+# name in OCL_COLLECTIONS. The smoke test below only knows MCH concepts, so a non-MCH
+# collection needs --no-smoke-test until this grows per-collection expectations.
+readonly OCL_COLLECTION="${OCL_COLLECTION:-mch}"
 readonly DEFAULT_VERSION="${OCL_COLLECTION_VERSION:-HEAD}"
 readonly DEFAULT_POLL_SECONDS="${OCL_EXPORT_POLL_SECONDS:-15}"
 readonly DEFAULT_POLL_ATTEMPTS="${OCL_EXPORT_POLL_ATTEMPTS:-40}"
@@ -44,8 +57,17 @@ Options:
   --version <version>          Collection version to export. Defaults to OCL_COLLECTION_VERSION or HEAD.
   --poll-seconds <seconds>     Poll interval while waiting for OCL to build the export.
   --poll-attempts <count>      Maximum polling attempts before failing.
-  --no-smoke-test              Skip the post-download concept presence checks.
+  --no-smoke-test              Skip the post-download concept presence checks. Required for
+                               any collection other than mch — the checks look for MCH
+                               concepts and would fail on a lab or pharmacy export.
   -h, --help                   Show this help text.
+
+Environment:
+  OCL_ORG                      OCL organisation. Defaults to LIB.
+  OCL_COLLECTION               Collection to export. Defaults to mch.
+
+build-distribution.sh drives this from distro.properties (ocl.org, ocl.collections,
+ocl.collection.version); prefer changing it there over calling this script by hand.
 EOF
 }
 
@@ -133,6 +155,23 @@ request_export() {
     "$(export_url)"
 }
 
+# The name of the ZIP OCL is currently serving, e.g.
+#   LIB_mch_vHEAD_autoexpand-HEAD.2026-07-18_184701.zip
+# taken from the 302 Location that request_export follows. Reported for the log only.
+#
+# It looks like a build timestamp and is NOT one: OCL derives it from the collection
+# version's creation date, so it is byte-identical across rebuilds of HEAD. Do not use it to
+# decide whether an export is fresh — that was tried, and every poll announced "still
+# serving the cached export" about a ZIP that had already been regenerated, burning the full
+# ten-minute poll budget before downloading that same correct file. Freshness comes from
+# DELETEing the cached export first, after which 204 means building and 200 means ready.
+export_object_name() {
+  [[ -s "$headers" ]] || return 0
+  tr -d '\r' < "$headers" \
+    | sed -n 's#^[Ll]ocation:.*/\([^/?]*\.zip\).*#\1#p' \
+    | tail -1
+}
+
 show_error_body() {
   if [[ -s "$body" ]]; then
     echo "----- response body -----" >&2
@@ -201,7 +240,63 @@ if [[ "$version" == "HEAD" ]]; then
 fi
 
 echo "== requesting OCL export for ${OCL_ORG}/${OCL_COLLECTION} version ${version} =="
-status="$(request_export GET)"
+
+# A released version is immutable, so its cached export is always correct and reusing it is
+# the whole point. HEAD is not: it moves every time anyone edits the collection, and OCL
+# keeps serving the export ZIP built the last time someone asked. Accepting that cache meant
+# adding five concepts to LIB/mch and then building against a snapshot from three weeks
+# earlier — the fetch reported success, the export was 785 concepts, and the five were
+# absent. Nothing downstream could tell the difference between that and a collection that
+# had never been updated.
+#
+# So for HEAD, discard the cached export and build a new one.
+#
+# POST alone does not do it: while a cached export exists OCL answers POST with 303 See
+# Other — "there is already one, use that" — and never rebuilds. The cached artifact has to
+# be deleted first. That is safe: it is a generated ZIP, not collection data, and the POST
+# immediately below regenerates it from the live collection.
+if [[ "$version" == "HEAD" ]]; then
+  echo "== HEAD is mutable; rebuilding the export rather than reusing the cached one =="
+  # Remember which ZIP is being served now, so the poll below can tell the new export from
+  # this one. Without it, a GET that still returns the OLD ZIP would break the poll
+  # immediately — reintroducing exactly the staleness this avoids.
+  request_export GET >/dev/null || true
+  cached="$(export_object_name)"
+  [[ -n "$cached" ]] && echo "   discarding cached export: ${cached}"
+
+  delete_status="$(request_export DELETE)"
+  case "$delete_status" in
+    # 204 deleted, 404 there was nothing cached. Either way there is now no export to reuse.
+    204|404) ;;
+    *)
+      echo "FAIL: could not discard the cached HEAD export (HTTP ${delete_status})." >&2
+      echo "  Without discarding it, OCL answers POST with 303 and keeps serving the old" >&2
+      echo "  ZIP, so the build would silently use a stale dictionary." >&2
+      show_error_body
+      exit 1
+      ;;
+  esac
+
+  queue_status="$(request_export POST)"
+  case "$queue_status" in
+    # 409 means one is already building — that is fine, the poll below waits for it.
+    202|204|409)
+      status=208
+      ;;
+    303)
+      echo "FAIL: OCL still reports a cached export after it was deleted (HTTP 303)." >&2
+      echo "  Retry; if it persists the export may have been rebuilt concurrently." >&2
+      exit 1
+      ;;
+    *)
+      echo "FAIL: could not queue export (HTTP ${queue_status})." >&2
+      show_error_body
+      exit 1
+      ;;
+  esac
+else
+  status="$(request_export GET)"
+fi
 
 case "$status" in
   200)
@@ -236,6 +331,15 @@ if [[ "$status" == "208" ]]; then
     status="$(request_export GET)"
     case "$status" in
       200)
+        # Safe to accept: the cached export was DELETEd above, so OCL answers 204 until the
+        # new one finishes building and a 200 can only be the new one.
+        #
+        # Do NOT gate this on the object name changing. OCL names the HEAD export after the
+        # collection version's creation date, not the build time, so the name is identical
+        # across rebuilds — an earlier attempt to compare it spent all 40 polls announcing
+        # "still serving the cached export" about a ZIP that had already been regenerated,
+        # then downloaded that same correct file anyway, ten minutes later.
+        [[ -n "$(export_object_name)" ]] && echo "   export ready: $(export_object_name)"
         break
         ;;
       204|208)
@@ -261,9 +365,12 @@ if ! unzip -tqq "$body" >/dev/null 2>&1; then
   exit 1
 fi
 
-dest_name="lib-mch-ciel-$(sanitize_version "$version").zip"
+# The collection is part of the name so several collections can sit side by side, and the
+# sweep below is scoped to this one — it must never delete another collection's export.
+dest_name="lib-$(sanitize_version "$OCL_COLLECTION")-ciel-$(sanitize_version "$version").zip"
 dest_path="$DST_DIR/$dest_name"
-find "$DST_DIR" -maxdepth 1 -type f -name 'lib-mch-ciel-*.zip' ! -name "$dest_name" -delete
+find "$DST_DIR" -maxdepth 1 -type f \
+  -name "lib-$(sanitize_version "$OCL_COLLECTION")-ciel-*.zip" ! -name "$dest_name" -delete
 mv "$body" "$dest_path"
 
 if [[ "$skip_smoke_test" != "true" ]]; then

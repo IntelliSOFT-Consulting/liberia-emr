@@ -42,7 +42,11 @@ services:
       OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
       OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
-      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error=false
+      # One of continue_on_error, fail_on_error, disabled. The previous
+      # 'continue_on_error=false' was none of them and fell through to continuing anyway;
+      # this is the same behaviour spelled validly. See distribution/backend/Dockerfile for
+      # why fail_on_error is not the safer-sounding choice it appears to be.
+      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
@@ -51,7 +55,10 @@ services:
       interval: 20s
       timeout: 5s
       retries: 60
-      start_period: 300s
+      # Must cover a first boot's full concept-dictionary import — see the same setting in
+      # the facility stack. At 300s a healthy import was marked unhealthy after ~25 minutes
+      # and every service gated on condition: service_healthy stayed down.
+      start_period: 5400s
     networks: [liberiaemr]
 
   frontend:

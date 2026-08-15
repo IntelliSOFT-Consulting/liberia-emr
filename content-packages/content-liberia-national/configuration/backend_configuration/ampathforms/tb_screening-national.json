@@ -177,7 +177,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.national.date-tb-treatment-was-started.uuid}"
+                "concept": "${var.concept.ciel.date-tb-treatment-was-started.uuid}"
               },
               "validators": [
                 {

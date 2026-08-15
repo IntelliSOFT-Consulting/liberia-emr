@@ -19,7 +19,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "text",
-                                "concept": "${var.concept.presenting-complaint.uuid}"
+                                "concept": "${var.concept.ciel.presenting-complaint.uuid}"
                             },
                             "required": true,
                             "id": "presenting_complaint"
@@ -29,7 +29,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "textarea",
-                                "concept": "${var.concept.history-presenting-complaint.uuid}"
+                                "concept": "${var.concept.ciel.history-presenting-complaint.uuid}"
                             },
                             "id": "hpc"
                         },
@@ -38,7 +38,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "textarea",
-                                "concept": "${var.concept.past-medical-history.uuid}"
+                                "concept": "${var.concept.ciel.past-medical-history.uuid}"
                             },
                             "id": "pmh"
                         },
@@ -71,7 +71,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "textarea",
-                                "concept": "${var.concept.general-exam-findings.uuid}"
+                                "concept": "${var.concept.ciel.general-exam-findings.uuid}"
                             },
                             "id": "general_exam"
                         }
@@ -86,14 +86,14 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "problem",
-                                "concept": "${var.concept.primary-diagnosis.uuid}",
+                                "concept": "${var.concept.ciel.primary-diagnosis.uuid}",
                                 "diagnosis": {
                                     "rank": 1,
                                     "isConfirmed": true,
                                     "conceptClasses": [
                                         "Diagnosis"
                                     ],
-                                    "conceptSet": "${var.concept.diagnosis-set.uuid}"
+                                    "conceptSet": "${var.concept.ciel.visit-diagnoses.uuid}"
                                 }
                             },
                             "required": true,
@@ -104,7 +104,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "textarea",
-                                "concept": "${var.concept.investigations-ordered.uuid}"
+                                "concept": "${var.concept.ciel.investigations-ordered.uuid}"
                             },
                             "id": "investigations"
                         },
@@ -113,19 +113,19 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "radio",
-                                "concept": "${var.concept.disposition.uuid}",
+                                "concept": "${var.concept.ciel.disposition.uuid}",
                                 "answers": [
                                     {
                                         "label": "Discharge",
-                                        "concept": "${var.concept.disposition-discharge.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-discharge.uuid}"
                                     },
                                     {
                                         "label": "Admit to Hospital",
-                                        "concept": "${var.concept.disposition-admit.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-admit.uuid}"
                                     },
                                     {
                                         "label": "Refer Out",
-                                        "concept": "${var.concept.disposition-refer.uuid}"
+                                        "concept": "${var.concept.ciel.disposition-refer.uuid}"
                                     }
                                 ]
                             },
@@ -137,7 +137,7 @@
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "date",
-                                "concept": "${var.concept.followup-date.uuid}"
+                                "concept": "${var.concept.ciel.followup-date.uuid}"
                             },
                             "id": "followup"
                         }

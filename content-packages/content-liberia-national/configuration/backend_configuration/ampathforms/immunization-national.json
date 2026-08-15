@@ -69,7 +69,7 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.oral.uuid}",
+                    "concept": "${var.concept.ciel.oral.uuid}",
                     "label": "Oral"
                   }
                 ]

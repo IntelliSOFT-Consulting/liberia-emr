@@ -1,0 +1,4 @@
+Uuid,Void/Retire,Name,Description
+${var.conceptclass.program.uuid},,Program,Concept identifying a care programme a patient may enrol in
+${var.conceptclass.workflow.uuid},,Workflow,Concept whose answers are the states of a programme workflow
+${var.conceptclass.state.uuid},,State,Concept representing one state within a programme workflow

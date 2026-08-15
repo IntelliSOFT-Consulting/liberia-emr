@@ -40,6 +40,14 @@ same `--version`, or the stack tries to pull a tag that may not be published.
 the backend — the frontend is only brought up, never waited on — so CI pairs it with
 `build-distribution.sh --no-frontend` and avoids assembling the SPA to prove a CSV loads.
 
+CI runs this script in the `initializer-clean-db` job, but **not on every commit**: it costs
+around 18 minutes, so it is skipped when nothing in the commit can affect what Initializer
+loads. Anything under `content-packages/`, `distribution/`, `qa/upgrade/` or
+`scripts/build/` keeps it, and an undetermined case runs it. See
+[`distribution/ci/README.md`](../../distribution/ci/README.md). A change that could alter
+metadata from somewhere outside those paths needs the path list widened, not the job
+weakened.
+
 ## The fixture database
 
 ⚠ **Never a copy of production.** A production dump in a CI runner is a PHI breach.

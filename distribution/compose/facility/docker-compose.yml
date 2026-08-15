@@ -46,9 +46,12 @@ services:
       OMRS_CONFIG_CREATE_TABLES: "${OMRS_CREATE_TABLES:-false}"
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
       OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
-      # Fail the boot rather than half-apply metadata — a partially loaded configuration
-      # is far harder to diagnose than a refused startup.
-      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error=false
+      # One of three literals: continue_on_error, fail_on_error, disabled. The previous
+      # 'continue_on_error=false' was none of them and fell through to continuing, so this
+      # is the same behaviour spelled validly — not a change.
+      # fail_on_error is not used on purpose: the first erroring domain aborts every later
+      # one, which loses more metadata than it protects. See distribution/backend/Dockerfile.
+      OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error
       JAVA_OPTS: >-
         -Xmx${BACKEND_HEAP:-3g}
         -Duser.timezone=Africa/Monrovia
@@ -59,7 +62,15 @@ services:
       interval: 20s
       timeout: 5s
       retries: 60
-      start_period: 300s
+      # A FIRST boot imports the whole concept dictionary before it will answer this probe.
+      # start_period has to cover that, because failures inside it are the only ones that do
+      # not count toward retries: at the previous 300s, a healthy import was declared
+      # unhealthy after ~25 minutes (300s + 60 x 20s), and frontend and sync — which both
+      # gate on condition: service_healthy below — never started at all. Measured against the
+      # full CIEL dictionary, which the ocl/ README says not to ship; a curated subset is up
+      # in minutes and never comes near this ceiling. Failures still surface, just later, and
+      # a backend that has answered once leaves the start period immediately.
+      start_period: 5400s
     networks: [liberiaemr]
 
   frontend:

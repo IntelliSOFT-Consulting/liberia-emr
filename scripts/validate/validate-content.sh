@@ -108,6 +108,93 @@ while IFS= read -r f; do
 done < <(find_src -path '*/frontend_configuration/*' -name '*.json')
 ok "no hard-coded UUIDs in frontend config"
 
+section "role identity collisions"
+# The role table is keyed by role NAME, so two rows resolving to the same name are one role,
+# and the second silently overwrites the first — or fails the load outright when they carry
+# different UUIDs. Initializer also maps rows onto the header POSITIONALLY, so a block pasted
+# from a file with a different column order lands every value one column off without any row
+# being malformed. Both happened at once here: RefApp rows written for
+# 'Uuid,Role name,Description,Inherited roles,Privileges' were pasted into roles-common.csv
+# under 'Uuid,Void/Retire,Role name,Description,Privileges,Inherited roles', so
+# 'Organizational: Nurse' was read as a Void/Retire flag and the role was created as plain
+# 'Nurse' — colliding with the clinical Nurse role. A misalignment that produces a duplicate
+# name is caught here; the roles domain is the one worth guarding because it is name-keyed.
+#
+# Variables are resolved per package before comparing, because the same role legitimately
+# reaches this check as a literal UUID in one layer and a ${var.*} token in another.
+python3 - "$PKG_DIR" <<'PY' || err "role identity collisions (see above)"
+import csv, glob, os, re, sys
+
+pkg_dir = sys.argv[1]
+seen = {}   # role name -> (uuid, origin)
+by_uuid = {}
+bad = []
+
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/roles/*.csv")):
+    if f"{os.sep}target{os.sep}" in f:
+        continue
+    pkg = f[len(pkg_dir) + 1:].split(os.sep)[0]
+    variables = {}
+    vf = os.path.join(pkg_dir, pkg, "configuration", "variables.properties")
+    if os.path.exists(vf):
+        for line in open(vf):
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                variables[k.strip()] = v.strip()
+
+    def resolve(value):
+        return re.sub(r"\$\{([^}]+)\}", lambda m: variables.get(m.group(1), m.group(0)), value)
+
+    rows = list(csv.reader(open(f, newline="")))
+    if not rows:
+        continue
+    hdr = [h.strip() for h in rows[0]]
+    if "Role name" not in hdr or "Uuid" not in hdr:
+        continue
+    ni, ui = hdr.index("Role name"), hdr.index("Uuid")
+    for n, r in enumerate(rows[1:], start=2):
+        if len(r) <= max(ni, ui) or not r[ni].strip():
+            continue
+        name, uuid = r[ni].strip(), resolve(r[ui].strip())
+        origin = f"{f[len(pkg_dir) - len('content-packages'):]}:{n}"
+        if name in seen and seen[name][0] != uuid:
+            bad.append(f"role '{name}' declared with two UUIDs: {seen[name][1]} and {origin}")
+        elif uuid in by_uuid and by_uuid[uuid][0] != name:
+            bad.append(f"UUID {uuid} used by two roles: {by_uuid[uuid][1]} and {origin}")
+        seen[name] = (uuid, origin)
+        by_uuid[uuid] = (name, origin)
+
+for b in bad:
+    print(f"       {b}", file=sys.stderr)
+sys.exit(1 if bad else 0)
+PY
+ok "no role identity collisions"
+
+section "conflicting variable declarations"
+# variables.properties is read as a Java properties file: a key declared twice keeps the LAST
+# value with no warning. Two roles both claiming var.role.nurse.uuid meant the clinical Nurse
+# role silently inherited the RefApp Organizational Nurse UUID.
+# Only WITHIN one file — two site packages legitimately declare the same key, because a build
+# resolves exactly one of them.
+while IFS= read -r f; do
+  # Split on the FIRST '=' only: a value may contain one. An exact re-declaration of the
+  # same value is harmless duplication, so only a differing value is reported.
+  hits="$(awk '
+    /^var\./ {
+      i = index($0, "=")
+      if (i == 0) next
+      k = substr($0, 1, i - 1); v = substr($0, i + 1)
+      if (k in seen) { if (seen[k] != v) print k }
+      else seen[k] = v
+    }' "$f")"
+  if [[ -n "$hits" ]]; then
+    err "the same variable declared twice with different values (the last one silently wins): ${f#$ROOT/}"
+    echo "$hits" | sed 's/^/       /' >&2
+  fi
+done < <(find_src -name 'variables.properties')
+ok "no conflicting variable declarations"
+
 section "unresolved variables"
 # Every ${var.x} referenced anywhere must be declared in some variables.properties.
 # Keys are written WITH the var. prefix, because the file is consumed as a Maven resource
@@ -131,6 +218,62 @@ if [[ -n "$missing" ]]; then
   echo "$missing" | sed 's/^/       ${var./; s/$/}/' >&2
 fi
 ok "variable references"
+
+section "location tags"
+# Two failures live here, and both cost a full install cycle to find the hard way.
+#
+# A missing tag: LocationLineProcessor resolves every Tag|<Name> header with
+# getLocationTagByName and THROWS when it returns null, so an unknown tag rejects the whole
+# location row — and with it the parent reference of every location beneath it.
+#
+# A duplicate tag: location_tag.name is unique, so two packages declaring the same name
+# under different UUIDs do not merge — the second one fails with a
+# ConstraintViolationException. Tags owned by a module must therefore NOT be declared in
+# content at all; the module creates them at startup, before Initializer runs.
+python3 - "$PKG_DIR" <<'PY' || err "location tag problems (see above)"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+
+# Tags created by modules at startup. Content must not redeclare these.
+MODULE_OWNED = {
+    "Queue Location": "queue module",
+    "Appointment Location": "appointments module",
+}
+
+defined = {}
+for f in glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/locationtags/*.csv"):
+    package = f.split("/")[-5]
+    with open(f, newline="") as fh:
+        for row in csv.DictReader(fh):
+            name = (row.get("Name") or "").strip()
+            if name:
+                defined.setdefault(name, []).append(package)
+
+problems = []
+for name, packages in sorted(defined.items()):
+    if len(packages) > 1:
+        problems.append(f"'{name}' declared by {len(packages)} packages: {', '.join(packages)}")
+    if name in MODULE_OWNED:
+        problems.append(f"'{name}' is created by the {MODULE_OWNED[name]}; declaring it in "
+                        f"{packages[0]} collides on the unique name")
+
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/locations/*.csv")):
+    with open(f, newline="") as fh:
+        header = next(csv.reader(fh), [])
+    for column in header:
+        if not column.startswith("Tag|"):
+            continue
+        tag = column[4:].strip()
+        if tag not in defined and tag not in MODULE_OWNED:
+            problems.append(f"{os.path.basename(f)} references Tag|{tag}, "
+                            f"which no package declares and no module creates")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "location tags resolve and are declared once"
 
 echo
 if [[ $fail -ne 0 ]]; then
