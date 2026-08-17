@@ -6,13 +6,13 @@
       "sections": [
         {
           "label": "Obstetric History",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "d954bf76-15ae-45e7-b766-152c60ad0ec7",
+                "concept": "${var.concept.ciel.gravida.uuid}",
                 "min": "1"
               },
               "id": "gravida",
@@ -23,7 +23,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "0575e00d-1891-4237-8be4-61f60349c8fe"
+                "concept": "${var.concept.ciel.lmp.uuid}"
               },
               "id": "lmp",
               "label": "Last Menstrual Period (LMP)",
@@ -40,7 +40,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "a02355f4-8dbd-4f62-a147-137f3263ce5c",
+                "concept": "${var.concept.ciel.full-term-births.uuid}",
                 "min": "0"
               },
               "id": "fullTermBirths",
@@ -51,7 +51,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "48d67ab3-daf4-4e53-bc96-6e46aae1ad91",
+                "concept": "${var.concept.ciel.preterm-births.uuid}",
                 "min": "0"
               },
               "id": "pretermBirths",
@@ -62,7 +62,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "0c37c9a6-53f4-434b-ba63-bc723951f56e",
+                "concept": "${var.concept.ciel.abortions.uuid}",
                 "min": "0"
               },
               "id": "abortions",
@@ -73,7 +73,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "c1f73fad-4c78-4abf-aded-5de910bba2bb",
+                "concept": "${var.concept.ciel.living-children.uuid}",
                 "min": "0"
               },
               "id": "livingChildren",
@@ -84,20 +84,20 @@
         },
         {
           "label": "Physical Examination",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "ce4cf3dd-4c5e-40a4-acf0-aea84d25f8b7",
+                "concept": "${var.concept.national.color.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -110,14 +110,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "bfe3ebba-b0a8-41eb-9487-86eea3f4fac0",
+                "concept": "${var.concept.national.heart.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -130,14 +130,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "0bfe7ca6-0698-47a6-91c5-1fa7b7c7862a",
+                "concept": "${var.concept.national.lungs.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -150,14 +150,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "da28bf3d-9cd8-484d-9e1b-c0e255423255",
+                "concept": "${var.concept.national.breasts.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -170,14 +170,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "67298259-f943-4b8c-920b-2c8a975015d1",
+                "concept": "${var.concept.national.nipples.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -190,14 +190,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "ae1a6611-ff6e-47dc-9e65-bb7ba54bc845",
+                "concept": "${var.concept.ciel.abdomen.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -210,14 +210,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "1c8c5d91-b6af-444b-84c4-465eb14044e4",
+                "concept": "${var.concept.national.extremities.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -230,14 +230,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "a606ee41-fcb1-4d06-9081-ea5ef32beddc",
+                "concept": "${var.concept.national.pelvic-examination.uuid}",
                 "answers": [
                   {
-                    "concept": "ef10150e-e5b6-4ff7-9a55-57877063f651",
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
                     "label": "Abnormal"
                   },
                   {
-                    "concept": "fdd025f4-f9ec-4939-8bc9-f23dc4169a9b",
+                    "concept": "${var.concept.ciel.normal.uuid}",
                     "label": "Normal"
                   }
                 ]
@@ -250,27 +250,34 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "a51380ed-07c2-4ec6-a062-998b26769cad",
+                "concept": "${var.concept.national.explain-abnormalities.uuid}",
                 "maxLength": "2000"
               },
               "id": "explainAbnormalities",
               "label": "Explain abnormalities",
-              "required": true,
+              "required": false,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "(physicalExamColour === '${var.concept.ciel.abnormal.uuid}' || heart === '${var.concept.ciel.abnormal.uuid}' || lungs === '${var.concept.ciel.abnormal.uuid}' || breasts === '${var.concept.ciel.abnormal.uuid}' || nipples === '${var.concept.ciel.abnormal.uuid}' || abdomen === '${var.concept.ciel.abnormal.uuid}' || extremities === '${var.concept.ciel.abnormal.uuid}' || pelvicExamination === '${var.concept.ciel.abnormal.uuid}') && isEmpty(myValue)",
+                  "message": "Explain the abnormal physical examination finding(s)"
+                }
+              ],
               "hide": {
-                "hideWhenExpression": "physicalExamColour !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && heart !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && lungs !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && breasts !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && nipples !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && abdomen !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && extremities !== 'ef10150e-e5b6-4ff7-9a55-57877063f651' && pelvicExamination !== 'ef10150e-e5b6-4ff7-9a55-57877063f651'"
+                "hideWhenExpression": "physicalExamColour !== '${var.concept.ciel.abnormal.uuid}' && heart !== '${var.concept.ciel.abnormal.uuid}' && lungs !== '${var.concept.ciel.abnormal.uuid}' && breasts !== '${var.concept.ciel.abnormal.uuid}' && nipples !== '${var.concept.ciel.abnormal.uuid}' && abdomen !== '${var.concept.ciel.abnormal.uuid}' && extremities !== '${var.concept.ciel.abnormal.uuid}' && pelvicExamination !== '${var.concept.ciel.abnormal.uuid}'"
               }
             }
           ]
         },
         {
           "label": "Maternal Assessment",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "17b1204b-ce88-4a0d-9c2f-6ebcc73b219f"
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}"
               },
               "id": "systolicBloodPressure",
               "label": "Blood pressure (Systolic)",
@@ -280,7 +287,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "a7367960-91f3-4bba-875b-e7bdfa67f66d"
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}"
               },
               "id": "diastolicBloodPressure",
               "label": "Blood pressure (Diastolic)",
@@ -290,7 +297,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "614b78af-0985-45ba-9c06-2076ce3ad783",
+                "concept": "${var.concept.ciel.weight-kg.uuid}",
                 "min": "20",
                 "max": "300"
               },
@@ -302,7 +309,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "00663865-9680-476c-9033-60bd55e15970",
+                "concept": "${var.concept.ciel.gestational-age.uuid}",
                 "min": "0",
                 "max": "45"
               },
@@ -314,18 +321,18 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "select",
-                "concept": "7425aeea-340f-4f06-a155-c1c5decb37d4",
+                "concept": "${var.concept.ciel.pregnancy-status.uuid}",
                 "answers": [
                   {
-                    "concept": "5f0b5647-877e-4b44-82fe-0d4e049fed8c",
+                    "concept": "${var.concept.national.1st-trimester.uuid}",
                     "label": "1st trimester"
                   },
                   {
-                    "concept": "0e8a8700-26e8-46f5-b4dd-7d8accc0f4a2",
+                    "concept": "${var.concept.national.2nd-trimester.uuid}",
                     "label": "2nd trimester"
                   },
                   {
-                    "concept": "5750e3ac-2e65-4a09-a789-c9b87a952634",
+                    "concept": "${var.concept.national.3rd-trimester.uuid}",
                     "label": "3rd trimester"
                   }
                 ],
@@ -339,13 +346,13 @@
         },
         {
           "label": "Fetal Assessment",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "c696ec1b-25d0-4cd2-aa24-1329b4e815cd",
+                "concept": "${var.concept.ciel.fundal-height.uuid}",
                 "min": "0",
                 "max": "50"
               },
@@ -357,26 +364,26 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "select",
-                "concept": "5e358516-82b3-4370-b765-e76d84ed233e",
+                "concept": "${var.concept.mch.fetal-presentation.uuid}",
                 "answers": [
                   {
-                    "concept": "b40ede7f-63ce-428d-8532-6a5e02258ff3",
+                    "concept": "${var.concept.mch.presentation-breech.uuid}",
                     "label": "Breech"
                   },
                   {
-                    "concept": "af5b1f09-2546-44c5-8025-3c7459be6a2f",
+                    "concept": "${var.concept.mch.presentation-oblique.uuid}",
                     "label": "Oblique"
                   },
                   {
-                    "concept": "af341181-bef8-4233-9779-733692383481",
+                    "concept": "${var.concept.mch.presentation-transverse.uuid}",
                     "label": "Transverse"
                   },
                   {
-                    "concept": "6b7b79fc-b14e-48f9-add1-d75417cc33cc",
+                    "concept": "${var.concept.mch.presentation-vertex.uuid}",
                     "label": "Vertex"
                   },
                   {
-                    "concept": "53f02833-956e-457f-9453-30b569ef17b5",
+                    "concept": "${var.concept.mch.presentation-other.uuid}",
                     "label": "Other"
                   }
                 ]
@@ -389,7 +396,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "d779b757-c75c-4f66-9efd-4e4a54ababcf",
+                "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "min": "60",
                 "max": "220"
               },
@@ -401,7 +408,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "089e92cc-a536-4ebe-99dd-27e22f12e850",
+                "concept": "${var.concept.national.other-findings.uuid}",
                 "maxLength": "2000"
               },
               "id": "otherFindings",
@@ -411,13 +418,13 @@
         },
         {
           "label": "Preventive Interventions",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "toggle",
-                "concept": "8a5f5da2-5bb2-47d8-9f17-90bba940f80b",
+                "concept": "${var.concept.mch.woman-receiving-ipt.uuid}",
                 "toggleOptions": {
                   "labelTrue": "Yes",
                   "labelFalse": "No"
@@ -431,29 +438,36 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "select",
-                "concept": "edf4344a-2e9f-4e0e-88d1-824bd3f25069",
+                "concept": "${var.concept.mch.ipt-dose-administered.uuid}",
                 "answers": [
                   {
-                    "concept": "025d9262-58ae-4261-a04d-77a8dfa4bd0b",
+                    "concept": "${var.concept.mch.1st-ipt-dose.uuid}",
                     "label": "1st IPT dose"
                   },
                   {
-                    "concept": "5b45044d-e950-41ee-b798-24cee7e10c03",
+                    "concept": "${var.concept.mch.2nd-ipt-dose.uuid}",
                     "label": "2nd IPT dose"
                   },
                   {
-                    "concept": "769be397-f71a-45eb-bac1-a154c2250c32",
+                    "concept": "${var.concept.mch.3rd-ipt-dose.uuid}",
                     "label": "3rd IPT dose"
                   },
                   {
-                    "concept": "460f19eb-2dcc-481c-87d7-d0db4e864d4e",
+                    "concept": "${var.concept.mch.4th-ipt-dose.uuid}",
                     "label": "4th IPT dose"
                   }
                 ]
               },
               "id": "iptDoseAdministered",
               "label": "IPT dose administered",
-              "required": true,
+              "required": false,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "womanReceivingIpt === true && isEmpty(myValue)",
+                  "message": "Select the IPT dose administered"
+                }
+              ],
               "hide": {
                 "hideWhenExpression": "womanReceivingIpt !== true"
               }
@@ -462,16 +476,24 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "22dae112-b695-4b93-9149-1755601f81cb",
+                "concept": "${var.concept.mch.iptp-deferral-reason.uuid}",
                 "answers": [
                   {
-                    "concept": "f9bc5cc3-a724-4b0b-8955-869223dd982f",
+                    "concept": "${var.concept.mch.iptp-deferred-malaria-treatment.uuid}",
                     "label": "Malaria treatment initiated"
                   }
                 ]
               },
               "id": "iptpDeferralReason",
               "label": "IPTp deferral reason",
+              "required": false,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "womanReceivingIpt === false && isEmpty(myValue)",
+                  "message": "Select the IPTp deferral reason"
+                }
+              ],
               "hide": {
                 "hideWhenExpression": "womanReceivingIpt !== false"
               }
@@ -480,7 +502,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "toggle",
-                "concept": "79f0b15d-71eb-44ea-a7b3-747bba212713",
+                "concept": "${var.concept.mch.llin-received-at-anc.uuid}",
                 "toggleOptions": {
                   "labelTrue": "Yes",
                   "labelFalse": "No"
@@ -493,13 +515,13 @@
         },
         {
           "label": "Management Notes",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "f633cde2-2e75-4d87-84e9-f11344bf4e74",
+                "concept": "${var.concept.national.routine-drugs.uuid}",
                 "maxLength": "500"
               },
               "id": "routineDrugs",
@@ -509,7 +531,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "853d8b10-6906-489a-ac31-1fe33e71bc5f",
+                "concept": "${var.concept.national.treatment-remarks.uuid}",
                 "maxLength": "2000"
               },
               "id": "treatmentRemarks",
@@ -519,13 +541,13 @@
         },
         {
           "label": "Pregnant Woman Health Card",
-          "isExpanded": "true",
+          "isExpanded": true,
           "questions": [
             {
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "dfdcdeb3-8c48-4457-928a-2ab51db3e0e7"
+                "concept": "${var.concept.mch.health-card-issue-date.uuid}"
               },
               "id": "healthCardIssueDate",
               "label": "Issue date",
@@ -543,10 +565,12 @@
       ]
     }
   ],
+  "uuid": "${var.form.anc-initial.uuid}",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "encounter": "ANC Initial Visit",
   "processor": "EncounterFormProcessor",
-  "encounterType": "1e4a7c92-6d05-4b38-9f21-c0a4e6f8b2d3",
   "referencedForms": [],
-  "uuid": "fb3bc76e-d132-4cc4-8bd7-50807dbe7f59",
-  "description": "Captures clinical information for a pregnant woman’s initial antenatal care visit, including obstetric history, physical examination, maternal and fetal assessment, preventive interventions, and treatment notes.",
-  "version": "1.4"
+  "description": "Captures clinical information for a pregnant woman’s initial antenatal care visit, including obstetric history, physical examination, maternal and fetal assessment, preventive interventions, and treatment notes."
 }

@@ -128,7 +128,8 @@ names and Form Builder labels stay clinically concise (`IPT dose administered`,
 deferral reasons in this increment.
 
 Fatima acceptance representation: Woman receiving IPT = false; IPTp deferral reason = Malaria
-treatment initiated. Form conditionals are not implemented in this increment.
+treatment initiated. The ANC Initial schema conditionally requires the dose when true and the
+deferral reason when false.
 
 ### Pregnant Woman Health Card
 
