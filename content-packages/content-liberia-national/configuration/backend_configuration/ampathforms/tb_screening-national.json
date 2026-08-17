@@ -159,6 +159,11 @@
                 {
                   "type": "date",
                   "allowFutureDates": "false"
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
+                  "message": "Date cannot be before the patient's date of birth."
                 }
               ]
             },
@@ -183,6 +188,11 @@
                 {
                   "type": "date",
                   "allowFutureDates": "false"
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
+                  "message": "Date cannot be before the patient's date of birth."
                 }
               ]
             },
