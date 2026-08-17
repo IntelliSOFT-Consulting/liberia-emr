@@ -29,8 +29,15 @@ readonly OCL_COLLECTION="${OCL_COLLECTION:-mch}"
 readonly DEFAULT_VERSION="${OCL_COLLECTION_VERSION:-HEAD}"
 readonly DEFAULT_POLL_SECONDS="${OCL_EXPORT_POLL_SECONDS:-15}"
 readonly DEFAULT_POLL_ATTEMPTS="${OCL_EXPORT_POLL_ATTEMPTS:-40}"
+# Every layer that can declare a CIEL alias the smoke test looks for. content-liberia-national
+# is in the list because the shared ANC/obstetric CIEL aliases (lmp, gravida, parity, …) are
+# declared there, not in the MCH package: content-liberia-national must build without
+# content-liberia-mch. Leaving it out does not fail the run — extract_ciel_id simply finds
+# nothing and the key is skipped — so the smoke test would quietly shrink from five concepts
+# to three and still report success.
 readonly VAR_FILES=(
   "$ROOT/content-packages/content-common/configuration/variables.properties"
+  "$ROOT/content-packages/content-liberia-national/configuration/variables.properties"
   "$ROOT/content-packages/content-liberia-mch/configuration/variables.properties"
 )
 readonly SMOKE_TEST_KEYS=(
