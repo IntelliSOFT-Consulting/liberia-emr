@@ -11,7 +11,7 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
-| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`) |
+| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | not written |
 | ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | not written |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
@@ -23,12 +23,12 @@ because a serial time-plotted chart is not something the form engine renders.
 
 ## Layout
 
-Released forms use a single published schema containing the form UUID, version, encounter,
-publication status, and pages:
+Each form is a pair:
 
 ```
 ampathforms/
-└── anc-initial.json          # published O3 form-engine schema and metadata
+├── anc-initial.json          # O3 form-engine schema
+└── anc-initial_form.json     # form metadata: name, version, encounter type, published
 ```
 
 ## Versioning
