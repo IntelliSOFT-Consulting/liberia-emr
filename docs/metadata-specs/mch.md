@@ -272,6 +272,19 @@ no such obs; confirm against the pilot database before retiring. `anc-national.j
 bumped to version `1.1` so any existing encounters stay bound to the schema they were
 entered under.
 
+### ANC fetal presentation and IPT model
+
+ANC fetal presentation uses the self-contained MCH coded concept
+`var.concept.mch.fetal-presentation.uuid`, with Vertex, Breech, Transverse, Oblique and Other
+answer variables. This is the runtime fallback for DAK CIEL 160090; no CIEL answer IDs were
+invented.
+
+The signed ANC IPT flow is: `var.concept.mch.woman-receiving-ipt.uuid` (Boolean); when true,
+`var.concept.mch.ipt-dose-administered.uuid` with exact 1st–4th MCH answers; when false,
+`var.concept.mch.iptp-deferral-reason.uuid`. The only sourced acceptance answer currently
+represented is `var.concept.mch.iptp-deferred-malaria-treatment.uuid`; no additional reasons
+are inferred. LLIN uses Boolean `var.concept.mch.llin-received-at-anc.uuid`.
+
 ### Declared locally
 
 ANC IPT / presentation / health-card concepts. **DE.53 Woman receiving IPT and DE.54 LLIN
