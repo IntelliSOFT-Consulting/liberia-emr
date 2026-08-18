@@ -1,8 +1,16 @@
 # FHIR profiles and resources
 
-FHIR is the interoperability substrate for the External build class: the sync layer, the
-DHIS2 export and any future cross-facility query all lean on it, so the profiles live here
-rather than being restated in each integration.
+FHIR is the interoperability substrate for the External build class: the DHIS2 export,
+cross-facility query and any future national exchange all lean on it, so the profiles live
+here rather than being restated in each integration.
+
+**FHIR is not used for the facility→central push.** That path uses `openmrs-dbsync`'s native
+serialisation, because it is same-product replication where fidelity beats legibility, and
+because `patient_program`/`patient_state`, which carries MCH programme enrolment, has no
+honest FHIR mapping. FHIR is adopted for every **read** path, where it crosses a product
+boundary and earns its cost. The reasoning is in
+[ADR 0008](../../docs/adr/0008-adopt-openmrs-dbsync.md) and the
+[module evaluation](../../docs/architecture/sync-module-evaluation.md) §2.5.
 
 ## Contents (to build)
 
