@@ -80,25 +80,44 @@ Do not substitute Colour (HGT) for physical-exam Colour.
 
 Required clinical answers: Vertex, Breech, Transverse, Oblique, Other.
 
-⚠ **CIEL 160090 exists upstream in CIEL. What is missing is its inclusion in the OCL
-collection this build subscribes to** (`distribution/distro.properties` → `ocl.org=LIB`,
-`ocl.collections=mch`); it is absent from every OCL export under
-`content-packages/content-common/.../ocl/`. National Presentation is Vertex-only, so ANC
-uses a self-contained MCH value set as an interim stand-in. Parent FSN: Fetal Presentation
-at ANC; short name `Fetal presentation` (disambiguated from the national `Presentation`).
-`Same-as CIEL:160090` was attempted but omitted: without a CIEL concept source, Initializer
-rejects the mapping (`Concept Source is required`). Approved CIEL 160090 remains in
-traceability. Answer concepts are local only — CIEL answer IDs were not invented. The
-national Presentation concept is not used for new MCH forms.
+National Presentation is Vertex-only, so ANC uses a self-contained MCH value set. Parent FSN:
+Fetal Presentation at ANC; short name `Fetal presentation` (disambiguated from the national
+`Presentation`). `Same-as CIEL:160090` was attempted but omitted: without a CIEL concept
+source, Initializer rejects the mapping (`Concept Source is required`) — see open item 19 for
+why no CIEL source reaches the runtime. Answer concepts are local only — CIEL answer IDs were
+not invented. The national Presentation concept is not used for new MCH forms.
 
-**Open item before go-live.** Raise CIEL 160090 and its answers with the `LIB/mch`
-collection / CIEL maintainers, per [`../../content-packages/content-common/configuration/backend_configuration/ocl/README.md`](../../content-packages/content-common/configuration/backend_configuration/ocl/README.md):
-a concept that lives only in Liberia's database cannot be aggregated nationally. Once 160090
-lands in the collection, every presentation obs already recorded against the local value set
-needs a data migration, because concepts are append-only in production
-([IMPLEMENTATION.md §9](../../IMPLEMENTATION.md)) and the local set can never simply be
-removed. **Adding 160090 to the collection before go-live is far cheaper than migrating
-after it.**
+⚠ **The pinned export still does not contain 160090.** It was added to collection *HEAD* on
+2026-08-18, but `distro.properties` pins `ocl.collection.version=1.0.1` and the build fetches
+a *released* version. Until a new version is cut and that pin is bumped (open item 17), every
+build behaves exactly as before.
+
+**CIEL 160090 was added to the `LIB/mch` collection on 2026-08-18**, together with its 12
+CIEL answer concepts. That closes the availability question and opens a harder one, because
+**160090 is not a drop-in replacement for the local value set**:
+
+| Approved Liberian answer | CIEL 160090 equivalent |
+| --- | --- |
+| Vertex | `160091 Vertex presentation` — typed `Finding/Boolean` |
+| Breech | `146922 Breech presentation` |
+| Transverse | ⚠ collapsed with Oblique into `112259 Transverse or oblique fetal presentation` |
+| Oblique | ⚠ same concept as Transverse — the two cannot be told apart |
+| Other | ⚠ no equivalent |
+
+CIEL also carries 8 answers the DAK does not ask for (Compound, Mentum, Face or brow, Cord,
+Frank breech, Occiput anterior, Brow, Face, Footling breech). So migrating onto 160090 means
+losing the Transverse/Oblique distinction and "Other", and showing clinicians a 12-item list.
+
+⚠ **The `LIB/mch` collection carries no mappings at all** — 825 concepts, 0 mappings — so the
+Q-AND-A links between 160090 and those answers are absent from the export. Even after the
+import, 160090 loads as a coded question with no answers attached, and content still has to
+declare the answer set itself. See open item 19.
+
+The realistic options are therefore: keep the local value set and carry a `Same as` mapping to
+160090 once the collection carries mappings, or accept CIEL's coarser answer set. Either way,
+every presentation obs already recorded against the local value set needs a data migration if
+the concept changes, because concepts are append-only in production
+([IMPLEMENTATION.md §9](../../IMPLEMENTATION.md)).
 
 | Answer (UI label) | Short name | Variable |
 | --- | --- | --- |
@@ -144,9 +163,14 @@ Both MCH Boolean concepts have been removed. **Do not reintroduce them.** The LL
 was also a local duplicate of CIEL 160428 with no `Same as mappings`, which would have
 silently zeroed any DHIS2/FHIR LLIN indicator built on 160428.
 
-⚠ CIEL **160428** (LLIN received at ANC) is absent from every OCL export this distro loads,
-so the national question still cannot carry a `Same as mappings` today. Raise it with the
-`LIB/mch` collection maintainers alongside 160090.
+⚠ **The DAK's CIEL 160428 for DE.54 is a source error, not a missing term.** Checked against
+CIEL on 2026-08-18: 160428 is `Long-lasting insecticidal net` (**Misc / N/A**) — the commodity
+itself, not a question about whether one was received. Mapping our Yes/No question `Same as
+CIEL:160428` would assert that the question *is* a bednet. It was deliberately **not** added to
+the collection. No `Same as mappings` is owed here; raise the mismapping with whoever maintains
+the DAK sheet, alongside the DE.21 Weight error (`165379` is *total weight gain during current
+pregnancy*, not body weight). Both are the same class of defect as `LBR.LD.DE.81` and
+`EMR.FP.DE10`.
 
 The national IPT dose question (1st / 2nd / 3rd+) is left unchanged and is not used for the
 new MCH ANC forms — it has no exact 4th answer, and `3rd IPT dose+` must not be reused for
@@ -421,22 +445,39 @@ Updated against the DAK read on 2026-08-06 — see
     concepts. Closed: MCH FSNs use distinct `IPTp … at ANC` wording, **and short names now
     carry the same disambiguation** — concise-but-colliding short names were the remaining
     half of this problem, because Form Builder search renders short names.
-16. **Get CIEL `160090` (Presentation) and `160428` (LLIN received at ANC) added to the
-    `LIB/mch` OCL collection.** Both exist upstream in CIEL; neither is in any OCL export
-    this distro loads, which is why DE.24 runs on a local value set and DE.54 carries no
-    `Same as mappings`. Do this **before go-live**: afterwards, every obs already recorded
-    against the local concepts needs migrating, since concepts are append-only in production.
-    `165372` (Pelvic examination) and `165379` (Weight) are in the same position — both are
-    DAK-proposed and absent from every export, so the forms diverge onto other terms.
-17. **Clinical decision on the two ANC elements the two forms still record differently** —
+16. ~~Get CIEL `160090` and `165372` added to the `LIB/mch` OCL collection.~~ **Done
+    2026-08-18** via `scripts/build/ocl-add-concepts.sh`: `160090 Fetal presentation` plus its
+    12 answer concepts, and `165372 Pelvic examination findings`. `160428` and `165379` were
+    deliberately excluded — see item 20.
+17. **Cut a new released `LIB/mch` collection version and bump
+    `ocl.collection.version`** (currently `1.0.1`) in `distribution/distro.properties`.
+    References land on collection HEAD; the build fetches a *released* version, so until this
+    is done the import above changes nothing for any build.
+18. **Decide DE.24 Presentation:** migrate onto CIEL 160090 and lose the Transverse/Oblique
+    distinction and "Other", or keep the local value set and carry a `Same as` mapping. See
+    *ANC prenatal presentation*. DE.16 Pelvic examination has the same migrate-or-keep
+    decision now that 165372 is available.
+19. **The `LIB/mch` collection contains 825 concepts and ZERO mappings.** Every one of its 102
+    coded questions therefore loads with no answer linkage, and no `SAME-AS` mapping reaches
+    the runtime — which is the underlying reason `Same as CIEL:…` has never been loadable from
+    our CSVs. This is collection-wide and predates the ANC work. Decide whether the collection
+    should carry mappings (it is what makes CIEL useful for the DHIS2 and FHIR aggregation in
+    §8) and, if so, remediate it as one deliberate change rather than per concept.
+20. **Two DAK CIEL codes are wrong at source and must not be implemented as mapped:**
+    `LBR.EMR.DE.21` Weight → `165379` is *total weight gain during current pregnancy*, not body
+    weight (correct term is `5089`); `LBR.EMR.DE.54` LLIN received at ANC → `160428` is the
+    *bednet commodity* (Misc/N/A), not a question. Raise both with the sheet maintainer with
+    items in 10.
+21. **Clinical decision on the two ANC elements the two forms still record differently** —
     DE.24 Presentation (national is Vertex-only) and DE.48 IPT dose (national `3rd IPT dose+`
     versus exact 3rd/4th). See *Converged ANC concepts*. Until they land, any indicator on
     those two elements must read both concepts.
-18. **Retirement and migration analysis for the national ANC concepts superseded by the CIEL
+22. **Retirement and migration analysis for the national ANC concepts superseded by the CIEL
     convergence** (LMP, FT/P/A/LN, gestational age, fundal height, FHT), including whether
     PNC fundal height (`EMR.PND.DE27`) should also move to CIEL 1439. They stay declared
     until that analysis is done. `national.fundal-height-cm` is still live in
     `pnc-national.json`.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
-claim that MCH is specified. Item 16 is cheap now and expensive after go-live.
+claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
+build at all; item 19 is the one with the widest blast radius.
