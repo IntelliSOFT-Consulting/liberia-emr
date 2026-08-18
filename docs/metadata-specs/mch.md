@@ -449,20 +449,35 @@ Updated against the DAK read on 2026-08-06 — see
     2026-08-18** via `scripts/build/ocl-add-concepts.sh`: `160090 Fetal presentation` plus its
     12 answer concepts, and `165372 Pelvic examination findings`. `160428` and `165379` were
     deliberately excluded — see item 20.
-17. **Cut a new released `LIB/mch` collection version and bump
-    `ocl.collection.version`** (currently `1.0.1`) in `distribution/distro.properties`.
-    References land on collection HEAD; the build fetches a *released* version, so until this
-    is done the import above changes nothing for any build.
+17. ~~Cut a new released `LIB/mch` collection version and bump `ocl.collection.version`.~~
+    **Done 2026-08-18.** `LIB/mch` `1.0.2` was released (825 concepts, against 811 in `1.0.1`)
+    and `distribution/distro.properties` now pins it. Verified: `160090`, `165372` and all 12
+    presentation answers are in the released version, and `fetch-ciel.sh --version 1.0.2`
+    produces `lib-mch-ciel-1.0.2.zip` carrying them. The build is reproducible again — it is
+    no longer fetching HEAD.
 18. **Decide DE.24 Presentation:** migrate onto CIEL 160090 and lose the Transverse/Oblique
     distinction and "Other", or keep the local value set and carry a `Same as` mapping. See
     *ANC prenatal presentation*. DE.16 Pelvic examination has the same migrate-or-keep
     decision now that 165372 is available.
-19. **The `LIB/mch` collection contains 825 concepts and ZERO mappings.** Every one of its 102
-    coded questions therefore loads with no answer linkage, and no `SAME-AS` mapping reaches
-    the runtime — which is the underlying reason `Same as CIEL:…` has never been loadable from
-    our CSVs. This is collection-wide and predates the ANC work. Decide whether the collection
-    should carry mappings (it is what makes CIEL useful for the DHIS2 and FHIR aggregation in
-    §8) and, if so, remediate it as one deliberate change rather than per concept.
+19. **The `LIB/mch` collection contains 825 concepts and ZERO mappings** — still true in the
+    released `1.0.2`. Every one of its 104 coded questions loads with no answer linkage, and no
+    `SAME-AS` mapping reaches the runtime, which is the underlying reason `Same as CIEL:…` has
+    never been loadable from our CSVs (`Concept Source is required`). Collection-wide, and it
+    predates the ANC work.
+
+    **Scoped 2026-08-18 and ready to run.** Sampling 60 of the 825 concepts found a mean of
+    6.1 mappings each, so the repair is roughly **5,000 mappings** — trivial beside the ~300,000
+    in a full CIEL export that `ocl/README.md` warns about, so the Initializer startup cost the
+    curated collection exists to avoid does not apply here. By type: ~66% `SAME-AS` (what the
+    DHIS2 and FHIR aggregation in §8 needs), ~16% `Q-AND-A` (what gives coded questions their
+    answers), the rest `NARROWER-THAN`/`BROADER-THAN`. Of the `Q-AND-A` answer targets sampled,
+    **52 of 54 are already in the collection**, so the repair creates few dangling references —
+    and `scripts/build/ocl-add-mappings.py` refuses to add a `Q-AND-A` whose answer concept is
+    absent rather than reproducing this defect in mapping form.
+
+    Run `OCL_API_TOKEN=… scripts/build/ocl-add-mappings.py --types SAME-AS,Q-AND-A` for the dry
+    run, then `--apply`, then cut `1.0.3` and bump the pin. Doing `Q-AND-A` first is the smaller,
+    higher-value half.
 20. **Two DAK CIEL codes are wrong at source and must not be implemented as mapped:**
     `LBR.EMR.DE.21` Weight → `165379` is *total weight gain during current pregnancy*, not body
     weight (correct term is `5089`); `LBR.EMR.DE.54` LLIN received at ANC → `160428` is the
