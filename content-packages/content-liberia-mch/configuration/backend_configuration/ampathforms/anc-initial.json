@@ -277,7 +277,9 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "${var.concept.national.blood-pressure-systolic.uuid}"
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "min": "50",
+                "max": "260"
               },
               "id": "systolicBloodPressure",
               "label": "Blood pressure (Systolic)",
@@ -287,7 +289,9 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}"
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "min": "30",
+                "max": "180"
               },
               "id": "diastolicBloodPressure",
               "label": "Blood pressure (Diastolic)",
@@ -299,7 +303,7 @@
                 "rendering": "number",
                 "concept": "${var.concept.ciel.weight-kg.uuid}",
                 "min": "20",
-                "max": "300"
+                "max": "250"
               },
               "id": "weight",
               "label": "Weight",
@@ -423,12 +427,18 @@
             {
               "type": "obs",
               "questionOptions": {
-                "rendering": "toggle",
-                "concept": "${var.concept.mch.woman-receiving-ipt.uuid}",
-                "toggleOptions": {
-                  "labelTrue": "Yes",
-                  "labelFalse": "No"
-                }
+                "rendering": "radio",
+                "concept": "${var.concept.national.woman-receiving-ipt.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
               },
               "id": "womanReceivingIpt",
               "label": "Woman receiving IPT",
@@ -464,12 +474,12 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "womanReceivingIpt === true && isEmpty(myValue)",
+                  "failsWhenExpression": "womanReceivingIpt === '${var.concept.ciel.yes.uuid}' && isEmpty(myValue)",
                   "message": "Select the IPT dose administered"
                 }
               ],
               "hide": {
-                "hideWhenExpression": "womanReceivingIpt !== true"
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.yes.uuid}'"
               }
             },
             {
@@ -487,26 +497,25 @@
               "id": "iptpDeferralReason",
               "label": "IPTp deferral reason",
               "required": false,
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "womanReceivingIpt === false && isEmpty(myValue)",
-                  "message": "Select the IPTp deferral reason"
-                }
-              ],
               "hide": {
-                "hideWhenExpression": "womanReceivingIpt !== false"
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.no.uuid}'"
               }
             },
             {
               "type": "obs",
               "questionOptions": {
-                "rendering": "toggle",
-                "concept": "${var.concept.mch.llin-received-at-anc.uuid}",
-                "toggleOptions": {
-                  "labelTrue": "Yes",
-                  "labelFalse": "No"
-                }
+                "rendering": "radio",
+                "concept": "${var.concept.national.llin-received-at-anc.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
               },
               "id": "llinReceivedAtAnc",
               "label": "LLIN received at ANC"

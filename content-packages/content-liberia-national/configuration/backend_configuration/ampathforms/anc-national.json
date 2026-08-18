@@ -1,7 +1,7 @@
 {
   "name": "ANC Form",
   "uuid": "43924f79-673e-4869-92c2-8418ff02a98f",
-  "version": "1.0",
+  "version": "1.1",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -28,7 +28,7 @@
               "type": "obs",
               "id": "lmp",
               "questionOptions": {
-                "concept": "${var.concept.national.last-menstrual-period-lmp.uuid}",
+                "concept": "${var.concept.ciel.lmp.uuid}",
                 "rendering": "date"
               }
             },
@@ -37,7 +37,7 @@
               "type": "obs",
               "id": "ftb",
               "questionOptions": {
-                "concept": "${var.concept.national.full-term-births-f.uuid}",
+                "concept": "${var.concept.ciel.full-term-births.uuid}",
                 "rendering": "number"
               }
             },
@@ -46,7 +46,7 @@
               "type": "obs",
               "id": "ptb",
               "questionOptions": {
-                "concept": "${var.concept.national.preterm-births-p.uuid}",
+                "concept": "${var.concept.ciel.preterm-births.uuid}",
                 "rendering": "number"
               }
             },
@@ -55,7 +55,7 @@
               "type": "obs",
               "id": "abortions",
               "questionOptions": {
-                "concept": "${var.concept.national.abortions-a.uuid}",
+                "concept": "${var.concept.ciel.abortions.uuid}",
                 "rendering": "number"
               }
             },
@@ -64,7 +64,7 @@
               "type": "obs",
               "id": "living_children",
               "questionOptions": {
-                "concept": "${var.concept.national.living-children-l-n.uuid}",
+                "concept": "${var.concept.ciel.living-children.uuid}",
                 "rendering": "number"
               }
             }
@@ -301,7 +301,7 @@
               "type": "obs",
               "id": "gestational_age",
               "questionOptions": {
-                "concept": "${var.concept.national.gestational-age-weeks.uuid}",
+                "concept": "${var.concept.ciel.gestational-age.uuid}",
                 "rendering": "number"
               }
             },
@@ -310,7 +310,7 @@
               "type": "obs",
               "id": "fundal_height",
               "questionOptions": {
-                "concept": "${var.concept.national.fundal-height-cm.uuid}",
+                "concept": "${var.concept.ciel.fundal-height.uuid}",
                 "rendering": "number"
               }
             },
@@ -343,7 +343,7 @@
               "type": "obs",
               "id": "fht",
               "questionOptions": {
-                "concept": "${var.concept.national.fetal-heart-tone-fht.uuid}",
+                "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "rendering": "number"
               }
             },

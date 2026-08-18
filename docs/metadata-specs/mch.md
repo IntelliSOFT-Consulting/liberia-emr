@@ -78,33 +78,70 @@ Do not substitute Colour (HGT) for physical-exam Colour.
 | --- | --- | --- | --- |
 | `LBR.EMR.DE.24` Presentation | Local MCH coded (traced to CIEL 160090) | `var.concept.mch.fetal-presentation.uuid` | Runtime fallback |
 
-Required clinical answers: Vertex, Breech, Transverse, Oblique, Other. CIEL 160090 is not
-present in the local dictionary and national Presentation is Vertex-only, so ANC uses a
-self-contained MCH value set. Parent FSN: Fetal Presentation at ANC; short name Presentation.
-`Same-as CIEL:160090` was attempted but omitted: without a CIEL concept source, Initializer
-rejects the mapping (`Concept Source is required`). Approved CIEL 160090 remains in
-traceability. Answer concepts are local only — CIEL answer IDs were not invented. The
-national Presentation concept is not used for new MCH forms.
+Required clinical answers: Vertex, Breech, Transverse, Oblique, Other.
 
-| Answer (UI label) | Variable |
+National Presentation is Vertex-only, so ANC uses a self-contained MCH value set. Parent FSN:
+Fetal Presentation at ANC; short name `Fetal presentation` (disambiguated from the national
+`Presentation`). `Same-as CIEL:160090` was attempted but omitted: without a CIEL concept
+source, Initializer rejects the mapping (`Concept Source is required`) — see open item 19 for
+why no CIEL source reaches the runtime. Answer concepts are local only — CIEL answer IDs were
+not invented. The national Presentation concept is not used for new MCH forms.
+
+⚠ **The pinned export still does not contain 160090.** It was added to collection *HEAD* on
+2026-08-18, but `distro.properties` pins `ocl.collection.version=1.0.1` and the build fetches
+a *released* version. Until a new version is cut and that pin is bumped (open item 17), every
+build behaves exactly as before.
+
+**CIEL 160090 was added to the `LIB/mch` collection on 2026-08-18**, together with its 12
+CIEL answer concepts. That closes the availability question and opens a harder one, because
+**160090 is not a drop-in replacement for the local value set**:
+
+| Approved Liberian answer | CIEL 160090 equivalent |
 | --- | --- |
-| Vertex | `var.concept.mch.presentation-vertex.uuid` |
-| Breech | `var.concept.mch.presentation-breech.uuid` |
-| Transverse | `var.concept.mch.presentation-transverse.uuid` |
-| Oblique | `var.concept.mch.presentation-oblique.uuid` |
-| Other | `var.concept.mch.presentation-other.uuid` |
+| Vertex | `160091 Vertex presentation` — typed `Finding/Boolean` |
+| Breech | `146922 Breech presentation` |
+| Transverse | ⚠ collapsed with Oblique into `112259 Transverse or oblique fetal presentation` |
+| Oblique | ⚠ same concept as Transverse — the two cannot be told apart |
+| Other | ⚠ no equivalent |
+
+CIEL also carries 8 answers the DAK does not ask for (Compound, Mentum, Face or brow, Cord,
+Frank breech, Occiput anterior, Brow, Face, Footling breech). So migrating onto 160090 means
+losing the Transverse/Oblique distinction and "Other", and showing clinicians a 12-item list.
+
+⚠ **The `LIB/mch` collection carries no mappings at all** — 825 concepts, 0 mappings — so the
+Q-AND-A links between 160090 and those answers are absent from the export. Even after the
+import, 160090 loads as a coded question with no answers attached, and content still has to
+declare the answer set itself. See open item 19.
+
+The realistic options are therefore: keep the local value set and carry a `Same as` mapping to
+160090 once the collection carries mappings, or accept CIEL's coarser answer set. Either way,
+every presentation obs already recorded against the local value set needs a data migration if
+the concept changes, because concepts are append-only in production
+([IMPLEMENTATION.md §9](../../IMPLEMENTATION.md)).
+
+| Answer (UI label) | Short name | Variable |
+| --- | --- | --- |
+| Vertex | Vertex presentation | `var.concept.mch.presentation-vertex.uuid` |
+| Breech | Breech presentation | `var.concept.mch.presentation-breech.uuid` |
+| Transverse | Transverse presentation | `var.concept.mch.presentation-transverse.uuid` |
+| Oblique | Oblique presentation | `var.concept.mch.presentation-oblique.uuid` |
+| Other | Other presentation | `var.concept.mch.presentation-other.uuid` |
+
+Short names carry the `… presentation` suffix so Form Builder search does not return two
+entries rendering as the identical label — national `concepts-national.csv` already has
+`Vertex` and `Presentation` as fully specified names.
 
 ### ANC IPT model
 
 Signed dictionary semantics (preserve; do not replace with Administered/Deferred):
 
-1. Woman receiving IPT? → Boolean (true / false)
-2. If true → IPT dose administered → 1st / 2nd / 3rd / 4th
-3. If false and deferred → IPTp deferral reason → Malaria treatment initiated
+1. Woman receiving IPT? → coded Yes / No (CIEL 1065 / 1066)
+2. If Yes → IPT dose administered → 1st / 2nd / 3rd / 4th
+3. If No and deferred → IPTp deferral reason → Malaria treatment initiated (optional)
 
 | Element | Home | Variable |
 | --- | --- | --- |
-| Woman receiving IPT (`LBR.EMR.DE.53`) | Local MCH Boolean fallback | `var.concept.mch.woman-receiving-ipt.uuid` |
+| Woman receiving IPT (`LBR.EMR.DE.53`) | Existing national coded Yes/No | `var.concept.national.woman-receiving-ipt.uuid` |
 | IPT dose administered (`LBR.EMR.DE.48`) | New MCH coded question | `var.concept.mch.ipt-dose-administered.uuid` |
 | 1st IPT dose | New MCH answer | `var.concept.mch.1st-ipt-dose.uuid` |
 | 2nd IPT dose | New MCH answer | `var.concept.mch.2nd-ipt-dose.uuid` |
@@ -112,24 +149,50 @@ Signed dictionary semantics (preserve; do not replace with Administered/Deferred
 | 4th IPT dose | New MCH answer | `var.concept.mch.4th-ipt-dose.uuid` |
 | IPTp deferral reason | New MCH coded question | `var.concept.mch.iptp-deferral-reason.uuid` |
 | Malaria treatment initiated | New MCH answer | `var.concept.mch.iptp-deferred-malaria-treatment.uuid` |
-| LLIN received at ANC (`LBR.EMR.DE.54`) | Local MCH Boolean fallback | `var.concept.mch.llin-received-at-anc.uuid` |
+| LLIN received at ANC (`LBR.EMR.DE.54`) | Existing national coded Yes/No | `var.concept.national.llin-received-at-anc.uuid` |
 
-National Woman receiving IPT / LLIN received at ANC Yes/No concepts are left unchanged and
-are not used for new MCH ANC forms (they fail to load without CIEL Yes/No). FSN for the IPT
-Boolean is `Woman Receiving IPT at ANC`; for LLIN `LLIN Received During ANC Contact`. Form
-Builder labels stay `Woman receiving IPT` and `LLIN received at ANC`.
+**No local Boolean duplicates.** Earlier drafts declared MCH Boolean concepts for Woman
+receiving IPT and LLIN received at ANC on the premise that the national coded questions
+"do not load (missing CIEL Yes/No)". That premise was wrong: CIEL **1065** (Yes) and **1066**
+(No) are both present in `lib-mch-ciel-head.zip`, and the national questions already carry
+them as answers. The Boolean fallbacks would not have worked in any case — OpenMRS stores a
+Boolean obs by resolving `ConceptService.getTrueConcept()` / `getFalseConcept()`, which read
+the `concept.true` / `concept.false` global properties; nothing in this repo sets either, so
+the obs would have been rejected on save and the whole encounter POST would have failed.
+Both MCH Boolean concepts have been removed. **Do not reintroduce them.** The LLIN Boolean
+was also a local duplicate of CIEL 160428 with no `Same as mappings`, which would have
+silently zeroed any DHIS2/FHIR LLIN indicator built on 160428.
+
+⚠ **The DAK's CIEL 160428 for DE.54 is a source error, not a missing term.** Checked against
+CIEL on 2026-08-18: 160428 is `Long-lasting insecticidal net` (**Misc / N/A**) — the commodity
+itself, not a question about whether one was received. Mapping our Yes/No question `Same as
+CIEL:160428` would assert that the question *is* a bednet. It was deliberately **not** added to
+the collection. No `Same as mappings` is owed here; raise the mismapping with whoever maintains
+the DAK sheet, alongside the DE.21 Weight error (`165379` is *total weight gain during current
+pregnancy*, not body weight). Both are the same class of defect as `LBR.LD.DE.81` and
+`EMR.FP.DE10`.
 
 The national IPT dose question (1st / 2nd / 3rd+) is left unchanged and is not used for the
-new MCH ANC forms. The MCH dose value set is entirely self-contained (no national answer
-UUID references) because `concepts-mch.csv` is processed before `concepts-national.csv`.
-FSNs use the `… at ANC` / `IPTp …` wording to avoid colliding with national FSNs; short
-names and Form Builder labels stay clinically concise (`IPT dose administered`,
-`1st IPT dose`, …). Do not reuse national `3rd IPT dose+` for exact 3rd. No additional
-deferral reasons in this increment.
+new MCH ANC forms — it has no exact 4th answer, and `3rd IPT dose+` must not be reused for
+exact 3rd. The MCH dose value set is entirely self-contained (no national answer UUID
+references) because `concepts-mch.csv` is processed before `concepts-national.csv`. FSNs use
+the `… at ANC` / `IPTp …` wording to avoid colliding with national FSNs, and **short names
+carry the same disambiguation** (`IPTp dose administered`, `1st IPTp dose`, …) so Form
+Builder search does not return two entries with identical labels — `concepts-national.csv`
+already has `IPT dose administered`, `1st IPT dose` and `2nd IPT dose` as fully specified
+names. No additional deferral reasons in this increment.
 
-Fatima acceptance representation: Woman receiving IPT = false; IPTp deferral reason = Malaria
-treatment initiated. The ANC Initial schema conditionally requires the dose when true and the
-deferral reason when false.
+**IPTp deferral reason is optional, deliberately.** The answer set holds one clinically
+approved reason (Malaria treatment initiated), but IPT is also legitimately not given when
+gestational age is below 13 weeks, when the schedule is already complete, on SP stock-out,
+or on documented sulfa allergy. Making the question mandatory whenever Woman receiving IPT =
+No would force clinicians to record a reason that is false, and that value would flow into
+the national IPT dataset as a real observation. Extend the answer set with the clinical team
+**before** making it required.
+
+Fatima acceptance representation: Woman receiving IPT = No; IPTp deferral reason = Malaria
+treatment initiated. The ANC Initial schema conditionally requires the dose when Yes, and
+offers (but does not require) the deferral reason when No.
 
 ### Pregnant Woman Health Card
 
@@ -144,32 +207,90 @@ remain outside concept metadata).
 
 | Area | Use |
 | --- | --- |
-| Obstetric history | Gravida, LMP, Full-term births, Preterm births, Abortions, Living children — **no Parity row** |
-| Physical exam Colour (`DE.7`) | National `Color` + national Normal / Abnormal — not Colour (HGT) |
-| Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions + national Normal / Abnormal |
+| Obstetric history | CIEL Gravida (5624), LMP (1427), Full-term births (160080), Preterm births (160078), Abortions (1823), Living children (1825) — **no Parity row** |
+| Physical exam Colour (`DE.7`) | National `Color` + CIEL Normal (1115) / Abnormal (1116) — not Colour (HGT) |
+| Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions (Abdomen is CIEL 1808) + CIEL Normal / Abnormal |
 | Colour (HGT) (`DE.25`) | National Text — prenatal/HGT only; do not use for physical-exam Colour |
-| SBP / DBP / Weight | National Blood Pressure (Systolic/Diastolic) / Weight (kg) |
-| Gestational age / Fundal height / Fetal heart tone | Prefer existing national equivalents at Form Builder time if MCH CIEL aliases are absent from the local dictionary |
+| SBP / DBP | National Blood Pressure (Systolic / Diastolic), bounded 50–260 and 30–180 |
+| Weight | CIEL 5089 Weight (kg), form `max` **250** — CIEL 5089 carries `hi_absolute = 250` and `ObsValidator` rejects anything above it server-side, failing the whole encounter POST |
+| Gestational age / Fundal height / Fetal heart tone | CIEL 1438 / 1439 / 1440. Both ANC forms use these; the national local equivalents are superseded (see *Converged ANC concepts* below) |
 | Other findings / Routine drugs / Treatment remarks | Existing national text (drugs/remarks supplemental only) |
-| Trimester | Existing national Pregnancy status question/value set — do **not** alias CIEL 5272 |
-| Woman receiving IPT / LLIN received at ANC | Local MCH Boolean fallbacks below |
+| Trimester | CIEL 5272 Pregnancy status with the existing national trimester answers |
+| Woman receiving IPT / LLIN received at ANC | Existing **national coded Yes/No** questions, answered by CIEL 1065 / 1066 — **never** a local Boolean |
 | Presentation | Local MCH value set — do **not** use national Vertex-only Presentation |
+
+### Converged ANC concepts
+
+"ANC Form" (`anc-national.json`, encounter `Consultation`) and "ANC Initial Visit"
+(`anc-initial.json`, encounter `ANC Initial Visit`) both sit in the Maternal and Child Health
+form section and a clinician can open either. They previously recorded the same DAK elements
+against **different** concepts, so any ANC coverage, hypertension or IPTp indicator — and the
+patient chart flowsheet — saw only the encounters entered on one of the two forms, with no
+error anywhere.
+
+Both forms now write the same series for every element where a verified CIEL term exists:
+
+| DAK element | Converged on | Was, in `anc-national.json` |
+| --- | --- | --- |
+| `DE.2` LMP | CIEL 1427 | `var.concept.national.last-menstrual-period-lmp.uuid` |
+| `DE.3` Full-term births | CIEL 160080 | `var.concept.national.full-term-births-f.uuid` |
+| `DE.4` Preterm births | CIEL 160078 | `var.concept.national.preterm-births-p.uuid` |
+| `DE.5` Abortions | CIEL 1823 | `var.concept.national.abortions-a.uuid` |
+| `DE.6` Living children | CIEL 1825 | `var.concept.national.living-children-l-n.uuid` |
+| `DE.22` Gestational age | CIEL 1438 | `var.concept.national.gestational-age-weeks.uuid` |
+| `DE.23` Fundal height | CIEL 1439 | `var.concept.national.fundal-height-cm.uuid` |
+| `DE.26` Fetal heart tone | CIEL 1440 | `var.concept.national.fetal-heart-tone-fht.uuid` |
+| `DE.53` Woman receiving IPT | national coded Yes/No (CIEL 1065/1066) | *(MCH form used a local Boolean)* |
+| `DE.54` LLIN received at ANC | national coded Yes/No (CIEL 1065/1066) | *(MCH form used a local Boolean)* |
+
+The shared CIEL aliases are declared in
+`content-liberia-national/configuration/variables.properties`, not in the MCH package:
+content-liberia-national must build without content-liberia-mch, because mch depends on
+national and never the reverse.
+
+⚠ **Still divergent — needs a clinical value-set decision, not a code change.**
+
+- `DE.24` **Presentation.** "ANC Form" uses national `Presentation` (Vertex-only); "ANC
+  Initial Visit" uses the MCH value set (Vertex / Breech / Transverse / Oblique / Other).
+  Converging means adding the four missing answers to the *national* question — additive and
+  permitted under §9 — but it is a national value-set change that needs clinical sign-off,
+  and CIEL 160090 remains the real target once it lands in the collection.
+- `DE.48` **IPT dose administered.** "ANC Form" offers 1st / 2nd / **3rd+**; "ANC Initial
+  Visit" offers exact 1st / 2nd / 3rd / 4th. These cannot merge until someone decides what
+  happens to the national `3rd IPT dose+` answer — it cannot be reused for exact 3rd, and
+  offering both alongside each other would be incoherent at the point of care.
+
+Until those two land, an indicator on Presentation or IPT dose must read both concepts.
+
+⚠ **Retirement and migration are deliberately NOT done here.** The superseded national
+concepts stay declared: they are append-only ([IMPLEMENTATION.md §9](../../IMPLEMENTATION.md)),
+and `var.concept.national.fundal-height-cm.uuid` is still referenced by `pnc-national.json`.
+Retiring them — and deciding whether PNC fundal height (`EMR.PND.DE27`) should also move to
+CIEL 1439 — needs a migration analysis of any obs already recorded against them. At the time
+of this change the distribution is `1.0.0-SNAPSHOT` with no release tag, so there should be
+no such obs; confirm against the pilot database before retiring. `anc-national.json` is
+bumped to version `1.1` so any existing encounters stay bound to the schema they were
+entered under.
 
 ### Declared locally
 
-ANC IPT / LLIN / presentation / health-card concepts:
+ANC IPT / presentation / health-card concepts. **DE.53 Woman receiving IPT and DE.54 LLIN
+received at ANC are NOT here** — they use the existing national coded Yes/No questions; the
+local Boolean concepts that once stood in for them have been removed and must not come back.
 
-| Concept (FSN) | Type | Answers / notes |
-| --- | --- | --- |
-| Woman Receiving IPT at ANC | Boolean | signed DE.53 Boolean semantics |
-| LLIN Received During ANC Contact | Boolean | signed DE.54 Boolean semantics |
-| IPTp Dose Administered at ANC | Coded | MCH 1st–4th only |
-| First / Second / Third / Fourth IPTp Dose at ANC | N/A | answers |
-| IPTp deferral reason | Coded | Malaria treatment initiated |
-| Malaria treatment initiated | N/A | answer |
-| Fetal Presentation at ANC | Coded | Vertex; Breech; Transverse; Oblique; Other (CIEL 160090 traced in docs only) |
-| Vertex / Breech / Transverse / Oblique / Other Fetal Presentation at ANC | N/A | answers; no CIEL answer mappings |
-| Pregnant Woman Health Card Issue Date | Date | — |
+| Concept (FSN) | Short name | Type | Answers / notes |
+| --- | --- | --- | --- |
+| IPTp Dose Administered at ANC | IPTp dose administered | Coded | MCH 1st–4th only |
+| First / Second / Third / Fourth IPTp Dose at ANC | 1st–4th IPTp dose | N/A | answers |
+| IPTp deferral reason | IPTp deferral reason | Coded | Malaria treatment initiated (optional — answer set incomplete) |
+| Malaria treatment initiated | Malaria treatment initiated | N/A | answer |
+| Fetal Presentation at ANC | Fetal presentation | Coded | Vertex; Breech; Transverse; Oblique; Other (CIEL 160090 traced in docs only) |
+| Vertex / Breech / Transverse / Oblique / Other Fetal Presentation at ANC | `… presentation` | N/A | answers; no CIEL answer mappings |
+| Pregnant Woman Health Card Issue Date | Health card issue date | Date | — |
+
+Short names are listed because they must not collide with a national fully specified name —
+`concepts-national.csv` already carries `Vertex`, `Presentation`, `IPT dose administered`,
+`1st IPT dose` and `2nd IPT dose`, and Form Builder search shows short names.
 
 Partograph observations (no adequate CIEL term found — ⚠ each still needs a CIEL lookup
 recorded or an explicit "none exists" note):
@@ -321,8 +442,57 @@ Updated against the DAK read on 2026-08-06 — see
     CIEL 160090 retained in traceability (Same-as omitted until CIEL source exists);
     answer CIEL IDs not invented.
 15. ~~OpenMRS fully-specified-name collision risk~~ between national and MCH IPT dose
-    concepts. Closed: MCH FSNs use distinct `IPTp … at ANC` wording; short names remain
-    concise for Form Builder labels.
+    concepts. Closed: MCH FSNs use distinct `IPTp … at ANC` wording, **and short names now
+    carry the same disambiguation** — concise-but-colliding short names were the remaining
+    half of this problem, because Form Builder search renders short names.
+16. ~~Get CIEL `160090` and `165372` added to the `LIB/mch` OCL collection.~~ **Done
+    2026-08-18** via `scripts/build/ocl-add-concepts.sh`: `160090 Fetal presentation` plus its
+    12 answer concepts, and `165372 Pelvic examination findings`. `160428` and `165379` were
+    deliberately excluded — see item 20.
+17. ~~Cut a new released `LIB/mch` collection version and bump `ocl.collection.version`.~~
+    **Done 2026-08-18.** `LIB/mch` `1.0.2` was released (825 concepts, against 811 in `1.0.1`)
+    and `distribution/distro.properties` now pins it. Verified: `160090`, `165372` and all 12
+    presentation answers are in the released version, and `fetch-ciel.sh --version 1.0.2`
+    produces `lib-mch-ciel-1.0.2.zip` carrying them. The build is reproducible again — it is
+    no longer fetching HEAD.
+18. **Decide DE.24 Presentation:** migrate onto CIEL 160090 and lose the Transverse/Oblique
+    distinction and "Other", or keep the local value set and carry a `Same as` mapping. See
+    *ANC prenatal presentation*. DE.16 Pelvic examination has the same migrate-or-keep
+    decision now that 165372 is available.
+19. **The `LIB/mch` collection contains 825 concepts and ZERO mappings** — still true in the
+    released `1.0.2`. Every one of its 104 coded questions loads with no answer linkage, and no
+    `SAME-AS` mapping reaches the runtime, which is the underlying reason `Same as CIEL:…` has
+    never been loadable from our CSVs (`Concept Source is required`). Collection-wide, and it
+    predates the ANC work.
+
+    **Scoped 2026-08-18 and ready to run.** Sampling 60 of the 825 concepts found a mean of
+    6.1 mappings each, so the repair is roughly **5,000 mappings** — trivial beside the ~300,000
+    in a full CIEL export that `ocl/README.md` warns about, so the Initializer startup cost the
+    curated collection exists to avoid does not apply here. By type: ~66% `SAME-AS` (what the
+    DHIS2 and FHIR aggregation in §8 needs), ~16% `Q-AND-A` (what gives coded questions their
+    answers), the rest `NARROWER-THAN`/`BROADER-THAN`. Of the `Q-AND-A` answer targets sampled,
+    **52 of 54 are already in the collection**, so the repair creates few dangling references —
+    and `scripts/build/ocl-add-mappings.py` refuses to add a `Q-AND-A` whose answer concept is
+    absent rather than reproducing this defect in mapping form.
+
+    Run `OCL_API_TOKEN=… scripts/build/ocl-add-mappings.py --types SAME-AS,Q-AND-A` for the dry
+    run, then `--apply`, then cut `1.0.3` and bump the pin. Doing `Q-AND-A` first is the smaller,
+    higher-value half.
+20. **Two DAK CIEL codes are wrong at source and must not be implemented as mapped:**
+    `LBR.EMR.DE.21` Weight → `165379` is *total weight gain during current pregnancy*, not body
+    weight (correct term is `5089`); `LBR.EMR.DE.54` LLIN received at ANC → `160428` is the
+    *bednet commodity* (Misc/N/A), not a question. Raise both with the sheet maintainer with
+    items in 10.
+21. **Clinical decision on the two ANC elements the two forms still record differently** —
+    DE.24 Presentation (national is Vertex-only) and DE.48 IPT dose (national `3rd IPT dose+`
+    versus exact 3rd/4th). See *Converged ANC concepts*. Until they land, any indicator on
+    those two elements must read both concepts.
+22. **Retirement and migration analysis for the national ANC concepts superseded by the CIEL
+    convergence** (LMP, FT/P/A/LN, gestational age, fundal height, FHT), including whether
+    PNC fundal height (`EMR.PND.DE27`) should also move to CIEL 1439. They stay declared
+    until that analysis is done. `national.fundal-height-cm` is still live in
+    `pnc-national.json`.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
-claim that MCH is specified.
+claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
+build at all; item 19 is the one with the widest blast radius.
