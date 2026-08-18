@@ -12,7 +12,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "${var.concept.pnc.parity.uuid}"
+                "concept": "${var.concept.ciel.parity.uuid}"
               },
               "id": "parity",
               "label": "Parity"
@@ -51,7 +51,7 @@
                 "concept": "${var.concept.national.place-of-delivery.uuid}",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.place-of-delivery-health-facility.uuid}",
+                    "concept": "${var.concept.ciel.health-facility.uuid}",
                     "label": "Health facility"
                   },
                   {

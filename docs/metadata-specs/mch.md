@@ -385,15 +385,13 @@ visibility, or contact gating.
   7 days (`3a981f7d-2691-469d-921c-470e39a74cb3`), PPC 3 within 28 days
   (`ca6a3b18-00a4-4320-bc2d-f7ff8350ce72`), and PPC 4 within 42 days
   (`820b6a3b-216a-46e0-8f07-b19e93336aa7`).
-- `Parity` uses the runtime-loaded local Numeric/Question concept
-  (`b60efef6-7728-402c-922d-e8a137e7044c`). The live non-demo dictionary does not contain
-  the DAK's CIEL 1053 UUID. The local concept was created by the runtime daemon on
-  2026-08-12, has no external mapping, and is now managed by the MCH package.
+- `Parity` reuses the runtime-loaded CIEL Numeric/Question concept
+  (`1053AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`). The MCH package does not redeclare it.
 - National terminology authoritatively owns `Place of Delivery`
   (`68bcf423-25ab-48a5-8c0e-5bd1ee6b7e02`) and its local `Home`
-  (`636aece0-5ab8-4e95-b491-192c3349cd79`) and `Health facility`
-  (`c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5`) answers. MCH reuses those loaded concepts and
-  does not redeclare them. Neither answer relies on unavailable CIEL 1536/1537 UUIDs.
+  (`636aece0-5ab8-4e95-b491-192c3349cd79`) answer. `Health facility` reuses the
+  runtime-loaded CIEL concept (`1537AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`). MCH reuses these
+  loaded concepts and does not redeclare them.
 - Initial HIV result (`da0be8c8-ecd0-4680-b0f8-8fd4fcd40ddd`) and `Results at PNC
   re-test` (`c5a63b81-253a-486f-961f-6740e647645e`) both use CIEL 664 Negative,
   CIEL 703 Positive, and CIEL 1067 Unknown. Both are available at every catch-up contact;
