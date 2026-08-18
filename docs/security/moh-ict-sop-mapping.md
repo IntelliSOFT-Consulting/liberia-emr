@@ -85,15 +85,43 @@ first, not the second.
 | D3 | Encrypted backups | — | `docs/runbooks/backup-restore.md` | **Open** |
 | D4 | No secrets in the repository | — | Only `.env.example` templates committed; enforced by `scripts/validate/no-secrets.sh` in CI | Enforced |
 | D5 | Legacy admin UI disabled | — | `OMRS_CONFIG_MODULE_WEB_ADMIN=false` and blocked at the gateway | Enforced |
+| D6 | Per-facility broker authorisation: send-only, own address only | — | Artemis broker at central; see [sync architecture](../architecture/sync-eip.md) §7.3 | **Open** |
+| D7 | Full-disk encryption on facility servers | — | Facility host build | **Open**; not previously in this register |
+| D8 | Facility certificate revocation enforced at central | — | Broker CRL/OCSP; [sync architecture](../architecture/sync-eip.md) §7.2 | **Open** |
+
+### D3: the copies that are easy to miss
+
+Backup encryption is usually scoped to the OpenMRS database. The sync layer creates four
+further copies of clinical data at rest: the **binary log** (up to six months of every
+change), the sender's **management database** (retry payloads), the **broker journal** at
+central, and the sync queue volume. All are in scope for D3. See
+[sync architecture](../architecture/sync-eip.md) §7.4.
+
+### D6: why a broker permission is a national-scale control
+
+Facilities share one broker. A permission granting a facility read access to anything other
+than its own address lets it read other facilities' clinical data. It is one line of
+configuration and it fails silently, so it is verified by a **negative test**, a facility
+credential proving it *cannot* read another facility's address, not by config review.
+
+### D7: facility servers are not in a data centre
+
+They sit in health centres, physically reachable and unattended overnight. A stolen server
+yields the clinical database, six months of binary log, and the facility's client
+certificate. Disk encryption is what makes theft a hardware loss rather than a breach.
 
 ---
 
 ## Open items blocking go-live sign-off
 
-1. **A4 / A5** — password expiry and history (ADR 0004).
-2. **A7** — server-side session timeout to match the client timer.
-3. **B4** — named-account policy in the runbook and training material.
-4. **C3** — log review confirming no PHI reaches application logs.
-5. **D3** — backup encryption implemented and a restore rehearsed.
+1. **A4 / A5**: password expiry and history (ADR 0004).
+2. **A7**: server-side session timeout to match the client timer.
+3. **B4**: named-account policy in the runbook and training material.
+4. **C3**: log review confirming no PHI reaches application logs.
+5. **D3**: backup encryption implemented and a restore rehearsed, covering all five copies
+   of clinical data at rest, not only the OpenMRS database.
+6. **D6 / D8**: broker authorisation and certificate revocation, each proven by a negative
+   test rather than by configuration review.
+7. **D7**: facility disk encryption accepted as a control and an owner named.
 
 Nothing on this list is closed by editing a CSV.
