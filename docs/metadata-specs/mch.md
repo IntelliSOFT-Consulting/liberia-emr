@@ -374,6 +374,85 @@ Five schemas, none written yet. See the
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
 
+### Mother PNC terminology contract
+
+The Mother PNC form itself is created manually in Form Builder. Metadata provides these
+stable concepts without encoding form requiredness, multi-select behaviour, conditional
+visibility, or contact gating.
+
+- `Post-partum care` (`1659ca4e-56a1-4dda-8668-8e9a0dcc571e`) retains its existing UUID
+  and has PPC 1 within 24 hours (`0717361a-8470-42ff-b457-f02eb48b432e`), PPC 2 within
+  7 days (`3a981f7d-2691-469d-921c-470e39a74cb3`), PPC 3 within 28 days
+  (`ca6a3b18-00a4-4320-bc2d-f7ff8350ce72`), and PPC 4 within 42 days
+  (`820b6a3b-216a-46e0-8f07-b19e93336aa7`).
+- `Parity` uses the runtime-loaded local Numeric/Question concept
+  (`b60efef6-7728-402c-922d-e8a137e7044c`). The live non-demo dictionary does not contain
+  the DAK's CIEL 1053 UUID. The local concept was created by the runtime daemon on
+  2026-08-12, has no external mapping, and is now managed by the MCH package.
+- National terminology authoritatively owns `Place of Delivery`
+  (`68bcf423-25ab-48a5-8c0e-5bd1ee6b7e02`) and its local `Home`
+  (`636aece0-5ab8-4e95-b491-192c3349cd79`) and `Health facility`
+  (`c2bdbd9e-185b-4f77-b1e9-b7ee8d38def5`) answers. MCH reuses those loaded concepts and
+  does not redeclare them. Neither answer relies on unavailable CIEL 1536/1537 UUIDs.
+- Initial HIV result (`da0be8c8-ecd0-4680-b0f8-8fd4fcd40ddd`) and `Results at PNC
+  re-test` (`c5a63b81-253a-486f-961f-6740e647645e`) both use CIEL 664 Negative,
+  CIEL 703 Positive, and CIEL 1067 Unknown. Both are available at every catch-up contact;
+  re-test is not gated to six weeks.
+- `HIV counselling provided` (`cb61aa35-c0b3-44b3-8f7b-ac78faf7a9b8`) follows the
+  Liberia coded Yes/No convention and is available at every catch-up contact.
+- Referral uses the shared referral workflow; no PNC-specific referral observation exists.
+- `Vitamin A for mother at 6 wks` (`996b496d-1c9d-4492-bb84-a0106ea635d1`) is the
+  current DE21 concept. The former DE31 duplicate is not part of the live workbook.
+
+#### DE14 Complications
+
+`Maternal Postnatal Complications` (`0576b7e5-8326-4b16-ba9b-0b6016bdd11c`) is a coded
+Question. Its terminology name is deliberately specific because the runtime already has a
+demo surgical `Complications` concept (`64fe56e6-5b52-4cdb-adc2-b6d50bfdee63`) with
+Misc/Text semantics; Form Builder should display the field label `Complications` and render
+it as multi-select. The live workbook contains Pre-eclampsia twice;
+that duplication is preserved in traceability, while the concept value set correctly
+contains CIEL 129251 only once.
+
+| Answer | UUID |
+| --- | --- |
+| No labour or birth complications | `1107AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Unknown labour or intrapartum complications | `1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Pre-eclampsia | `129251AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Eclampsia | `118744AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Maternal convulsions | `113054AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Other pregnancy or labour problems (specify) | `5622AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Hypertension | `117399AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Severe pre-eclampsia | `113006AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Anaemia | `121629AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| HIV positive | `138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| TB positive | `112141AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Syphilis positive | `112493AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Respiratory tract infection | `113304AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Low oximetry | `158211AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Fever | `140238AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Early onset neonatal sepsis | `91bdbfe7-1b3c-4866-9f6d-3b599bd7e84b` |
+| Postpartum haemorrhage | `80e01283-3690-4872-8486-fac16552c19b` |
+| Perineal laceration | `468d8e9c-f509-4045-9ac9-519960fbdfa6` |
+| Severe hypertension | `7eb59ca2-1c2b-49f0-826a-4c04173eed9a` |
+| Iron prescribed | `699c7614-39ea-4673-9aa7-43f59285150b` |
+| HIV inconclusive | `16ea7a29-7649-4fb5-8e94-d446c382cfa0` |
+| Postpartum infection | `30ac9358-1b9d-4450-86ad-d97c314c861a` |
+| Risk of postnatal depression and/or anxiety | `71393e98-5650-480f-83f3-802e0e90e084` |
+| Risk of alloimmunization | `3be13f35-03c3-44aa-8302-74dc7f8570a5` |
+| Substantial risk of HIV | `4eff9170-7163-4c63-9799-41a19870e12a` |
+| Risk of bleeding or postpartum infection | `0bfa2c23-7c4b-437b-8f0d-8338c327c5db` |
+| Perineal Infection | `887ca517-5359-451a-99fe-b39b820f09ff` |
+| Abnormal caesarean-section wound exam | `17345eaf-ccf6-490a-8536-9747244b8032` |
+| Wound infection suspected | `87ef7a27-07d5-45b6-9e06-45da09366d53` |
+| Uterine infection suspected | `20d76b7a-050a-4c9a-a022-9c915bb7e125` |
+| Postpartum bleeding | `cb077720-badb-4b9f-9827-23f1644b235f` |
+| Severe oedema | `b8acbfbf-433a-4342-b809-90cfa14c851c` |
+
+When CIEL 5622 is selected, Form Builder should show the companion Text Question `Other
+pregnancy or labour problems details` (`30481431-0ff0-47b1-995c-12fcdc0da7e7`). The
+hide/show expression belongs to the form and is intentionally absent from metadata.
+
 ---
 
 ## 6. Orders
