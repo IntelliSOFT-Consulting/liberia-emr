@@ -124,7 +124,7 @@
                     "label": "Other pregnancy or labour problems (specify)"
                   },
                   {
-                    "concept": "${var.concept.ciel.low-oximetry.uuid}",
+                    "concept": "${var.concept.ciel.oxygen-desaturation.uuid}",
                     "label": "Low oximetry"
                   },
                   {
@@ -152,8 +152,8 @@
                     "label": "Pre-eclampsia"
                   },
                   {
-                    "concept": "${var.concept.ciel.respiratory-tract-infection.uuid}",
-                    "label": "Respiratory tract infection"
+                    "concept": "${var.concept.ciel.respiratory-tract-infection-nos.uuid}",
+                    "label": "Respiratory tract infection, NOS"
                   },
                   {
                     "concept": "${var.concept.pnc.risk-alloimmunization.uuid}",
@@ -184,11 +184,11 @@
                     "label": "Substantial risk of HIV"
                   },
                   {
-                    "concept": "${var.concept.ciel.syphilis-positive.uuid}",
+                    "concept": "${var.concept.ciel.syphilis.uuid}",
                     "label": "Syphilis positive"
                   },
                   {
-                    "concept": "${var.concept.ciel.tb-positive.uuid}",
+                    "concept": "${var.concept.ciel.tuberculosis.uuid}",
                     "label": "TB positive"
                   },
                   {
@@ -262,7 +262,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "select",
-                "concept": "${var.concept.national.hiv-test-results-at-6-weeks.uuid}",
+                "concept": "${var.concept.national.results-at-pnc-re-test.uuid}",
                 "answers": [
                   {
                     "concept": "${var.concept.ciel.664.uuid}",

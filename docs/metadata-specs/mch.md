@@ -374,11 +374,9 @@ Five schemas, none written yet. See the
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
 
-### Mother PNC terminology contract
+### Mother PNC terminology and schema contract
 
-The Mother PNC form itself is created manually in Form Builder. Metadata provides these
-stable concepts without encoding form requiredness, multi-select behaviour, conditional
-visibility, or contact gating.
+The Mother PNC form (`content-packages/content-liberia-mch/configuration/backend_configuration/ampathforms/pnc-visit.json`) was designed and validated through Form Builder, and the exported/versioned JSON in the content package is the deployable, reproducible source of truth. Rendering, requiredness, and hide/show logic live in the form schema, while concept metadata supplies terminology and value sets.
 
 - `Post-partum care` (`1659ca4e-56a1-4dda-8668-8e9a0dcc571e`) retains its existing UUID
   and has PPC 1 within 24 hours (`0717361a-8470-42ff-b457-f02eb48b432e`), PPC 2 within
@@ -400,17 +398,18 @@ visibility, or contact gating.
   Liberia coded Yes/No convention and is available at every catch-up contact.
 - Referral uses the shared referral workflow; no PNC-specific referral observation exists.
 - `Vitamin A for mother at 6 wks` (`996b496d-1c9d-4492-bb84-a0106ea635d1`) is the
-  current DE21 concept. The former DE31 duplicate is not part of the live workbook.
+  current DE21 concept. The former DE31 duplicate is not part of the live workbook. It is
+  conditionally shown when PPC 4 (42 days) is selected via form hide expression
+  `postPartumCare !== '${var.concept.national.ppc-4-received-within-42-days.uuid}'`.
 
 #### DE14 Complications
 
 `Maternal Postnatal Complications` (`0576b7e5-8326-4b16-ba9b-0b6016bdd11c`) is a coded
 Question. Its terminology name is deliberately specific because the runtime already has a
 demo surgical `Complications` concept (`64fe56e6-5b52-4cdb-adc2-b6d50bfdee63`) with
-Misc/Text semantics; Form Builder should display the field label `Complications` and render
-it as multi-select. The live workbook contains Pre-eclampsia twice;
-that duplication is preserved in traceability, while the concept value set correctly
-contains CIEL 129251 only once.
+Misc/Text semantics. The form schema renders it using `checkbox-searchable` with the field
+label `Complications`. The live workbook contains Pre-eclampsia twice; that duplication is
+preserved in traceability, while the concept value set correctly contains CIEL 129251 only once.
 
 | Answer | UUID |
 | --- | --- |
@@ -426,7 +425,7 @@ contains CIEL 129251 only once.
 | HIV positive | `138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
 | TB positive | `112141AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
 | Syphilis positive | `112493AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
-| Respiratory tract infection | `113304AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
+| Respiratory tract infection, NOS | `999AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
 | Low oximetry | `158211AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
 | Fever | `140238AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` |
 | Early onset neonatal sepsis | `91bdbfe7-1b3c-4866-9f6d-3b599bd7e84b` |
@@ -447,9 +446,7 @@ contains CIEL 129251 only once.
 | Postpartum bleeding | `cb077720-badb-4b9f-9827-23f1644b235f` |
 | Severe oedema | `b8acbfbf-433a-4342-b809-90cfa14c851c` |
 
-When CIEL 5622 is selected, Form Builder should show the companion Text Question `Other
-pregnancy or labour problems details` (`30481431-0ff0-47b1-995c-12fcdc0da7e7`). The
-hide/show expression belongs to the form and is intentionally absent from metadata.
+When CIEL 5622 (`Other pregnancy or labour problems (specify)`) is selected, the companion Text Question `Other pregnancy or labour problems details` (`30481431-0ff0-47b1-995c-12fcdc0da7e7`) is displayed via form hide expression `!maternalComplications?.includes('${var.concept.ciel.other.uuid}')`.
 
 ---
 
