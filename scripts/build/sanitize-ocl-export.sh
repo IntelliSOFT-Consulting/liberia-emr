@@ -117,7 +117,7 @@ for zip_path in sys.argv[1:]:
             print(f"OCL sanitize: {os.path.basename(zip_path)} already clean")
             continue
 
-        fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+        fd, tmp_path = tempfile.mkstemp(suffix=".zip", dir=os.path.dirname(zip_path))
         os.close(fd)
         try:
             with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as target:
