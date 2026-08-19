@@ -327,12 +327,18 @@
             {
               "type": "obs",
               "questionOptions": {
-                "rendering": "toggle",
-                "concept": "${var.concept.mch.woman-receiving-ipt.uuid}",
-                "toggleOptions": {
-                  "labelTrue": "Yes",
-                  "labelFalse": "No"
-                }
+                "concept": "${var.concept.national.woman-receiving-ipt.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
               },
               "id": "womanReceivingIpt",
               "label": "Woman receiving IPT",
@@ -366,7 +372,7 @@
               "label": "IPT dose administered",
               "required": true,
               "hide": {
-                "hideWhenExpression": "womanReceivingIpt !== true"
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.yes.uuid}'"
               }
             },
             {
@@ -384,18 +390,24 @@
               "id": "iptpDeferralReason",
               "label": "IPTp deferral reason",
               "hide": {
-                "hideWhenExpression": "womanReceivingIpt !== false"
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.no.uuid}'"
               }
             },
             {
               "type": "obs",
               "questionOptions": {
-                "rendering": "toggle",
-                "concept": "${var.concept.mch.llin-received-at-anc.uuid}",
-                "toggleOptions": {
-                  "labelTrue": "Yes",
-                  "labelFalse": "No"
-                }
+                "concept": "${var.concept.national.llin-received-at-anc.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
               },
               "id": "llinReceivedAtAnc",
               "label": "LLIN received at ANC"
