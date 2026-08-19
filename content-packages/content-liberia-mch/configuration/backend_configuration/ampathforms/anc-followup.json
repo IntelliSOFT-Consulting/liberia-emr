@@ -1,0 +1,454 @@
+{
+  "name": "ANC Follow-up Visit",
+  "pages": [
+    {
+      "label": "Follow-up ANC Assessment",
+      "sections": [
+        {
+          "label": "Physical Examination",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.color.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "physicalExamColour",
+              "label": "Colour"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.heart.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "heart",
+              "label": "Heart"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.lungs.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "lungs",
+              "label": "Lungs"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.breasts.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "breasts",
+              "label": "Breasts"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.nipples.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "nipples",
+              "label": "Nipples"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ciel.abdomen.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "abdomen",
+              "label": "Abdomen"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.extremities.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "extremities",
+              "label": "Extremities"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.pelvic-examination.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.abnormal.uuid}",
+                    "label": "Abnormal"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              },
+              "id": "pelvicExamination",
+              "label": "Pelvic examination"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.explain-abnormalities.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "explainAbnormalities",
+              "label": "Explain abnormalities",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "physicalExamColour !== '${var.concept.ciel.abnormal.uuid}' && heart !== '${var.concept.ciel.abnormal.uuid}' && lungs !== '${var.concept.ciel.abnormal.uuid}' && breasts !== '${var.concept.ciel.abnormal.uuid}' && nipples !== '${var.concept.ciel.abnormal.uuid}' && abdomen !== '${var.concept.ciel.abnormal.uuid}' && extremities !== '${var.concept.ciel.abnormal.uuid}' && pelvicExamination !== '${var.concept.ciel.abnormal.uuid}'"
+              }
+            }
+          ]
+        },
+        {
+          "label": "Maternal Assessment",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}"
+              },
+              "id": "systolicBloodPressure",
+              "label": "Blood pressure (Systolic)",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}"
+              },
+              "id": "diastolicBloodPressure",
+              "label": "Blood pressure (Diastolic)",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.weight-kg.uuid}",
+                "min": "20",
+                "max": "300"
+              },
+              "id": "weight",
+              "label": "Weight",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.gestational-age-weeks.uuid}",
+                "min": "0",
+                "max": "45"
+              },
+              "id": "gestationalAge",
+              "label": "Gestational age",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.ciel.pregnancy-status.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1st-trimester.uuid}",
+                    "label": "1st trimester"
+                  },
+                  {
+                    "concept": "${var.concept.national.2nd-trimester.uuid}",
+                    "label": "2nd trimester"
+                  },
+                  {
+                    "concept": "${var.concept.national.3rd-trimester.uuid}",
+                    "label": "3rd trimester"
+                  }
+                ]
+              },
+              "id": "pregnancyTrimester",
+              "label": "Pregnancy trimester",
+              "required": true
+            }
+          ]
+        },
+        {
+          "label": "Fetal Assessment",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.fundal-height-cm.uuid}",
+                "min": "0",
+                "max": "50"
+              },
+              "id": "fundalHeight",
+              "label": "Fundal height",
+              "required": false
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.mch.fetal-presentation.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.presentation-breech.uuid}",
+                    "label": "Breech"
+                  },
+                  {
+                    "concept": "${var.concept.mch.presentation-oblique.uuid}",
+                    "label": "Oblique"
+                  },
+                  {
+                    "concept": "${var.concept.mch.presentation-transverse.uuid}",
+                    "label": "Transverse"
+                  },
+                  {
+                    "concept": "${var.concept.mch.presentation-vertex.uuid}",
+                    "label": "Vertex"
+                  },
+                  {
+                    "concept": "${var.concept.mch.presentation-other.uuid}",
+                    "label": "Other"
+                  }
+                ]
+              },
+              "id": "fetalPresentation",
+              "label": "Presentation"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.fetal-heart-tone-fht.uuid}",
+                "min": "60",
+                "max": "220"
+              },
+              "id": "fetalHeartTone",
+              "label": "Fetal heart tone (FHT)"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.other-findings.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "otherFindings",
+              "label": "Other findings"
+            }
+          ]
+        },
+        {
+          "label": "Preventive Interventions",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "concept": "${var.concept.national.woman-receiving-ipt.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "womanReceivingIpt",
+              "label": "Woman receiving IPT",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.mch.ipt-dose-administered.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.1st-ipt-dose.uuid}",
+                    "label": "First IPTp Dose at ANC"
+                  },
+                  {
+                    "concept": "${var.concept.mch.2nd-ipt-dose.uuid}",
+                    "label": "Second IPTp Dose at ANC"
+                  },
+                  {
+                    "concept": "${var.concept.mch.3rd-ipt-dose.uuid}",
+                    "label": "Third IPTp Dose at ANC"
+                  },
+                  {
+                    "concept": "${var.concept.mch.4th-ipt-dose.uuid}",
+                    "label": "Fourth IPTp Dose at ANC"
+                  }
+                ]
+              },
+              "id": "iptDoseAdministered",
+              "label": "IPT dose administered",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.yes.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.iptp-deferral-reason.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.iptp-deferred-malaria-treatment.uuid}",
+                    "label": "Malaria treatment initiated"
+                  }
+                ]
+              },
+              "id": "iptpDeferralReason",
+              "label": "IPTp deferral reason",
+              "hide": {
+                "hideWhenExpression": "womanReceivingIpt !== '${var.concept.ciel.no.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "concept": "${var.concept.national.llin-received-at-anc.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "llinReceivedAtAnc",
+              "label": "LLIN received at ANC"
+            }
+          ]
+        },
+        {
+          "label": "Management Notes",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.routine-drugs.uuid}",
+                "maxLength": "500"
+              },
+              "id": "routineDrugs",
+              "label": "Routine drugs"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.treatment-remarks.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "treatmentRemarks",
+              "label": "Treatment remarks"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "processor": "EncounterFormProcessor",
+  "encounter": "ANC Follow-up Visit",
+  "referencedForms": [],
+  "uuid": "${var.form.anc-followup.uuid}",
+  "description": "Captures clinical information for a pregnant woman’s follow-up antenatal care visit, including physical examination, maternal and fetal assessment, preventive interventions, and treatment notes.",
+  "version": "1.0",
+  "published": true,
+  "retired": false
+}

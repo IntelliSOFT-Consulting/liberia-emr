@@ -272,6 +272,20 @@ no such obs; confirm against the pilot database before retiring. `anc-national.j
 bumped to version `1.1` so any existing encounters stay bound to the schema they were
 entered under.
 
+### ANC fetal presentation and IPT model
+
+ANC fetal presentation uses the self-contained MCH coded concept
+`var.concept.mch.fetal-presentation.uuid`, with Vertex, Breech, Transverse, Oblique and Other
+answer variables. This is the runtime fallback for DAK CIEL 160090; no CIEL answer IDs were
+invented.
+
+Woman receiving IPT uses the existing NATIONAL coded Yes/No concept (`var.concept.national.woman-receiving-ipt.uuid`).
+LLIN received at ANC uses the existing NATIONAL coded Yes/No concept (`var.concept.national.llin-received-at-anc.uuid`).
+CIEL 1065 / 1066 (`${var.concept.ciel.yes.uuid}` / `${var.concept.ciel.no.uuid}`) are the answers.
+The local Boolean fallbacks were removed and must not be reintroduced.
+
+When Woman receiving IPT is Yes (`${var.concept.ciel.yes.uuid}`), `var.concept.mch.ipt-dose-administered.uuid` is shown with exact 1st–4th MCH answers; when No (`${var.concept.ciel.no.uuid}`), `var.concept.mch.iptp-deferral-reason.uuid` is shown. The only sourced acceptance answer currently represented is `var.concept.mch.iptp-deferred-malaria-treatment.uuid`; no additional reasons are inferred.
+
 ### Declared locally
 
 ANC IPT / presentation / health-card concepts. **DE.53 Woman receiving IPT and DE.54 LLIN
