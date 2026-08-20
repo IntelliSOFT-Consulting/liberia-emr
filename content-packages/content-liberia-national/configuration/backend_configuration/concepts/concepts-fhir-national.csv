@@ -1,0 +1,10 @@
+Uuid,Same as mappings
+${var.concept.ciel.immunization-history.uuid},CIEL:1421
+${var.concept.ciel.immunization-sequence-number.uuid},CIEL:1418
+${var.concept.ciel.vaccination-date.uuid},CIEL:1410
+${var.concept.ciel.vaccine-manufacturer.uuid},CIEL:1419
+${var.concept.ciel.vaccine-lot-number.uuid},CIEL:1420
+${var.concept.ciel.vaccine-lot-expiration-date.uuid},CIEL:165907
+${var.concept.ciel.free-text-comment.uuid},CIEL:161011
+${var.concept.ciel.date-of-next-dose.uuid},CIEL:170000
+${var.concept.ciel.immunizations.uuid},CIEL:984

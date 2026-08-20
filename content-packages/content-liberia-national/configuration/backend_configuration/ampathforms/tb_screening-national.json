@@ -155,9 +155,12 @@
               "label": "Total Score",
               "id": "total_score",
               "type": "obs",
-              "disabled": {
-                "disableWhenExpression": "true"
-              },
+              "behaviours": [
+                {
+                  "intent": "*",
+                  "readonly": true
+                }
+              ],
               "questionOptions": {
                 "rendering": "number",
                 "disallowDecimals": true,
