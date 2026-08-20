@@ -1,10 +1,10 @@
-Uuid,Fully specified name:en,Data class,Data type,Same as mappings
-1421AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Immunization history,Finding,N/A,CIEL:1421
-1418AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Immunization sequence number,Finding,Numeric,CIEL:1418
-1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Vaccination date,Finding,Date,CIEL:1410
-1419AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Vaccine manufacturer,Finding,Text,CIEL:1419
-1420AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Vaccine lot number,Finding,Text,CIEL:1420
-165907AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Vaccine lot expiration date,Finding,Date,CIEL:165907
-161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Free text comment,Misc,Text,CIEL:161011
-170000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Date of next dose,Question,Date,CIEL:170000
-984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,Immunizations,ConvSet,Coded,CIEL:984
+Uuid,Same as mappings
+${var.concept.ciel.immunization-history.uuid},CIEL:1421
+${var.concept.ciel.immunization-sequence-number.uuid},CIEL:1418
+${var.concept.ciel.vaccination-date.uuid},CIEL:1410
+${var.concept.ciel.vaccine-manufacturer.uuid},CIEL:1419
+${var.concept.ciel.vaccine-lot-number.uuid},CIEL:1420
+${var.concept.ciel.vaccine-lot-expiration-date.uuid},CIEL:165907
+${var.concept.ciel.free-text-comment.uuid},CIEL:161011
+${var.concept.ciel.date-of-next-dose.uuid},CIEL:170000
+${var.concept.ciel.immunizations.uuid},CIEL:984

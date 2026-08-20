@@ -46,6 +46,8 @@ readonly SMOKE_TEST_KEYS=(
   "var.concept.ciel.lmp.uuid"
   "var.concept.ciel.gravida.uuid"
   "var.concept.ciel.birth-weight.uuid"
+  "var.concept.ciel.immunization-history.uuid"
+  "var.concept.ciel.immunizations.uuid"
 )
 
 token="${OCL_API_TOKEN:-}"

@@ -158,7 +158,7 @@
               "behaviours": [
                 {
                   "intent": "*",
-                  "readonly": "true"
+                  "readonly": true
                 }
               ],
               "questionOptions": {

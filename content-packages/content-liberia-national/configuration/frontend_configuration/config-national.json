@@ -129,9 +129,6 @@
     "Brand color #2": "#001B56",
     "Brand color #3": "#002A86"
   },
-  "@openmrs/esm-patient-medications-app": {
-    "conceptClasses": ["Drug"]
-  },
   "@openmrs/esm-patient-forms-app": {
     "orderBy": "most-recent",
     "formSections": [
