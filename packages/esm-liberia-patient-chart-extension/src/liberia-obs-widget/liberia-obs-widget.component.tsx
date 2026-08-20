@@ -193,7 +193,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Sub-component: horizontal table (rows = concepts, columns = encounters)
+// Sub-component: vertical table (rows = encounters, columns = concepts)
 // ---------------------------------------------------------------------------
 
 interface ObsTableProps {
