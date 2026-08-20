@@ -56,7 +56,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const [showGraph, setShowGraph] = useState(false);
 
   // Fallback for when handlePostResponse is not supported by the environment's esm-form-engine-app version:
-  // We simply listen for any click on a "Save" or "Submit" button and trigger a brief 3-second cache-busting poll.
+  // We simply listen for any click on a "Save" or "Submit" button and trigger a brief 2-second cache-busting poll.
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
