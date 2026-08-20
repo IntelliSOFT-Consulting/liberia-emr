@@ -36,9 +36,9 @@ interface LiberiaObsWidgetProps {
 /**
  * Generic "Observations by Encounter" widget.
  *
- * - Rows    = concepts from config.data (ordered as configured)
- * - Columns = encounters (newest-first by default, paged to config.maxEncounters)
- * - "Add"   = opens the AMPATH form identified by config.formUuid in the
+ * - Rows = encounters (newest-first, by default, paged to config.maxEncounters)
+ * - Columns = concepts from config.data (ordered as configured)
+ * - "Add" = opens the AMPATH form identified by config.formUuid in the
  *             standard patient-form-entry-workspace (no custom workspace needed)
  *
  * Display mode is explicitly configured (table / graph / switchable) — it is
@@ -75,7 +75,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
     return () => document.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  // Paginate encounter columns
+  // Paginate encounters
   const [page, setPage] = useState(0);
   const pagedEncounters = useMemo(() => {
     const start = page * config.maxEncounters;

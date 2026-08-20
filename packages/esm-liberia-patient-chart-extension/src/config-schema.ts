@@ -41,7 +41,7 @@ export const configSchema = {
       _type: Type.Object,
       concept: {
         _type: Type.ConceptUuid,
-        _description: 'Concept UUID to display as a row (table) or series (graph).',
+        _description: 'Concept UUID to display as a column (table) or series (graph).',
       },
       label: {
         _type: Type.String,
@@ -50,17 +50,17 @@ export const configSchema = {
       },
     },
     _default: [],
-    _description: 'Ordered list of concepts to display. Each entry becomes one row in table mode.',
+    _description: 'Ordered list of concepts to display. Each entry becomes one column in table mode.',
   },
   maxEncounters: {
     _type: Type.Number,
     _default: 5,
-    _description: 'Number of encounter columns shown per page.',
+    _description: 'Number of encounters shown per page.',
   },
   oldestFirst: {
     _type: Type.Boolean,
     _default: false,
-    _description: 'Sort encounter columns oldest-to-newest (left to right). Defaults to newest first.',
+    _description: 'Sort encounters oldest-to-newest. Defaults to newest first.',
   },
   fullWidth: {
     _type: Type.Boolean,
