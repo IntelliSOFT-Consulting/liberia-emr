@@ -290,12 +290,16 @@ const ObsGraph: React.FC<ObsGraphProps> = ({ encounters, configData, title }: Ob
     }).filter(Boolean);
   }, [encounters]);
 
-  const selectedConcept = configData[selectedConceptIndex];
+  const safeIndex = configData.length > 0 ? Math.min(selectedConceptIndex, configData.length - 1) : 0;
+  const selectedConcept = configData[safeIndex];
+  
   const chartData = useMemo(() => {
+    if (!selectedConcept) return [];
     return getChartDataForConcept(selectedConcept.concept, selectedConcept.label);
   }, [getChartDataForConcept, selectedConcept]);
 
   const chartOptions: LineChartOptions = useMemo(() => {
+    if (!selectedConcept) return {} as LineChartOptions;
     return {
       title: t(selectedConcept.label || selectedConcept.concept),
       axes: {
@@ -344,8 +348,7 @@ const ObsGraph: React.FC<ObsGraphProps> = ({ encounters, configData, title }: Ob
     };
   }, [t, selectedConcept]);
 
-  const hasAnyData = encounters.some(enc => enc.obs.length > 0);
-  if (!hasAnyData) {
+  if (!selectedConcept || !encounters.some((enc) => enc.obs.length > 0)) {
     return (
       <div className={styles.graphPlaceholder}>
         <p>{t('noNumericData', 'No numeric data available to graph.')}</p>
