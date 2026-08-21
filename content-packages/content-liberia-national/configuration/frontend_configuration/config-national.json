@@ -217,7 +217,6 @@
         "concept": "${var.concept.national.total-score.uuid}",
         "label": "Total Score"
       }
-    ],
-    "resultsName": "There are no results to display for this patient"
+    ]
   }
 }
