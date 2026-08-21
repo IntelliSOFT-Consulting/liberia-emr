@@ -1,0 +1,466 @@
+{
+  "name": "Mother PNC",
+  "pages": [
+    {
+      "label": "Mother PNC Assessment",
+      "sections": [
+        {
+          "label": "PNC Visit Details",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.parity.uuid}"
+              },
+              "id": "parity",
+              "label": "Parity"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.national.post-partum-care.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.ppc-1-received-within-24hrs.uuid}",
+                    "label": "PPC 1: Received within 24hrs"
+                  },
+                  {
+                    "concept": "${var.concept.national.ppc-2-received-within-7-days.uuid}",
+                    "label": "PPC 2: Received within 7 days"
+                  },
+                  {
+                    "concept": "${var.concept.national.ppc-3-received-within-28-days.uuid}",
+                    "label": "PPC 3: Received within 28 days"
+                  },
+                  {
+                    "concept": "${var.concept.national.ppc-4-received-within-42-days.uuid}",
+                    "label": "PPC 4: Received within 42 days"
+                  }
+                ]
+              },
+              "id": "postPartumCare",
+              "label": "Post-partum care"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.place-of-delivery.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.health-facility.uuid}",
+                    "label": "Health facility"
+                  },
+                  {
+                    "concept": "${var.concept.national.place-of-delivery-home.uuid}",
+                    "label": "Home"
+                  }
+                ]
+              },
+              "id": "placeOfDelivery",
+              "label": "Place of Delivery"
+            }
+          ]
+        },
+        {
+          "label": "Maternal Complications and Referral",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "checkbox-searchable",
+                "concept": "${var.concept.pnc.complications.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.pnc.abnormal-caesarean-wound-exam.uuid}",
+                    "label": "Abnormal caesarean-section wound exam"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.anaemia.uuid}",
+                    "label": "Anaemia"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.maternal-convulsions.uuid}",
+                    "label": "Maternal convulsions"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.early-onset-neonatal-sepsis.uuid}",
+                    "label": "Early onset neonatal sepsis"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.eclampsia.uuid}",
+                    "label": "Eclampsia"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.fever.uuid}",
+                    "label": "Fever"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.hiv-inconclusive.uuid}",
+                    "label": "HIV inconclusive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.hiv-positive.uuid}",
+                    "label": "HIV positive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.hypertension.uuid}",
+                    "label": "Hypertension"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.iron-prescribed.uuid}",
+                    "label": "Iron prescribed"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no-labour-birth-complications.uuid}",
+                    "label": "No labour or birth complications"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.other.uuid}",
+                    "label": "Other pregnancy or labour problems (specify)"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.oxygen-desaturation.uuid}",
+                    "label": "Low oximetry"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.perineal-infection.uuid}",
+                    "label": "Perineal Infection"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.perineal-laceration.uuid}",
+                    "label": "Perineal laceration"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.postpartum-bleeding.uuid}",
+                    "label": "Postpartum bleeding"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.postpartum-haemorrhage.uuid}",
+                    "label": "Postpartum haemorrhage"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.postpartum-infection.uuid}",
+                    "label": "Postpartum infection"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.pre-eclampsia.uuid}",
+                    "label": "Pre-eclampsia"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.respiratory-tract-infection-nos.uuid}",
+                    "label": "Respiratory tract infection, NOS"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.risk-alloimmunization.uuid}",
+                    "label": "Risk of alloimmunization"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.risk-bleeding-postpartum-infection.uuid}",
+                    "label": "Risk of bleeding or postpartum infection"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.risk-postnatal-depression-anxiety.uuid}",
+                    "label": "Risk of postnatal depression and/or anxiety"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.severe-hypertension.uuid}",
+                    "label": "Severe hypertension"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.severe-oedema.uuid}",
+                    "label": "Severe oedema"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.severe-pre-eclampsia.uuid}",
+                    "label": "Severe pre-eclampsia"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.substantial-risk-hiv.uuid}",
+                    "label": "Substantial risk of HIV"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.syphilis.uuid}",
+                    "label": "Syphilis positive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.tuberculosis.uuid}",
+                    "label": "TB positive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.unknown.uuid}",
+                    "label": "Unknown labour or intrapartum complications"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.uterine-infection-suspected.uuid}",
+                    "label": "Uterine infection suspected"
+                  },
+                  {
+                    "concept": "${var.concept.pnc.wound-infection-suspected.uuid}",
+                    "label": "Wound infection suspected"
+                  }
+                ]
+              },
+              "id": "maternalComplications",
+              "label": "Complications"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.pnc.other-pregnancy-labour-problems-details.uuid}"
+              },
+              "id": "otherPregnancyOrLabourProblemsDetails",
+              "label": "Other pregnancy or labour problems details",
+              "hide": {
+                "hideWhenExpression": "!maternalComplications?.includes('${var.concept.ciel.other.uuid}')"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.complications-identified-and-managed.uuid}"
+              },
+              "id": "complicationsIdentifiedAndManaged",
+              "label": "Complications Identified and Managed"
+            }
+          ]
+        },
+        {
+          "label": "HIV Services",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.national.hiv-test-results-at-initial-pnc-visit.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.664.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.703.uuid}",
+                    "label": "Positive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.unknown.uuid}",
+                    "label": "Unknown"
+                  }
+                ]
+              },
+              "id": "initialPncHivResult",
+              "label": "Results at initial PNC visit"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.national.results-at-pnc-re-test.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.664.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.703.uuid}",
+                    "label": "Positive"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.unknown.uuid}",
+                    "label": "Unknown"
+                  }
+                ]
+              },
+              "id": "resultsAtPncReTest",
+              "label": "Results at PNC re-test"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.pnc.hiv-counselling-provided.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "hivCounsellingProvided",
+              "label": "HIV counselling provided"
+            }
+          ]
+        },
+        {
+          "label": "Maternal Clinical Assessment",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.assessment-findings-of-the-mother-s-breasts.uuid}"
+              },
+              "id": "breast",
+              "label": "Breast"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.national.fundal-height-cm.uuid}"
+              },
+              "id": "fundalHeight",
+              "label": "Fundal height"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.haemoglobin.uuid}"
+              },
+              "id": "hb",
+              "label": "Hb"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.assessment-of-the-condition-of-the-perineum.uuid}"
+              },
+              "id": "perineum",
+              "label": "Perineum"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.lochia-assessment.uuid}"
+              },
+              "id": "lochia",
+              "label": "Lochia"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.general-health-status.uuid}"
+              },
+              "id": "generalHealthStatus",
+              "label": "General health status"
+            }
+          ]
+        },
+        {
+          "label": "Preventive Care and Counselling",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.preventive-interventions-provided-during-the-post-partum-period.uuid}"
+              },
+              "id": "preventionMaternal",
+              "label": "Prevention Maternal"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.vitamin-a-for-mother-at-6-wks.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "vitaminAForMotherAt6Wks",
+              "label": "Vitamin A for mother at 6 wks",
+              "hide": {
+                "hideWhenExpression": "postPartumCare !== '${var.concept.national.ppc-4-received-within-42-days.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.counselled-mother-on-danger-signs.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "counselledMotherOnDangerSigns",
+              "label": "Counselled mother on danger signs"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.counselled-mother-on-breastfeeding.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "counselledMotherOnBreastfeeding",
+              "label": "Counselled mother on breastfeeding"
+            }
+          ]
+        },
+        {
+          "label": "Intervention and Follow-up",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.intervention.uuid}"
+              },
+              "id": "intervention",
+              "label": "Intervention"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "processor": "EncounterFormProcessor",
+  "encounter": "Postnatal Visit",
+  "referencedForms": [],
+  "uuid": "${var.form.pnc-visit.uuid}",
+  "description": "Captures postnatal care information for the mother during scheduled PNC visits, including maternal assessment, clinical findings, counselling, treatment, referral, and follow-up care.",
+  "version": "1.0",
+  "published": true,
+  "retired": false
+}
