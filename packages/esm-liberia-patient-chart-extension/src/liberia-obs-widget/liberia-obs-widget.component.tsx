@@ -28,6 +28,7 @@ import {
   useConfig,
   useVisit,
   showModal,
+  showSnackbar,
 } from '@openmrs/esm-framework';
 import { LineChart, type LineChartOptions, ScaleTypes } from '@carbon/charts-react';
 import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
@@ -75,7 +76,14 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       }
       
       const doLaunch = async () => {
-        const { data } = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
+        let data: { uuid: string; name?: string; display?: string } | undefined;
+        try {
+          const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
+          data = response.data;
+        } catch (err: any) {
+          showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
+          return;
+        }
 
         launchWorkspace2('patient-form-entry-workspace', {
           workspaceTitle: data?.display ?? data?.name ?? config.title,
