@@ -1,11 +1,9 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import {
   Button,
   ContentSwitcher,
   DataTableSkeleton,
-  IconButton,
   IconSwitch,
   InlineLoading,
   Table,
@@ -22,7 +20,15 @@ import {
   TabsVertical,
 } from '@carbon/react';
 import { Add, Analytics, Table as TableIcon } from '@carbon/react/icons';
-import { formatDate, formatDatetime, launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  formatDatetime,
+  launchWorkspace2,
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+  useVisit,
+  showModal,
+} from '@openmrs/esm-framework';
 import { LineChart, type LineChartOptions, ScaleTypes } from '@carbon/charts-react';
 import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
@@ -50,7 +56,8 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 
   const [isPolling, setIsPolling] = useState(false);
 
-  const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid, isPolling);
+  const { encounters, isLoading, error } = useObsByEncounter(patientUuid, isPolling);
+  const { activeVisit } = useVisit(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
@@ -82,8 +89,6 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
     return encounters.slice(start, start + config.maxEncounters);
   }, [encounters, page, config.maxEncounters]);
 
-  const totalPages = Math.ceil(encounters.length / config.maxEncounters);
-
   /** Launch the configured AMPATH form in the standard O3 workspace drawer */
   const handleLaunchForm = useCallback(
     async (encounterUuid?: string) => {
@@ -91,20 +96,31 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         return;
       }
       
-      const { data } = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
+      const doLaunch = async () => {
+        const { data } = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
 
-      launchWorkspace2('patient-form-entry-workspace', {
-        workspaceTitle: data?.display ?? data?.name ?? config.title,
-        form: data,
-        encounterUuid,
-        additionalProps: {
-          mode: encounterUuid ? 'edit' : 'enter',
-          formSessionIntent: '*',
-          openClinicalFormsWorkspaceOnFormClose: false,
-        },
-      });
+        launchWorkspace2('patient-form-entry-workspace', {
+          workspaceTitle: data?.display ?? data?.name ?? config.title,
+          form: data,
+          encounterUuid,
+          additionalProps: {
+            mode: encounterUuid ? 'edit' : 'enter',
+            formSessionIntent: '*',
+            openClinicalFormsWorkspaceOnFormClose: false,
+          },
+        });
+      };
+
+      if (!activeVisit) {
+        const dispose = showModal('start-visit-dialog', {
+          closeModal: () => dispose(),
+          onVisitStarted: doLaunch,
+        });
+      } else {
+        doLaunch();
+      }
     },
-    [config.formUuid, config.title, mutate],
+    [config.formUuid, config.title, activeVisit],
   );
 
   if (isLoading) {
@@ -120,7 +136,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       <EmptyState
         displayText={config.title.toLowerCase()}
         headerTitle={config.title}
-        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+        launchForm={config.formUuid && config.showAddButton !== false ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -151,7 +167,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
           )}
 
           {/* Add button — always visible when formUuid is configured */}
-          {config.formUuid && (
+          {config.formUuid && config.showAddButton !== false && (
             <Button
               kind="ghost"
               renderIcon={Add}

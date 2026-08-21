@@ -67,6 +67,11 @@ export const configSchema = {
     _default: false,
     _description: 'If true, the widget spans the entire width of the dashboard grid.',
   },
+  showAddButton: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'If true, displays the "Add" button to launch the form.',
+  },
 };
 
 export interface ConfigObject {
@@ -78,4 +83,5 @@ export interface ConfigObject {
   maxEncounters: number;
   oldestFirst: boolean;
   fullWidth: boolean;
+  showAddButton: boolean;
 }
