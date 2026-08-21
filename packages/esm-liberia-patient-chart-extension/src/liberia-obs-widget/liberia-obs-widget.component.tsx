@@ -351,13 +351,12 @@ const ObsGraph: React.FC<ObsGraphProps> = ({ encounters, configData, title }: Ob
           {t('titleDisplayed', `${title} displayed`)}
         </label>
         <div className={styles.tabsAndChartArea}>
-          <TabsVertical>
+          <TabsVertical selectedIndex={selectedConceptIndex} onChange={({ selectedIndex }) => setSelectedConceptIndex(selectedIndex)}>
             <TabListVertical aria-label="Graph tabs">
-              {configData.map((conceptObj: any, index: number) => (
+              {configData.map((conceptObj: any) => (
                 <Tab
                   key={conceptObj.concept}
                   className={styles.tab}
-                  onClick={() => setSelectedConceptIndex(index)}
                 >
                   {conceptObj.label || conceptObj.concept}
                 </Tab>
