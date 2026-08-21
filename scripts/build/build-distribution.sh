@@ -78,10 +78,13 @@ if [[ "$DEMO" == "false" ]]; then
       echo "         A release must pin a published collection version; HEAD is not reproducible." >&2
     fi
     for collection in ${ocl_collections//,/ }; do
-      if compgen -G "$ocl_dir/lib-${collection}-ciel-*.zip" >/dev/null; then
+      expected_zip="$ocl_dir/lib-${collection}-ciel-${ocl_version:-head}.zip"
+      if [[ -f "$expected_zip" ]]; then
         echo "== OCL collection ${collection} already present =="
         continue
       fi
+      # Delete stale cached zips for this collection if the version changed
+      rm -f "$ocl_dir/lib-${collection}-ciel-"*.zip
       echo "== fetching the OCL collection ${ocl_org}/${collection} =="
       # Only MCH has smoke-test expectations in fetch-ciel.sh.
       smoke=()
