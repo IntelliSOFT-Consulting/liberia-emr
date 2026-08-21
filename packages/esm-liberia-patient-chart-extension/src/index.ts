@@ -30,7 +30,7 @@ export function startupApp() {
  * (columns = encounters, rows = configured concepts) with an "Add" button that
  * opens the configured AMPATH form in the standard patient-form-entry-workspace.
  *
- * Display mode (table / graph / switchable) and fullWidth are both controlled
+ * Display mode (table / graph / switchable) is controlled
  * by runtime config — no rebuild needed to switch between them.
  */
 export const liberiaObsWidget = getAsyncLifecycle(

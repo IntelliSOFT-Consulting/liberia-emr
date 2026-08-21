@@ -186,7 +186,6 @@
     }
   },
   "liberia-obs-widget": {
-    "fullWidth": true,
     "displayMode": "table",
     "title": "TB Screening",
     "encounterTypes": [

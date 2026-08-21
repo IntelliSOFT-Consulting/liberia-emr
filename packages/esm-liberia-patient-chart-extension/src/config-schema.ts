@@ -62,11 +62,6 @@ export const configSchema = {
     _default: false,
     _description: 'Sort encounters oldest-to-newest. Defaults to newest first.',
   },
-  fullWidth: {
-    _type: Type.Boolean,
-    _default: false,
-    _description: 'If true, the widget spans the entire width of the dashboard grid.',
-  },
   showAddButton: {
     _type: Type.Boolean,
     _default: true,
@@ -82,6 +77,5 @@ export interface ConfigObject {
   data: Array<{ concept: string; label: string }>;
   maxEncounters: number;
   oldestFirst: boolean;
-  fullWidth: boolean;
   showAddButton: boolean;
 }
