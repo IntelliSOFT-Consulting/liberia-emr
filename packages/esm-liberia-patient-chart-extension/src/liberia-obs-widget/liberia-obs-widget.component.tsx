@@ -348,7 +348,7 @@ const ObsGraph: React.FC<ObsGraphProps> = ({ encounters, configData, title }: Ob
     <div className={styles.graphWidgetContainer}>
       <div className={styles.conceptPickerTabs}>
         <label className={styles.vitalsSignLabel}>
-          {t('titleDisplayed', `${title} displayed`)}
+          {t('titleDisplayed', '{{title}} displayed', { title })}
         </label>
         <div className={styles.tabsAndChartArea}>
           <TabsVertical selectedIndex={selectedConceptIndex} onChange={({ selectedIndex }) => setSelectedConceptIndex(selectedIndex)}>
