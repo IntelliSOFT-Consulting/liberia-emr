@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.47.0"
+  },
+  "extensions": [
+    {
+      "name": "liberia-obs-widget",
+      "component": "liberiaObsWidget",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    }
+  ]
+}

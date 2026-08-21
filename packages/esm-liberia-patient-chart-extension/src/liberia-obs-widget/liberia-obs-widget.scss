@@ -1,0 +1,153 @@
+.widgetContainer {
+  background-color: #ffffff; /* match Vitals explicitly */
+  border: 1px solid var(--cds-border-subtle);
+  margin-bottom: 1rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loadingIndicator {
+  display: flex;
+  align-items: center;
+}
+
+.labelColumn {
+  min-width: 10rem;
+  font-weight: 600;
+}
+
+.encounterDate {
+  font-weight: 600;
+  font-size: var(--cds-body-compact-01-font-size);
+  white-space: nowrap;
+}
+
+.encounterTime {
+  font-size: var(--cds-label-01-font-size);
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
+}
+
+.editButton {
+  margin-top: 0.25rem;
+  padding: 0;
+}
+
+.graphPlaceholder {
+  padding: 2rem;
+  text-align: center;
+  color: var(--cds-text-secondary);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.pageInfo {
+  font-size: var(--cds-label-01-font-size);
+  color: var(--cds-text-secondary);
+}
+
+.graphWidgetContainer {
+  display: flex;
+  margin: 0 1rem;
+  flex-direction: row;
+  justify-content: space-between;
+
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options) {
+    inset-inline-start: auto !important;
+    inset-inline-end: 0;
+    width: auto;
+    min-width: 0;
+    margin-top: 0.5rem;
+  }
+
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options .cds--overflow-menu-options__option) {
+    inline-size: auto;
+  }
+
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options .cds--overflow-menu-options__btn) {
+    max-inline-size: none !important;
+  }
+
+  :global(.cds--tabs--vertical ~ .cds--tab-content) {
+    overflow-y: visible;
+  }
+}
+
+.conceptPickerTabs {
+  margin: 0.5rem 0;
+  flex-grow: 1;
+}
+
+.vitalsSignLabel {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.33333;
+  letter-spacing: 0.32px;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.tabsAndChartArea {
+  :global(.cds--tabs--vertical) {
+    min-height: 24rem; /* ensure graph has room */
+  }
+
+  :global(.cds--tabs--vertical .cds--tab-list) {
+    background-color: var(--cds-layer-01, #f4f4f4);
+  }
+}
+
+.lineChartContainer {
+  flex-grow: 1;
+  margin: 0.5rem 0;
+}
+
+.tab {
+  outline: 0;
+  outline-offset: 0;
+  min-height: 2rem !important;
+  height: 2rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+
+  // Carbon places padding on the inner button/link element. 
+  // We target any direct child to force the height down.
+  & > * {
+    min-height: 2rem !important;
+    height: 2rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  &:active,
+  &:focus {
+    outline: 2px solid var(--brand-03, #0f62fe) !important;
+  }
+
+  &[aria-selected='true'] {
+    box-shadow: inset 4px 0 0 0 var(--brand-03, #0f62fe) !important;
+    margin-inline-start: 0 !important;
+    line-height: normal !important;
+    background-color: var(--cds-layer, #ffffff) !important;
+  }
+
+  &[aria-selected='false'] {
+    border-bottom: none;
+    border-inline-start: 2px solid var(--cds-border-subtle, #e0e0e0) !important;
+    margin-inline-start: 0 !important;
+    background-color: transparent !important;
+  }
+}
