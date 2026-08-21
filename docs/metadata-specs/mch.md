@@ -203,7 +203,66 @@ offers (but does not require) the deferral reason when No.
 No other health-card concepts in this increment (name, address, clinic, age, record number
 remain outside concept metadata).
 
+### Newborn PNC terminology
+
+Newborn PNC uses a dedicated contact classification. It does **not** reuse maternal `Post-partum care` or the maternal PPC1–PPC4 concepts.
+
+| Newborn contact answer | Variable |
+| --- | --- |
+| PNC 1: Received within 24 hours | `var.concept.mch.pnc-1-received-within-24hrs.uuid` |
+| PNC 2: Received within 7 days | `var.concept.mch.pnc-2-received-within-7-days.uuid` |
+| PNC 3: Received within 28 days | `var.concept.mch.pnc-3-received-within-28-days.uuid` |
+| PNC 4: Received within 42 days | `var.concept.mch.pnc-4-received-within-42-days.uuid` |
+
+The parent is `Newborn Postnatal Contact` (`var.concept.mch.newborn-pnc-contact.uuid`). PNC 4 is the 42-day contact, which is the six-week contact for later Form Builder static vaccine reminders.
+
+`Newborn Postnatal Complications` (`var.concept.mch.newborn-pnc-complications.uuid`) is a coded question whose answer set preserves the live PNC data dictionary wording and exact 17-answer DAK order:
+
+1. None (CIEL 1107)
+2. Noisy breathing (grunting, stridor) — `var.concept.mch.noisy-breathing.uuid` (Local MCH)
+3. Cyanosis (CIEL 143050)
+4. Slow breathing, gasping, apnoea — `var.concept.mch.slow-breathing-gasping-apnoea.uuid` (Local MCH)
+5. Flaring of the nostrils with each breath — `var.concept.mch.flaring-of-nostrils.uuid` (Local MCH)
+6. Not able to feed at all or not feeding well — `var.concept.mch.not-able-to-feed.uuid` (Local MCH)
+7. Fits or convulsions (CIEL 143388 `Convulsions in the newborn`)
+8. Abdominal distension (CIEL 150915)
+9. Fast breathing (breathing rate ≥ 60/min) — `var.concept.mch.fast-breathing.uuid` (Local MCH)
+10. Severe chest in-drawing — `var.concept.mch.severe-chest-indrawing.uuid` (Local MCH)
+11. Movement only when stimulated or no movement at all — `var.concept.mch.movement-only-when-stimulated.uuid` (Local MCH)
+12. Draining purulent discharge from stump or cut — `var.concept.mch.draining-purulent-discharge-stump-cut.uuid` (Local MCH)
+13. Bleeding from stump or cut — `var.concept.mch.bleeding-from-stump-cut.uuid` (Local MCH)
+14. Fever/high body temperature (≥ 37.5 °C) (CIEL 140238)
+15. Low body temperature (< 35.5 °C) (CIEL 137998 `Hypothermia of newborn`)
+16. Any jaundice in the first 24 hrs of life — `var.concept.mch.jaundice-first-24hrs.uuid` (Local MCH)
+17. Other (specify) (CIEL 5622)
+
+None (CIEL 1107), Cyanosis (CIEL 143050), Convulsions in the newborn (CIEL 143388), Abdominal distension (CIEL 150915), Fever (CIEL 140238), Hypothermia of newborn (CIEL 137998), and Other (CIEL 5622) reuse verified CIEL concepts. The 10 remaining answers are local MCH `Misc / N/A` concepts created because no exact/clinically equivalent CIEL term exists. `Other newborn complication details` (`var.concept.mch.other-newborn-complication-details.uuid`) is a companion Question/Text concept for free text when Other is selected.
+
+The numeric temperature `<36.5 °C` hypothermia threshold is implemented as a Form Engine non-blocking warning rule, distinct from the stored DAK coded danger sign `Low body temperature (< 35.5 °C)`. `Any jaundice in the first 24 hrs of life` triggers an urgent visual markdown alert for pathological jaundice. Existing national concepts are retained for Received Kangaroo care (conditionally displayed when birth weight < 2.5 kg), Chlorhexidine administration (Before/After 24hrs), Nevirapine start date, and Complications Identified and Managed. Standard non-obs markdown components provide static PNC1 (BCG before discharge) and PNC4 (6-week vaccines) immunization reminders.
+
+### Form Builder contract (Newborn PNC form)
+
+The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-packages/content-liberia-mch/` bound to `var.form.newborn-pnc.uuid` (`52724fa9-3ce8-47fc-bde8-9218916e28f2`) and encounter `Postnatal Visit`.
+
+| Field ID | Form Label | Rendering | Concept / Variable | Logic / Rules |
+| --- | --- | --- | --- | --- |
+| `newbornPostnatalContact` | Newborn Postnatal Contact | Coded (radio) | `var.concept.mch.newborn-pnc-contact.uuid` | Required. Answers: PNC 1–4. |
+| `pnc1_bcg_reminder` | BCG Reminder | Markdown | N/A (non-obs) | Shown when PNC 1 selected. |
+| `pnc4_6wk_vaccine_reminder` | 6-Week Vaccines Reminder | Markdown | N/A (non-obs) | Shown when PNC 4 selected. |
+| `birthWeight` | Birth Weight (kg) | Numeric | `var.concept.ciel.birth-weight.uuid` | Optional. Used for weight loss & Kangaroo care. |
+| `currentWeight` | Current Weight (kg) | Numeric | `var.concept.ciel.weight-kg.uuid` | Required. |
+| `weightLossPercent` | Weight Loss (%) | Numeric (disabled) | N/A (transient) | Calculated transient UI value (`isTransient: true`, non-persisted): `((birthWeight - currentWeight)/birthWeight)*100`. Warning if > 10%. |
+| `temperature` | Temperature (°C) | Numeric | `var.concept.ciel.temperature.uuid` | Required. Warning if < 36.5°C. |
+| `newbornPostnatalComplications` | Newborn Postnatal Complications | Checkbox-searchable | `var.concept.mch.newborn-pnc-complications.uuid` | Required. 17 answers in DAK order. |
+| `jaundice_urgent_alert` | Pathological Jaundice Alert | Markdown | N/A (non-obs) | Shown when `jaundice-first-24hrs` selected. |
+| `otherNewbornComplicationDetails` | Other newborn complication details | Textarea | `var.concept.mch.other-newborn-complication-details.uuid` | Shown only when CIEL 5622 (`Other`) selected. |
+| `receivedKangarooCare` | Received Kangaroo care | Coded (radio) | `var.concept.national.received-kangaroo-care.uuid` | Shown only when birth weight < 2.5 kg. Answers: Yes/No. |
+| `chlorhexidineAdministration` | Chlorhexidine administration | Coded (radio) | `var.concept.national.chlorhexidine-administration.uuid` | Answers: Before 24hrs / After 24hrs. |
+| `nevirapineStartDate` | Nevirapine start date | Date | `var.concept.national.nevirapine-start-date.uuid` | Date picker. |
+| `complicationsIdentifiedAndManaged` | Complications Identified and Managed | Textarea | `var.concept.national.complications-identified-and-managed.uuid` | Free text. |
+
 ### Form Builder contract (ANC observation forms)
+
 
 | Area | Use |
 | --- | --- |
