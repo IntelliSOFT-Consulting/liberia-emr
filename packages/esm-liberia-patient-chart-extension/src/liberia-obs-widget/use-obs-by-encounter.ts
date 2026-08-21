@@ -33,7 +33,7 @@ interface UseObsByEncounterResult {
  * Uses the OpenMRS REST v1 API directly so that this package has no compile-
  * time dependency on upstream esm-generic-patient-widgets-app internals.
  */
-export function useObsByEncounter(patientUuid: string, isPolling: boolean = false): UseObsByEncounterResult {
+export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult {
   const config = useConfig<ConfigObject>();
 
   // Build query string — multiple encounterType params are OR-ed by the REST layer
@@ -52,15 +52,13 @@ export function useObsByEncounter(patientUuid: string, isPolling: boolean = fals
   const url = `${restBaseUrl}/encounter?${queryString}`;
 
   const fetcher = (fetchUrl: string) => {
-    if (!isPolling) return openmrsFetch(fetchUrl);
     const delimiter = fetchUrl.includes('?') ? '&' : '?';
     return openmrsFetch(`${fetchUrl}${delimiter}_=${Date.now()}`);
   };
 
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: EncounterRep[] } }, Error>(
     patientUuid ? url : null,
-    fetcher,
-    { refreshInterval: isPolling ? 1000 : 0 }
+    fetcher
   );
 
   const encounters = [...(data?.data?.results ?? [])].sort((a, b) => {

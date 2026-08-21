@@ -54,33 +54,11 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
-  const [isPolling, setIsPolling] = useState(false);
-
-  const { encounters, isLoading, error } = useObsByEncounter(patientUuid, isPolling);
+  const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
   const { activeVisit } = useVisit(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
-
-  // Fallback for when handlePostResponse is not supported by the environment's esm-form-engine-app version:
-  // We simply listen for any click on a "Save" or "Submit" button and trigger a brief 2-second cache-busting poll.
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const button = target.closest('button');
-      if (button) {
-        const text = button.innerText?.toLowerCase() || '';
-        if (text.includes('save') || text.includes('submit')) {
-          console.log('[liberia-obs-widget] Save/Submit clicked, triggering poll window');
-          setIsPolling(true);
-          setTimeout(() => setIsPolling(false), 2000);
-        }
-      }
-    };
-    
-    document.addEventListener('click', handleGlobalClick);
-    return () => document.removeEventListener('click', handleGlobalClick);
-  }, []);
 
   // Paginate encounters
   const [page, setPage] = useState(0);
@@ -103,10 +81,12 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
           workspaceTitle: data?.display ?? data?.name ?? config.title,
           form: data,
           encounterUuid,
+          onWorkspaceClose: () => mutate(),
           additionalProps: {
             mode: encounterUuid ? 'edit' : 'enter',
             formSessionIntent: '*',
             openClinicalFormsWorkspaceOnFormClose: false,
+            onSubmit: () => mutate(),
           },
         });
       };
@@ -120,7 +100,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         doLaunch();
       }
     },
-    [config.formUuid, config.title, activeVisit],
+    [config.formUuid, config.title, activeVisit, mutate],
   );
 
   if (isLoading) {
