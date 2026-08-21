@@ -45,6 +45,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
     `patient=${patientUuid}`,
     encounterTypeParams,
     'v=custom:(uuid,encounterDatetime,obs:(uuid,concept:(uuid,display),value,display))',
+    'limit=100',
   ]
     .filter(Boolean)
     .join('&');
