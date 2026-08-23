@@ -31,7 +31,14 @@ import {
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { LineChart, type LineChartOptions, ScaleTypes } from '@carbon/charts-react';
-import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  PatientChartPagination,
+  useLaunchWorkspaceRequiringVisit,
+  usePatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
 import type { ConfigObject } from '../config-schema';
 import styles from './liberia-obs-widget.scss';
@@ -56,10 +63,26 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
 
   const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
-  const { activeVisit } = useVisit(patientUuid);
+  const { mutateVisitContext, visitContext, patient } = usePatientChartStore(patientUuid);
+  const launchFormRequiringVisit = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
+
+  // Re-fetch when any form in the patient chart is submitted
+  useEffect(() => {
+    const handleFormSubmitted = () => {
+      mutate();
+    };
+
+    window.addEventListener('openmrs:form-submitted', handleFormSubmitted);
+    window.addEventListener('openmrs:form-entry-submitted', handleFormSubmitted);
+
+    return () => {
+      window.removeEventListener('openmrs:form-submitted', handleFormSubmitted);
+      window.removeEventListener('openmrs:form-entry-submitted', handleFormSubmitted);
+    };
+  }, [mutate]);
 
   // Paginate encounters
   const [page, setPage] = useState(0);
@@ -74,41 +97,35 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       if (!config.formUuid) {
         return;
       }
-      
-      const doLaunch = async () => {
-        let data: { uuid: string; name?: string; display?: string } | undefined;
-        try {
-          const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
-          data = response.data;
-        } catch (err: any) {
-          showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
-          return;
-        }
 
-        launchWorkspace2('patient-form-entry-workspace', {
-          workspaceTitle: data?.display ?? data?.name ?? config.title,
-          form: data,
-          encounterUuid,
-          onWorkspaceClose: () => mutate(),
-          additionalProps: {
-            mode: encounterUuid ? 'edit' : 'enter',
-            formSessionIntent: '*',
-            openClinicalFormsWorkspaceOnFormClose: false,
-            onSubmit: () => mutate(),
-          },
-        });
+      let data: { uuid: string; name?: string; display?: string } | undefined;
+      try {
+        const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
+        data = response.data;
+      } catch (err: any) {
+        showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
+        return;
+      }
+
+      const workspaceProps = {
+        workspaceTitle: data?.display ?? data?.name ?? config.title,
+        form: data,
+        encounterUuid: encounterUuid ?? '',
       };
 
-      if (!activeVisit) {
-        const dispose = showModal('start-visit-dialog', {
-          closeModal: () => dispose(),
-          onVisitStarted: doLaunch,
-        });
-      } else {
-        doLaunch();
-      }
+      const groupProps = {
+        patient,
+        patientUuid,
+        visitContext,
+        mutateVisitContext: () => {
+          mutateVisitContext?.();
+          mutate();
+        },
+      };
+
+      launchFormRequiringVisit(workspaceProps, {}, groupProps);
     },
-    [config.formUuid, config.title, activeVisit, mutate],
+    [config.formUuid, config.title, launchFormRequiringVisit, patient, patientUuid, visitContext, mutateVisitContext, mutate, t],
   );
 
   if (isLoading) {

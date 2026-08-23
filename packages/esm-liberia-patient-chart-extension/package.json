@@ -1,6 +1,6 @@
 {
   "name": "@liberiaemr/esm-liberia-patient-chart-extension",
-  "version": "1.0.0-SNAPSHOT",
+  "version": "1.0.0",
   "license": "MPL-2.0",
   "description": "Generic configurable obs-by-encounter widget for LiberiaEMR patient chart",
   "browser": "dist/liberiaemr-esm-liberia-patient-chart-extension.js",
@@ -53,6 +53,8 @@
     "@openmrs/esm-framework": "next",
     "@openmrs/esm-patient-chart-app": "next",
     "@openmrs/esm-patient-common-lib": "next",
+    "@rspack/cli": "^1.0.0",
+    "@rspack/core": "^1.0.0",
     "@types/fhir": "^0.0.31",
     "@types/lodash-es": "^4.17.9",
     "@types/react": "^18.3.0",
