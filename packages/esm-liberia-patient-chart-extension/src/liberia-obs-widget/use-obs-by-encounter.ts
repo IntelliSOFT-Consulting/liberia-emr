@@ -59,10 +59,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
 
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: EncounterRep[] } }, Error>(
     patientUuid ? url : null,
-    fetcher,
-    {
-      revalidateOnFocus: true,
-    }
+    fetcher
   );
 
   const encounters = [...(data?.data?.results ?? [])].sort((a, b) => {
