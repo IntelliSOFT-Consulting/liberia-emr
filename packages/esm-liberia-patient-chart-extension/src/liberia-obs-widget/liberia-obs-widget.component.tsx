@@ -129,12 +129,15 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         patient: chartStore?.patient,
         patientUuid,
         visitContext: chartStore?.visitContext,
-        mutateVisitContext: chartStore?.mutateVisitContext,
+        mutateVisitContext: () => {
+          chartStore?.mutateVisitContext?.();
+          mutate();
+        },
       };
 
       launchWorkspace2('patient-form-entry-workspace', workspaceProps, {}, groupProps);
     },
-    [config.formUuid, config.title, startVisitIfNeeded, patientUuid, t],
+    [config.formUuid, config.title, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
   if (isLoading) {
