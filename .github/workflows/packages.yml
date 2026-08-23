@@ -16,6 +16,9 @@ on:
       - created
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: packages-ci-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: ${{ github.ref_name != 'main' && github.event_name != 'release' }}
@@ -42,17 +45,17 @@ jobs:
             [ -d "$pkg_dir" ] || continue
             pkg_name=$(basename "$pkg_dir")
 
-            # Exclude esm-liberia-epartograph-app and modify-pr
-            if [[ "$pkg_name" == "esm-liberia-epartograph-app" || "$pkg_name" == "modify-pr" ]]; then
-              echo "== Skipping $pkg_name (excluded) =="
-              continue
-            fi
-
             if [[ -f "$pkg_dir/package.json" ]]; then
+              if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
+                echo "== Skipping $pkg_name (private) =="
+                continue
+              fi
+
               echo "== Building $pkg_name =="
               (
                 cd "$pkg_dir"
-                yarn install
+                yarn install --frozen-lockfile
+                yarn typescript
                 yarn build
               )
             fi
@@ -70,6 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: npm-publish
 
     steps:
       - name: Checkout repository
@@ -90,17 +94,17 @@ jobs:
             [ -d "$pkg_dir" ] || continue
             pkg_name=$(basename "$pkg_dir")
 
-            # Exclude esm-liberia-epartograph-app and modify-pr
-            if [[ "$pkg_name" == "esm-liberia-epartograph-app" || "$pkg_name" == "modify-pr" ]]; then
-              echo "== Skipping $pkg_name (excluded) =="
-              continue
-            fi
-
             if [[ -f "$pkg_dir/package.json" ]]; then
+              if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
+                echo "== Skipping $pkg_name (private) =="
+                continue
+              fi
+
               echo "== Packaging and Publishing $pkg_name (pre-release) =="
               (
                 cd "$pkg_dir"
-                yarn install
+                yarn install --frozen-lockfile
+                yarn typescript
                 yarn build
 
                 # Extract base version from package.json
@@ -121,6 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'release'
+    environment: npm-publish
 
     steps:
       - name: Checkout repository
@@ -141,17 +146,17 @@ jobs:
             [ -d "$pkg_dir" ] || continue
             pkg_name=$(basename "$pkg_dir")
 
-            # Exclude esm-liberia-epartograph-app and modify-pr
-            if [[ "$pkg_name" == "esm-liberia-epartograph-app" || "$pkg_name" == "modify-pr" ]]; then
-              echo "== Skipping $pkg_name (excluded) =="
-              continue
-            fi
-
             if [[ -f "$pkg_dir/package.json" ]]; then
+              if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
+                echo "== Skipping $pkg_name (private) =="
+                continue
+              fi
+
               echo "== Packaging and Publishing $pkg_name (stable release) =="
               (
                 cd "$pkg_dir"
-                yarn install
+                yarn install --frozen-lockfile
+                yarn typescript
                 yarn build
 
                 pkg_version="${GITHUB_REF_NAME#v}"
