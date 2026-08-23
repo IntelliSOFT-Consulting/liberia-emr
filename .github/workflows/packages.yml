@@ -154,9 +154,14 @@ jobs:
                 yarn install
                 yarn build
 
-                pkg_version=$(node -p "require('./package.json').version")
-                echo "Publishing ${pkg_name}@${pkg_version} with tag 'latest'..."
-                npm publish --access public --tag latest
+                pkg_version="${GITHUB_REF_NAME#v}"
+                npm version "$pkg_version" --no-git-tag-version --allow-same-version
+                if npm view "${pkg_name}@${pkg_version}" version >/dev/null 2>&1; then
+                  echo "${pkg_name}@${pkg_version} already published — skipping"
+                else
+                  echo "Publishing ${pkg_name}@${pkg_version} with tag 'latest'..."
+                  npm publish --access public --tag latest
+                fi
               )
             fi
           done
