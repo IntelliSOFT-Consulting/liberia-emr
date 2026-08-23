@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -66,21 +66,6 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
-
-  // Re-fetch when any form in the patient chart is submitted
-  useEffect(() => {
-    const handleFormSubmitted = () => {
-      mutate();
-    };
-
-    window.addEventListener('openmrs:form-submitted', handleFormSubmitted);
-    window.addEventListener('openmrs:form-entry-submitted', handleFormSubmitted);
-
-    return () => {
-      window.removeEventListener('openmrs:form-submitted', handleFormSubmitted);
-      window.removeEventListener('openmrs:form-entry-submitted', handleFormSubmitted);
-    };
-  }, [mutate]);
 
   // Paginate encounters
   const [page, setPage] = useState(0);
