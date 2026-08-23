@@ -22,6 +22,7 @@ import {
 import { Add, Analytics, Table as TableIcon } from '@carbon/react/icons';
 import {
   formatDatetime,
+  getGlobalStore,
   launchWorkspace2,
   openmrsFetch,
   restBaseUrl,
@@ -36,8 +37,9 @@ import {
   EmptyState,
   ErrorState,
   PatientChartPagination,
-  useLaunchWorkspaceRequiringVisit,
   usePatientChartStore,
+  useStartVisitIfNeeded,
+  type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
 import type { ConfigObject } from '../config-schema';
@@ -64,7 +66,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 
   const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
   const { mutateVisitContext, visitContext, patient } = usePatientChartStore(patientUuid);
-  const launchFormRequiringVisit = useLaunchWorkspaceRequiringVisit(patientUuid, 'patient-form-entry-workspace');
+  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
@@ -98,6 +100,11 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         return;
       }
 
+      const didStartVisit = await startVisitIfNeeded();
+      if (!didStartVisit) {
+        return;
+      }
+
       let data: { uuid: string; name?: string; display?: string } | undefined;
       try {
         const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
@@ -107,6 +114,8 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         return;
       }
 
+      const currentStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
+
       const workspaceProps = {
         workspaceTitle: data?.display ?? data?.name ?? config.title,
         form: data,
@@ -114,18 +123,18 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       };
 
       const groupProps = {
-        patient,
+        patient: currentStore?.patient ?? patient,
         patientUuid,
-        visitContext,
+        visitContext: currentStore?.visitContext ?? visitContext,
         mutateVisitContext: () => {
-          mutateVisitContext?.();
+          currentStore?.mutateVisitContext?.();
           mutate();
         },
       };
 
-      launchFormRequiringVisit(workspaceProps, {}, groupProps);
+      launchWorkspace2('patient-form-entry-workspace', workspaceProps, {}, groupProps);
     },
-    [config.formUuid, config.title, launchFormRequiringVisit, patient, patientUuid, visitContext, mutateVisitContext, mutate, t],
+    [config.formUuid, config.title, startVisitIfNeeded, patient, patientUuid, visitContext, mutate, t],
   );
 
   if (isLoading) {
