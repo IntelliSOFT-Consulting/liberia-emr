@@ -1,6 +1,6 @@
 {
   "name": "TB Screening",
-  "uuid": "c2451999-2937-3db6-81fd-106aba22310f",
+  "uuid": "${var.form.tb-screening.uuid}",
   "version": "1.0",
   "published": true,
   "retired": false,
