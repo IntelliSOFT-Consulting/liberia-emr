@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -22,16 +22,22 @@ import {
 import { Add, Analytics, Table as TableIcon } from '@carbon/react/icons';
 import {
   formatDatetime,
+  getGlobalStore,
   launchWorkspace2,
   openmrsFetch,
   restBaseUrl,
   useConfig,
-  useVisit,
-  showModal,
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { LineChart, type LineChartOptions, ScaleTypes } from '@carbon/charts-react';
-import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  PatientChartPagination,
+  useStartVisitIfNeeded,
+  type PatientChartStore,
+} from '@openmrs/esm-patient-common-lib';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
 import type { ConfigObject } from '../config-schema';
 import styles from './liberia-obs-widget.scss';
@@ -56,7 +62,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const config = useConfig<ConfigObject>();
 
   const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
-  const { activeVisit } = useVisit(patientUuid);
+  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
   const [showGraph, setShowGraph] = useState(false);
@@ -74,41 +80,49 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       if (!config.formUuid) {
         return;
       }
-      
-      const doLaunch = async () => {
-        let data: { uuid: string; name?: string; display?: string } | undefined;
-        try {
-          const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
-          data = response.data;
-        } catch (err: any) {
-          showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
-          return;
-        }
 
-        launchWorkspace2('patient-form-entry-workspace', {
-          workspaceTitle: data?.display ?? data?.name ?? config.title,
-          form: data,
-          encounterUuid,
-          onWorkspaceClose: () => mutate(),
-          additionalProps: {
-            mode: encounterUuid ? 'edit' : 'enter',
-            formSessionIntent: '*',
-            openClinicalFormsWorkspaceOnFormClose: false,
-            onSubmit: () => mutate(),
-          },
-        });
+      const didStartVisit = await startVisitIfNeeded();
+      if (!didStartVisit) {
+        return;
+      }
+
+      let data: { uuid: string; name?: string; display?: string } | undefined;
+      try {
+        const response = await openmrsFetch(`${restBaseUrl}/form/${config.formUuid}?v=custom:(uuid,name,display)`);
+        data = response.data;
+      } catch (err: any) {
+        showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
+        return;
+      }
+
+      // Read the store AFTER the visit prompt resolves — values captured at render
+      // time are stale for a patient who had no open visit when clicked.
+      const chartStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
+
+      const workspaceProps = {
+        workspaceTitle: data?.display ?? data?.name ?? config.title,
+        form: data,
+        encounterUuid: encounterUuid ?? '',
+        additionalProps: {
+          mode: encounterUuid ? 'edit' : 'enter',
+          formSessionIntent: '*',
+          openClinicalFormsWorkspaceOnFormClose: false,
+        },
       };
 
-      if (!activeVisit) {
-        const dispose = showModal('start-visit-dialog', {
-          closeModal: () => dispose(),
-          onVisitStarted: doLaunch,
-        });
-      } else {
-        doLaunch();
-      }
+      const groupProps = {
+        patient: chartStore?.patient,
+        patientUuid,
+        visitContext: chartStore?.visitContext,
+        mutateVisitContext: () => {
+          chartStore?.mutateVisitContext?.();
+          mutate();
+        },
+      };
+
+      launchWorkspace2('patient-form-entry-workspace', workspaceProps, {}, groupProps);
     },
-    [config.formUuid, config.title, activeVisit, mutate],
+    [config.formUuid, config.title, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
   if (isLoading) {
