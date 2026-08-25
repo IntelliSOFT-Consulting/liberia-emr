@@ -1,0 +1,245 @@
+{
+  "name": "First and Second Stage of Labor and Delivery",
+  "uuid": "${var.form.first-and-second-stage-of-labor-and-delivery.uuid}",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Labor & Delivery",
+  "referencedForms": [],
+  "pages": [
+    {
+      "label": "First and Second Stage of Labor and Delivery",
+      "sections": [
+        {
+          "label": "First and Second Stage of Labor and Delivery",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "markdown",
+              "id": "partograph_recording_alert",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "value": [
+                "**Partograph Recording**",
+                "",
+                "Upon completion of the First Stage of Delivery form, you will proceed to the partograph to commence recording and monitoring the patient's labour progress."
+              ]
+            },
+            {
+              "label": "Oxygen saturation (SpO2)",
+              "type": "obs",
+              "id": "spo2",
+              "questionOptions": {
+                "concept": "${var.concept.national.oxygen-saturation-spo2.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 100,
+                "step": 1
+              }
+            }
+          ]
+        },
+        {
+          "label": "Blood Pressure",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Systolic",
+              "type": "obs",
+              "id": "bp_sys",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 300,
+                "step": 1
+              }
+            },
+            {
+              "label": "Diastolic",
+              "type": "obs",
+              "id": "bp_dia",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 200,
+                "step": 1
+              }
+            }
+          ]
+        },
+        {
+          "label": "Clinical Observations",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Fetal heart rate",
+              "type": "obs",
+              "id": "fhr",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 250,
+                "step": 1
+              }
+            },
+            {
+              "label": "Gravida",
+              "type": "obs",
+              "id": "gravida",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.gravida.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "step": 1,
+                "disallowDecimals": true
+              }
+            },
+            {
+              "label": "Parity",
+              "type": "obs",
+              "id": "parity",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.parity.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "step": 1,
+                "disallowDecimals": true
+              }
+            },
+            {
+              "label": "Adequate tetanus-diphtheria (TD2+) immunization",
+              "type": "obs",
+              "id": "td2",
+              "questionOptions": {
+                "concept": "${var.concept.national.adequate-tetanus-diphtheria-td2-immunization.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Adequate iron/folic acid supplementation (180 tablets)",
+              "type": "obs",
+              "id": "iron_folic_acid",
+              "questionOptions": {
+                "concept": "${var.concept.national.adequate-iron-folic-acid-supplementation-180-tablets.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Delivery method",
+              "type": "obs",
+              "id": "delivery_method",
+              "questionOptions": {
+                "concept": "${var.concept.national.delivery-method.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.spontaneous-vaginal-delivery-svd.uuid}",
+                    "label": "Spontaneous vaginal delivery (SVD)"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.cesarean-section.uuid}",
+                    "label": "Cesarean section"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Perineum",
+              "type": "obs",
+              "id": "perineum",
+              "questionOptions": {
+                "concept": "${var.concept.national.perineum.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.episiotomy-answer.uuid}",
+                    "label": "Episiotomy"
+                  },
+                  {
+                    "concept": "${var.concept.national.intact.uuid}",
+                    "label": "Intact"
+                  },
+                  {
+                    "concept": "${var.concept.national.laceration.uuid}",
+                    "label": "Laceration"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Anaesthesia",
+              "type": "obs",
+              "id": "anaesthesia",
+              "questionOptions": {
+                "concept": "${var.concept.national.anaesthesia.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.episiotomy-answer.uuid}",
+                    "label": "Episiotomy"
+                  },
+                  {
+                    "concept": "${var.concept.national.local.uuid}",
+                    "label": "Local"
+                  },
+                  {
+                    "concept": "${var.concept.national.general.uuid}",
+                    "label": "General"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.none.uuid}",
+                    "label": "None"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Repair",
+              "type": "obs",
+              "id": "repair",
+              "questionOptions": {
+                "concept": "${var.concept.national.repair.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

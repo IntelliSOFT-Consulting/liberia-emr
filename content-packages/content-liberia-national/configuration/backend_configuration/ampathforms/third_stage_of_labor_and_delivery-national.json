@@ -1,0 +1,326 @@
+{
+  "name": "Third Stage of Labor and Delivery",
+  "uuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Labor & Delivery",
+  "referencedForms": [],
+  "pages": [
+    {
+      "label": "Third Stage",
+      "sections": [
+        {
+          "label": "Third Stage of Labor and Delivery",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Active Management",
+              "type": "obs",
+              "id": "active_management",
+              "questionOptions": {
+                "concept": "${var.concept.national.active-management.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Medication administered during the third stage of labour.",
+              "type": "obs",
+              "id": "medication_administered",
+              "questionOptions": {
+                "concept": "${var.concept.national.medication-administered-during-the-third-stage-of-labour.uuid}",
+                "rendering": "textarea",
+                "rows": 3
+              }
+            },
+            {
+              "label": "Medication time",
+              "type": "obs",
+              "id": "medication_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.medication-time.uuid}",
+                "rendering": "time"
+              }
+            },
+            {
+              "label": "Dose",
+              "type": "obs",
+              "id": "dose",
+              "questionOptions": {
+                "concept": "${var.concept.national.dose.uuid}",
+                "rendering": "number",
+                "min": 0
+              }
+            },
+            {
+              "label": "Placenta delivery time",
+              "type": "obs",
+              "id": "placenta_delivery_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.placenta-delivery-time.uuid}",
+                "rendering": "time"
+              }
+            },
+            {
+              "label": "Placenta status",
+              "type": "obs",
+              "id": "placenta_status",
+              "questionOptions": {
+                "concept": "${var.concept.national.placenta-status.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.complete.uuid}",
+                    "label": "Complete"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.incomplete.uuid}",
+                    "label": "Incomplete"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Blood loss amount",
+              "type": "obs",
+              "id": "blood_loss_amount",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-loss-amount.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.small-less-than-250-cc.uuid}",
+                    "label": "Small (Less than 250 cc)"
+                  },
+                  {
+                    "concept": "${var.concept.national.moderate-250-499-cc.uuid}",
+                    "label": "Moderate (250–499 cc)"
+                  },
+                  {
+                    "concept": "${var.concept.national.large-more-than-500-cc.uuid}",
+                    "label": "Large (More than 500 cc)"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Baby",
+      "sections": [
+        {
+          "label": "Baby Details",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "markdown",
+              "id": "baby_registration_next_step",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "value": [
+                "**Registration is the Next Step**",
+                "",
+                "Once the baby's details have been saved, the next step is patient registration. You will be redirected automatically."
+              ]
+            },
+            {
+              "label": "Weight",
+              "type": "obs",
+              "id": "weight",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.weight-kg.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 10,
+                "step": 0.1
+              }
+            },
+            {
+              "label": "Length",
+              "type": "obs",
+              "id": "length",
+              "questionOptions": {
+                "concept": "${var.concept.national.length.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 100,
+                "step": 0.1
+              }
+            },
+            {
+              "label": "Sex",
+              "type": "obs",
+              "id": "sex",
+              "questionOptions": {
+                "concept": "${var.concept.national.sex.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.1534.uuid}",
+                    "label": "Male"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.1535.uuid}",
+                    "label": "Female"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Baby presentation",
+              "type": "obs",
+              "id": "baby_presentation",
+              "questionOptions": {
+                "concept": "${var.concept.national.presentation.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.vertex.uuid}",
+                    "label": "Vertex"
+                  },
+                  {
+                    "concept": "${var.concept.national.breech.uuid}",
+                    "label": "Breech"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.5622.uuid}",
+                    "label": "Other"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "APGAR",
+      "sections": [
+        {
+          "label": "APGAR Score",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Assessment time",
+              "type": "obs",
+              "id": "assessment_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.assessment-time.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.1-minute.uuid}",
+                    "label": "1 Minute"
+                  },
+                  {
+                    "concept": "${var.concept.national.5-minutes.uuid}",
+                    "label": "5 Minutes"
+                  },
+                  {
+                    "concept": "${var.concept.national.10-minutes.uuid}",
+                    "label": "10 Minutes"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Colour (Appearance)",
+              "type": "obs",
+              "id": "colour_appearance",
+              "questionOptions": {
+                "concept": "${var.concept.national.colour-appearance.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 2,
+                "step": 1
+              }
+            },
+            {
+              "label": "Heart rate (Pulse)",
+              "type": "obs",
+              "id": "heart_rate_pulse",
+              "questionOptions": {
+                "concept": "${var.concept.national.heart-rate-pulse.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 2,
+                "step": 1
+              }
+            },
+            {
+              "label": "Muscle tone (Activity)",
+              "type": "obs",
+              "id": "muscle_tone_activity",
+              "questionOptions": {
+                "concept": "${var.concept.national.muscle-tone-activity.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 2,
+                "step": 1
+              }
+            },
+            {
+              "label": "Reflex irritability (Grimace)",
+              "type": "obs",
+              "id": "reflex_irritability_grimace",
+              "questionOptions": {
+                "concept": "${var.concept.national.reflex-irritability-grimace.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 2,
+                "step": 1
+              }
+            },
+            {
+              "label": "Respiration (Breathing)",
+              "type": "obs",
+              "id": "respiration_breathing",
+              "questionOptions": {
+                "concept": "${var.concept.national.respiration-breathing.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 2,
+                "step": 1
+              }
+            },
+            {
+              "label": "Total APGAR score",
+              "type": "obs",
+              "id": "total_apgar_score",
+              "questionOptions": {
+                "concept": "${var.concept.national.total-apgar-score.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 10,
+                "step": 1
+              }
+            },
+            {
+              "label": "Time at which the baby was delivered.",
+              "type": "obs",
+              "id": "time_at_which_baby_delivered",
+              "questionOptions": {
+                "concept": "${var.concept.national.time-at-which-the-baby-was-delivered.uuid}",
+                "rendering": "time"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

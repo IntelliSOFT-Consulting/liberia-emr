@@ -1,0 +1,275 @@
+{
+  "name": "Fourth Stage Monitoring for Woman and Baby",
+  "uuid": "${var.form.fourth-stage-monitoring-for-woman-and-baby.uuid}",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Labor & Delivery",
+  "referencedForms": [],
+  "pages": [
+    {
+      "label": "Fourth Stage Monitoring",
+      "sections": [
+        {
+          "label": "Fourth Stage Monitoring",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Complications of woman",
+              "type": "obs",
+              "id": "complications_of_woman",
+              "questionOptions": {
+                "concept": "${var.concept.national.complications-of-woman.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.none.uuid}",
+                    "label": "None"
+                  },
+                  {
+                    "concept": "${var.concept.national.postpartum-haemorrhage.uuid}",
+                    "label": "Postpartum haemorrhage"
+                  },
+                  {
+                    "concept": "${var.concept.national.severe-hypertension.uuid}",
+                    "label": "Severe hypertension"
+                  },
+                  {
+                    "concept": "${var.concept.national.eclampsia.uuid}",
+                    "label": "Eclampsia"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.5622.uuid}",
+                    "label": "Other"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Complications of baby",
+              "type": "obs",
+              "id": "complications_of_baby",
+              "questionOptions": {
+                "concept": "${var.concept.national.complications-of-baby.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.none.uuid}",
+                    "label": "None"
+                  },
+                  {
+                    "concept": "${var.concept.national.asphyxia.uuid}",
+                    "label": "Asphyxia"
+                  },
+                  {
+                    "concept": "${var.concept.national.hypothermia.uuid}",
+                    "label": "Hypothermia"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.5622.uuid}",
+                    "label": "Other"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Monitoring frequency",
+              "type": "obs",
+              "id": "monitoring_frequency",
+              "questionOptions": {
+                "concept": "${var.concept.national.monitoring-frequency.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.every-15-minutes-for-first-2-hours.uuid}",
+                    "label": "Every 15 minutes for first 2 hours"
+                  },
+                  {
+                    "concept": "${var.concept.national.every-30-minutes-for-1-hour.uuid}",
+                    "label": "Every 30 minutes for 1 hour"
+                  },
+                  {
+                    "concept": "${var.concept.national.every-1-hour-for-next-4-hours.uuid}",
+                    "label": "Every 1 hour for next 4 hours"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Observation time",
+              "type": "obs",
+              "id": "observation_time",
+              "questionOptions": {
+                "concept": "${var.concept.national.observation-time.uuid}",
+                "rendering": "time"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Woman",
+      "sections": [
+        {
+          "label": "Blood Pressure",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Systolic",
+              "type": "obs",
+              "id": "bp_sys",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 300,
+                "step": 1
+              }
+            },
+            {
+              "label": "Diastolic",
+              "type": "obs",
+              "id": "bp_dia",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 200,
+                "step": 1
+              }
+            }
+          ]
+        },
+        {
+          "label": "Clinical Observations",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Pulse",
+              "type": "obs",
+              "id": "pulse",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.pulse.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 250,
+                "step": 1
+              }
+            },
+            {
+              "label": "Fundus",
+              "type": "obs",
+              "id": "fundus",
+              "questionOptions": {
+                "concept": "${var.concept.national.fundus.uuid}",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Bleeding",
+              "type": "obs",
+              "id": "bleeding",
+              "questionOptions": {
+                "concept": "${var.concept.national.bleeding.uuid}",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Bladder",
+              "type": "obs",
+              "id": "bladder",
+              "questionOptions": {
+                "concept": "${var.concept.national.bladder.uuid}",
+                "rendering": "text"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Baby",
+      "sections": [
+        {
+          "label": "Baby Observations",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Breathing",
+              "type": "obs",
+              "id": "baby_breathing",
+              "questionOptions": {
+                "concept": "${var.concept.national.baby-breathing.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Suck",
+              "type": "obs",
+              "id": "baby_suck",
+              "questionOptions": {
+                "concept": "${var.concept.national.baby-suck.uuid}",
+                "rendering": "radio",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Temperature status",
+              "type": "obs",
+              "id": "temperature_status",
+              "questionOptions": {
+                "concept": "${var.concept.national.temperature-status.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.warm.uuid}",
+                    "label": "Warm"
+                  },
+                  {
+                    "concept": "${var.concept.national.cold.uuid}",
+                    "label": "Cold"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.normal.uuid}",
+                    "label": "Normal"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Labor notes",
+              "type": "obs",
+              "id": "labor_notes",
+              "questionOptions": {
+                "concept": "${var.concept.national.labor-notes.uuid}",
+                "rendering": "textarea",
+                "rows": 4
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

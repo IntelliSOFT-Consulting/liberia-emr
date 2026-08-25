@@ -146,14 +146,19 @@
         ]
       },
       {
-        "name": "Maternal and Child Health",
+        "name": "Maternal Health Care",
         "forms": [
-          "ANC Initial Visit",
-          "ANC Follow-up Visit",
-          "Labour and Delivery Form",
-          "Delivery Summary",
-          "Newborn PNC",
-          "Mother PNC",
+          "First and Second Stage of Labor and Delivery",
+          "Partograph",
+          "Third Stage of Labor and Delivery",
+          "Fourth Stage Monitoring for Woman and Baby"
+        ]
+      },
+      {
+        "name": "Child Health",
+        "forms": [
+          "ANC Form",
+          "PNC",
           "Family Planning"
         ]
       },
