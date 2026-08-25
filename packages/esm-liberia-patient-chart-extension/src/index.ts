@@ -22,6 +22,7 @@ const options = {
 };
 
 export function startupApp() {
+  defineConfigSchema(moduleName, configSchema);
   defineConfigSchema('liberia-obs-widget', configSchema);
 }
 
