@@ -1,8 +1,9 @@
 import { defineConfig } from 'cypress'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
-const envFilePath = path.resolve(__dirname, 'cypress.env.json')
+const envFilePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'cypress.env.json')
 const localEnv = fs.existsSync(envFilePath)
   ? JSON.parse(fs.readFileSync(envFilePath, 'utf8'))
   : {}
