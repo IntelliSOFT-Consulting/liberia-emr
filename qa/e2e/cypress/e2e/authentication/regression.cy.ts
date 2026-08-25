@@ -189,7 +189,7 @@ describe('Registration', () => {
         registrationPage.preventDoubleSubmitOnRapidClicks(testData);
     })
 
-    const runLiveRegistration = ((Cypress.config() as any).RUN_LIVE_REGISTRATION === true) ? it : it.skip;
+    const runLiveRegistration = Cypress.env('RUN_LIVE_REGISTRATION') === true ? it : it.skip;
 
     runLiveRegistration('should successfully register a patient with valid data', () => {
         fillAndSubmitValidRegistration();
