@@ -1,5 +1,5 @@
 {
-  "name": "Fourth Stage Monitoring for Woman and Baby",
+  "name": "4. Fourth Stage Monitoring for Woman and Baby",
   "uuid": "${var.form.fourth-stage-monitoring-for-woman-and-baby.uuid}",
   "version": "1.0",
   "published": true,
@@ -20,7 +20,7 @@
               "type": "obs",
               "id": "complications_of_woman",
               "questionOptions": {
-                "concept": "${var.concept.national.complications-of-woman.uuid}",
+                "concept": "${var.concept.ciel.maternal-outcome.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -36,7 +36,7 @@
                     "label": "Severe hypertension"
                   },
                   {
-                    "concept": "${var.concept.national.eclampsia.uuid}",
+                    "concept": "${var.concept.ciel.eclampsia.uuid}",
                     "label": "Eclampsia"
                   },
                   {
@@ -124,9 +124,16 @@
                 "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 300,
+                "max": 250,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
             },
             {
               "label": "Diastolic",
@@ -138,7 +145,14 @@
                 "min": 0,
                 "max": 200,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
+                  "message": "Value must be between 0 and 200"
+                }
+              ]
             }
           ]
         },
@@ -154,9 +168,16 @@
                 "concept": "${var.concept.ciel.pulse.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 250,
+                "max": 230,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
+                  "message": "Value must be between 0 and 230"
+                }
+              ]
             },
             {
               "label": "Fundus",

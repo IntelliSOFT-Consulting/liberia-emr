@@ -1,5 +1,5 @@
 {
-  "name": "Partograph",
+  "name": "2. Partograph",
   "uuid": "${var.form.partograph.uuid}",
   "version": "1.0",
   "published": true,
@@ -34,10 +34,17 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "rendering": "number",
-                "min": 0,
+                "min": 40,
                 "max": 250,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
+                  "message": "Value must be between 40 and 250"
+                }
+              ]
             },
             {
               "label": "Amniotic fluid",
@@ -64,7 +71,7 @@
                     "label": "Blood-stained"
                   },
                   {
-                    "concept": "${var.concept.national.absent.uuid}",
+                    "concept": "${var.concept.ciel.absent.uuid}",
                     "label": "Absent"
                   }
                 ]
@@ -80,19 +87,19 @@
                 "answers": [
                   {
                     "concept": "${var.concept.national.moulding-0.uuid}",
-                    "label": "0"
+                    "label": "0 — None"
                   },
                   {
                     "concept": "${var.concept.national.moulding-plus-1.uuid}",
-                    "label": "+"
+                    "label": "+ — Mild"
                   },
                   {
                     "concept": "${var.concept.national.moulding-plus-2.uuid}",
-                    "label": "++"
+                    "label": "++ — Moderate"
                   },
                   {
                     "concept": "${var.concept.national.moulding-plus-3.uuid}",
-                    "label": "+++"
+                    "label": "+++ — Severe"
                   }
                 ]
               }
@@ -107,7 +114,14 @@
                 "min": 0,
                 "max": 10,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
             },
             {
               "label": "Fetal head descent",
@@ -119,7 +133,14 @@
                 "min": 0,
                 "max": 5,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 5)",
+                  "message": "Value must be between 0 and 5"
+                }
+              ]
             },
             {
               "label": "Contractions per 10 minutes",
@@ -131,7 +152,14 @@
                 "min": 0,
                 "max": 10,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
             },
             {
               "label": "Units of oxytocin/litre given per minute",
@@ -160,9 +188,16 @@
                 "concept": "${var.concept.ciel.pulse.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 250,
+                "max": 230,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
+                  "message": "Value must be between 0 and 230"
+                }
+              ]
             }
           ]
         },
@@ -178,9 +213,16 @@
                 "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 300,
+                "max": 250,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
             },
             {
               "label": "Diastolic",
@@ -192,7 +234,14 @@
                 "min": 0,
                 "max": 200,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
+                  "message": "Value must be between 0 and 200"
+                }
+              ]
             }
           ]
         },
@@ -208,9 +257,16 @@
                 "concept": "${var.concept.ciel.temperature-c.uuid}",
                 "rendering": "number",
                 "min": 25,
-                "max": 45,
+                "max": 47,
                 "step": 0.1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 25 || myValue > 47)",
+                  "message": "Value must be between 25 and 47"
+                }
+              ]
             },
             {
               "label": "Proteins in urine",
@@ -222,7 +278,14 @@
                 "min": 0,
                 "max": 4,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 4)",
+                  "message": "Value must be between 0 and 4"
+                }
+              ]
             },
             {
               "label": "Acetone in urine",
@@ -234,7 +297,14 @@
                 "min": 0,
                 "max": 4,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 4)",
+                  "message": "Value must be between 0 and 4"
+                }
+              ]
             },
             {
               "label": "Urine Volume",
@@ -246,7 +316,14 @@
                 "min": 0,
                 "max": 5000,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 5000)",
+                  "message": "Value must be between 0 and 5000"
+                }
+              ]
             }
           ]
         }

@@ -1,5 +1,5 @@
 {
-  "name": "First and Second Stage of Labor and Delivery",
+  "name": "1. First and Second Stage of Labor and Delivery",
   "uuid": "${var.form.first-and-second-stage-of-labor-and-delivery.uuid}",
   "version": "1.0",
   "published": true,
@@ -37,7 +37,14 @@
                 "min": 0,
                 "max": 100,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 100)",
+                  "message": "Value must be between 0 and 100"
+                }
+              ]
             }
           ]
         },
@@ -53,9 +60,16 @@
                 "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 300,
+                "max": 250,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
             },
             {
               "label": "Diastolic",
@@ -67,7 +81,14 @@
                 "min": 0,
                 "max": 200,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
+                  "message": "Value must be between 0 and 200"
+                }
+              ]
             }
           ]
         },
@@ -82,10 +103,17 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "rendering": "number",
-                "min": 0,
+                "min": 40,
                 "max": 250,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
+                  "message": "Value must be between 40 and 250"
+                }
+              ]
             },
             {
               "label": "Gravida",

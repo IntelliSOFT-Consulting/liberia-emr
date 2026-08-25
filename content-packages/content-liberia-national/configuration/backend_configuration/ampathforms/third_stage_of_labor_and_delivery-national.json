@@ -1,5 +1,5 @@
 {
-  "name": "Third Stage of Labor and Delivery",
+  "name": "3. Third Stage of Labor and Delivery",
   "uuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
   "version": "1.0",
   "published": true,
@@ -147,7 +147,14 @@
                 "min": 0,
                 "max": 10,
                 "step": 0.1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
             },
             {
               "label": "Length",
@@ -159,7 +166,14 @@
                 "min": 0,
                 "max": 100,
                 "step": 0.1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 100)",
+                  "message": "Value must be between 0 and 100"
+                }
+              ]
             },
             {
               "label": "Sex",
@@ -247,7 +261,14 @@
                 "min": 0,
                 "max": 2,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
+                  "message": "Value must be between 0 and 2"
+                }
+              ]
             },
             {
               "label": "Heart rate (Pulse)",
@@ -259,7 +280,14 @@
                 "min": 0,
                 "max": 2,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
+                  "message": "Value must be between 0 and 2"
+                }
+              ]
             },
             {
               "label": "Muscle tone (Activity)",
@@ -271,7 +299,14 @@
                 "min": 0,
                 "max": 2,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
+                  "message": "Value must be between 0 and 2"
+                }
+              ]
             },
             {
               "label": "Reflex irritability (Grimace)",
@@ -283,7 +318,14 @@
                 "min": 0,
                 "max": 2,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
+                  "message": "Value must be between 0 and 2"
+                }
+              ]
             },
             {
               "label": "Respiration (Breathing)",
@@ -295,7 +337,14 @@
                 "min": 0,
                 "max": 2,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
+                  "message": "Value must be between 0 and 2"
+                }
+              ]
             },
             {
               "label": "Total APGAR score",
@@ -307,7 +356,14 @@
                 "min": 0,
                 "max": 10,
                 "step": 1
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
             },
             {
               "label": "Time at which the baby was delivered.",
