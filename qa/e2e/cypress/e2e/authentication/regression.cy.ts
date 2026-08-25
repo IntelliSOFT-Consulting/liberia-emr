@@ -14,7 +14,7 @@ const createRegistrationTestData = (): RegistrationTestData => {
     return {
         firstName: faker.person.firstName(),
         familyName: faker.person.lastName(),
-        sex: faker.helpers.arrayElement(['male', 'female']),
+        sex: faker.helpers.arrayElement(['male', 'female'] as const),
         birthdate: randomAdultBirthdateParts()
     };
 };
@@ -189,7 +189,9 @@ describe('Registration', () => {
         registrationPage.preventDoubleSubmitOnRapidClicks(testData);
     })
 
-    it('should successfully register a patient with valid data', () => {
+    const runLiveRegistration = ((Cypress.config() as any).RUN_LIVE_REGISTRATION === true) ? it : it.skip;
+
+    runLiveRegistration('should successfully register a patient with valid data', () => {
         fillAndSubmitValidRegistration();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
         cy.contains('Vitals and biometrics', { timeout: 100000 }).should('be.visible');

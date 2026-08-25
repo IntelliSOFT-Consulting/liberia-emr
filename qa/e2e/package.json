@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "test": "cypress run"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,6 @@
     "@faker-js/faker": "^10.6.0",
     "@types/node": "^26.2.0",
     "cypress": "^15.20.1",
-    "typescript": "^7.0.2"
+    "typescript": "^5.6.0"
   }
 }
