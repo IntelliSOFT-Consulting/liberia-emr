@@ -20,6 +20,11 @@
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
     }
   },
+  "@openmrs/esm-app-shell": {
+    "Enabled feature flags": [
+      "patient-flags"
+    ]
+  },
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": [
       "${var.identifiertype.moh-health-record.uuid}",
@@ -174,6 +179,7 @@
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
+          "patient-flags-list",
           "liberia-obs-widget",
           "vitals-overview-widget",
           "biometrics-overview-widget",

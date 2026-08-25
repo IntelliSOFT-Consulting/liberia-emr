@@ -268,7 +268,7 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 | --- | --- |
 | Obstetric history | CIEL Gravida (5624), LMP (1427), Full-term births (160080), Preterm births (160078), Abortions (1823), Living children (1825) — **no Parity row** |
 | Physical exam Colour (`DE.7`) | National `Color` + CIEL Normal (1115) / Abnormal (1116) — not Colour (HGT) |
-| Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions (Abdomen is CIEL 1808) + CIEL Normal / Abnormal |
+| Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions + CIEL Normal / Abnormal. Abdomen uses the Liberia coded Question, not CIEL 1808 (an Anatomy concept with N/A datatype). |
 | Colour (HGT) (`DE.25`) | National Text — prenatal/HGT only; do not use for physical-exam Colour |
 | SBP / DBP | National Blood Pressure (Systolic / Diastolic), bounded 50–260 and 30–180 |
 | Weight | CIEL 5089 Weight (kg), form `max` **250** — CIEL 5089 carries `hi_absolute = 250` and `ObsValidator` rejects anything above it server-side, failing the whole encounter POST |
@@ -277,6 +277,7 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 | Trimester | CIEL 5272 Pregnancy status with the existing national trimester answers |
 | Woman receiving IPT / LLIN received at ANC | Existing **national coded Yes/No** questions, answered by CIEL 1065 / 1066 — **never** a local Boolean |
 | Presentation | Local MCH value set — do **not** use national Vertex-only Presentation |
+| Danger-sign alerts | Surfaced persistently as Patient Flags (`omod.patientflags`) for High SBP (>=140), High DBP (>=90), Abnormal FHT (<110 or >160 bpm), and Non-vertex presentation based on latest observations. In-form non-blocking advisories are rendered via conditional Form Engine `markdown` elements (`hideWhenExpression`), preserving valid obs persistence. Physical-exam abnormality explanation remains a blocking form completeness validator. |
 
 ### Converged ANC concepts
 
