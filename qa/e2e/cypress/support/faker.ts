@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker';
+const { faker } = require('@faker-js/faker');
 
 export type DateParts = {
     day: string;

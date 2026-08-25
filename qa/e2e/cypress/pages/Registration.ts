@@ -65,7 +65,6 @@ class RegistrationPage {
     }
 
     clickRegisterPatient() {
-        cy.wait(500); 
         cy.get('button[type="submit"]', { timeout: 10000 }).should('be.enabled');
         cy.contains('button', 'Register patient', { timeout: 10000 }).should('be.enabled');
         cy.contains('button', 'Register patient', { timeout: 10000 }).click();
