@@ -45,7 +45,11 @@ services:
       OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
       OMRS_CONFIG_CREATE_TABLES: "${OMRS_CREATE_TABLES:-false}"
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
-      OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
+      # Legacy admin UI, MOH ICT SOP control D5. Blocked in production and unblocked on
+      # dev/staging, from ONE variable that also drives the gateway below — the two layers
+      # cannot be half-set from separate knobs. Unset means false, so a facility env file
+      # that never mentions it stays disabled. Only dev/staging env files set it to true.
+      OMRS_CONFIG_MODULE_WEB_ADMIN: "${LEGACY_ADMIN_UI:-false}"
       # One of three literals: continue_on_error, fail_on_error, disabled. The previous
       # 'continue_on_error=false' was none of them and fell through to continuing, so this
       # is the same behaviour spelled validly — not a change.
@@ -102,6 +106,11 @@ services:
     image: ${REGISTRY}/liberia-emr-gateway:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on: [frontend, backend]
+    environment:
+      # Same variable as the backend above: false blocks /openmrs/admin/ at the edge,
+      # true lets it through to the backend. The image itself defaults to false, so
+      # this line changes nothing in production — it exists so dev/staging can opt out.
+      LEGACY_ADMIN_UI: "${LEGACY_ADMIN_UI:-false}"
     ports:
       - "80:80"
       - "443:443"

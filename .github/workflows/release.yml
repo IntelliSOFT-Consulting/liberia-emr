@@ -119,6 +119,15 @@ jobs:
     needs: publish
     environment: staging
     steps:
+      # Still a stub. When this is implemented, pass LEGACY_ADMIN_UI=true on the
+      # compose command exactly as deploy-dev does in ci.yml — staging is a
+      # non-production environment and is allowed the legacy admin UI:
+      #
+      #   LIBERIAEMR_VERSION=<tag> LEGACY_ADMIN_UI=true \
+      #     docker compose --env-file facility.env up -d
+      #
+      # Set it on the command, not in the staging server's facility.env, so it
+      # cannot travel with a copied env file into a facility.
       - run: 'echo "TODO: deploy to staging"'
 
   approve-production:
@@ -128,4 +137,7 @@ jobs:
     # Manual approval gate configured on the environment.
     environment: production
     steps:
+      # Production deploys are manual and must NOT set LEGACY_ADMIN_UI. The gateway
+      # image and the compose files both default it to false, which is what keeps MOH
+      # ICT SOP control D5 enforced in production. See docs/security/moh-ict-sop-mapping.md.
       - run: echo "Approved. Deploy per docs/runbooks/deploy.md."

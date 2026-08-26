@@ -703,13 +703,23 @@ jobs:
       # what a manual `docker compose up` would use later. Confirmed
       # against the real facility.env: LIBERIAEMR_VERSION is exactly the
       # variable that selects the image tag.
+      #
+      # LEGACY_ADMIN_UI=true is set the same way, and ONLY here. It unblocks
+      # /openmrs/admin/ at the gateway and sets module.allow_web_admin on the
+      # backend, so dev can reach Manage Modules and the legacy scheduler,
+      # which have no O3 equivalent yet. It is safe to hard-code because this
+      # job is dev-only (DEV_HOST, main pushes); a facility or central deploy
+      # runs from docs/runbooks/deploy.md and never sets it, and both the
+      # compose default and the gateway image default are false. Do NOT copy
+      # this line into a production deploy path — MOH ICT SOP control D5,
+      # docs/security/moh-ict-sop-mapping.md.
       - name: Pull and restart on the dev server
         run: |
           ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
             set -e
             cd "${{ secrets.DEV_COMPOSE_DIR }}"
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env pull
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env pull
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
           '
 
   # ---------------------------------------------------------------------
@@ -803,6 +813,10 @@ jobs:
               exit 1
             fi
           done
+          # LEGACY_ADMIN_UI=true is repeated in the restart below for the same
+          # reason LIBERIAEMR_VERSION is: it lives in the deploy command, not in
+          # the server's facility.env, so a rollback that omitted it would leave
+          # dev with the admin UI blocked and look like an unrelated regression.
           echo "rolling back to:"
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
@@ -816,7 +830,7 @@ jobs:
             docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend:latest'
             docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
             cd '${{ secrets.DEV_COMPOSE_DIR }}'
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
           "
 
       - name: Verify the rollback came back up

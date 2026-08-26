@@ -41,6 +41,9 @@ services:
       OMRS_CONFIG_CONNECTION_USERNAME: ${MYSQL_USER}
       OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
+      # Legacy admin UI, MOH ICT SOP control D5. Hard-coded false here, unlike the
+      # facility stack: central holds the national data set and has no dev/staging
+      # deployment of its own, so there is no environment that should ever unblock it.
       OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
       # One of continue_on_error, fail_on_error, disabled. The previous
       # 'continue_on_error=false' was none of them and fell through to continuing anyway;
