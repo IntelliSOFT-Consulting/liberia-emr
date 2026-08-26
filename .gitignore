@@ -81,3 +81,12 @@ dist/
 # Regenerated per run and removed by its cleanup trap; never a real certificate.
 qa/upgrade/.ci-certs/
 qa/upgrade/initializer-failure.log
+
+## cypess local environment
+cypress/videos/
+cypress/screenshots/
+# Cypress
+qa/e2e/cypress.env.json
+qa/e2e/node_modules/
+qa/e2e/cypress/screenshots/
+qa/e2e/cypress/videos/
