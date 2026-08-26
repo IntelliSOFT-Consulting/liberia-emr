@@ -6,26 +6,35 @@
 name: CI
 
 on:
-  # No branches: filter — fires on a push to ANY branch, not just
-  # main/develop/release/**. publish-latest and deploy-dev stay gated to
-  # main specifically via their own if:, so this doesn't change what
-  # actually gets published/deployed — it just means every branch gets
-  # validate/build/security/test feedback on push, not only PRs.
+  # main only. This trigger used to carry no branches: filter, so every branch
+  # push ran the pipeline — but a push to a branch that already had a PR fired
+  # this workflow TWICE for one commit, and the concurrency group below cancelled
+  # one of the two. A cancelled run still publishes a check run for every job in
+  # its plan, so the commit ended up with two checks named "CI gate": one from the
+  # run that finished, one cancelled. GitHub requires EVERY check run carrying a
+  # required context to pass, so the cancelled leftover blocked the PR even when
+  # the surviving run was green — see the gate job for the full story.
+  #
+  # A required status check therefore needs exactly one run per commit, and that
+  # run is the pull_request one. The cost is that a branch gets no CI until a PR
+  # exists for it; workflow_dispatch below covers an ad-hoc run before then, and
+  # a draft PR gets the full pipeline.
   push:
+    branches: [main]
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
 
-# A push to a branch that already has a PR fires this workflow TWICE — once for
-# the push, once for the pull_request — and both ran to completion side by side.
-# That is the whole reactor, Sonar, dependency-check and the container build,
-# twice per commit, reporting the same check name twice on the PR.
+# This used to be what stopped a commit being built twice, back when a branch push
+# and its pull_request both triggered the workflow; the push trigger above is now
+# restricted to main, so only one event fires per commit and there is nothing left
+# to collapse. What the group still does is make a NEW commit cancel the run still
+# going for the previous one, instead of queueing behind it.
 #
-# Grouping on the BRANCH rather than the event is what collapses them: on a
-# pull_request event github.head_ref is the source branch, on a push it is empty
-# and ref_name is that same branch, so both events land in one group and only one
-# survives. The same group then makes a new commit cancel the run still going for
-# the previous one, instead of queueing behind it.
+# The key is still the BRANCH rather than the event: on a pull_request event
+# github.head_ref is the source branch, on a push it is empty and ref_name is the
+# branch, so successive runs for one branch share a group however they were
+# triggered — including a workflow_dispatch run on a branch that also has a PR.
 concurrency:
   group: ci-${{ github.head_ref || github.ref_name }}
   # Never on main. publish-latest, deploy-dev, smoke-test, rollback-dev and dast
@@ -527,6 +536,17 @@ jobs:
   gate:
     name: CI gate
     runs-on: ubuntu-latest
+    # This job is the required status check for main (repository ruleset "Prevent direct
+    # push to Main"), which is why the push trigger at the top of this file is restricted
+    # to main: a required context must be produced by exactly ONE run per commit. When both
+    # a push and a pull_request run existed for the same commit, the one the concurrency
+    # group cancelled still published a second check run named "CI gate" — cancelled, not
+    # skipped — and a required context blocks the merge unless every check run carrying it
+    # passes. Adding a job-level if: does NOT fix that: a cancelled run publishes a check
+    # run for every job in its plan, whether or not the condition would have skipped it.
+    #
+    # always(), so a dependency that failed still reaches the assertion below instead of
+    # skipping it and reporting success by omission.
     if: always()
     needs:
       - changes
