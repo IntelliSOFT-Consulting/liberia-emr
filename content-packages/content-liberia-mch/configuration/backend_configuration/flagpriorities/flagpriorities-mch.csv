@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Name,Style,Rank,Description
+${var.patientflagpriority.anc-danger-sign.uuid},,High Priority,color:red,1,High-priority ANC danger signs requiring clinical evaluation

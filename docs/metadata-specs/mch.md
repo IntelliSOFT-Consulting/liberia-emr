@@ -277,7 +277,7 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 | Trimester | CIEL 5272 Pregnancy status with the existing national trimester answers |
 | Woman receiving IPT / LLIN received at ANC | Existing **national coded Yes/No** questions, answered by CIEL 1065 / 1066 — **never** a local Boolean |
 | Presentation | Local MCH value set — do **not** use national Vertex-only Presentation |
-| Danger-sign alerts | Surfaced persistently as Patient Flags (`omod.patientflags`) for High SBP (>=140), High DBP (>=90), Abnormal FHT (<110 or >160 bpm), and Non-vertex presentation based on latest observations. In-form non-blocking advisories are rendered via conditional Form Engine `markdown` elements (`hideWhenExpression`), preserving valid obs persistence. Physical-exam abnormality explanation remains a blocking form completeness validator. |
+| Danger-sign alerts | Surfaced persistently as high-priority Patient Flags (`omod.patientflags`) for High SBP (>=140), High DBP (>=90), Abnormal FHT (<110 or >160 bpm), and Non-vertex presentation based on the latest observation from ANC Initial Visit or ANC Follow-up Visit. The current runtime does not reliably create ANC programme enrolments, so the completed-pregnancy lifecycle boundary is the first non-voided Delivery encounter at or after the ANC encounter; observations from that completed pregnancy cannot remain active. No arbitrary recency interval is used. In-form non-blocking advisories are rendered via conditional Form Engine `markdown` elements (`hideWhenExpression`), preserving valid obs persistence. Physical-exam abnormality explanation remains a blocking form completeness validator. |
 
 ### Converged ANC concepts
 
