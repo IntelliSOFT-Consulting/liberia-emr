@@ -4,6 +4,7 @@
     "webservices.rest": "^2.47.0",
     "fhir2": "^2.0.0"
   },
+  "pages": [],
   "extensions": [
     {
       "name": "partograph-dashboard-link",

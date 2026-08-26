@@ -21,9 +21,11 @@
     "_comment_epartograph": [
       "The e-partograph is a Custom Build ESM pinned in distribution/distro.properties.",
       "Its clinical concepts are supplied here rather than compiled into the module, so",
-      "a concept correction ships as a config change, not a frontend release."
+      "a concept correction ships as a config change, not a frontend release.",
+      "The formUuid below is the compiled UUID from partograph-national.json."
     ],
     "encounterTypeUuid": "${var.encountertype.partograph.uuid}",
+    "formUuid": "${var.form.partograph.uuid}",
     "concepts": {
       "cervicalDilationUuid": "${var.concept.partograph.cervical-dilation.uuid}",
       "descentOfHeadUuid": "${var.concept.partograph.descent-of-head.uuid}",
@@ -35,7 +37,12 @@
       "systolicBloodPressureUuid": "${var.concept.ciel.systolic-bp.uuid}",
       "diastolicBloodPressureUuid": "${var.concept.ciel.diastolic-bp.uuid}",
       "pulseUuid": "${var.concept.ciel.pulse.uuid}",
-      "temperatureUuid": "${var.concept.ciel.temperature.uuid}"
+      "temperatureUuid": "${var.concept.ciel.temperature.uuid}",
+      "oxytocinUnitsPerLitreUuid": "${var.concept.partograph.oxytocin-units-per-litre.uuid}",
+      "drugsAndIvFluidsUuid": "${var.concept.partograph.drugs-and-iv-fluids.uuid}",
+      "proteinsInUrineUuid": "${var.concept.partograph.proteins-in-urine.uuid}",
+      "acetoneInUrineUuid": "${var.concept.partograph.acetone-in-urine.uuid}",
+      "urineVolumeUuid": "${var.concept.partograph.urine-volume.uuid}"
     },
     "alertLine": {
       "_comment": "WHO partograph alert/action lines. Confirm against the DAK before go-live.",

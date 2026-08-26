@@ -16,6 +16,11 @@ export const configSchema = {
     _description: 'Encounter type recorded for each serial partograph observation.',
     _default: '',
   },
+  formUuid: {
+    _type: Type.String,
+    _description: 'UUID of the partograph AMPATH form to launch when the user clicks Add.',
+    _default: '',
+  },
   concepts: {
     cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '' },
     descentOfHeadUuid: { _type: Type.ConceptUuid, _default: '' },
@@ -28,6 +33,11 @@ export const configSchema = {
     diastolicBloodPressureUuid: { _type: Type.ConceptUuid, _default: '' },
     pulseUuid: { _type: Type.ConceptUuid, _default: '' },
     temperatureUuid: { _type: Type.ConceptUuid, _default: '' },
+    oxytocinUnitsPerLitreUuid: { _type: Type.ConceptUuid, _default: '' },
+    drugsAndIvFluidsUuid: { _type: Type.ConceptUuid, _default: '' },
+    proteinsInUrineUuid: { _type: Type.ConceptUuid, _default: '' },
+    acetoneInUrineUuid: { _type: Type.ConceptUuid, _default: '' },
+    urineVolumeUuid: { _type: Type.ConceptUuid, _default: '' },
   },
   alertLine: {
     _description:
@@ -52,7 +62,25 @@ export const configSchema = {
 
 export interface EPartographConfig {
   encounterTypeUuid: string;
-  concepts: Record<string, string>;
+  formUuid: string;
+  concepts: {
+    cervicalDilationUuid: string;
+    descentOfHeadUuid: string;
+    contractionsPerTenMinutesUuid: string;
+    contractionDurationUuid: string;
+    amnioticFluidUuid: string;
+    mouldingUuid: string;
+    fetalHeartRateUuid: string;
+    systolicBloodPressureUuid: string;
+    diastolicBloodPressureUuid: string;
+    pulseUuid: string;
+    temperatureUuid: string;
+    oxytocinUnitsPerLitreUuid: string;
+    drugsAndIvFluidsUuid: string;
+    proteinsInUrineUuid: string;
+    acetoneInUrineUuid: string;
+    urineVolumeUuid: string;
+  };
   alertLine: {
     startDilationCm: number;
     cmPerHour: number;

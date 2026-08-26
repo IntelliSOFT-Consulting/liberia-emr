@@ -41,12 +41,17 @@
     "rxjs": "6.x"
   },
   "dependencies": {
+    "@carbon/charts": "^1.15.0",
+    "@carbon/charts-react": "^1.15.0",
     "@carbon/react": "^1.71.0",
-    "lodash-es": "^4.17.21"
+    "@openmrs/esm-patient-common-lib": "next",
+    "lodash-es": "^4.17.21",
+    "swr": "^2.2.5"
   },
   "devDependencies": {
     "@openmrs/esm-framework": "next",
     "@openmrs/webpack-config": "next",
+    "@types/lodash-es": "^4.17.12",
     "openmrs": "next",
     "typescript": "^5.6.0",
     "webpack": "^5.95.0"
