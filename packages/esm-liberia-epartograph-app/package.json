@@ -1,6 +1,6 @@
 {
   "name": "@liberiaemr/esm-liberia-epartograph-app",
-  "version": "1.0.0-SNAPSHOT",
+  "version": "1.0.0",
   "private": true,
   "license": "MPL-2.0",
   "description": "WHO-aligned electronic partograph for LiberiaEMR",
