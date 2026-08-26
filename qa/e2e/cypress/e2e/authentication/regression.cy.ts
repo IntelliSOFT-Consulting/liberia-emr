@@ -103,15 +103,19 @@ describe('Registration', () => {
         registrationPage.verifyRequiredFieldErrors(['birthdate']);
     })
 
-    it('should not show required-field error message after filling all required fields', () => {
-        registrationPage.fillRequiredFields({
-            firstName: testData.firstName,
-            familyName: testData.familyName,
-            sex: testData.sex,
-            birthdate: testData.birthdate
-        });
-        registrationPage.clickRegisterPatient();
+    it('should successfully register a patient with valid data', () => {
+        cy.intercept('POST', '**/ws/rest/v1/patient**', {
+            statusCode: 201,
+            body: { uuid: faker.string.uuid() }
+        }).as('createPatient');
+
+        fillAndSubmitValidRegistration();
         registrationPage.verifyNoRequiredFieldErrors();
+
+        cy.wait('@createPatient', { timeout: 10000 }).then(({ request, response }) => {
+            expect(request.method).to.equal('POST');
+            expect(response?.statusCode).to.equal(201);
+        });
     })
 
     it('should reject a future date of birth', () => {
@@ -191,7 +195,7 @@ describe('Registration', () => {
 
     const runLiveRegistration = Cypress.env('RUN_LIVE_REGISTRATION') === true ? it : it.skip;
 
-    runLiveRegistration('should successfully register a patient with valid data', () => {
+    runLiveRegistration('should successfully register a patient with valid data against live backend', () => {
         fillAndSubmitValidRegistration();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
         cy.contains('Vitals and biometrics', { timeout: 100000 }).should('be.visible');

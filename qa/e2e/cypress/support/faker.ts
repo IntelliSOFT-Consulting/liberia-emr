@@ -1,4 +1,4 @@
-const { faker } = require('@faker-js/faker');
+ import { faker } from '@faker-js/faker';
 
 export type DateParts = {
     day: string;
@@ -12,7 +12,7 @@ export const toDateParts = (date: Date): DateParts => ({
     year: String(date.getFullYear())
 });
 
-export const randomAdultBirthdateParts = (minAge = 18, maxAge = 80): DateParts => {
+export const randomAdultBirthdateParts = (minAge = 0, maxAge = 80): DateParts => {
     const dateOfBirth = faker.date.birthdate({ min: minAge, max: maxAge, mode: 'age' });
     return toDateParts(dateOfBirth);
 };
