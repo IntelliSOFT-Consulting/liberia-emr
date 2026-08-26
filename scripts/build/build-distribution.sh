@@ -167,6 +167,80 @@ fi
 echo "== building content packages =="
 mvn -B -q -DskipTests -f "$ROOT/pom.xml" clean package
 
+# The content CSVs are now resolved (target/configuration), and the dictionary ZIPs are on
+# disk, so this is the only point at which the two can be compared. concept_name is unique
+# per locale for a fully specified name, so a content concept that claims a name an imported
+# CIEL concept already owns under a DIFFERENT UUID loses with DuplicateConceptNameException
+# — one row rejected, the whole clean-install gate red, and the message names neither the
+# file nor the dictionary it collided with. validate-content.sh catches the same clash
+# between two content CSVs; the exports are gitignored, so it cannot see this half.
+echo "== checking concept names against the shipped dictionaries =="
+python3 - "$ROOT" "$DEMO" <<'PY' || { echo "FAIL: concept name collides with the dictionary (see above)" >&2; exit 1; }
+import csv, glob, json, os, sys, zipfile
+
+root, demo = sys.argv[1], sys.argv[2] == "true"
+
+# (locale, casefolded name) -> (external_id, dictionary) for every FULLY_SPECIFIED name the
+# exports carry. Synonyms are excluded: OpenMRS only enforces uniqueness on the fully
+# specified name.
+owned = {}
+
+def in_this_build(path):
+    """A distribution ships the demo layer or the production layers, never both."""
+    pkg = path[len(f"{root}/content-packages/"):].split(os.sep)[0]
+    return (pkg == "content-demo") == demo
+
+for z in glob.glob(f"{root}/content-packages/*/configuration/backend_configuration/ocl/*.zip"):
+    if not in_this_build(z):
+        continue
+    try:
+        with zipfile.ZipFile(z) as f:
+            if "export.json" not in f.namelist():
+                continue
+            export = json.loads(f.read("export.json"))
+    except Exception:
+        continue
+    for concept in export.get("concepts") or []:
+        ext = str(concept.get("external_id") or "")
+        if not ext:
+            continue
+        for name in concept.get("names") or []:
+            if not isinstance(name, dict) or name.get("name_type") != "FULLY_SPECIFIED":
+                continue
+            if name.get("retired") is True:
+                continue
+            text = (name.get("name") or "").strip()
+            if text:
+                owned.setdefault(((name.get("locale") or "en"), text.casefold()),
+                                 (ext, os.path.basename(z)))
+
+collisions = []
+for f in sorted(glob.glob(
+        f"{root}/content-packages/*/target/configuration/backend_configuration/concepts/*.csv")):
+    if not in_this_build(f):
+        continue
+    with open(f, newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    fsn_cols = [c for c in (rows[0].keys() if rows else [])
+                if c and c.strip().lower().startswith("fully specified name")]
+    for n, row in enumerate(rows, start=2):
+        uuid = (row.get("Uuid") or "").strip()
+        for col in fsn_cols:
+            locale = col.split(":", 1)[1].strip() if ":" in col else "en"
+            text = (row.get(col) or "").strip()
+            if not uuid or not text:
+                continue
+            held = owned.get((locale, text.casefold()))
+            if held and held[0] != uuid:
+                collisions.append(
+                    f"{os.path.basename(f)}:{n} names {uuid} '{text}' in locale '{locale}', "
+                    f"but {held[1]} already gives that name to {held[0]}")
+
+for c in collisions:
+    print(f"  {c}", file=sys.stderr)
+sys.exit(1 if collisions else 0)
+PY
+
 echo "== resolving OMODs from distro.properties =="
 "$ROOT/scripts/build/resolve-modules.sh" --out "$ROOT/distribution/backend/modules"
 
