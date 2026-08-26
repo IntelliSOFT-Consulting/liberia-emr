@@ -186,5 +186,3 @@ ${var.concept.national.baby-breathing.uuid},,Breathing,Breathing,Baby breathing,
 ${var.concept.national.baby-suck.uuid},,Suck,Suck,Baby suck,Question,Coded,"${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}",
 ${var.concept.national.temperature-status.uuid},,Temperature status,Temperature status,Temperature status,Question,Coded,"${var.concept.national.warm.uuid};${var.concept.national.cold.uuid};${var.concept.ciel.normal.uuid}",
 ${var.concept.national.labor-notes.uuid},,Labor notes,Labor notes,Labor notes,Question,Text,,
-
-
