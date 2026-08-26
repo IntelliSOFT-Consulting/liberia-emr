@@ -527,7 +527,21 @@ jobs:
   gate:
     name: CI gate
     runs-on: ubuntu-latest
-    if: always()
+    # always(), so a failed dependency still reaches the assertion below rather than
+    # skipping it — but NOT on a push to a branch that is not main.
+    #
+    # This job is the required status check for main (repository ruleset "Prevent direct
+    # push to Main"). A push to a branch with an open PR fires this workflow twice, and the
+    # concurrency group above cancels one of the two. The cancelled run's dependencies come
+    # back as 'cancelled', so this job — which runs on always() — fails, and publishes a
+    # SECOND check run named "CI gate" against the same commit. GitHub requires every check
+    # run carrying a required context to pass, so that leftover failure blocked the PR even
+    # though the surviving run was green.
+    #
+    # Restricting the job to pull_request and main means exactly one "CI gate" check exists
+    # per commit. Branch pushes keep every other job, so the feedback the trigger comment
+    # above describes is unchanged; they simply do not publish the gate context.
+    if: always() && (github.event_name != 'push' || github.ref == 'refs/heads/main')
     needs:
       - changes
       - validate
