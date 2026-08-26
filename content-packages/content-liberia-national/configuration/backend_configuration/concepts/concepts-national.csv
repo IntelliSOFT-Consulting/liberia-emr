@@ -123,7 +123,7 @@ ${var.concept.national.heart.uuid},,Heart,Heart,Heart,Question,Coded,${var.conce
 ${var.concept.national.lungs.uuid},,Lungs,Lungs,Lungs,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
 ${var.concept.national.breasts.uuid},,Breasts,Breasts,Breasts,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
 ${var.concept.national.nipples.uuid},,Nipples,Nipples,Nipples,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
-${var.concept.national.abdomen.uuid},,Abdomen,Abdomen,Abdomen,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
+${var.concept.national.abdomen.uuid},,Abdomen examination,Abdomen exam,Abdomen physical examination finding,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
 ${var.concept.national.extremities.uuid},,Extremities,Extremities,Extremities,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
 ${var.concept.national.pelvic-examination.uuid},,Pelvic examination,Pelvic exam,Pelvic examination,Question,Coded,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid},
 ${var.concept.national.presentation.uuid},,Presentation,Presentation,Presentation,Question,Coded,${var.concept.national.vertex.uuid},
