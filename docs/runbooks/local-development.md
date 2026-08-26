@@ -181,7 +181,83 @@ The checkout must be under `$HOME` for Colima to mount it.
 - **Nothing is pushed to the registry.** Every local run builds its own images; `--local`
   on the deploy script exists for exactly that.
 
-## 6. Files that are yours, not the repository's
+## 6. Reaching the legacy admin UI
+
+Logging in at `https://localhost/openmrs/` redirects to `/openmrs/admin/index.htm`, which
+answers with a bare **404 from nginx**. That is the stack working correctly, not a broken
+deploy: MOH ICT SOP control D5 disables the legacy admin UI, both at the gateway and in
+the backend. Day to day, use the SPA at `https://localhost/openmrs/spa/` — its System
+Administration app covers most of what the legacy UI did — or the REST API, which is not
+blocked.
+
+For the parts that have no O3 equivalent yet (Manage Modules, the legacy scheduler,
+Advanced Settings), set one variable in your **local** `distribution/env/*.env` — never in
+a facility env file:
+
+```bash
+echo 'LEGACY_ADMIN_UI=true' >> distribution/env/demo.env
+```
+
+Then recreate the two containers that read it:
+
+```bash
+cd distribution/compose/facility
+docker compose -f docker-compose.yml -f docker-compose.demo.yml \
+  --env-file ../../env/demo.env up -d --force-recreate backend gateway
+```
+
+`https://localhost/openmrs/admin/index.htm` now loads. Confirm both layers actually
+flipped — a `404` means the gateway is still blocking, a `403`/redirect means the backend
+is:
+
+```bash
+curl -sk -o /dev/null -w '%{http_code}\n' -u admin:Admin123 \
+  https://localhost/openmrs/admin/index.htm      # 200
+```
+
+Only `true` and `false` are valid. Any other value names a gateway snippet that does not
+exist and nginx refuses to start — deliberately, so a typo cannot read as "allowed". If
+the gateway will not come up after you touch this, that is the first thing to check:
+
+```bash
+docker compose ... logs gateway | tail -20
+```
+
+### `OMRS_CONFIG_MODULE_WEB_ADMIN` only applies to a FRESH install
+
+Setting the variable is not enough on an instance that already has data, and this is easy
+to misread as the change not working.
+
+The entrypoint writes it to `/openmrs/openmrs-server.properties` and passes that file as
+`-DOPENMRS_INSTALLATION_SCRIPT`. OpenMRS reads an installation script **only while running
+the install wizard**. The file it actually uses at runtime is
+`/openmrs/data/openmrs-runtime.properties`, which lives in the `openmrs-data` volume, is
+generated once on first boot and is never regenerated from the environment afterwards.
+
+So:
+
+| Instance | Effect of `LEGACY_ADMIN_UI=true` |
+| --- | --- |
+| Fresh install (empty `openmrs-data`) | Both layers flip automatically. |
+| Existing install | Gateway unblocks; the backend does **not** — the persisted property still says `false`. |
+
+On an existing instance, set it once by hand and restart the backend:
+
+```bash
+docker exec -u root <backend-container> sh -c \
+  "sed -i 's/^module\.allow_web_admin=.*/module.allow_web_admin=true/' \
+     /openmrs/data/openmrs-runtime.properties"
+docker compose --env-file <env> restart backend
+```
+
+It only has to be done once per instance; a later clean install picks the value up from
+the environment on its own.
+
+The same variable is what `deploy-dev` sets on the dev server, so dev behaves like your
+local box. Production sets nothing and stays blocked; see
+[moh-ict-sop-mapping.md](../security/moh-ict-sop-mapping.md) §D5.
+
+## 7. Files that are yours, not the repository's
 
 Git-ignored, and absent from a fresh clone — expect to recreate them:
 

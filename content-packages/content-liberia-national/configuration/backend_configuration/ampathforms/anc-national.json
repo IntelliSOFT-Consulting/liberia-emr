@@ -179,7 +179,7 @@
               "type": "obs",
               "id": "abdomen",
               "questionOptions": {
-                "concept": "${var.concept.ciel.abdomen.uuid}",
+                "concept": "${var.concept.national.abdomen.uuid}",
                 "rendering": "select",
                 "answers": [
                   {

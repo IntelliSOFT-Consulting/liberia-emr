@@ -190,7 +190,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "radio",
-                "concept": "${var.concept.ciel.abdomen.uuid}",
+                "concept": "${var.concept.national.abdomen.uuid}",
                 "answers": [
                   {
                     "concept": "${var.concept.ciel.abnormal.uuid}",
@@ -286,6 +286,19 @@
               "required": true
             },
             {
+              "type": "markdown",
+              "id": "systolicBpWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(systolicBloodPressure) || systolicBloodPressure < 140"
+              },
+              "value": [
+                "⚠️ **High Systolic BP (≥140 mmHg):** Evaluate for gestational hypertension / pre-eclampsia"
+              ]
+            },
+            {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
@@ -296,6 +309,19 @@
               "id": "diastolicBloodPressure",
               "label": "Blood pressure (Diastolic)",
               "required": true
+            },
+            {
+              "type": "markdown",
+              "id": "diastolicBpWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(diastolicBloodPressure) || diastolicBloodPressure < 90"
+              },
+              "value": [
+                "⚠️ **High Diastolic BP (≥90 mmHg):** Evaluate for gestational hypertension / pre-eclampsia"
+              ]
             },
             {
               "type": "obs",
@@ -397,6 +423,19 @@
               "required": false
             },
             {
+              "type": "markdown",
+              "id": "fetalPresentationWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(fetalPresentation) || fetalPresentation === '${var.concept.mch.presentation-vertex.uuid}'"
+              },
+              "value": [
+                "⚠️ **Non-vertex Presentation:** Monitor and evaluate presentation for delivery planning"
+              ]
+            },
+            {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
@@ -407,6 +446,19 @@
               "id": "fetalHeartTone",
               "label": "Fetal heart tone (FHT)",
               "required": false
+            },
+            {
+              "type": "markdown",
+              "id": "fetalHeartToneWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(fetalHeartTone) || (fetalHeartTone >= 110 && fetalHeartTone <= 160)"
+              },
+              "value": [
+                "⚠️ **Abnormal Fetal Heart Tone (<110 or >160 bpm):** Evaluate for fetal distress"
+              ]
             },
             {
               "type": "obs",

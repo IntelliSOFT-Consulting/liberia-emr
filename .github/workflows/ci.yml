@@ -6,26 +6,35 @@
 name: CI
 
 on:
-  # No branches: filter — fires on a push to ANY branch, not just
-  # main/develop/release/**. publish-latest and deploy-dev stay gated to
-  # main specifically via their own if:, so this doesn't change what
-  # actually gets published/deployed — it just means every branch gets
-  # validate/build/security/test feedback on push, not only PRs.
+  # main only. This trigger used to carry no branches: filter, so every branch
+  # push ran the pipeline — but a push to a branch that already had a PR fired
+  # this workflow TWICE for one commit, and the concurrency group below cancelled
+  # one of the two. A cancelled run still publishes a check run for every job in
+  # its plan, so the commit ended up with two checks named "CI gate": one from the
+  # run that finished, one cancelled. GitHub requires EVERY check run carrying a
+  # required context to pass, so the cancelled leftover blocked the PR even when
+  # the surviving run was green — see the gate job for the full story.
+  #
+  # A required status check therefore needs exactly one run per commit, and that
+  # run is the pull_request one. The cost is that a branch gets no CI until a PR
+  # exists for it; workflow_dispatch below covers an ad-hoc run before then, and
+  # a draft PR gets the full pipeline.
   push:
+    branches: [main]
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
 
-# A push to a branch that already has a PR fires this workflow TWICE — once for
-# the push, once for the pull_request — and both ran to completion side by side.
-# That is the whole reactor, Sonar, dependency-check and the container build,
-# twice per commit, reporting the same check name twice on the PR.
+# This used to be what stopped a commit being built twice, back when a branch push
+# and its pull_request both triggered the workflow; the push trigger above is now
+# restricted to main, so only one event fires per commit and there is nothing left
+# to collapse. What the group still does is make a NEW commit cancel the run still
+# going for the previous one, instead of queueing behind it.
 #
-# Grouping on the BRANCH rather than the event is what collapses them: on a
-# pull_request event github.head_ref is the source branch, on a push it is empty
-# and ref_name is that same branch, so both events land in one group and only one
-# survives. The same group then makes a new commit cancel the run still going for
-# the previous one, instead of queueing behind it.
+# The key is still the BRANCH rather than the event: on a pull_request event
+# github.head_ref is the source branch, on a push it is empty and ref_name is the
+# branch, so successive runs for one branch share a group however they were
+# triggered — including a workflow_dispatch run on a branch that also has a PR.
 concurrency:
   group: ci-${{ github.head_ref || github.ref_name }}
   # Never on main. publish-latest, deploy-dev, smoke-test, rollback-dev and dast
@@ -527,6 +536,17 @@ jobs:
   gate:
     name: CI gate
     runs-on: ubuntu-latest
+    # This job is the required status check for main (repository ruleset "Prevent direct
+    # push to Main"), which is why the push trigger at the top of this file is restricted
+    # to main: a required context must be produced by exactly ONE run per commit. When both
+    # a push and a pull_request run existed for the same commit, the one the concurrency
+    # group cancelled still published a second check run named "CI gate" — cancelled, not
+    # skipped — and a required context blocks the merge unless every check run carrying it
+    # passes. A job-level if: does NOT fix that: a cancelled run publishes a check run for
+    # every job in its plan, whether or not the condition would have skipped it.
+    #
+    # always(), so a dependency that failed still reaches the assertion below instead of
+    # skipping it and reporting success by omission.
     if: always()
     needs:
       - changes
@@ -683,13 +703,23 @@ jobs:
       # what a manual `docker compose up` would use later. Confirmed
       # against the real facility.env: LIBERIAEMR_VERSION is exactly the
       # variable that selects the image tag.
+      #
+      # LEGACY_ADMIN_UI=true is set the same way, and ONLY here. It unblocks
+      # /openmrs/admin/ at the gateway and sets module.allow_web_admin on the
+      # backend, so dev can reach Manage Modules and the legacy scheduler,
+      # which have no O3 equivalent yet. It is safe to hard-code because this
+      # job is dev-only (DEV_HOST, main pushes); a facility or central deploy
+      # runs from docs/runbooks/deploy.md and never sets it, and both the
+      # compose default and the gateway image default are false. Do NOT copy
+      # this line into a production deploy path — MOH ICT SOP control D5,
+      # docs/security/moh-ict-sop-mapping.md.
       - name: Pull and restart on the dev server
         run: |
           ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
             set -e
             cd "${{ secrets.DEV_COMPOSE_DIR }}"
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env pull
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env pull
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
           '
 
   # ---------------------------------------------------------------------
@@ -783,6 +813,10 @@ jobs:
               exit 1
             fi
           done
+          # LEGACY_ADMIN_UI=true is repeated in the restart below for the same
+          # reason LIBERIAEMR_VERSION is: it lives in the deploy command, not in
+          # the server's facility.env, so a rollback that omitted it would leave
+          # dev with the admin UI blocked and look like an unrelated regression.
           echo "rolling back to:"
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
@@ -796,7 +830,7 @@ jobs:
             docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend:latest'
             docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
             cd '${{ secrets.DEV_COMPOSE_DIR }}'
-            LIBERIAEMR_VERSION=latest docker compose --env-file facility.env up -d
+            LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
           "
 
       - name: Verify the rollback came back up

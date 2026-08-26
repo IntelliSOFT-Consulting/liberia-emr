@@ -80,11 +80,56 @@ first, not the second.
 
 | # | Control | Baseline | Where | Status |
 | --- | --- | --- | --- | --- |
-| D1 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/nginx.conf` | Enforced |
+| D1 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` | Enforced |
 | D2 | Mutual TLS on sync | — | `sync-receiver` in the central compose | **Partial** — certificate lifecycle is the MOH ICT Unit's |
 | D3 | Encrypted backups | — | `docs/runbooks/backup-restore.md` | **Open** |
 | D4 | No secrets in the repository | — | Only `.env.example` templates committed; enforced by `scripts/validate/no-secrets.sh` in CI | Enforced |
-| D5 | Legacy admin UI disabled | — | `OMRS_CONFIG_MODULE_WEB_ADMIN=false` and blocked at the gateway | Enforced |
+| D5 | Legacy admin UI disabled | production only | `LEGACY_ADMIN_UI` drives both `OMRS_CONFIG_MODULE_WEB_ADMIN` and the gateway `/openmrs/admin/` block | Enforced in production — see the note below |
+
+---
+
+### D5 — the dev/staging exception
+
+The legacy admin UI is off by default and on only where it is deliberately switched on.
+A single variable, `LEGACY_ADMIN_UI`, drives both layers, so neither can be flipped
+without the other:
+
+| | Value | Gateway `/openmrs/admin/` | Backend `module.allow_web_admin` |
+| --- | --- | --- | --- |
+| Facility / central production | unset → `false` | 404 at the edge | `false` |
+| Dev, staging, local | `true` | proxied to the backend | `true` |
+
+The default is `false` in three independent places — the gateway image (`ENV
+LEGACY_ADMIN_UI=false`), the facility compose file (`${LEGACY_ADMIN_UI:-false}`) and the
+env template — so an environment that never mentions the variable is blocked. Central is
+stronger still: it hard-codes `false` and has no opt-out at all.
+
+Only two places set it to `true`, both non-production and both setting it on the deploy
+command rather than in a server's persistent `facility.env`, so it cannot travel with a
+copied env file into a facility:
+
+- `deploy-dev` in `.github/workflows/ci.yml` (dev host, `main` pushes only)
+- `deploy-staging` in `.github/workflows/release.yml` (documented; the job is still a stub)
+
+A production deploy follows `docs/runbooks/deploy.md` and sets nothing, which is what
+keeps this control enforced where it is contractual.
+
+**Implementation caveat.** `OMRS_CONFIG_MODULE_WEB_ADMIN` is consumed by the OpenMRS
+install wizard, so on an instance that is already installed the persisted
+`openmrs-runtime.properties` wins and the variable has no effect. On such an instance the
+backend layer must be flipped once by hand (see
+[local-development.md](../runbooks/local-development.md) §6); a clean install honours the
+variable directly. Note what this means for the control as previously written: on an
+existing production instance the enforcement has effectively been the gateway block plus
+the wizard's original `false`, not the environment variable. Both layers still have to be
+deliberately flipped to expose the UI, so the control holds — but it holds for a slightly
+different reason than the old wording implied.
+
+**Residual risk accepted:** dev and staging expose an interface that production does not,
+so they are not byte-identical rehearsals of the production surface, and the ZAP baseline
+scan in `dast` now scans a host with that interface reachable. Neither instance holds
+patient data. Revisit when O3 grows equivalents for Manage Modules and the legacy
+scheduler, at which point the exception can be dropped entirely.
 
 ---
 
