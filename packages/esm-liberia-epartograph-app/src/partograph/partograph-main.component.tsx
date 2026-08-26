@@ -87,14 +87,14 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<EPartographConfig>();
 
-  const { encounters, isLoading, error, mutate } = usePartographEncounters(patientUuid);
+  const { encounters, isDelivered, isLoading, error, mutate } = usePartographEncounters(patientUuid);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table view toggle
-  const [showGraph, setShowGraph] = useState(true); // default to graph (matches mockup)
+  const [showGraph, setShowGraph] = useState(false); // default to table view
 
   // Selected tab index in graph mode
-  const [selectedTabIndex, setSelectedTabIndex] = useState(3); // default to composite chart tab
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0); // default to first tab (Fetal Heart Rate)
 
   // Pagination for table mode (encounters are oldest-first; we show newest-first in table)
   const [page, setPage] = useState(0);
@@ -104,8 +104,8 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     return encountersNewestFirst.slice(start, start + PAGE_SIZE);
   }, [encountersNewestFirst, page]);
 
-  // CDS alert status
-  const alerts = usePartographAlerts(encounters, config);
+  // CDS alert status (suppresses intrapartum alerts if delivery has already occurred)
+  const alerts = usePartographAlerts(encounters, config, isDelivered);
 
   /** Launch the partograph AMPATH form in the O3 workspace drawer. */
   const handleLaunchForm = useCallback(
@@ -170,7 +170,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
       <EmptyState
         displayText={t('partograph', 'partograph')}
         headerTitle={t('partograph', 'Partograph')}
-        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+        launchForm={() => handleLaunchForm()}
       />
     );
   }
@@ -201,11 +201,9 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           </ContentSwitcher>
 
           {/* Add button */}
-          {config.formUuid && (
-            <Button kind="ghost" renderIcon={Add} iconDescription={t('add', 'Add')} size="sm" onClick={() => handleLaunchForm()}>
-              {t('add', 'Add')}
-            </Button>
-          )}
+          <Button kind="ghost" renderIcon={Add} iconDescription={t('add', 'Add')} size="sm" onClick={() => handleLaunchForm()}>
+            {t('add', 'Add')}
+          </Button>
         </div>
       </CardHeader>
 

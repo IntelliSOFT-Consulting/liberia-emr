@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { EPartographConfig } from '../config-schema';
@@ -14,47 +15,192 @@ export interface ObsRep {
 export interface PartographEncounter {
   uuid: string;
   encounterDatetime: string;
+  encounterType?: { uuid: string; display: string };
+  form?: { uuid: string; name: string; display?: string };
   obs: ObsRep[];
 }
 
-interface UsePartographEncountersResult {
-  /** All encounters, sorted oldest-first (earliest record = index 0). */
+export interface UsePartographEncountersResult {
+  /** All partograph serial encounters, sorted oldest-first (earliest record = index 0). */
   encounters: PartographEncounter[];
+  /** Encounter representing delivery (from Stage 3 or Delivery encounter type), if recorded. */
+  deliveryEncounter?: PartographEncounter;
+  /** Whether delivery has been documented for this patient/labour course. */
+  isDelivered: boolean;
   isLoading: boolean;
   error: Error | undefined;
   mutate: () => Promise<any>;
 }
 
 /**
- * Fetches all encounters of the partograph encounter type for a patient.
- * Returns them sorted oldest-first so that the WHO alert/action line
- * calculation can correctly identify T₀ (the earliest recorded ≥4 cm dilation).
+ * usePartographEncounters
+ *
+ * Obstetrical Clinical Architecture:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Labour & Delivery in Liberia EMR spans 4 distinct stages:
+ *
+ *  1. Stage 1 (Admission & Latent phase):
+ *     - Form: "1. First and Second Stage of Labor and Delivery"
+ *     - Records admission, baseline history, and initial vaginal examination.
+ *     - If cervical dilation is >= 4 cm upon admission, that entry marks the
+ *       beginning of active labour (T₀) and is included in the Partograph series.
+ *
+ *  2. Active Intrapartum Monitoring (The Partograph):
+ *     - Form: "2. Partograph" (Encounter Type: Labor & Delivery / Partograph Observation)
+ *     - Serial observations (every 30m–4h) of cervical dilatation, fetal head
+ *       descent, contractions, fetal heart rate, moulding, and amniotic fluid.
+ *     - Plotted against the WHO Alert & Action lines.
+ *
+ *  3. Stage 3 (Delivery of Infant and Placenta):
+ *     - Form: "3. Third Stage of Labor and Delivery" / Delivery Summary
+ *     - Records delivery time, APGAR scores, AMTSL, placenta delivery, blood loss.
+ *     - Clinically marks the CONCLUSION of the Partograph. When a Stage 3 or
+ *       Delivery encounter exists, the Partograph CDS engine recognizes that labour
+ *       has finished and automatically suppresses intrapartum alerts ("Update Due").
+ *
+ *  4. Stage 4 (Immediate Postpartum Recovery):
+ *     - Form: "4. Fourth Stage Monitoring for Woman and Baby"
+ *     - Postpartum maternal vitals, uterine tone, lochia, newborn feeding.
+ *     - Excluded from the Partograph table because active labour has concluded.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 export function usePartographEncounters(patientUuid: string): UsePartographEncountersResult {
   const config = useConfig<EPartographConfig>();
 
   const queryString = [
     `patient=${patientUuid}`,
-    config.encounterTypeUuid ? `encounterType=${config.encounterTypeUuid}` : '',
-    'v=custom:(uuid,encounterDatetime,obs:(uuid,concept:(uuid,display),value,display))',
-    'limit=200',
-  ]
-    .filter(Boolean)
-    .join('&');
+    'v=custom:(uuid,encounterDatetime,encounterType:(uuid,display),form:(uuid,name,display),obs:(uuid,concept:(uuid,display),value,display))',
+    'limit=100',
+  ].join('&');
 
   const url = `${restBaseUrl}/encounter?${queryString}`;
 
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: PartographEncounter[] } }, Error>(
-    patientUuid && config.encounterTypeUuid ? url : null,
+    patientUuid ? url : null,
     (fetchUrl: string) => openmrsFetch(`${fetchUrl}&_=${Date.now()}`),
   );
 
-  // Sort oldest-first so index 0 is the very first partograph entry (needed for T₀).
-  const encounters = [...(data?.data?.results ?? [])].sort(
-    (a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime(),
-  );
+  const rawEncounters = data?.data?.results ?? [];
 
-  return { encounters, isLoading, error, mutate };
+  // 1. Identify all Partograph serial encounters (sorted chronologically)
+  const allPartographEncounters = useMemo(() => {
+    const filtered = rawEncounters.filter((enc) => {
+      const formName = enc.form?.name || enc.form?.display || '';
+
+      // A. Explicit Partograph forms ("2. Partograph", "Partograph", or configured formUuid)
+      if (/partograph/i.test(formName)) return true;
+      if (config.formUuid && enc.form?.uuid === config.formUuid) return true;
+      if (
+        enc.form?.uuid === '526d9c5b-70a6-38e8-9048-18c5527369fc' ||
+        enc.form?.uuid === '4fea4040-faf8-3f23-aaab-f375cc9e79ec'
+      ) {
+        return true;
+      }
+
+      // B. Dedicated "Partograph Observation" encounter type
+      if (
+        config.encounterTypeUuid &&
+        enc.encounterType?.uuid === config.encounterTypeUuid &&
+        enc.encounterType?.uuid !== '659775fb-05e4-427f-8d9f-7e4cabe19962'
+      ) {
+        return true;
+      }
+
+      // C. Check if Stage 1 Admission recorded active-phase cervical dilation (>= 4 cm)
+      if (/first and second stage|labour admission/i.test(formName)) {
+        const dilationObs = config.concepts?.cervicalDilationUuid
+          ? enc.obs?.find((o) => o.concept?.uuid === config.concepts.cervicalDilationUuid)
+          : undefined;
+        const dilationVal = dilationObs ? parseFloat(String(dilationObs.value)) : null;
+        if (dilationVal !== null && dilationVal >= (config.alertLine?.startDilationCm ?? 4)) {
+          return true; // Include admission dilation as T₀ anchor
+        }
+      }
+
+      // D. Encounter containing core intrapartum partograph tracking concepts
+      const coreConcepts = [
+        config.concepts?.cervicalDilationUuid,
+        config.concepts?.descentOfHeadUuid,
+        config.concepts?.contractionsPerTenMinutesUuid,
+        config.concepts?.contractionDurationUuid,
+        config.concepts?.mouldingUuid,
+        config.concepts?.amnioticFluidUuid,
+      ].filter(Boolean);
+
+      return enc.obs?.some((o) => coreConcepts.includes(o.concept?.uuid));
+    });
+
+    return filtered.sort(
+      (a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime(),
+    );
+  }, [rawEncounters, config]);
+
+  // 2. Identify all Delivery encounters (Stage 3 / Delivery Summary) sorted chronologically
+  const deliveryEncounters = useMemo(() => {
+    return rawEncounters
+      .filter((enc) => {
+        // Check Delivery encounter type (var.encountertype.delivery.uuid: 7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9)
+        if (enc.encounterType?.uuid === '7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9') return true;
+
+        // Check form name for Stage 3 or Delivery
+        const formName = enc.form?.name || enc.form?.display || '';
+        if (/third stage|delivery summary|delivery/i.test(formName)) return true;
+
+        // Check known Third Stage form UUIDs
+        if (enc.form?.uuid === 'a1f46814-43c4-3690-9b87-ae4644b8b93a') return true;
+
+        return false;
+      })
+      .sort((a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime());
+  }, [rawEncounters]);
+
+  // 3. Subsequent Pregnancy & Episode-of-Care Resolution:
+  //
+  // A patient can have multiple pregnancies over time.
+  // When a woman returns pregnant years later, a historical Stage 3 encounter in her
+  // record must NEVER suppress alerts for her new labour.
+  //
+  // - If any Partograph encounter is recorded AFTER the latest delivery, this indicates
+  //   a NEW labour episode! isDelivered becomes false, and alerts reactivate immediately.
+  // - Only encounters belonging to the current labour episode (after the previous delivery)
+  //   are plotted on the active partograph chart.
+  const { currentLabourEncounters, deliveryEncounter, isDelivered } = useMemo(() => {
+    if (!deliveryEncounters.length) {
+      return {
+        currentLabourEncounters: allPartographEncounters,
+        deliveryEncounter: undefined,
+        isDelivered: false,
+      };
+    }
+
+    const latestDeliveryEnc = deliveryEncounters[deliveryEncounters.length - 1];
+    const latestDeliveryTime = new Date(latestDeliveryEnc.encounterDatetime).getTime();
+
+    // Check if new Partograph observations exist AFTER that delivery
+    const encountersAfterDelivery = allPartographEncounters.filter(
+      (enc) => new Date(enc.encounterDatetime).getTime() > latestDeliveryTime,
+    );
+
+    if (encountersAfterDelivery.length > 0) {
+      // Subsequent pregnancy: a new labour has commenced after the previous delivery!
+      // This new labour has NOT delivered yet. Alerts are fully ACTIVE.
+      return {
+        currentLabourEncounters: encountersAfterDelivery,
+        deliveryEncounter: undefined,
+        isDelivered: false,
+      };
+    }
+
+    // Otherwise, the latest delivery occurred after all recorded partograph observations.
+    // The current labour course has concluded with delivery.
+    return {
+      currentLabourEncounters: allPartographEncounters,
+      deliveryEncounter: latestDeliveryEnc,
+      isDelivered: true,
+    };
+  }, [allPartographEncounters, deliveryEncounters]);
+
+  return { encounters: currentLabourEncounters, deliveryEncounter, isDelivered, isLoading, error, mutate };
 }
 
 /**

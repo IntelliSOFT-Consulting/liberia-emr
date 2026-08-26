@@ -9,11 +9,11 @@
   "source": true,
   "scripts": {
     "start": "openmrs develop",
-    "start:dev": "openmrs develop --backend https://liberiaemrfacilitydev.intellisoftkenya.com --config-file ../../distribution/frontend/config/config-national.json",
-    "start:local": "openmrs develop --backend http://localhost:8085 --port 8083 --config-file ../../distribution/frontend/config/config-national.json",
-    "serve": "webpack serve --mode=development",
-    "build": "webpack --mode production",
-    "analyze": "webpack --mode=production --env analyze=true",
+    "start:dev": "openmrs develop --backend https://liberiaemrfacilitydev.intellisoftkenya.com --config-file ../../distribution/frontend/config/config-national.json --config-file ../../distribution/frontend/config/config-mch.json",
+    "start:local": "openmrs develop --backend http://localhost:8085 --port 8083 --config-file ../../distribution/frontend/config/config-national.json --config-file ../../distribution/frontend/config/config-mch.json",
+    "serve": "rspack serve --mode=development",
+    "build": "rspack --mode production",
+    "analyze": "rspack --mode=production --env analyze=true",
     "lint": "eslint src --ext ts,tsx",
     "typescript": "tsc",
     "test": "jest --config jest.config.js",
@@ -52,10 +52,14 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "next",
-    "@openmrs/webpack-config": "next",
+    "@rspack/cli": "^1.0.0",
+    "@rspack/core": "^1.0.0",
+    "@types/fhir": "^0.0.44",
     "@types/lodash-es": "^4.17.12",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/webpack-env": "^1.18.8",
     "openmrs": "next",
-    "typescript": "^5.6.0",
-    "webpack": "^5.95.0"
+    "typescript": "^5.6.0"
   }
 }

@@ -41,5 +41,7 @@
   "partographUpdateDue": "Partograph Update Due",
   "partographUpdateDueSubtitle": "The next labour assessment is due. Please record the required maternal and fetal observations in the partograph.",
   "labourProgressNormal": "Labour Progress Normal",
-  "labourProgressNormalSubtitle": "Cervical dilatation is progressing as expected and remains on or to the left of the Alert Line. Continue routine monitoring."
+  "labourProgressNormalSubtitle": "Cervical dilatation is progressing as expected and remains on or to the left of the Alert Line. Continue routine monitoring.",
+  "labourConcluded": "Labour Concluded",
+  "labourConcludedSubtitle": "Delivery has been recorded. Active intrapartum monitoring is complete."
 }

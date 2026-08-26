@@ -10,9 +10,10 @@ import { findObs, getNumericObsValue, type PartographEncounter } from '../use-pa
  *  - alert:    Labour has crossed the Alert Line but not yet the Action Line. → Yellow toast.
  *  - action:   Labour has crossed the Action Line. Immediate clinical decision required. → Red toast.
  *  - due:      The next partograph assessment is overdue. → Blue/info toast.
+ *  - delivered: Delivery has occurred (Stage 3 recorded). Intrapartum alerts suppressed. → Success notification.
  *  - none:     No data yet — no toast.
  */
-export type PartographAlertStatus = 'normal' | 'alert' | 'action' | 'due' | 'none';
+export type PartographAlertStatus = 'normal' | 'alert' | 'action' | 'due' | 'delivered' | 'none';
 
 export interface PartographAlertResult {
   status: PartographAlertStatus;
@@ -61,20 +62,32 @@ function actionLineDilation(elapsedMs: number, startDilationCm: number, cmPerHou
 /**
  * Core Clinical Decision Support hook for the WHO Electronic Partograph.
  *
- * Given the list of partograph encounters (oldest-first) and the alert/action line
- * config, it computes the current CDS status by:
+ * Given the list of partograph encounters (oldest-first), alert/action line config,
+ * and delivery status, it computes the current CDS status:
  *
+ *  0. Checks if delivery has occurred (Stage 3 recorded). If delivered, active labour
+ *     is concluded and intrapartum alerts ("Update Due", "Action Line") are suppressed.
  *  1. Finding T₀: the time of the FIRST encounter where dilation ≥ startDilationCm.
  *  2. Reading the LATEST dilation value.
- *  3. Computing where the Alert and Action lines are at the current real-world time.
+ *  3. Computing where the Alert and Action lines were at the time of the latest assessment.
  *  4. Comparing current dilation against those reference lines.
- *  5. Checking whether the last entry is >30 minutes ago.
+ *  5. Checking whether the last entry is >30 minutes ago (triggers "Update Due" if within lines).
  */
 export function usePartographAlerts(
   encounters: PartographEncounter[],
   config: EPartographConfig,
+  isDelivered = false,
 ): PartographAlertResult {
   return useMemo(() => {
+    // 0. If delivery has already occurred, active labour has completed.
+    // Suppress all intrapartum alerts (Update Due, Alert Line, Action Line).
+    if (isDelivered) {
+      return {
+        status: 'delivered',
+        isAssessmentDue: false,
+      };
+    }
+
     const noData: PartographAlertResult = { status: 'none', isAssessmentDue: false };
 
     if (!encounters.length) return noData;
@@ -119,19 +132,24 @@ export function usePartographAlerts(
       };
     }
 
-    // --- 4. Compute Alert/Action line values at the current real-world time ---
-    const elapsedSinceT0Ms = now.getTime() - t0.getTime();
-    const alertAtNow = alertLineDilation(elapsedSinceT0Ms, startDilationCm, cmPerHour);
-    const actionAtNow = actionLineDilation(elapsedSinceT0Ms, startDilationCm, cmPerHour, actionLineOffsetHours);
+    // --- 4. Compute Alert/Action line values at the time of the latest assessment ---
+    const elapsedAtLastAssessmentMs = lastEntryTime.getTime() - t0.getTime();
+    const alertAtLastAssessment = alertLineDilation(elapsedAtLastAssessmentMs, startDilationCm, cmPerHour);
+    const actionAtLastAssessment = actionLineDilation(
+      elapsedAtLastAssessmentMs,
+      startDilationCm,
+      cmPerHour,
+      actionLineOffsetHours,
+    );
 
     // --- 5. Compare current dilation against the reference lines ---
     let status: PartographAlertStatus;
-    if (currentDilationCm >= actionAtNow && actionAtNow > 0) {
+    if (actionAtLastAssessment > 0 && currentDilationCm <= actionAtLastAssessment) {
       status = 'action'; // Action Line Reached — immediate clinical intervention
-    } else if (currentDilationCm >= alertAtNow) {
+    } else if (currentDilationCm < alertAtLastAssessment) {
       status = 'alert'; // Alert Line crossed — labour requires review
     } else if (isAssessmentDue) {
-      status = 'due'; // Labour is within lines but an entry is overdue
+      status = 'due'; // Labour is within lines but next assessment is overdue
     } else {
       status = 'normal'; // Labour progressing normally
     }
@@ -140,35 +158,32 @@ export function usePartographAlerts(
       status,
       t0,
       currentDilationCm,
-      alertLineDilationAtNow: alertAtNow,
+      alertLineDilationAtNow: alertAtLastAssessment,
       isAssessmentDue,
       minutesSinceLastEntry,
     };
-  }, [encounters, config]);
+  }, [encounters, config, isDelivered]);
 }
 
 /**
  * Generates chart-ready points for the WHO Alert Line.
  *
- * Returns an array of { x: Date, y: number } spanning from T₀ to
- * when the alert line reaches 10 cm, at 30-minute intervals.
+ * As a straight reference line (slope = cmPerHour), it only requires its start point
+ * (T₀, startDilationCm) and end point (T₀ + hoursToComplete, 10 cm). This ensures a clean,
+ * continuous reference guideline without artificial intermediate scatter points.
  */
 export function generateAlertLinePoints(
   t0: Date,
   startDilationCm: number,
   cmPerHour: number,
 ): Array<{ x: Date; y: number }> {
-  const points: Array<{ x: Date; y: number }> = [];
   const hoursToComplete = (10 - startDilationCm) / cmPerHour;
-  const intervalMs = 30 * 60 * 1000; // 30-minute steps
   const totalMs = hoursToComplete * 60 * 60 * 1000;
 
-  for (let ms = 0; ms <= totalMs; ms += intervalMs) {
-    const x = new Date(t0.getTime() + ms);
-    const y = alertLineDilation(ms, startDilationCm, cmPerHour);
-    points.push({ x, y });
-  }
-  return points;
+  return [
+    { x: t0, y: startDilationCm },
+    { x: new Date(t0.getTime() + totalMs), y: 10 },
+  ];
 }
 
 /**

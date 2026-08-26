@@ -138,7 +138,13 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
       curve: 'curveLinear',
       points: {
         enabled: true,
-        radius: 4,
+        radius: ((d: any) => {
+          const group = d?.group || d?.dataGroupName || '';
+          if (/alert|action/i.test(group)) {
+            return 0;
+          }
+          return 4;
+        }) as any,
       },
       legend: { enabled: !seriesConceptUuid }, // hide legend for single-series
       tooltip: {

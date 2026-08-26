@@ -20,19 +20,6 @@
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// CDS Alert toasts
-// ──────────────────────────────────────────────────────────────────────────────
-
-.alertContainer {
-  padding: 0 1rem 0.5rem;
-
-  // Stack multiple alerts if needed
-  & + .alertContainer {
-    padding-top: 0;
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // Graph container
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -91,6 +78,34 @@
 .lineChartContainer {
   flex-grow: 1;
   margin: 0.5rem 0;
+
+  :global {
+    // Hide dots on ALERT and ACTION reference lines so only monitored patient data has points
+    circle.dot[style*="#161616"],
+    circle.dot[style*="rgb(22, 22, 22)"],
+    circle.dot[style*="rgb(22,22,22)"],
+    circle.dot[style*="stroke: #161616"],
+    circle.dot[style*="stroke:#161616"],
+    circle.dot[style*="stroke: rgb(22, 22, 22)"],
+    circle.dot[style*="stroke:rgb(22,22,22)"],
+    circle.dot[style*="fill: #161616"],
+    circle.dot[style*="fill:#161616"],
+    circle.dot[style*="fill: rgb(22, 22, 22)"],
+    circle.dot[style*="fill:rgb(22,22,22)"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      r: 0 !important;
+      pointer-events: none !important;
+    }
+
+    // Give ALERT and ACTION reference lines a crisp solid stroke matching WHO design
+    path.line[style*="#161616"],
+    path.line[style*="rgb(22, 22, 22)"],
+    path.line[style*="rgb(22,22,22)"] {
+      stroke-width: 2.5px !important;
+    }
+  }
 }
 
 .graphPlaceholder {
