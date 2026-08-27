@@ -228,10 +228,6 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.episiotomy-answer.uuid}",
-                    "label": "Episiotomy"
-                  },
-                  {
                     "concept": "${var.concept.mch.local.uuid}",
                     "label": "Local"
                   },

@@ -78,7 +78,7 @@ ${var.concept.mch.laceration.uuid},,Laceration,Laceration,Perineal laceration,Mi
 ${var.concept.mch.local.uuid},,Local,Local,Local anesthesia,Misc,N/A,,
 ${var.concept.mch.adequate-iron-folic-acid-supplementation-180-tablets.uuid},,Adequate iron/folic acid supplementation (180 tablets),Adequate iron/folic acid supplementation (180 tablets),Adequate iron/folic acid supplementation (180 tablets),Question,Coded,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid},
 ${var.concept.mch.perineum.uuid},,Perineum,Perineum,Perineum condition during delivery,Question,Coded,${var.concept.national.episiotomy-answer.uuid};${var.concept.mch.intact.uuid};${var.concept.mch.laceration.uuid},
-${var.concept.mch.anaesthesia.uuid},,Anaesthesia,Anaesthesia,Anaesthesia administered during delivery,Question,Coded,${var.concept.national.episiotomy-answer.uuid};${var.concept.ciel.none.uuid};${var.concept.mch.local.uuid};${var.concept.national.general.uuid},
+${var.concept.mch.anaesthesia.uuid},,Anaesthesia,Anaesthesia,Anaesthesia administered during delivery,Question,Coded,${var.concept.ciel.none.uuid};${var.concept.mch.local.uuid};${var.concept.national.general.uuid},
 ${var.concept.mch.repair.uuid},,Repair,Repair,Perineal repair performed,Question,Coded,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid},
 ${var.concept.mch.clear.uuid},,Clear,Clear,Clear,Misc,N/A,,
 ${var.concept.mch.meconium-stained.uuid},,Meconium-stained,Meconium-stained,Meconium-stained,Misc,N/A,,
