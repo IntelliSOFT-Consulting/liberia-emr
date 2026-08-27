@@ -28,11 +28,11 @@
                     "label": "None"
                   },
                   {
-                    "concept": "${var.concept.national.postpartum-haemorrhage.uuid}",
+                    "concept": "${var.concept.pnc.postpartum-haemorrhage.uuid}",
                     "label": "Postpartum haemorrhage"
                   },
                   {
-                    "concept": "${var.concept.national.severe-hypertension.uuid}",
+                    "concept": "${var.concept.pnc.severe-hypertension.uuid}",
                     "label": "Severe hypertension"
                   },
                   {

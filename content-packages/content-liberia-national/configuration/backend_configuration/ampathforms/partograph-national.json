@@ -51,7 +51,7 @@
               "type": "obs",
               "id": "amniotic_fluid",
               "questionOptions": {
-                "concept": "${var.concept.national.amniotic-fluid.uuid}",
+                "concept": "${var.concept.partograph.amniotic-fluid.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
