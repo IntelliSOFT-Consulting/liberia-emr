@@ -51,7 +51,7 @@
               "type": "obs",
               "id": "complications_of_baby",
               "questionOptions": {
-                "concept": "${var.concept.national.complications-of-baby.uuid}",
+                "concept": "${var.concept.mch.complications-of-baby.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -59,11 +59,11 @@
                     "label": "None"
                   },
                   {
-                    "concept": "${var.concept.national.asphyxia.uuid}",
+                    "concept": "${var.concept.mch.asphyxia.uuid}",
                     "label": "Asphyxia"
                   },
                   {
-                    "concept": "${var.concept.national.hypothermia.uuid}",
+                    "concept": "${var.concept.mch.hypothermia.uuid}",
                     "label": "Hypothermia"
                   },
                   {
@@ -78,19 +78,19 @@
               "type": "obs",
               "id": "monitoring_frequency",
               "questionOptions": {
-                "concept": "${var.concept.national.monitoring-frequency.uuid}",
+                "concept": "${var.concept.mch.monitoring-frequency.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.every-15-minutes-for-first-2-hours.uuid}",
+                    "concept": "${var.concept.mch.every-15-minutes-for-first-2-hours.uuid}",
                     "label": "Every 15 minutes for first 2 hours"
                   },
                   {
-                    "concept": "${var.concept.national.every-30-minutes-for-1-hour.uuid}",
+                    "concept": "${var.concept.mch.every-30-minutes-for-1-hour.uuid}",
                     "label": "Every 30 minutes for 1 hour"
                   },
                   {
-                    "concept": "${var.concept.national.every-1-hour-for-next-4-hours.uuid}",
+                    "concept": "${var.concept.mch.every-1-hour-for-next-4-hours.uuid}",
                     "label": "Every 1 hour for next 4 hours"
                   }
                 ]
@@ -101,7 +101,7 @@
               "type": "obs",
               "id": "observation_time",
               "questionOptions": {
-                "concept": "${var.concept.national.observation-time.uuid}",
+                "concept": "${var.concept.mch.observation-time.uuid}",
                 "rendering": "time"
               }
             }
@@ -184,7 +184,7 @@
               "type": "obs",
               "id": "fundus",
               "questionOptions": {
-                "concept": "${var.concept.national.fundus.uuid}",
+                "concept": "${var.concept.mch.fundus.uuid}",
                 "rendering": "text"
               }
             },
@@ -193,7 +193,7 @@
               "type": "obs",
               "id": "bleeding",
               "questionOptions": {
-                "concept": "${var.concept.national.bleeding.uuid}",
+                "concept": "${var.concept.mch.bleeding.uuid}",
                 "rendering": "text"
               }
             },
@@ -202,7 +202,7 @@
               "type": "obs",
               "id": "bladder",
               "questionOptions": {
-                "concept": "${var.concept.national.bladder.uuid}",
+                "concept": "${var.concept.mch.bladder.uuid}",
                 "rendering": "text"
               }
             }
@@ -222,7 +222,7 @@
               "type": "obs",
               "id": "baby_breathing",
               "questionOptions": {
-                "concept": "${var.concept.national.baby-breathing.uuid}",
+                "concept": "${var.concept.mch.baby-breathing.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
@@ -241,7 +241,7 @@
               "type": "obs",
               "id": "baby_suck",
               "questionOptions": {
-                "concept": "${var.concept.national.baby-suck.uuid}",
+                "concept": "${var.concept.mch.baby-suck.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
@@ -260,15 +260,15 @@
               "type": "obs",
               "id": "temperature_status",
               "questionOptions": {
-                "concept": "${var.concept.national.temperature-status.uuid}",
+                "concept": "${var.concept.mch.temperature-status.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.warm.uuid}",
+                    "concept": "${var.concept.mch.warm.uuid}",
                     "label": "Warm"
                   },
                   {
-                    "concept": "${var.concept.national.cold.uuid}",
+                    "concept": "${var.concept.mch.cold.uuid}",
                     "label": "Cold"
                   },
                   {
@@ -283,7 +283,7 @@
               "type": "obs",
               "id": "labor_notes",
               "questionOptions": {
-                "concept": "${var.concept.national.labor-notes.uuid}",
+                "concept": "${var.concept.mch.labor-notes.uuid}",
                 "rendering": "textarea",
                 "rows": 4
               }

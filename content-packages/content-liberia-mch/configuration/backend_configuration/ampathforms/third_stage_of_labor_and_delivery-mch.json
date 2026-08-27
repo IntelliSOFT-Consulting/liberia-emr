@@ -104,11 +104,11 @@
                     "label": "Small (Less than 250 cc)"
                   },
                   {
-                    "concept": "${var.concept.national.moderate-250-499-cc.uuid}",
+                    "concept": "${var.concept.mch.moderate-250-499-cc.uuid}",
                     "label": "Moderate (250–499 cc)"
                   },
                   {
-                    "concept": "${var.concept.national.large-more-than-500-cc.uuid}",
+                    "concept": "${var.concept.mch.large-more-than-500-cc.uuid}",
                     "label": "Large (More than 500 cc)"
                   }
                 ]
@@ -207,7 +207,7 @@
                     "label": "Vertex"
                   },
                   {
-                    "concept": "${var.concept.national.breech.uuid}",
+                    "concept": "${var.concept.mch.breech.uuid}",
                     "label": "Breech"
                   },
                   {

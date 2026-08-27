@@ -163,7 +163,7 @@
               "type": "obs",
               "id": "iron_folic_acid",
               "questionOptions": {
-                "concept": "${var.concept.national.adequate-iron-folic-acid-supplementation-180-tablets.uuid}",
+                "concept": "${var.concept.mch.adequate-iron-folic-acid-supplementation-180-tablets.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {
@@ -201,7 +201,7 @@
               "type": "obs",
               "id": "perineum",
               "questionOptions": {
-                "concept": "${var.concept.national.perineum.uuid}",
+                "concept": "${var.concept.mch.perineum.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -209,11 +209,11 @@
                     "label": "Episiotomy"
                   },
                   {
-                    "concept": "${var.concept.national.intact.uuid}",
+                    "concept": "${var.concept.mch.intact.uuid}",
                     "label": "Intact"
                   },
                   {
-                    "concept": "${var.concept.national.laceration.uuid}",
+                    "concept": "${var.concept.mch.laceration.uuid}",
                     "label": "Laceration"
                   }
                 ]
@@ -224,7 +224,7 @@
               "type": "obs",
               "id": "anaesthesia",
               "questionOptions": {
-                "concept": "${var.concept.national.anaesthesia.uuid}",
+                "concept": "${var.concept.mch.anaesthesia.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
@@ -232,7 +232,7 @@
                     "label": "Episiotomy"
                   },
                   {
-                    "concept": "${var.concept.national.local.uuid}",
+                    "concept": "${var.concept.mch.local.uuid}",
                     "label": "Local"
                   },
                   {
@@ -251,7 +251,7 @@
               "type": "obs",
               "id": "repair",
               "questionOptions": {
-                "concept": "${var.concept.national.repair.uuid}",
+                "concept": "${var.concept.mch.repair.uuid}",
                 "rendering": "radio",
                 "answers": [
                   {

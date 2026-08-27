@@ -82,23 +82,23 @@
               "type": "obs",
               "id": "moulding",
               "questionOptions": {
-                "concept": "${var.concept.national.moulding.uuid}",
+                "concept": "${var.concept.mch.moulding.uuid}",
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.moulding-0.uuid}",
+                    "concept": "${var.concept.mch.moulding-0.uuid}",
                     "label": "0 — None"
                   },
                   {
-                    "concept": "${var.concept.national.moulding-plus-1.uuid}",
+                    "concept": "${var.concept.mch.moulding-plus-1.uuid}",
                     "label": "+ — Mild"
                   },
                   {
-                    "concept": "${var.concept.national.moulding-plus-2.uuid}",
+                    "concept": "${var.concept.mch.moulding-plus-2.uuid}",
                     "label": "++ — Moderate"
                   },
                   {
-                    "concept": "${var.concept.national.moulding-plus-3.uuid}",
+                    "concept": "${var.concept.mch.moulding-plus-3.uuid}",
                     "label": "+++ — Severe"
                   }
                 ]
@@ -109,7 +109,7 @@
               "type": "obs",
               "id": "cervical_dilatation",
               "questionOptions": {
-                "concept": "${var.concept.national.cervical-dilatation.uuid}",
+                "concept": "${var.concept.mch.cervical-dilatation.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 10,
@@ -128,7 +128,7 @@
               "type": "obs",
               "id": "fetal_head_descent",
               "questionOptions": {
-                "concept": "${var.concept.national.fetal-head-descent.uuid}",
+                "concept": "${var.concept.mch.fetal-head-descent.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 5,
@@ -147,7 +147,7 @@
               "type": "obs",
               "id": "contractions_per_10_minutes",
               "questionOptions": {
-                "concept": "${var.concept.national.contractions-per-10-minutes.uuid}",
+                "concept": "${var.concept.mch.contractions-per-10-minutes.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 10,
@@ -166,7 +166,7 @@
               "type": "obs",
               "id": "units_of_oxytocin_litre_given_per_minute",
               "questionOptions": {
-                "concept": "${var.concept.national.units-of-oxytocin-litre-given-per-minute.uuid}",
+                "concept": "${var.concept.mch.units-of-oxytocin-litre-given-per-minute.uuid}",
                 "rendering": "number",
                 "min": 0
               }
@@ -176,7 +176,7 @@
               "type": "obs",
               "id": "drugs_given_and_iv_fluids",
               "questionOptions": {
-                "concept": "${var.concept.national.drugs-given-and-iv-fluids.uuid}",
+                "concept": "${var.concept.mch.drugs-given-and-iv-fluids.uuid}",
                 "rendering": "text"
               }
             },
@@ -273,7 +273,7 @@
               "type": "obs",
               "id": "proteins_in_urine",
               "questionOptions": {
-                "concept": "${var.concept.national.proteins-in-urine.uuid}",
+                "concept": "${var.concept.mch.proteins-in-urine.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 4,
@@ -292,7 +292,7 @@
               "type": "obs",
               "id": "acetone_in_urine",
               "questionOptions": {
-                "concept": "${var.concept.national.acetone-in-urine.uuid}",
+                "concept": "${var.concept.mch.acetone-in-urine.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 4,
@@ -311,7 +311,7 @@
               "type": "obs",
               "id": "urine_volume",
               "questionOptions": {
-                "concept": "${var.concept.national.urine-volume.uuid}",
+                "concept": "${var.concept.mch.urine-volume.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 5000,
