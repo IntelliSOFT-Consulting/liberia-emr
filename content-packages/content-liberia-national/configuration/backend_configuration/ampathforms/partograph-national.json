@@ -55,23 +55,23 @@
                 "rendering": "select",
                 "answers": [
                   {
-                    "concept": "${var.concept.national.clear.uuid}",
+                    "concept": "${var.concept.partograph.clear-liquor.uuid}",
                     "label": "Clear"
                   },
                   {
-                    "concept": "${var.concept.national.intact.uuid}",
+                    "concept": "${var.concept.partograph.membranes-intact.uuid}",
                     "label": "Intact"
                   },
                   {
-                    "concept": "${var.concept.national.meconium-stained.uuid}",
+                    "concept": "${var.concept.partograph.meconium-liquor.uuid}",
                     "label": "Meconium-stained"
                   },
                   {
-                    "concept": "${var.concept.national.blood-stained.uuid}",
+                    "concept": "${var.concept.partograph.blood-liquor.uuid}",
                     "label": "Blood-stained"
                   },
                   {
-                    "concept": "${var.concept.ciel.absent.uuid}",
+                    "concept": "${var.concept.partograph.absent-liquor.uuid}",
                     "label": "Absent"
                   }
                 ]
