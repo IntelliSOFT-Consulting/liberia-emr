@@ -274,18 +274,30 @@
               "id": "proteins_in_urine",
               "questionOptions": {
                 "concept": "${var.concept.mch.proteins-in-urine.uuid}",
-                "rendering": "number",
-                "min": 0,
-                "max": 4,
-                "step": 1
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 4)",
-                  "message": "Value must be between 0 and 4"
-                }
-              ]
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.negative.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-1.uuid}",
+                    "label": "+"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-2.uuid}",
+                    "label": "++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-3.uuid}",
+                    "label": "+++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-4.uuid}",
+                    "label": "++++"
+                  }
+                ]
+              }
             },
             {
               "label": "Acetone in urine",
@@ -293,18 +305,30 @@
               "id": "acetone_in_urine",
               "questionOptions": {
                 "concept": "${var.concept.mch.acetone-in-urine.uuid}",
-                "rendering": "number",
-                "min": 0,
-                "max": 4,
-                "step": 1
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 4)",
-                  "message": "Value must be between 0 and 4"
-                }
-              ]
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.negative.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-1.uuid}",
+                    "label": "+"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-2.uuid}",
+                    "label": "++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-3.uuid}",
+                    "label": "+++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-4.uuid}",
+                    "label": "++++"
+                  }
+                ]
+              }
             },
             {
               "label": "Urine Volume",

@@ -185,7 +185,17 @@
               "id": "fundus",
               "questionOptions": {
                 "concept": "${var.concept.mch.fundus.uuid}",
-                "rendering": "text"
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.contracted.uuid}",
+                    "label": "Contracted"
+                  },
+                  {
+                    "concept": "${var.concept.mch.boggy.uuid}",
+                    "label": "Boggy"
+                  }
+                ]
               }
             },
             {
@@ -194,7 +204,21 @@
               "id": "bleeding",
               "questionOptions": {
                 "concept": "${var.concept.mch.bleeding.uuid}",
-                "rendering": "text"
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.1498.uuid}",
+                    "label": "Mild"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.1499.uuid}",
+                    "label": "Moderate"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.1500.uuid}",
+                    "label": "Severe"
+                  }
+                ]
               }
             },
             {
@@ -203,7 +227,17 @@
               "id": "bladder",
               "questionOptions": {
                 "concept": "${var.concept.mch.bladder.uuid}",
-                "rendering": "text"
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.empty.uuid}",
+                    "label": "Empty"
+                  },
+                  {
+                    "concept": "${var.concept.mch.palpable.uuid}",
+                    "label": "Palpable"
+                  }
+                ]
               }
             }
           ]
