@@ -310,6 +310,19 @@ sys.exit(1 if problems else 0)
 PY
 ok "every concept CSV names its concepts, once"
 
+section "CSV blank lines"
+# Initializer parses CSVs row-by-row with no tolerance for blank lines: an empty line is
+# read as a single-element row and throws ArrayIndexOutOfBoundsException when a line
+# processor accesses column 2.
+while IFS= read -r f; do
+  hits="$(grep -nE '^[[:space:]]*$' "$f" || true)"
+  if [[ -n "$hits" ]]; then
+    err "blank line in CSV: ${f#$ROOT/}"
+    echo "$hits" | sed 's/^/       /' >&2
+  fi
+done < <(find_src -name '*.csv')
+ok "no blank lines in CSVs"
+
 section "location tags"
 # Two failures live here, and both cost a full install cycle to find the hard way.
 #

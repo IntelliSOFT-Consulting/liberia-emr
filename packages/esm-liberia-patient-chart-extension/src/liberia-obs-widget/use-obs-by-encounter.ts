@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
@@ -38,6 +39,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
 
   // Build query string — multiple encounterType params are OR-ed by the REST layer
   const encounterTypeParams = config.encounterTypes
+    ?.filter(Boolean)
     ?.map((uuid) => `encounterType=${uuid}`)
     .join('&');
 
@@ -62,10 +64,26 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
     fetcher
   );
 
-  const encounters = [...(data?.data?.results ?? [])].sort((a, b) => {
-    const diff = new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime();
-    return config.oldestFirst ? -diff : diff;
-  });
+  const targetConceptUuids = useMemo(
+    () => new Set(config.data?.map((d) => d.concept).filter(Boolean)),
+    [config.data]
+  );
+
+  const encounters = useMemo(() => {
+    const raw = data?.data?.results ?? [];
+    return [...raw]
+      .filter((enc) => {
+        // If target concepts are defined, only show encounters that actually contain at least one matching obs
+        if (targetConceptUuids.size > 0) {
+          return enc.obs?.some((o) => targetConceptUuids.has(o.concept?.uuid));
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const diff = new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime();
+        return config.oldestFirst ? -diff : diff;
+      });
+  }, [data, config.oldestFirst, targetConceptUuids]);
 
   return { encounters, isLoading, error, mutate };
 }

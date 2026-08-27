@@ -135,7 +135,7 @@
     "Brand color #3": "#002A86"
   },
   "@openmrs/esm-patient-forms-app": {
-    "orderBy": "most-recent",
+    "orderBy": "name",
     "formSections": [
       {
         "name": "TB Forms",
@@ -151,15 +151,20 @@
         ]
       },
       {
-        "name": "Maternal and Child Health",
+        "name": "Labor and Delivery",
         "forms": [
-          "ANC Initial Visit",
-          "ANC Follow-up Visit",
-          "Labour and Delivery Form",
-          "Delivery Summary",
-          "Newborn PNC",
-          "Mother PNC",
-          "Family Planning"
+          "1. First and Second Stage of Labor and Delivery",
+          "2. Partograph",
+          "3. Third Stage of Labor and Delivery",
+          "4. Fourth Stage Monitoring for Woman and Baby"
+        ]
+      },
+      {
+        "name": "Maternal and Reproductive Health",
+        "forms": [
+          "1. ANC Form",
+          "2. PNC",
+          "3. Family Planning"
         ]
       },
       {

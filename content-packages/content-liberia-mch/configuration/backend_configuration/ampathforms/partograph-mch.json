@@ -1,0 +1,357 @@
+{
+  "name": "2. Partograph",
+  "uuid": "${var.form.partograph.uuid}",
+  "version": "1.0",
+  "published": true,
+  "retired": false,
+  "processor": "EncounterFormProcessor",
+  "encounter": "Labor & Delivery",
+  "referencedForms": [],
+  "pages": [
+    {
+      "label": "Partograph",
+      "sections": [
+        {
+          "label": "Ongoing Partograph Monitoring",
+          "isExpanded": true,
+          "questions": [
+            {
+              "type": "markdown",
+              "id": "partograph_ongoing_alert",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "value": [
+                "**Ongoing Partograph Monitoring**",
+                "",
+                "This form is completed periodically throughout labour. You will receive reminders when recordings are due and alerts when clinical attention may be required. The patient's labour progress can be monitored in the Partograph section."
+              ]
+            },
+            {
+              "label": "Fetal heart rate",
+              "type": "obs",
+              "id": "fetal_heart_rate",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
+                "rendering": "number",
+                "min": 40,
+                "max": 250,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
+                  "message": "Value must be between 40 and 250"
+                }
+              ]
+            },
+            {
+              "label": "Amniotic fluid",
+              "type": "obs",
+              "id": "amniotic_fluid",
+              "questionOptions": {
+                "concept": "${var.concept.partograph.amniotic-fluid.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.partograph.clear-liquor.uuid}",
+                    "label": "Clear"
+                  },
+                  {
+                    "concept": "${var.concept.partograph.membranes-intact.uuid}",
+                    "label": "Intact"
+                  },
+                  {
+                    "concept": "${var.concept.partograph.meconium-liquor.uuid}",
+                    "label": "Meconium-stained"
+                  },
+                  {
+                    "concept": "${var.concept.partograph.blood-liquor.uuid}",
+                    "label": "Blood-stained"
+                  },
+                  {
+                    "concept": "${var.concept.partograph.absent-liquor.uuid}",
+                    "label": "Absent"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Moulding",
+              "type": "obs",
+              "id": "moulding",
+              "questionOptions": {
+                "concept": "${var.concept.mch.moulding.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.moulding-0.uuid}",
+                    "label": "0 — None"
+                  },
+                  {
+                    "concept": "${var.concept.mch.moulding-plus-1.uuid}",
+                    "label": "+ — Mild"
+                  },
+                  {
+                    "concept": "${var.concept.mch.moulding-plus-2.uuid}",
+                    "label": "++ — Moderate"
+                  },
+                  {
+                    "concept": "${var.concept.mch.moulding-plus-3.uuid}",
+                    "label": "+++ — Severe"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Cervical dilatation",
+              "type": "obs",
+              "id": "cervical_dilatation",
+              "questionOptions": {
+                "concept": "${var.concept.mch.cervical-dilatation.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 10,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
+            },
+            {
+              "label": "Fetal head descent",
+              "type": "obs",
+              "id": "fetal_head_descent",
+              "questionOptions": {
+                "concept": "${var.concept.mch.fetal-head-descent.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 5,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 5)",
+                  "message": "Value must be between 0 and 5"
+                }
+              ]
+            },
+            {
+              "label": "Contractions per 10 minutes",
+              "type": "obs",
+              "id": "contractions_per_10_minutes",
+              "questionOptions": {
+                "concept": "${var.concept.mch.contractions-per-10-minutes.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 10,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
+                  "message": "Value must be between 0 and 10"
+                }
+              ]
+            },
+            {
+              "label": "Units of oxytocin/litre given per minute",
+              "type": "obs",
+              "id": "units_of_oxytocin_litre_given_per_minute",
+              "questionOptions": {
+                "concept": "${var.concept.mch.units-of-oxytocin-litre-given-per-minute.uuid}",
+                "rendering": "number",
+                "min": 0
+              }
+            },
+            {
+              "label": "Drugs given and IV Fluids",
+              "type": "obs",
+              "id": "drugs_given_and_iv_fluids",
+              "questionOptions": {
+                "concept": "${var.concept.mch.drugs-given-and-iv-fluids.uuid}",
+                "rendering": "text"
+              }
+            },
+            {
+              "label": "Pulse Rate",
+              "type": "obs",
+              "id": "pulse_rate",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.pulse.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 230,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
+                  "message": "Value must be between 0 and 230"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Blood Pressure",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Systolic",
+              "type": "obs",
+              "id": "bp_sys",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 250,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
+            },
+            {
+              "label": "Diastolic",
+              "type": "obs",
+              "id": "bp_dia",
+              "questionOptions": {
+                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 200,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
+                  "message": "Value must be between 0 and 200"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Urinalysis and Temperature",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Temperature",
+              "type": "obs",
+              "id": "temperature",
+              "questionOptions": {
+                "concept": "${var.concept.ciel.temperature-c.uuid}",
+                "rendering": "number",
+                "min": 25,
+                "max": 47,
+                "step": 0.1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 25 || myValue > 47)",
+                  "message": "Value must be between 25 and 47"
+                }
+              ]
+            },
+            {
+              "label": "Proteins in urine",
+              "type": "obs",
+              "id": "proteins_in_urine",
+              "questionOptions": {
+                "concept": "${var.concept.mch.proteins-in-urine.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.negative.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-1.uuid}",
+                    "label": "+"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-2.uuid}",
+                    "label": "++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-3.uuid}",
+                    "label": "+++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-4.uuid}",
+                    "label": "++++"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Acetone in urine",
+              "type": "obs",
+              "id": "acetone_in_urine",
+              "questionOptions": {
+                "concept": "${var.concept.mch.acetone-in-urine.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.negative.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-1.uuid}",
+                    "label": "+"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-2.uuid}",
+                    "label": "++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-3.uuid}",
+                    "label": "+++"
+                  },
+                  {
+                    "concept": "${var.concept.mch.plus-4.uuid}",
+                    "label": "++++"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Urine Volume",
+              "type": "obs",
+              "id": "urine_volume",
+              "questionOptions": {
+                "concept": "${var.concept.mch.urine-volume.uuid}",
+                "rendering": "number",
+                "min": 0,
+                "max": 5000,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 5000)",
+                  "message": "Value must be between 0 and 5000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

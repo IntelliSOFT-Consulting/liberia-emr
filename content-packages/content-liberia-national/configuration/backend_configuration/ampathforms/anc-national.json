@@ -1,5 +1,5 @@
 {
-  "name": "ANC Form",
+  "name": "1. ANC Form",
   "uuid": "43924f79-673e-4869-92c2-8418ff02a98f",
   "version": "1.1",
   "published": true,
@@ -275,8 +275,18 @@
               "id": "bp_systolic",
               "questionOptions": {
                 "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
-                "rendering": "number"
-              }
+                "rendering": "number",
+                "min": 0,
+                "max": 250,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
             },
             {
               "label": "Blood Pressure Diastolic",
@@ -284,8 +294,18 @@
               "id": "bp_diastolic",
               "questionOptions": {
                 "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
-                "rendering": "number"
-              }
+                "rendering": "number",
+                "min": 0,
+                "max": 200,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
+                  "message": "Value must be between 0 and 200"
+                }
+              ]
             },
             {
               "label": "Weight (kg)",
@@ -293,8 +313,18 @@
               "id": "weight",
               "questionOptions": {
                 "concept": "${var.concept.ciel.weight-kg.uuid}",
-                "rendering": "number"
-              }
+                "rendering": "number",
+                "min": 0,
+                "max": 250,
+                "step": 0.1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
+                  "message": "Value must be between 0 and 250"
+                }
+              ]
             },
             {
               "label": "Gestational age (Weeks)",
@@ -344,8 +374,18 @@
               "id": "fht",
               "questionOptions": {
                 "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
-                "rendering": "number"
-              }
+                "rendering": "number",
+                "min": 40,
+                "max": 250,
+                "step": 1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
+                  "message": "Value must be between 40 and 250"
+                }
+              ]
             },
             {
               "label": "Other findings",

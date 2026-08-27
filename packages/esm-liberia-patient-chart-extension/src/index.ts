@@ -35,5 +35,8 @@ export function startupApp() {
  */
 export const liberiaObsWidget = getAsyncLifecycle(
   () => import('./liberia-obs-widget/liberia-obs-widget.component'),
-  options,
+  {
+    featureName: 'liberia-obs-widget',
+    moduleName: 'liberia-obs-widget',
+  },
 );
