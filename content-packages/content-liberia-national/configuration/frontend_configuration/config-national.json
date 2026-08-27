@@ -196,40 +196,6 @@
       }
     }
   },
-  "@liberiaemr/esm-liberia-patient-chart-extension": {
-    "displayMode": "table",
-    "title": "TB Screening",
-    "encounterTypes": [
-      "${var.encountertype.tb-screening.uuid}"
-    ],
-    "formUuid": "${var.form.tb-screening.uuid}",
-    "data": [
-      {
-        "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}",
-        "label": "Cough > 2 wks"
-      },
-      {
-        "concept": "${var.concept.national.night-sweats-score.uuid}",
-        "label": "Night Sweats"
-      },
-      {
-        "concept": "${var.concept.national.weight-loss-score.uuid}",
-        "label": "Weight Loss"
-      },
-      {
-        "concept": "${var.concept.national.fever-score.uuid}",
-        "label": "Fever"
-      },
-      {
-        "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}",
-        "label": "Swelling"
-      },
-      {
-        "concept": "${var.concept.national.total-score.uuid}",
-        "label": "Total Score"
-      }
-    ]
-  },
   "liberia-obs-widget": {
     "displayMode": "table",
     "title": "TB Screening",
