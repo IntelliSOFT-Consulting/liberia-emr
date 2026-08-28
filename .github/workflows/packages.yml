@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Build frontend packages
@@ -54,7 +54,7 @@ jobs:
               echo "== Building $pkg_name =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile
+                yarn install --frozen-lockfile --ignore-engines
                 yarn typescript
                 yarn build
               )
@@ -82,7 +82,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Version & Publish Pre-releases to npm
@@ -103,7 +103,7 @@ jobs:
               echo "== Packaging and Publishing $pkg_name (pre-release) =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile
+                yarn install --frozen-lockfile --ignore-engines
                 yarn typescript
                 yarn build
 
@@ -134,7 +134,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Publish Stable Releases to npm
@@ -155,7 +155,7 @@ jobs:
               echo "== Packaging and Publishing $pkg_name (stable release) =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile
+                yarn install --frozen-lockfile --ignore-engines
                 yarn typescript
                 yarn build
 
