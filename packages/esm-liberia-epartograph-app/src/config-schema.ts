@@ -19,7 +19,7 @@ export const configSchema = {
   formUuid: {
     _type: Type.String,
     _description: 'UUID of the partograph AMPATH form to launch when the user clicks Add.',
-    _default: '4fea4040-faf8-3f23-aaab-f375cc9e79ec',
+    _default: '526d9c5b-70a6-38e8-9048-18c5527369fc',
   },
   concepts: {
     cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '34cffe7c-726f-5da4-ade1-c67e3209f5eb' },

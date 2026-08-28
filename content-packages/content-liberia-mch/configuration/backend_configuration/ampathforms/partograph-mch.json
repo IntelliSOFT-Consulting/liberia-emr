@@ -168,8 +168,16 @@
               "questionOptions": {
                 "concept": "${var.concept.mch.units-of-oxytocin-litre-given-per-minute.uuid}",
                 "rendering": "number",
-                "min": 0
-              }
+                "min": 0,
+                "step": "1"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue % 1 !== 0 || myValue < 0)",
+                  "message": "Only positive whole numbers (no decimal values) are allowed"
+                }
+              ]
             },
             {
               "label": "Drugs given and IV Fluids",
