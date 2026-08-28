@@ -20,7 +20,7 @@ interface PartographDashboardLinkProps {
 const PartographDashboardLink: React.FC<PartographDashboardLinkProps> = ({ basePath }) => {
   return (
     <BrowserRouter>
-      <DashboardExtension basePath={basePath} title="Partograph" path="partograph" />
+      <DashboardExtension basePath={basePath} title="Partograph" path="partograph" icon="omrs-icon-mother" />
     </BrowserRouter>
   );
 };

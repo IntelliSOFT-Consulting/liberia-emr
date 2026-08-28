@@ -51,7 +51,7 @@
     "swr": "^2.2.5"
   },
   "devDependencies": {
-    "@openmrs/esm-framework": "next",
+    "@openmrs/esm-framework": "^10.0.1-pre.5227",
     "@rspack/cli": "^1.0.0",
     "@rspack/core": "^1.0.0",
     "@types/fhir": "^0.0.44",
@@ -59,7 +59,7 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/webpack-env": "^1.18.8",
-    "openmrs": "next",
+    "openmrs": "^10.0.1-pre.5227",
     "typescript": "^5.6.0"
   }
 }

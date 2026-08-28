@@ -16,6 +16,7 @@
         "slot": "patient-chart-partograph-dashboard-slot",
         "path": "partograph",
         "title": "Partograph",
+        "icon": "omrs-icon-mother",
         "hideDashboardTitle": true
       },
       "online": true,
