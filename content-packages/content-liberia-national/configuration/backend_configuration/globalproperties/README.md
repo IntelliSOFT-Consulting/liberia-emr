@@ -20,7 +20,7 @@ and must be closed before go-live sign-off.
 | **Password expiry — 90 days** | 90 days | **NOT a GP.** Requires an authentication-module policy or an external IdP. See ADR 0004. |
 | **No reuse of last 3 passwords** | history = 3 | **NOT a GP.** Same as above. |
 | **Session timeout — 10 minutes** | 10 min | **NOT a core GP.** Enforced in the O3 runtime config (`config-national.json`) *and* at the gateway; both are required, since the frontend timer alone does not invalidate a stolen session server-side. |
-| TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/nginx.conf` |
+| TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` |
 | Encrypted backups | — | `docs/runbooks/backup-restore.md` |
 
 Do not "resolve" a **NOT a GP** row by adding a plausible-looking property name to a CSV.

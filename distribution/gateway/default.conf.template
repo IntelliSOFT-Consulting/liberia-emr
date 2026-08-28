@@ -1,5 +1,10 @@
 # LiberiaEMR gateway — TLS termination and routing.
 #
+# This is an nginx TEMPLATE, not a ready config: the official entrypoint runs envsubst
+# over /etc/nginx/templates/*.template into /etc/nginx/conf.d/ at container start. Only
+# names matching NGINX_ENVSUBST_FILTER (^LEGACY_ADMIN_) are substituted, so nginx's own
+# $host / $uri / $request_uri survive untouched. Do not COPY this straight into conf.d.
+#
 # TLS is contractual for facility<->cloud traffic (MOH ICT SOPs Feb 2023 v1.1.0,
 # National Cybersecurity Strategy 2025-2029). Do not weaken the protocol or cipher
 # settings below; see docs/security/.
@@ -52,8 +57,12 @@ server {
         return 302 /openmrs/spa/;
     }
 
-    # The legacy admin UI is disabled in production images; block it at the edge too.
-    location /openmrs/admin/ {
-        return 404;
-    }
+    # Legacy admin UI. MOH ICT SOP control D5 keeps this off in production; dev and
+    # staging turn it on to reach Manage Modules and the legacy scheduler, which have no
+    # O3 equivalent yet. LEGACY_ADMIN_UI is true|false and defaults to false in the
+    # Dockerfile, so an environment that never sets it stays blocked.
+    #
+    # An unrecognised value names a snippet that does not exist and nginx refuses to
+    # start. That is deliberate: a typo must not quietly fall through to "allowed".
+    include /etc/nginx/snippets/legacy-admin-${LEGACY_ADMIN_UI}.conf;
 }
