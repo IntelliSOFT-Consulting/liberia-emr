@@ -227,6 +227,7 @@ ${var.concept.national.item-0a3353a4.uuid},,,Tuberculin Purified Protein Derivat
 ${var.concept.ciel.86052.uuid},,,Valproic Acid,Acide valproïque,Drug,N/A,,,
 ${var.concept.national.item-fb9b6f7f.uuid},,,Vasopressin,Vasopressine,Drug,N/A,,,
 ${var.concept.national.item-b7bab21f.uuid},,,Vitamin C,Vitamine C,Drug,N/A,,,
+86339AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,,Vitamin A,Vitamine A,Drug,N/A,,,
 ${var.concept.national.item-f2300d2e.uuid},,,Vitamins A and D,Vitamines A et D,Drug,N/A,,,
 ${var.concept.national.item-e14ca630.uuid},,,Zidovudine (AZT),Zidovudine (AZT),Drug,N/A,,,
 ${var.concept.national.item-72e3dc8b.uuid},,,Zidovudine & Lamivudine (AZT/3TC),Zidovudine & Lamivudine (AZT/3TC),Drug,N/A,,,
