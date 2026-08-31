@@ -275,6 +275,31 @@ if grep -q 'ERROR' <<<"$iniz_log"; then
   # A diagnostic must never decide the exit status of the thing it is diagnosing.
   { grep -A6 'ERROR' <<<"$iniz_log" | head -40 >&2; } || true
 
+  # "could not be found in database" is ambiguous in the one way that decides the fix, and
+  # the log cannot settle it: the concept may never have been created at all (its own row
+  # failed, or the file defining it never loaded), or it may exist and simply not have been
+  # there YET when the referencing row was read — a load-order problem between two CSVs.
+  # Those need opposite fixes, so ask the database which one it is. ListParser aborts the
+  # whole list on its FIRST unresolved member, so the names below are only the first missing
+  # answer of each rejected row, not all of them.
+  missing="$(grep -oE "The object identified by '[0-9a-fA-F-]{36}'" <<<"$iniz_log" \
+             | grep -oE "[0-9a-fA-F-]{36}" | sort -u || true)"
+  if [[ -n "$missing" ]]; then
+    echo >&2
+    echo "  are the unresolved UUIDs in the database at the END of the run?" >&2
+    echo "  (present => load order between CSVs; absent => never created)" >&2
+    in_list="$(sed "s/^/'/; s/$/'/" <<<"$missing" | paste -sd, -)"
+    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+      mariadb -uroot -p"$DB_ROOT_PASSWORD" -t -e \
+      "select c.uuid, n.name, c.retired
+         from openmrs.concept c
+         left join openmrs.concept_name n
+           on n.concept_id = c.concept_id and n.concept_name_type = 'FULLY_SPECIFIED'
+        where c.uuid in ($in_list);" >&2 2>/dev/null \
+      || echo "  (could not query the concept table)" >&2
+    echo "  any UUID above that prints no row does not exist in the database." >&2
+  fi
+
   # An OCL failure arrives here as the single word-pair "Errors found" and nothing else:
   # openconceptlab's ImportServiceImpl.failImport() marks the whole import failed on any
   # item error, with that message and no detail, and Initializer's OpenConceptLabLoader
