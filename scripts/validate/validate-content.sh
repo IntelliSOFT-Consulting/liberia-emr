@@ -323,6 +323,47 @@ while IFS= read -r f; do
 done < <(find_src -name '*.csv')
 ok "no blank lines in CSVs"
 
+section "CSV short rows"
+# The blank line above is only the extreme case of a more general one: a row with FEWER
+# cells than the header has columns. Initializer addresses cells by header position, so a
+# row that stops early throws ArrayIndexOutOfBoundsException the moment a line processor
+# reads past its end — and when the row is a concept, every other concept naming it as an
+# answer fails too, with a much less obvious "could not be found in database". That is how
+# 54 of the 126 rows in concepts-mch.csv were rejected while this script stayed green:
+# csv.DictReader pads a short row with None, so none of the checks above could see it.
+#
+# Only SHORT rows are an error. A row with extra trailing cells is tolerated by Initializer
+# (the surplus is past the last named column and never read) and several of the concept
+# exports vendored from upstream have them; failing on those would fail files we do not own.
+#
+# Columns whose name begins with '_' are Initializer directives, not data — '_order:1000'
+# in privileges_stockmanagement-common.csv is a load-order hint, and its rows correctly stop
+# before it — so they do not count toward the width a row has to reach.
+python3 - "$PKG_DIR" <<'PY' || err "short CSV rows (see above)"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+
+for f in sorted(glob.glob(f"{pkg_dir}/**/*.csv", recursive=True)):
+    if f"{os.sep}target{os.sep}" in f:
+        continue
+    rel = f[len(pkg_dir) - len("content-packages"):]
+    with open(f, newline="", encoding="utf-8") as fh:
+        rows = list(csv.reader(fh))
+    if not rows:
+        continue
+    width = len([c for c in rows[0] if not c.strip().startswith("_")])
+    for n, row in enumerate(rows[1:], start=2):
+        if len(row) < width:
+            problems.append(f"{rel}:{n} has {len(row)} cells, header names {width} columns")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "no CSV row stops before its header does"
+
 section "location tags"
 # Two failures live here, and both cost a full install cycle to find the hard way.
 #
