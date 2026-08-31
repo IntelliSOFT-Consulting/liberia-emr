@@ -476,20 +476,37 @@ jobs:
       # differentiate categories on its own, so uploading all three files
       # via sarif_file: . collided. Needs security-events: write, already
       # granted at the workflow level.
+      #
+      # continue-on-error because the upload depends on a repository SETTING this workflow
+      # cannot assert: with Code Security disabled, upload-sarif fails with "Code Security
+      # must be enabled for this repository to use code scanning" and took the whole job,
+      # and therefore the CI gate, down with it. That was blocking every open PR on a
+      # configuration change rather than a code defect.
+      #
+      # What this does and does not trade away: the three scans above still RUN, and still
+      # fail the job if Trivy itself errors — only the publishing of results to the Security
+      # tab is made non-fatal. The cost is that a genuine upload regression now shows up as
+      # a red step inside a green job rather than a failed run, so findings can stop
+      # reaching the Security tab without anyone being paged. Re-enable Code Security on the
+      # repository and these steps go green on their own; drop continue-on-error then, so
+      # the upload is load-bearing again.
       - name: Upload Trivy results — backend
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-backend.sarif
           category: trivy-backend
       - name: Upload Trivy results — frontend
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-frontend.sarif
           category: trivy-frontend
       - name: Upload Trivy results — gateway
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-gateway.sarif
