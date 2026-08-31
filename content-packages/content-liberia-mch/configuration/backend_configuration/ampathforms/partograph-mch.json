@@ -218,7 +218,7 @@
               "type": "obs",
               "id": "bp_sys",
               "questionOptions": {
-                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "concept": "${var.concept.ciel.systolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 250,
@@ -237,7 +237,7 @@
               "type": "obs",
               "id": "bp_dia",
               "questionOptions": {
-                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 200,
@@ -262,7 +262,7 @@
               "type": "obs",
               "id": "temperature",
               "questionOptions": {
-                "concept": "${var.concept.ciel.temperature-c.uuid}",
+                "concept": "${var.concept.ciel.temperature.uuid}",
                 "rendering": "number",
                 "min": 25,
                 "max": 47,
