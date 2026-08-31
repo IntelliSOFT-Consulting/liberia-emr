@@ -323,6 +323,62 @@ while IFS= read -r f; do
 done < <(find_src -name '*.csv')
 ok "no blank lines in CSVs"
 
+section "CSV short rows"
+# The blank line above is only the extreme case of a more general one: a row with FEWER
+# cells than the header has columns. Initializer addresses cells by header position, so a
+# row that stops early throws ArrayIndexOutOfBoundsException the moment a line processor
+# reads past its end — and when the row is a concept, every other concept naming it as an
+# answer fails too, with a much less obvious "could not be found in database". That is how
+# 54 of the 126 rows in concepts-mch.csv were rejected while this script stayed green:
+# csv.DictReader pads a short row with None, so none of the checks above could see it.
+#
+# Only SHORT rows are an error. A row with extra trailing cells is tolerated by Initializer
+# (the surplus is past the last named column and never read) and several of the concept
+# exports vendored from upstream have them; failing on those would fail files we do not own.
+#
+# Columns whose name begins with '_' are Initializer directives ('_order:1000',
+# '_version:1') rather than data, and how far a row must reach past them is NOT uniform
+# across domains — so this asks each domain the question it actually answers to.
+#
+# In concepts/, rows must reach the FULL header, directives included. Every concept export
+# that carries directives pads through them, and the one attempt to add '_order:1800' to
+# concepts-national.csv without widening its rows rejected all 142 of them with
+# "Index 9 out of bounds for length 9" — the concept line processors address cells across
+# the whole header. Excluding directives here would have called that change clean.
+#
+# Everywhere else a row may stop before trailing directives: privileges_stockmanagement-
+# common.csv declares '_order:1000' as a 4th column and its 3-cell rows load correctly,
+# because nothing in that domain reads that far.
+python3 - "$PKG_DIR" <<'PY' || err "short CSV rows (see above)"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+
+for f in sorted(glob.glob(f"{pkg_dir}/**/*.csv", recursive=True)):
+    if f"{os.sep}target{os.sep}" in f:
+        continue
+    rel = f[len(pkg_dir) - len("content-packages"):]
+    with open(f, newline="", encoding="utf-8") as fh:
+        rows = list(csv.reader(fh))
+    if not rows:
+        continue
+    in_concepts = f"{os.sep}concepts{os.sep}" in f
+    if in_concepts:
+        width, what = len(rows[0]), "header has"
+    else:
+        width = len([c for c in rows[0] if not c.strip().startswith("_")])
+        what = "header names"
+    for n, row in enumerate(rows[1:], start=2):
+        if len(row) < width:
+            problems.append(f"{rel}:{n} has {len(row)} cells, {what} {width} columns")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "no CSV row stops before its header does"
+
 section "location tags"
 # Two failures live here, and both cost a full install cycle to find the hard way.
 #
