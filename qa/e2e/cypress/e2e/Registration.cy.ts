@@ -1,7 +1,7 @@
-import AuthenticationPage from '../../pages/AuthenticationPage';
-import { loginWithSession } from '../../support/session';
-import Registration from '../../pages/Registration';
-import { faker, futureBirthdateParts, randomAdultBirthdateParts } from '../../support/faker';
+import AuthenticationPage from '../pages/AuthenticationPage';
+import { loginWithSession } from '../support/session';
+import Registration from '../pages/Registration';
+import { faker, futureBirthdateParts, randomAdultBirthdateParts } from '../support/faker';
 
 type RegistrationTestData = {
     firstName: string;
@@ -200,5 +200,5 @@ describe('Registration', () => {
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
         cy.contains('Vitals and biometrics', { timeout: 100000 }).should('be.visible');
     })
-    
+
 })
