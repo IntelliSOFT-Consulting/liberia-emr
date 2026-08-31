@@ -191,10 +191,22 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
       };
     }
 
-    // Otherwise, the latest delivery occurred after all recorded partograph observations.
+    // Otherwise, the latest delivery occurred after or at the latest partograph observations.
     // The current labour course has concluded with delivery.
+    // Bound the current episode to encounters after the previous delivery (if one exists)
+    // to cleanly isolate the current pregnancy from historical ones while preserving the T₀ anchor.
+    const previousDeliveryTime =
+      deliveryEncounters.length > 1
+        ? new Date(deliveryEncounters[deliveryEncounters.length - 2].encounterDatetime).getTime()
+        : 0;
+
+    const concludedLabourEncounters = allPartographEncounters.filter((enc) => {
+      const encTime = new Date(enc.encounterDatetime).getTime();
+      return encTime > previousDeliveryTime && encTime <= latestDeliveryTime;
+    });
+
     return {
-      currentLabourEncounters: allPartographEncounters,
+      currentLabourEncounters: concludedLabourEncounters,
       deliveryEncounter: latestDeliveryEnc,
       isDelivered: true,
     };
