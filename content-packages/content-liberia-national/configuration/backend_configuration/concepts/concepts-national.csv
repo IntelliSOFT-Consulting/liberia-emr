@@ -1,4 +1,4 @@
-Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers,Complex data handler,_order:1800
+Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers,Complex data handler
 ${var.concept.date-of-referral.uuid},,Date of Referral,Date of Referral,Date the referral was issued,Misc,Date,,
 ${var.concept.national.coughing-2-weeks-or-more-score.uuid},,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Coughing 2 Weeks or More - Score,Question,Numeric,,
 ${var.concept.national.night-sweats-score.uuid},,Night Sweats - Score,Night Sweats - Score,Night Sweats - Score,Question,Numeric,,
