@@ -24,7 +24,7 @@ export const configSchema = {
   formUuid: {
     _type: Type.String,
     _description: 'UUID of the partograph AMPATH form to launch when the user clicks Add.',
-    _default: '526d9c5b-70a6-38e8-9048-18c5527369fc',
+    _default: '41d56853-8338-302e-a9f3-f81e70e797dd',
   },
   thirdStageFormUuid: {
     _type: Type.String,
