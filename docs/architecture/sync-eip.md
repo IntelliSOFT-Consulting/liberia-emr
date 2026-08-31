@@ -208,9 +208,9 @@ Consequences:
 
 > ⚠ **Required change, not yet made.** The facility `sync` service mounts no TLS material,
 > while `sync-receiver` mounts `${TLS_CERT_DIR}`. Mutual TLS needs the client half. Control
-> D2 in [the SOP mapping](../security/moh-ict-sop-mapping.md) stays **Partial** until the
-> facility mounts its client certificate and key and the certificate lifecycle is owned by
-> the MOH ICT Unit in writing.
+> D2 in [the SOP mapping](../security/moh-ict-sop-mapping.md) stays **Open** until the
+> broker exists in the central compose, the facility mounts its client certificate and key,
+> and the certificate lifecycle is owned by the MOH ICT Unit in writing.
 
 ### 1.5 The sender's management database
 
@@ -955,6 +955,10 @@ copy of the clinical record:
 | **Broker journal at central** | In-flight messages | Clinical content |
 | **Backups of any of the above** | Everything | Control D3 |
 
+This table is the **canonical enumeration** for control D3: the SOP mapping and §7.8 cite it
+rather than restate it. The `sync-queue` volume is not a sixth store; it is the physical
+backing of the management database and Debezium offset (§1.5) and is covered by that row.
+
 So: **full-disk encryption on facility hosts** (the server is stealable, and a stolen disk
 yields the database *and* six months of binlog *and* the client certificate), encryption of
 backups (D3), and the private key protected by file permissions and never in the repo (D4,
@@ -1020,7 +1024,7 @@ not an afterthought.
 | D2: Mutual TLS | Per-facility client certificate on `sync`; broker authorises on certificate subject; revocation enforced at central. **Requires the §1.4 change.** Certificate lifecycle is the MOH ICT Unit's |
 | C1 / B3: Audit | Sync outcomes, rejected messages, dead-letter access and every cross-facility access; readable by the ICT Auditor role only |
 | C3: No PHI in logs | Log UUID, entity type and outcome. Never a name, an identifier value or an observation value: including in error and dead-letter logs, which is where it usually leaks |
-| D3: Encrypted backups | Extends to the binlog, management database, broker journal and `sync-queue`: all five copies in §7.4 |
+| D3: Encrypted backups | Extends to all five copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
 | D4: No secrets in the repo | Facility credentials and keys live in `.env` and mounted files; already enforced in CI |
 | **New**: Payload encryption | PGP keys per facility, receiver key custody and rotation owned by MOH ICT (§7.7) |
 | **New**: Facility disk encryption | Not currently in the SOP mapping. §7.4 makes it necessary; raise it with MOH ICT |

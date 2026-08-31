@@ -83,7 +83,7 @@ anyway. It fails on fidelity and cost. `patient_program` / `patient_state`: MCH 
 enrolment, which is *core* Sprint 2/3 scope, has no honest FHIR mapping (`EpisodeOfCare` is
 a stretch and loses the workflow/state model). We would be writing a bespoke delivery
 guarantee for a national clinical dataset, which is the highest-risk code in the programme
-and the least justified. **FHIR is still adopted, for the read paths (§2.4).**
+and the least justified. **FHIR is still adopted, for the read paths (§2.5).**
 
 **C, the legacy `sync` module.** Built for the 1.x platform and the legacy UI; not a candidate
 for a platform 2.8 / O3 distribution.

@@ -81,7 +81,7 @@ first, not the second.
 | # | Control | Baseline | Where | Status |
 | --- | --- | --- | --- | --- |
 | D1 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` | Enforced |
-| D2 | Mutual TLS on sync | — | `sync-receiver` in the central compose | **Partial** — certificate lifecycle is the MOH ICT Unit's |
+| D2 | Mutual TLS on sync | — | Artemis broker at central: per-facility client certificate on `sync`, authorised on certificate subject; see [sync architecture](../architecture/sync-eip.md) §1.4 and §7.8 | **Open**; the broker is not yet in any compose file (risk E5), and the certificate lifecycle is the MOH ICT Unit's |
 | D3 | Encrypted backups | — | `docs/runbooks/backup-restore.md` | **Open** |
 | D4 | No secrets in the repository | — | Only `.env.example` templates committed; enforced by `scripts/validate/no-secrets.sh` in CI | Enforced |
 | D5 | Legacy admin UI disabled | production only | `LEGACY_ADMIN_UI` drives both `OMRS_CONFIG_MODULE_WEB_ADMIN` and the gateway `/openmrs/admin/` block | Enforced in production — see the note below |
@@ -136,11 +136,12 @@ scheduler, at which point the exception can be dropped entirely.
 
 ### D3: the copies that are easy to miss
 
-Backup encryption is usually scoped to the OpenMRS database. The sync layer creates four
-further copies of clinical data at rest: the **binary log** (up to six months of every
-change), the sender's **management database** (retry payloads), the **broker journal** at
-central, and the sync queue volume. All are in scope for D3. See
-[sync architecture](../architecture/sync-eip.md) §7.4.
+Backup encryption is usually scoped to the OpenMRS database. The sync layer creates
+further copies of clinical data at rest. The authoritative list is the five-row table in
+[sync architecture](../architecture/sync-eip.md) §7.4; D3 is closed only when every row of
+that table is covered. The `sync-queue` volume is not a sixth store: it is the physical
+backing of the sender's management database and Debezium offset (§1.5), and is covered by
+that row.
 
 ### D6: why a broker permission is a national-scale control
 
@@ -164,9 +165,10 @@ certificate. Disk encryption is what makes theft a hardware loss rather than a b
 3. **B4**: named-account policy in the runbook and training material.
 4. **C3**: log review confirming no PHI reaches application logs.
 5. **D3**: backup encryption implemented and a restore rehearsed, covering all five copies
-   of clinical data at rest, not only the OpenMRS database.
-6. **D6 / D8**: broker authorisation and certificate revocation, each proven by a negative
-   test rather than by configuration review.
+   of clinical data at rest enumerated in [sync architecture](../architecture/sync-eip.md)
+   §7.4, not only the OpenMRS database.
+6. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each
+   proven by a negative test rather than by configuration review.
 7. **D7**: facility disk encryption accepted as a control and an owner named.
 
 Nothing on this list is closed by editing a CSV.

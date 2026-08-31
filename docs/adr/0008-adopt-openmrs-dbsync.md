@@ -16,9 +16,10 @@ but it names the wrong artefact for pinning: **`openmrs-eip` is a toolbox**: the
 `openmrs-watcher` Debezium engine, the OpenMRS Camel component, a Spring Boot launcher, and
 is not a deployable sync application.
 
-Seven options were evaluated in [the module evaluation](../architecture/sync-module-evaluation.md):
-dbsync, a custom FHIR push, the legacy `sync` module, `sync2`, Atom Feed, native database
-replication, and a hand-assembled Debezium/Kafka pipeline.
+Nine options were evaluated in [the module evaluation](../architecture/sync-module-evaluation.md)
+§2.1: dbsync, a custom FHIR push, the legacy `sync` module, `sync2`, Atom Feed, native
+database replication, a hand-assembled Debezium/Kafka pipeline, SymmetricDS, and an
+integration engine (Mirth Connect or OpenHIM).
 
 ## Decision
 
@@ -26,8 +27,10 @@ Adopt **`mekomsolutions/openmrs-dbsync` 4.0.0** (the deployable sender and recei
 applications) on **`openmrs/openmrs-eip` 4.2.0**, with **ActiveMQ Artemis** as the JMS broker,
 **PGP payload encryption**, and **mutual TLS** on the broker connection.
 
-Both artefacts are pinned exactly in `distribution/distro.properties`, per ADR 0001. Neither
-`4.1.0-SNAPSHOT` nor any other SNAPSHOT ships.
+Both artefacts are to be pinned exactly in `distribution/distro.properties`, per ADR 0001.
+Neither is pinned today (ADR 0006 removed `omod.eip` correctly, but nothing replaced it; see
+[sync architecture](../architecture/sync-eip.md) §10 item 3 and risk E4), and Sprint 3 must
+not build until they are. Neither `4.1.0-SNAPSHOT` nor any other SNAPSHOT ships.
 
 The stack has a national-scale production precedent: CSaúde runs OpenMRS EIP-based sync for
 Mozambique's EMR programme across many low-connectivity facilities, on an actively maintained
