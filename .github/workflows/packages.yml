@@ -54,7 +54,7 @@ jobs:
               echo "== Building $pkg_name =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile --ignore-engines
+                yarn install --frozen-lockfile
                 yarn typescript
                 yarn build
               )
@@ -103,7 +103,7 @@ jobs:
               echo "== Packaging and Publishing $pkg_name (pre-release) =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile --ignore-engines
+                yarn install --frozen-lockfile
                 yarn typescript
                 yarn build
 
@@ -155,7 +155,7 @@ jobs:
               echo "== Packaging and Publishing $pkg_name (stable release) =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile --ignore-engines
+                yarn install --frozen-lockfile
                 yarn typescript
                 yarn build
 

@@ -1533,7 +1533,7 @@
     uuid "^9.0.1"
     workbox-window "^6.1.5"
 
-"@openmrs/esm-patient-common-lib@next":
+"@openmrs/esm-patient-common-lib@12.3.5-pre.12074":
   version "12.3.5-pre.12074"
   resolved "https://registry.yarnpkg.com/@openmrs/esm-patient-common-lib/-/esm-patient-common-lib-12.3.5-pre.12074.tgz#b3a1235cee5273e509e15af113c69fd6d0cce683"
   integrity sha512-/iPp5PPD5M7+PNcYcjQhcC+2C9SAc9JoHeAzWtRFbWjuldVphmciDiJz5B2SKWRb7c8QgZpjhoxv4M8wI5f4BA==
