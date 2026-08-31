@@ -25,7 +25,9 @@
       "The formUuid below is the compiled UUID from partograph-national.json."
     ],
     "encounterTypeUuid": "${var.encountertype.partograph.uuid}",
+    "deliveryEncounterTypeUuid": "${var.encountertype.delivery.uuid}",
     "formUuid": "${var.form.partograph.uuid}",
+    "thirdStageFormUuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
     "concepts": {
       "cervicalDilationUuid": "${var.concept.partograph.cervical-dilation.uuid}",
       "descentOfHeadUuid": "${var.concept.partograph.descent-of-head.uuid}",

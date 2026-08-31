@@ -90,19 +90,9 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
       // A. Explicit Partograph forms ("2. Partograph", "Partograph", or configured formUuid)
       if (/partograph/i.test(formName)) return true;
       if (config.formUuid && enc.form?.uuid === config.formUuid) return true;
-      if (
-        enc.form?.uuid === '526d9c5b-70a6-38e8-9048-18c5527369fc' ||
-        enc.form?.uuid === '4fea4040-faf8-3f23-aaab-f375cc9e79ec'
-      ) {
-        return true;
-      }
 
       // B. Dedicated "Partograph Observation" encounter type
-      if (
-        config.encounterTypeUuid &&
-        enc.encounterType?.uuid === config.encounterTypeUuid &&
-        enc.encounterType?.uuid !== '659775fb-05e4-427f-8d9f-7e4cabe19962'
-      ) {
+      if (config.encounterTypeUuid && enc.encounterType?.uuid === config.encounterTypeUuid) {
         return true;
       }
 
@@ -139,20 +129,27 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
   const deliveryEncounters = useMemo(() => {
     return rawEncounters
       .filter((enc) => {
-        // Check Delivery encounter type (var.encountertype.delivery.uuid: 7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9)
-        if (enc.encounterType?.uuid === '7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9') return true;
+        // Check Delivery encounter type via configuration
+        if (
+          config.deliveryEncounterTypeUuid &&
+          enc.encounterType?.uuid === config.deliveryEncounterTypeUuid
+        ) {
+          return true;
+        }
+
+        // Check configured Third Stage form UUID
+        if (config.thirdStageFormUuid && enc.form?.uuid === config.thirdStageFormUuid) {
+          return true;
+        }
 
         // Check form name for Stage 3 or Delivery Summary (anchored to avoid matching Stage 1 / Stage 2)
         const formName = enc.form?.name || enc.form?.display || '';
         if (/^3\.|third stage|delivery summary/i.test(formName)) return true;
 
-        // Check known Third Stage form UUIDs
-        if (enc.form?.uuid === 'a1f46814-43c4-3690-9b87-ae4644b8b93a') return true;
-
         return false;
       })
       .sort((a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime());
-  }, [rawEncounters]);
+  }, [rawEncounters, config]);
 
   // 3. Subsequent Pregnancy & Episode-of-Care Resolution:
   //

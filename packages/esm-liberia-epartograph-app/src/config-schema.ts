@@ -16,10 +16,20 @@ export const configSchema = {
     _description: 'Encounter type recorded for each serial partograph observation.',
     _default: '9e2c4f70-4a8d-4c01-87a9-48b2c6f0d2fb',
   },
+  deliveryEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter type representing delivery outcome / delivery summary.',
+    _default: '7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9',
+  },
   formUuid: {
     _type: Type.String,
     _description: 'UUID of the partograph AMPATH form to launch when the user clicks Add.',
     _default: '526d9c5b-70a6-38e8-9048-18c5527369fc',
+  },
+  thirdStageFormUuid: {
+    _type: Type.String,
+    _description: 'UUID of the Stage 3 / Delivery of Infant and Placenta AMPATH form.',
+    _default: 'a1f46814-43c4-3690-9b87-ae4644b8b93a',
   },
   concepts: {
     cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '34cffe7c-726f-5da4-ade1-c67e3209f5eb' },
@@ -62,7 +72,9 @@ export const configSchema = {
 
 export interface EPartographConfig {
   encounterTypeUuid: string;
+  deliveryEncounterTypeUuid?: string;
   formUuid: string;
+  thirdStageFormUuid?: string;
   concepts: {
     cervicalDilationUuid: string;
     descentOfHeadUuid: string;
