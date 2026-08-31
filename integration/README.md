@@ -8,11 +8,27 @@ into one makes both impossible to version or roll back independently.
 
 | Directory | Scope | Status |
 | --- | --- | --- |
-| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk** |
+| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; designed, not yet built |
 | [`dhis2/`](dhis2/) | Aggregate export + data-element mappings | Blocked on MOH mapping delivery |
 | [`cross-facility/`](cross-facility/) | Cross-facility patient query | Sprint 4 |
 | [`msupply/`](msupply/) | Stock integration | Deferred to the support period — spec only |
 | [`fhir/`](fhir/) | FHIR profiles and HL7 resources | Underpins the others |
+
+## Design documents
+
+The sync layer is designed in `docs/`; this directory holds the implementation contract.
+
+| Document | Covers |
+| --- | --- |
+| [Sync & EIP architecture](../docs/architecture/sync-eip.md) | Topology, change capture, transport, identity/CPI, offline & retry, security, cross-facility query |
+| [Module evaluation](../docs/architecture/sync-module-evaluation.md) | Why `openmrs-dbsync`; options rejected; versions; compatibility gaps; plan and risks |
+| [Entity coverage and sync order](../docs/architecture/sync-entity-coverage.md) | The 34 synced entities; dependency chain; what needs custom work |
+| [ADR 0008](../docs/adr/0008-adopt-openmrs-dbsync.md) | The module decision |
+
+**Current state:** no sync code exists. `distribution/` builds `backend`, `frontend` and
+`gateway` only; the `sync` and `sync-receiver` images named in the compose files are not
+produced by anything in this repository. The compose entries are an intended topology, not a
+deployment.
 
 ## Why the sync layer carries the most risk
 
