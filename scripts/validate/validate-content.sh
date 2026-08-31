@@ -336,9 +336,19 @@ section "CSV short rows"
 # (the surplus is past the last named column and never read) and several of the concept
 # exports vendored from upstream have them; failing on those would fail files we do not own.
 #
-# Columns whose name begins with '_' are Initializer directives, not data — '_order:1000'
-# in privileges_stockmanagement-common.csv is a load-order hint, and its rows correctly stop
-# before it — so they do not count toward the width a row has to reach.
+# Columns whose name begins with '_' are Initializer directives ('_order:1000',
+# '_version:1') rather than data, and how far a row must reach past them is NOT uniform
+# across domains — so this asks each domain the question it actually answers to.
+#
+# In concepts/, rows must reach the FULL header, directives included. Every concept export
+# that carries directives pads through them, and the one attempt to add '_order:1800' to
+# concepts-national.csv without widening its rows rejected all 142 of them with
+# "Index 9 out of bounds for length 9" — the concept line processors address cells across
+# the whole header. Excluding directives here would have called that change clean.
+#
+# Everywhere else a row may stop before trailing directives: privileges_stockmanagement-
+# common.csv declares '_order:1000' as a 4th column and its 3-cell rows load correctly,
+# because nothing in that domain reads that far.
 python3 - "$PKG_DIR" <<'PY' || err "short CSV rows (see above)"
 import csv, glob, os, sys
 
@@ -353,10 +363,15 @@ for f in sorted(glob.glob(f"{pkg_dir}/**/*.csv", recursive=True)):
         rows = list(csv.reader(fh))
     if not rows:
         continue
-    width = len([c for c in rows[0] if not c.strip().startswith("_")])
+    in_concepts = f"{os.sep}concepts{os.sep}" in f
+    if in_concepts:
+        width, what = len(rows[0]), "header has"
+    else:
+        width = len([c for c in rows[0] if not c.strip().startswith("_")])
+        what = "header names"
     for n, row in enumerate(rows[1:], start=2):
         if len(row) < width:
-            problems.append(f"{rel}:{n} has {len(row)} cells, header names {width} columns")
+            problems.append(f"{rel}:{n} has {len(row)} cells, {what} {width} columns")
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)
