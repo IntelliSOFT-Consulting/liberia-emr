@@ -8,8 +8,9 @@ describe('Visit', () => {
         loginWithSession();
     });
 
-    it('should register a patient before starting a visit', () => {
+    it('should start a visit after registering a patient', () => {
         visitPage.registerPatient();
         visitPage.startVisit();
+        visitPage.verifyVisitActive();
     })
 })
