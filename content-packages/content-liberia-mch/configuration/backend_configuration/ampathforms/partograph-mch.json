@@ -109,7 +109,7 @@
               "type": "obs",
               "id": "cervical_dilatation",
               "questionOptions": {
-                "concept": "${var.concept.mch.cervical-dilatation.uuid}",
+                "concept": "${var.concept.partograph.cervical-dilation.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 10,
@@ -128,7 +128,7 @@
               "type": "obs",
               "id": "fetal_head_descent",
               "questionOptions": {
-                "concept": "${var.concept.mch.fetal-head-descent.uuid}",
+                "concept": "${var.concept.partograph.descent-of-head.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 5,
@@ -147,7 +147,7 @@
               "type": "obs",
               "id": "contractions_per_10_minutes",
               "questionOptions": {
-                "concept": "${var.concept.mch.contractions-per-10-minutes.uuid}",
+                "concept": "${var.concept.partograph.contractions-per-10min.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 10,
