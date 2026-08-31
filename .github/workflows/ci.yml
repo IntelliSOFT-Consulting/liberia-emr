@@ -371,6 +371,18 @@ jobs:
       # an unresolved ${var.*} or a forward reference between layers.
       - name: Load all metadata into an empty database
         run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend
+      # run-clean-install.sh saves the whole initializer.log on failure, but only prints a
+      # 40-line excerpt — enough to name the rejected file, rarely enough to explain it. The
+      # rest is lost when the runner is torn down, and recovering it costs a full re-run of
+      # this 13-minute job. Keep it: the log is the only place the load ORDER of the concept
+      # CSVs is visible, which is what a cross-file answer reference failure turns on.
+      - name: Keep the Initializer log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: initializer-log
+          path: qa/upgrade/initializer-failure.log
+          if-no-files-found: ignore
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
