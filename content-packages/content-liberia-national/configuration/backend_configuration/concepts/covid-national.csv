@@ -1,6 +1,4 @@
 Uuid,Void/Retire,Same as mappings,Fully specified name:en,Fully specified name:es,Short name:en,Short name:es,Description:en,Data class,Data type,Complex data handler,Answers,Members,Allow decimals,Units,Normal low,Normal high,Absolute low,Absolute high,_version:1,_order:1700
-${var.concept.ciel.yes.uuid},,,Yes,Sí,Yes,Sí,,Misc,N/A,,,,,,,,,,,
-${var.concept.ciel.no.uuid},,,No,No,No,No,,Misc,N/A,,,,,,,,,,,
 ${var.concept.national.rash-nonvesicular-unspec.uuid},,,"Rash, nonvesicular, unspec.","Rash, nonvesicular, unspec.","Erupción no vesicular, no especificada","Erupción no vesicular, no especificada","Rash, nonvesicular, unspec.",Finding,N/A,,,,,,,,,,,
 ${var.concept.national.congestion.uuid},,,Congestion,Congestion,Congestión,Congestión,Congestion,Finding,N/A,,,,,,,,,,,
 ${var.concept.ciel.140238.uuid},,,Fever,Fever,Fever,Fever,Fever,Finding,N/A,,,,,,,,,,,

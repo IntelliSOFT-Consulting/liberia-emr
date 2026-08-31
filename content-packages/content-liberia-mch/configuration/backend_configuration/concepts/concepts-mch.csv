@@ -1,5 +1,4 @@
 Uuid,Void/Retire,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers,Same as mappings,Absolute low,Absolute high,Units
-${var.concept.ciel.anc.uuid},,Antenatal Care,ANC,Antenatal care program concept,Program,N/A,,,,,
 ${var.concept.program.labour-delivery.uuid},,Labour and Delivery Program,L&D Program,Program concept for intrapartum care,Program,Text,,,,,
 ${var.concept.program.pnc.uuid},,Postnatal Care Program,PNC Program,Program concept for postnatal care,Program,Text,,,,,
 ${var.concept.program.family-planning.uuid},,Family Planning Program,FP Program,Program concept for family planning counselling and method continuation,Program,Text,,,,,
