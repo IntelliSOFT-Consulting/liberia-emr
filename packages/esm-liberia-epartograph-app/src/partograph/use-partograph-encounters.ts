@@ -142,9 +142,9 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
         // Check Delivery encounter type (var.encountertype.delivery.uuid: 7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9)
         if (enc.encounterType?.uuid === '7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9') return true;
 
-        // Check form name for Stage 3 or Delivery
+        // Check form name for Stage 3 or Delivery Summary (anchored to avoid matching Stage 1 / Stage 2)
         const formName = enc.form?.name || enc.form?.display || '';
-        if (/third stage|delivery summary|delivery/i.test(formName)) return true;
+        if (/^3\.|third stage|delivery summary/i.test(formName)) return true;
 
         // Check known Third Stage form UUIDs
         if (enc.form?.uuid === 'a1f46814-43c4-3690-9b87-ae4644b8b93a') return true;
