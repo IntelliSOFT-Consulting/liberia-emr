@@ -12,10 +12,14 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
 | ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`) |
-| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | not written |
+| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
 | Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | not written |
+
+The `Variable` column is configuration metadata and repository convention — it is the `uuid`
+each schema carries and keeps content free of bare UUIDs. It is **not** the runtime identity:
+`AmpathFormsLoader` does not read the JSON `uuid` at all (see [Versioning](#versioning)).
 
 Intrapartum observations are **not** a form. They are captured by
 `packages/esm-liberia-epartograph-app` against the `Partograph Observation` encounter type,
@@ -24,18 +28,34 @@ because a serial time-plotted chart is not something the form engine renders.
 ## Layout
 
 Released forms use a single published schema containing the form UUID, version, encounter,
-publication status, and pages:
+publication status, and pages. The ANC schemas, illustrative — this directory also holds the
+labour & delivery forms and is not listed in full here:
 
 ```
 ampathforms/
-└── anc-initial.json          # published O3 form-engine schema and metadata
+├── anc-initial.json          # published O3 form-engine schema and metadata
+└── anc-followup.json         # published O3 form-engine schema and metadata
 ```
 
 ## Versioning
 
-A released form schema is historical data. To change one, create a **new form version**
-with a new UUID and leave the old schema intact — the old encounters must keep rendering
-the way they were recorded (IMPLEMENTATION.md §9). Do not edit a published schema in place.
+Do **not** mutate a released form in ways that change clinical meaning
+([IMPLEMENTATION.md §9](../../../../../IMPLEMENTATION.md)). Meaning-changing form
+changes need a new version and migration analysis.
+
+Initializer's AmpathFormsLoader does **not** use the JSON `uuid` as identity. It
+derives the Form UUID from **name + version**, and the form loaded through Initializer
+**replaces** any previous version of the same name. Keeping multiple JSON schemas
+with the same form name does not preserve independently loaded historical versions.
+
+**Non-semantic corrections** (validators, min/max bounds, whole-number enforcement,
+validation messages) that keep the same concepts, question meaning, encounter
+semantics, and workflow may retain the existing name and version so Initializer
+updates the existing FormResource.
+
+**Meaning-changing changes** (different concept semantics, repurposed questions,
+altered encounter meaning, a materially different workflow or data interpretation)
+require explicit migration/version analysis per §9.
 
 ## Before writing any of these
 
