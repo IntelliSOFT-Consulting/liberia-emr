@@ -371,6 +371,18 @@ jobs:
       # an unresolved ${var.*} or a forward reference between layers.
       - name: Load all metadata into an empty database
         run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend
+      # run-clean-install.sh saves the whole initializer.log on failure, but only prints a
+      # 40-line excerpt — enough to name the rejected file, rarely enough to explain it. The
+      # rest is lost when the runner is torn down, and recovering it costs a full re-run of
+      # this 13-minute job. Keep it: the log is the only place the load ORDER of the concept
+      # CSVs is visible, which is what a cross-file answer reference failure turns on.
+      - name: Keep the Initializer log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: initializer-log
+          path: qa/upgrade/initializer-failure.log
+          if-no-files-found: ignore
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
@@ -464,20 +476,37 @@ jobs:
       # differentiate categories on its own, so uploading all three files
       # via sarif_file: . collided. Needs security-events: write, already
       # granted at the workflow level.
+      #
+      # continue-on-error because the upload depends on a repository SETTING this workflow
+      # cannot assert: with Code Security disabled, upload-sarif fails with "Code Security
+      # must be enabled for this repository to use code scanning" and took the whole job,
+      # and therefore the CI gate, down with it. That was blocking every open PR on a
+      # configuration change rather than a code defect.
+      #
+      # What this does and does not trade away: the three scans above still RUN, and still
+      # fail the job if Trivy itself errors — only the publishing of results to the Security
+      # tab is made non-fatal. The cost is that a genuine upload regression now shows up as
+      # a red step inside a green job rather than a failed run, so findings can stop
+      # reaching the Security tab without anyone being paged. Re-enable Code Security on the
+      # repository and these steps go green on their own; drop continue-on-error then, so
+      # the upload is load-bearing again.
       - name: Upload Trivy results — backend
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-backend.sarif
           category: trivy-backend
       - name: Upload Trivy results — frontend
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-frontend.sarif
           category: trivy-frontend
       - name: Upload Trivy results — gateway
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-gateway.sarif
