@@ -382,6 +382,56 @@ recorded or an explicit "none exists" note):
 mapped. Resolve before load — see the
 [concepts README](../../content-packages/content-liberia-mch/configuration/backend_configuration/concepts/README.md).
 
+### Family Planning
+
+Introduced with the Family Planning form (`3. Family Planning` v2.0). Row-level DAK provenance is in
+[`../dak/traceability-mch.csv`](../dak/traceability-mch.csv); this section is the model only.
+
+Local MCH questions:
+
+| Concept (FSN) | Variable (`var.concept.mch.…`) | Type | Role on the form |
+| --- | --- | --- | --- |
+| Family Planning Client Type | `fp-client-type` | Coded | New vs continuing client |
+| Chosen Family Planning Method | `fp-chosen-method` | Coded | Counselling outcome; gates the eligibility, LAM and implant sections |
+| Amenorrhea (Menses Not Returned) | `fp-amenorrhea` | Coded | Pregnancy rule-out input; gates every implemented decision-table rule |
+| Missed or Late Menses | `fp-missed-menses` | Coded | Non-amenorrhoeic branch input (branch not implemented — open item 25) |
+| Days Since Unprotected Sex | `fp-days-since-unprotected-sex` | Numeric | Drives the ≤ 5-day emergency-contraception guidance; integer-only |
+| Exclusive Breastfeeding | `fp-exclusive-breastfeeding` | Coded | LAM criterion |
+| Date of Last Delivery | `fp-date-of-delivery` | Date | LAM six-month boundary (calendar months, month-end clamped) |
+| Unexplained Vaginal Bleeding | `fp-unexplained-vaginal-bleeding` | Coded | WHO MEC implant screen |
+| History of Breast Cancer | `fp-history-breast-cancer` | Coded | WHO MEC implant screen |
+| Severe Liver Disease or Jaundice | `fp-severe-liver-disease` | Coded | WHO MEC implant screen |
+| Current DVT or Pulmonary Embolism | `fp-current-dvt-pe` | Coded | WHO MEC implant screen |
+| Contraceptive Implant Inserted | `fp-implant-inserted` | Coded | Procedure performed — deliberately not inferred from the dispensed commodity |
+| Date of Contraceptive Implant Insertion | `fp-implant-insertion-date` | Date | Conditionally required when Implant Inserted = Yes |
+| Perform Pregnancy Test | `fp-perform-pregnancy-test` | Coded | **Declared but unused** — the form treats it as implied by a recorded Negative result |
+
+Local MCH answer concepts (all Misc / N/A), grouped by the question that carries them:
+
+| Question | Answers (`var.concept.mch.…`) |
+| --- | --- |
+| Family Planning Client Type | `fp-client-new`, `fp-client-continuing` |
+| Purpose of visit (national question, answer set extended) | `fp-purpose-side-effects`, `fp-purpose-jadelle-iucd-removal`, `fp-purpose-post-partum-fp` |
+| Chosen Family Planning Method / Family Planning Method Dispensed | `fp-cycle-beads`, `fp-microgynon`, `fp-microlut`, `fp-implants`, `fp-sayana-press` |
+| Chosen Family Planning Method only | `fp-lam` — a behaviour, not a dispensable commodity |
+
+Reused concepts needed to read the model:
+
+| Concept | Variable | Type | Note |
+| --- | --- | --- | --- |
+| Gravida / Parity | `var.concept.ciel.gravida.uuid` / `…parity.uuid` | Numeric | Integer-only on this form |
+| Pregnancy test result | `var.concept.ciel.pregnancy-test-result.uuid` (CIEL 45) | Coded | Restricted to CIEL 664 Negative / 703 Positive |
+| Return visit date | `var.concept.ciel.return-visit-date.uuid` (CIEL 5096) | Date | Derived, read-only: repeat pregnancy test at encounter date + 21 days. See open item 24 |
+| Male / female condoms | `var.concept.ciel.male-condoms.uuid` / `…female-condoms.uuid` | — | Method answers, both questions |
+| Injectable contraceptives | `var.concept.ciel.injectable-contraceptives.uuid` (CIEL 5279) | — | Chosen only — see open item 23 |
+| Intrauterine device | `var.concept.ciel.iud.uuid` (CIEL 5275) | — | Chosen only — see open item 23 |
+| Counselling done, Purpose of visit, Family planning method dispensed, Date method removed, For commodities, IUDs | `var.concept.national.…` | — | Existing national questions and answers, reused unchanged |
+
+The LAM, eligibility and pregnancy guidance blocks are **derived and not stored**: no
+"LAM eligible" or "eligible for implant" observation exists, because neither is a finding the
+client presents with. Automatic conversion of the next-contact observation into an
+`Appointment` is deferred to the separate backend-listener Jira.
+
 ---
 
 ## 2. Identifiers, locations, providers
@@ -443,7 +493,7 @@ permanent — retire, never delete (IMPLEMENTATION.md §9).
 
 ## 5. Forms
 
-Five schemas, none written yet. See the
+Five schemas; ANC Initial and `3. Family Planning` (v2.0) are written. See the
 [ampathforms README](../../content-packages/content-liberia-mch/configuration/backend_configuration/ampathforms/README.md)
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
@@ -640,6 +690,31 @@ Updated against the DAK read on 2026-08-06 — see
     PNC fundal height (`EMR.PND.DE27`) should also move to CIEL 1439. They stay declared
     until that analysis is done. `national.fundal-height-cm` is still live in
     `pnc-national.json`.
+
+23. **Family Planning Chosen Method vs Method Dispensed use different concepts for the same
+    method.** Chosen carries CIEL 5275 *Intrauterine device* and CIEL 5279 *Injectable
+    contraceptives*; Dispensed carries the national *IUDs* concept and CIEL 907
+    *medroxyprogesterone*. Any indicator counting "IUDs provided" or "injectables provided"
+    across the two questions will **split**. Both answer sets predate this work and both load,
+    so this is an aggregation defect, not a runtime failure. Decide which concept is canonical
+    per method, converge the two questions, and migrate existing observations — the pattern
+    already applied to LMP under *Converged ANC concepts*.
+24. **The next-contact date has no unambiguous observation contract.** CIEL 5096 *Return visit
+    date* is already used on the FP form for the repeat pregnancy test (encounter date + 21
+    days). The one-calendar-month contraceptive implant post-insertion review would need a
+    second value on that same concept in the same encounter — decision-table rules 3 and 4
+    apply to implant clients, so both follow-ups genuinely co-occur — and nothing at the
+    observation level distinguishes them. The form therefore persists **only** the +21-day
+    date. Automatic conversion of next-contact observations into `Appointment` resources is
+    deferred to the separate backend-listener Jira, which needs this contract decided first:
+    a distinct concept per follow-up, or a discriminator (obs grouping, or a coded
+    service/type obs) alongside CIEL 5096.
+25. **The non-amenorrhoeic pregnancy decision-table branches cannot be implemented from the
+    current form inputs.** Rules 19, 22 and 23 of sheet `FP.LO.004-3. PregTestNegative` turn on
+    `FP.DE.056 Type of pregnancy test` = "Highly sensitive", which the FP form does not capture;
+    rules 19 and 22 are otherwise identical and cannot be told apart. Rule 19 is additionally
+    self-inconsistent at source (`Provide method` = 0 while its Action reads "Provide the method
+    now"). Needs the DAK owner — raise with items 10 and 20.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
