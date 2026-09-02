@@ -308,6 +308,37 @@ The shared CIEL aliases are declared in
 content-liberia-national must build without content-liberia-mch, because mch depends on
 national and never the reverse.
 
+⚠ **The convergence above covers "ANC Form" and "ANC Initial Visit" only. "ANC Follow-up
+Visit" is NOT converged and is unresolved technical-clinical debt.** `anc-followup.json` was
+restored byte-for-byte from its authoritative pre-deletion version
+(`44c22b41f7c8fa7b3b7b5b6ee482953ac069f0bc`); it predates this convergence and was deleted
+before it was applied, so it never received it. For three elements it still writes the
+superseded national concepts:
+
+| DAK element | "ANC Form" + "ANC Initial Visit" | **"ANC Follow-up Visit"** |
+| --- | --- | --- |
+| `DE.22` Gestational age | `var.concept.ciel.gestational-age.uuid` | `var.concept.national.gestational-age-weeks.uuid` |
+| `DE.23` Fundal height | `var.concept.ciel.fundal-height.uuid` | `var.concept.national.fundal-height-cm.uuid` |
+| `DE.26` Fetal heart tone | `var.concept.ciel.fetal-heart-rate.uuid` | `var.concept.national.fetal-heart-tone-fht.uuid` |
+
+Consequence: gestational age, fundal height and fetal heart tone **do not currently form a
+single concept series across Initial + Follow-up**. Any flowsheet, trend or indicator over
+these three elements must read both concepts, or it will see only part of a pregnancy.
+Fundal height and gestational age have no compensating logic anywhere.
+
+ANC danger-sign behaviour is **not** broken by this: the `Abnormal Fetal Heart Tone (ANC)`
+flag in `flags-mch.csv` already matches
+`IN ('${var.concept.ciel.fetal-heart-rate.uuid}', '${var.concept.national.fetal-heart-tone-fht.uuid}')`,
+and the BP and presentation flags are likewise written across both concept variants.
+
+Resolution is **deliberately deferred, not accepted as permanent.** Remapping the form now
+would be a semantic/data-model change rather than the validation-only QA work it was restored
+under, and would leave observations already recorded against the national concepts split
+regardless. Closing it requires: (1) deciding the canonical CIEL mappings for Follow-up;
+(2) assessing observations already stored under the national concepts; (3) determining
+migration and reporting compatibility; and (4) applying the appropriate form version/update
+semantics under [IMPLEMENTATION.md §9](../../IMPLEMENTATION.md). Tracked as open item 23.
+
 ⚠ **Still divergent — needs a clinical value-set decision, not a code change.**
 
 - `DE.24` **Presentation.** "ANC Form" uses national `Presentation` (Vertex-only); "ANC
@@ -640,6 +671,25 @@ Updated against the DAK read on 2026-08-06 — see
     PNC fundal height (`EMR.PND.DE27`) should also move to CIEL 1439. They stay declared
     until that analysis is done. `national.fundal-height-cm` is still live in
     `pnc-national.json`.
+23. **"ANC Follow-up Visit" is not converged onto the CIEL ANC terms — UNRESOLVED.**
+    `anc-followup.json` still writes `national.gestational-age-weeks`,
+    `national.fundal-height-cm` and `national.fetal-heart-tone-fht` where "ANC Form" and "ANC
+    Initial Visit" write CIEL 1438 / 1439 / 1440, so DE.22, DE.23 and DE.26 do not form one
+    concept series across Initial + Follow-up. Danger-sign FHT is unaffected — its flag reads
+    both concepts. Deferred deliberately: closing it needs the canonical CIEL mappings for
+    Follow-up decided, existing obs under the national concepts assessed, migration/reporting
+    compatibility determined, and form version/update semantics applied under §9. Until then
+    any flowsheet or indicator on these three elements must read both concepts. See
+    *Converged ANC concepts*; related to item 22.
+24. **Upper bounds for the ANC obstetric counts are unspecified.** Gravida on
+    `anc-initial.json` is a whole-number field (`min: 1`, `step: 1`,
+    `disallowDecimals: true`) because Gravida includes the current pregnancy and
+    must be ≥ 1 for a patient in ANC. Full-term births, preterm births, abortions
+    and living children remain whole-number fields with `min: 0`, `step: 1`,
+    `disallowDecimals: true`. No approved clinical upper bound is currently
+    configured. The remaining open question is whether clinically approved upper
+    bounds should be introduced; that needs clinical/product sign-off before any
+    `max` is configured.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
