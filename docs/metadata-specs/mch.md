@@ -308,6 +308,37 @@ The shared CIEL aliases are declared in
 content-liberia-national must build without content-liberia-mch, because mch depends on
 national and never the reverse.
 
+⚠ **The convergence above covers "ANC Form" and "ANC Initial Visit" only. "ANC Follow-up
+Visit" is NOT converged and is unresolved technical-clinical debt.** `anc-followup.json` was
+restored byte-for-byte from its authoritative pre-deletion version
+(`44c22b41f7c8fa7b3b7b5b6ee482953ac069f0bc`); it predates this convergence and was deleted
+before it was applied, so it never received it. For three elements it still writes the
+superseded national concepts:
+
+| DAK element | "ANC Form" + "ANC Initial Visit" | **"ANC Follow-up Visit"** |
+| --- | --- | --- |
+| `DE.22` Gestational age | `var.concept.ciel.gestational-age.uuid` | `var.concept.national.gestational-age-weeks.uuid` |
+| `DE.23` Fundal height | `var.concept.ciel.fundal-height.uuid` | `var.concept.national.fundal-height-cm.uuid` |
+| `DE.26` Fetal heart tone | `var.concept.ciel.fetal-heart-rate.uuid` | `var.concept.national.fetal-heart-tone-fht.uuid` |
+
+Consequence: gestational age, fundal height and fetal heart tone **do not currently form a
+single concept series across Initial + Follow-up**. Any flowsheet, trend or indicator over
+these three elements must read both concepts, or it will see only part of a pregnancy.
+Fundal height and gestational age have no compensating logic anywhere.
+
+ANC danger-sign behaviour is **not** broken by this: the `Abnormal Fetal Heart Tone (ANC)`
+flag in `flags-mch.csv` already matches
+`IN ('${var.concept.ciel.fetal-heart-rate.uuid}', '${var.concept.national.fetal-heart-tone-fht.uuid}')`,
+and the BP and presentation flags are likewise written across both concept variants.
+
+Resolution is **deliberately deferred, not accepted as permanent.** Remapping the form now
+would be a semantic/data-model change rather than the validation-only QA work it was restored
+under, and would leave observations already recorded against the national concepts split
+regardless. Closing it requires: (1) deciding the canonical CIEL mappings for Follow-up;
+(2) assessing observations already stored under the national concepts; (3) determining
+migration and reporting compatibility; and (4) applying the appropriate form version/update
+semantics under [IMPLEMENTATION.md §9](../../IMPLEMENTATION.md). Tracked as open item 23.
+
 ⚠ **Still divergent — needs a clinical value-set decision, not a code change.**
 
 - `DE.24` **Presentation.** "ANC Form" uses national `Presentation` (Vertex-only); "ANC
@@ -382,6 +413,56 @@ recorded or an explicit "none exists" note):
 mapped. Resolve before load — see the
 [concepts README](../../content-packages/content-liberia-mch/configuration/backend_configuration/concepts/README.md).
 
+### Family Planning
+
+Introduced with the Family Planning form (`3. Family Planning` v2.0). Row-level DAK provenance is in
+[`../dak/traceability-mch.csv`](../dak/traceability-mch.csv); this section is the model only.
+
+Local MCH questions:
+
+| Concept (FSN) | Variable (`var.concept.mch.…`) | Type | Role on the form |
+| --- | --- | --- | --- |
+| Family Planning Client Type | `fp-client-type` | Coded | New vs continuing client |
+| Chosen Family Planning Method | `fp-chosen-method` | Coded | Counselling outcome; gates the eligibility, LAM and implant sections |
+| Amenorrhea (Menses Not Returned) | `fp-amenorrhea` | Coded | Pregnancy rule-out input; gates every implemented decision-table rule |
+| Missed or Late Menses | `fp-missed-menses` | Coded | Non-amenorrhoeic branch input (branch not implemented — open item 25) |
+| Days Since Unprotected Sex | `fp-days-since-unprotected-sex` | Numeric | Drives the ≤ 5-day emergency-contraception guidance; integer-only |
+| Exclusive Breastfeeding | `fp-exclusive-breastfeeding` | Coded | LAM criterion |
+| Date of Last Delivery | `fp-date-of-delivery` | Date | LAM six-month boundary (calendar months, month-end clamped) |
+| Unexplained Vaginal Bleeding | `fp-unexplained-vaginal-bleeding` | Coded | WHO MEC implant screen |
+| History of Breast Cancer | `fp-history-breast-cancer` | Coded | WHO MEC implant screen |
+| Severe Liver Disease or Jaundice | `fp-severe-liver-disease` | Coded | WHO MEC implant screen |
+| Current DVT or Pulmonary Embolism | `fp-current-dvt-pe` | Coded | WHO MEC implant screen |
+| Contraceptive Implant Inserted | `fp-implant-inserted` | Coded | Procedure performed — deliberately not inferred from the dispensed commodity |
+| Date of Contraceptive Implant Insertion | `fp-implant-insertion-date` | Date | Conditionally required when Implant Inserted = Yes |
+| Perform Pregnancy Test | `fp-perform-pregnancy-test` | Coded | **Declared but unused** — the form treats it as implied by a recorded Negative result |
+
+Local MCH answer concepts (all Misc / N/A), grouped by the question that carries them:
+
+| Question | Answers (`var.concept.mch.…`) |
+| --- | --- |
+| Family Planning Client Type | `fp-client-new`, `fp-client-continuing` |
+| Purpose of visit (national question, answer set extended) | `fp-purpose-side-effects`, `fp-purpose-jadelle-iucd-removal`, `fp-purpose-post-partum-fp` |
+| Chosen Family Planning Method / Family Planning Method Dispensed | `fp-cycle-beads`, `fp-microgynon`, `fp-microlut`, `fp-implants`, `fp-sayana-press` |
+| Chosen Family Planning Method only | `fp-lam` — a behaviour, not a dispensable commodity |
+
+Reused concepts needed to read the model:
+
+| Concept | Variable | Type | Note |
+| --- | --- | --- | --- |
+| Gravida / Parity | `var.concept.ciel.gravida.uuid` / `…parity.uuid` | Numeric | Integer-only on this form |
+| Pregnancy test result | `var.concept.ciel.pregnancy-test-result.uuid` (CIEL 45) | Coded | Restricted to CIEL 664 Negative / 703 Positive |
+| Return visit date | `var.concept.ciel.return-visit-date.uuid` (CIEL 5096) | Date | Derived, read-only: repeat pregnancy test at encounter date + 21 days. See open item 24 |
+| Male / female condoms | `var.concept.ciel.male-condoms.uuid` / `…female-condoms.uuid` | — | Method answers, both questions |
+| Injectable contraceptives | `var.concept.ciel.injectable-contraceptives.uuid` (CIEL 5279) | — | Chosen only — see open item 23 |
+| Intrauterine device | `var.concept.ciel.iud.uuid` (CIEL 5275) | — | Chosen only — see open item 23 |
+| Counselling done, Purpose of visit, Family planning method dispensed, Date method removed, For commodities, IUDs | `var.concept.national.…` | — | Existing national questions and answers, reused unchanged |
+
+The LAM, eligibility and pregnancy guidance blocks are **derived and not stored**: no
+"LAM eligible" or "eligible for implant" observation exists, because neither is a finding the
+client presents with. Automatic conversion of the next-contact observation into an
+`Appointment` is deferred to the separate backend-listener Jira.
+
 ---
 
 ## 2. Identifiers, locations, providers
@@ -443,10 +524,41 @@ permanent — retire, never delete (IMPLEMENTATION.md §9).
 
 ## 5. Forms
 
-Five schemas, none written yet. See the
+Five schemas; ANC Initial and `3. Family Planning` (v2.0) are written. See the
 [ampathforms README](../../content-packages/content-liberia-mch/configuration/backend_configuration/ampathforms/README.md)
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
+
+### Legacy national Family Planning form superseded
+
+The national `3. Family Planning` v1.0 schema
+(`content-liberia-national/.../ampathforms/family_planning-national.json`) remains declared
+in metadata and is superseded by MCH `3. Family Planning` v2.0, which is the active FP
+workflow. Both schemas carry the same form name, `3. Family Planning`, and are told apart by
+version. The legacy schema's JSON `uuid` field reads
+`d82ce32c-65fa-4ec5-b644-6517a8359133`; that is the source schema's own identifier for
+traceability, not the Form identity Initializer works with at load time, so identify the
+legacy form as `3. Family Planning` v1.0 rather than by that value.
+
+Source state and runtime state are not the same thing here, and the difference is the whole
+point of the note:
+
+- **At source**, the legacy schema is retained as `published=false` and `retired=false`.
+- `retired=false` is intentional at source, not an oversight. Initializer 2.12.0 cannot
+  create a brand-new already-retired form on a clean database — its creation path supplies
+  no retire reason — so a clean install fails if the schema ships retired.
+- **At runtime, `retired=false` is the creation state, not the end state.** On a clean load
+  the legacy v1.0 schema is created first; MCH `3. Family Planning` v2.0 is then loaded
+  under the same form name, and Initializer's same-name replacement path retires v1 with the
+  reason `Replaced with new version by Iniz` before creating v2. Do not read the source
+  `retired=false` as a guarantee about the form's state once a complete load has run.
+- `published=false` withdraws the legacy form independently of any of that: clinicians
+  should no longer launch it for new FP encounters, whatever its retired flag happens to
+  read at a given moment.
+- MCH `3. Family Planning` v2.0 is the active, published workflow once the load completes.
+- Historical encounters stay associated with the legacy form and keep rendering against
+  its preserved v1.0 schema.
+- This PR performs **no patient-data migration**. Existing FP observations are untouched.
 
 ### Mother PNC terminology and schema contract
 
@@ -640,6 +752,69 @@ Updated against the DAK read on 2026-08-06 — see
     PNC fundal height (`EMR.PND.DE27`) should also move to CIEL 1439. They stay declared
     until that analysis is done. `national.fundal-height-cm` is still live in
     `pnc-national.json`.
+23. **"ANC Follow-up Visit" is not converged onto the CIEL ANC terms — UNRESOLVED.**
+    `anc-followup.json` still writes `national.gestational-age-weeks`,
+    `national.fundal-height-cm` and `national.fetal-heart-tone-fht` where "ANC Form" and "ANC
+    Initial Visit" write CIEL 1438 / 1439 / 1440, so DE.22, DE.23 and DE.26 do not form one
+    concept series across Initial + Follow-up. Danger-sign FHT is unaffected — its flag reads
+    both concepts. Deferred deliberately: closing it needs the canonical CIEL mappings for
+    Follow-up decided, existing obs under the national concepts assessed, migration/reporting
+    compatibility determined, and form version/update semantics applied under §9. Until then
+    any flowsheet or indicator on these three elements must read both concepts. See
+    *Converged ANC concepts*; related to item 22.
+24. **Upper bounds for the ANC obstetric counts are unspecified.** Gravida on
+    `anc-initial.json` is a whole-number field (`min: 1`, `step: 1`,
+    `disallowDecimals: true`) because Gravida includes the current pregnancy and
+    must be ≥ 1 for a patient in ANC. Full-term births, preterm births, abortions
+    and living children remain whole-number fields with `min: 0`, `step: 1`,
+    `disallowDecimals: true`. No approved clinical upper bound is currently
+    configured. The remaining open question is whether clinically approved upper
+    bounds should be introduced; that needs clinical/product sign-off before any
+    `max` is configured.
+
+23. **Family Planning Chosen Method vs Method Dispensed use different concepts for the same
+    method.** Chosen carries CIEL 5275 *Intrauterine device* and CIEL 5279 *Injectable
+    contraceptives*; Dispensed carries the national *IUDs* concept and CIEL 907
+    *medroxyprogesterone*. Any indicator counting "IUDs provided" or "injectables provided"
+    across the two questions will **split**. Both answer sets predate this work and both load,
+    so this is an aggregation defect, not a runtime failure. Decide which concept is canonical
+    per method, converge the two questions, and migrate existing observations — the pattern
+    already applied to LMP under *Converged ANC concepts*.
+24. **The next-contact date has no unambiguous observation contract.** CIEL 5096 *Return visit
+    date* is already used on the FP form for the repeat pregnancy test (encounter date + 21
+    days). The one-calendar-month contraceptive implant post-insertion review would need a
+    second value on that same concept in the same encounter — decision-table rules 3 and 4
+    apply to implant clients, so both follow-ups genuinely co-occur — and nothing at the
+    observation level distinguishes them. The form therefore persists **only** the +21-day
+    date. Automatic conversion of next-contact observations into `Appointment` resources is
+    deferred to the separate backend-listener Jira, which needs this contract decided first:
+    a distinct concept per follow-up, or a discriminator (obs grouping, or a coded
+    service/type obs) alongside CIEL 5096.
+25. **The non-amenorrhoeic pregnancy decision-table branches cannot be implemented from the
+    current form inputs.** Rules 19, 22 and 23 of sheet `FP.LO.004-3. PregTestNegative` turn on
+    `FP.DE.056 Type of pregnancy test` = "Highly sensitive", which the FP form does not capture;
+    rules 19 and 22 are otherwise identical and cannot be told apart. Rule 19 is additionally
+    self-inconsistent at source (`Provide method` = 0 while its Action reads "Provide the method
+    now"). Needs the DAK owner — raise with items 10 and 20.
+
+26. **"Oral Contraceptive Pills (Microlut)" has no confirmed decision-table category.**
+    Microlut is a progestogen-only pill and is *deliberately unmapped* in decision table
+    `FP.LO.004-3`, which has no POP branch (recorded against `EMR.FP.DE27` in
+    [`traceability-mch.csv`](../dak/traceability-mch.csv)). It is therefore absent from
+    `fpProvideMethodNow`, `fpEmergencyContraception` and `repeatPregnancyTestDate`, while
+    Microgynon (a combined oral contraceptive) is present. Confirm which decision-table
+    method category, if any, Microlut maps to before applying `FP.LO.004-3` pregnancy
+    guidance to it. Do not infer equivalence with the COC branch from the shared "oral
+    contraceptive" label alone. Raise with items 10, 20 and 25.
+27. **LAM eligibility cannot be conclusively evaluated when Date of Last Delivery is
+    unknown.** The six-month post-partum criterion is guarded by `!isEmpty(dateOfLastDelivery)`,
+    so with the date blank the form shows neither the eligible nor the not-eligible guidance
+    rather than guessing. LAM has no DAK source at all (`no-dak-source` against Chosen
+    method, LAM, Exclusive Breastfeeding and Date of Last Delivery in
+    [`traceability-mch.csv`](../dak/traceability-mch.csv)), so **requiredness is not
+    sourced** and none has been imposed. Confirm with the clinical/DAK owner whether the
+    date should be required for LAM clients, or whether explicit fallback guidance should
+    be shown instead.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
