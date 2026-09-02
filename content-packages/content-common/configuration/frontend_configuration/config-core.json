@@ -26,7 +26,7 @@
   },
   "@openmrs/esm-patient-chart-app": {
     "visitTypeResourceUrl": "/ws/rest/v1/visittype?v=default",
-    "showRecommendedVisitTypeTab": true,
+    "showRecommendedVisitTypeTab": false,
     "visitDiagnosisConceptUuid": "${var.concept.ciel.visit-diagnoses.uuid}"
   },
   "@openmrs/esm-patient-vitals-app": {

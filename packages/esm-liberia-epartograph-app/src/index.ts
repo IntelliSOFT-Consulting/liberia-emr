@@ -40,3 +40,5 @@ export const partographDashboardLink = getAsyncLifecycle(
   () => import('./partograph/partograph-dashboard-link.component'),
   options,
 );
+
+export * from './components/persistent-notification';

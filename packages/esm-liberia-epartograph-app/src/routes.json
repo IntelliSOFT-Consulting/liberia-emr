@@ -1,9 +1,10 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "webservices.rest": "^2.47.0",
-    "fhir2": "^2.0.0"
+    "webservices.rest": ">=2.47.0",
+    "fhir2": ">=2.0.0"
   },
+  "pages": [],
   "extensions": [
     {
       "name": "partograph-dashboard-link",
@@ -13,8 +14,10 @@
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-partograph-dashboard-slot",
-        "path": "Partograph",
-        "title": "Partograph"
+        "path": "partograph",
+        "title": "Partograph",
+        "icon": "omrs-icon-mother",
+        "hideDashboardTitle": true
       },
       "online": true,
       "offline": true

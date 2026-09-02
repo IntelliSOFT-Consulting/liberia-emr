@@ -14,20 +14,40 @@ export const configSchema = {
   encounterTypeUuid: {
     _type: Type.UUID,
     _description: 'Encounter type recorded for each serial partograph observation.',
-    _default: '',
+    _default: '9e2c4f70-4a8d-4c01-87a9-48b2c6f0d2fb',
+  },
+  deliveryEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Encounter type representing delivery outcome / delivery summary.',
+    _default: '7c0a2d58-2e6b-4a9e-a587-26f0a4e8b0d9',
+  },
+  formUuid: {
+    _type: Type.String,
+    _description: 'UUID of the partograph AMPATH form to launch when the user clicks Add.',
+    _default: '41d56853-8338-302e-a9f3-f81e70e797dd',
+  },
+  thirdStageFormUuid: {
+    _type: Type.String,
+    _description: 'UUID of the Stage 3 / Delivery of Infant and Placenta AMPATH form.',
+    _default: 'a1f46814-43c4-3690-9b87-ae4644b8b93a',
   },
   concepts: {
-    cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '' },
-    descentOfHeadUuid: { _type: Type.ConceptUuid, _default: '' },
-    contractionsPerTenMinutesUuid: { _type: Type.ConceptUuid, _default: '' },
-    contractionDurationUuid: { _type: Type.ConceptUuid, _default: '' },
-    amnioticFluidUuid: { _type: Type.ConceptUuid, _default: '' },
-    mouldingUuid: { _type: Type.ConceptUuid, _default: '' },
-    fetalHeartRateUuid: { _type: Type.ConceptUuid, _default: '' },
-    systolicBloodPressureUuid: { _type: Type.ConceptUuid, _default: '' },
-    diastolicBloodPressureUuid: { _type: Type.ConceptUuid, _default: '' },
-    pulseUuid: { _type: Type.ConceptUuid, _default: '' },
-    temperatureUuid: { _type: Type.ConceptUuid, _default: '' },
+    cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '34cffe7c-726f-5da4-ade1-c67e3209f5eb' },
+    descentOfHeadUuid: { _type: Type.ConceptUuid, _default: 'f5306f9f-a41d-5750-9d19-cbc69da9d833' },
+    contractionsPerTenMinutesUuid: { _type: Type.ConceptUuid, _default: '07d345b3-90ff-56fd-ad73-3c64032f3447' },
+    contractionDurationUuid: { _type: Type.ConceptUuid, _default: '70c2a4e6-e083-4ccd-e4b5-a02c4e618305' },
+    amnioticFluidUuid: { _type: Type.ConceptUuid, _default: '92e4c608-02a5-4eef-06d7-c24e60830527' },
+    mouldingUuid: { _type: Type.ConceptUuid, _default: 'b9997fd8-705c-5030-9df3-99704510b444' },
+    fetalHeartRateUuid: { _type: Type.ConceptUuid, _default: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+    systolicBloodPressureUuid: { _type: Type.ConceptUuid, _default: '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+    diastolicBloodPressureUuid: { _type: Type.ConceptUuid, _default: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+    pulseUuid: { _type: Type.ConceptUuid, _default: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+    temperatureUuid: { _type: Type.ConceptUuid, _default: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+    oxytocinUnitsPerLitreUuid: { _type: Type.ConceptUuid, _default: 'a154a798-594f-5161-9fb3-f6281bb97f2a' },
+    drugsAndIvFluidsUuid: { _type: Type.ConceptUuid, _default: '77c2b68a-b814-5179-88b7-ab862f5d9106' },
+    proteinsInUrineUuid: { _type: Type.ConceptUuid, _default: 'ae5975cf-3db6-5af8-bdba-862ffc0971b9' },
+    acetoneInUrineUuid: { _type: Type.ConceptUuid, _default: '3b1719eb-8a36-5954-b8b5-168dba013ed7' },
+    urineVolumeUuid: { _type: Type.ConceptUuid, _default: '8910504d-b468-5616-94b8-35c970ab1324' },
   },
   alertLine: {
     _description:
@@ -52,7 +72,27 @@ export const configSchema = {
 
 export interface EPartographConfig {
   encounterTypeUuid: string;
-  concepts: Record<string, string>;
+  deliveryEncounterTypeUuid?: string;
+  formUuid: string;
+  thirdStageFormUuid?: string;
+  concepts: {
+    cervicalDilationUuid: string;
+    descentOfHeadUuid: string;
+    contractionsPerTenMinutesUuid: string;
+    contractionDurationUuid: string;
+    amnioticFluidUuid: string;
+    mouldingUuid: string;
+    fetalHeartRateUuid: string;
+    systolicBloodPressureUuid: string;
+    diastolicBloodPressureUuid: string;
+    pulseUuid: string;
+    temperatureUuid: string;
+    oxytocinUnitsPerLitreUuid: string;
+    drugsAndIvFluidsUuid: string;
+    proteinsInUrineUuid: string;
+    acetoneInUrineUuid: string;
+    urineVolumeUuid: string;
+  };
   alertLine: {
     startDilationCm: number;
     cmPerHour: number;
