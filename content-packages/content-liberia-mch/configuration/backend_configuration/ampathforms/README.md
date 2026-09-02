@@ -17,9 +17,13 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
 | Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | not written |
 
-The `Variable` column is configuration metadata and repository convention — it is the `uuid`
-each schema carries and keeps content free of bare UUIDs. It is **not** the runtime identity:
-`AmpathFormsLoader` does not read the JSON `uuid` at all (see [Versioning](#versioning)).
+The `Variable` column is the repository alias for each form's **runtime Form UUID**.
+`AmpathFormsLoader` ignores the JSON `uuid` field when deriving Form identity. Runtime
+Form UUID is deterministically derived from name + version (see [Versioning](#versioning)).
+Repository `var.form.*.uuid` values **must** therefore be set to that loader-derived UUID
+so frontend configuration, reports, or other metadata can address the actual Form row.
+The variable is not an independent source of identity; it mirrors the loader-derived
+runtime identity.
 
 ## Labour & Delivery Workflow and the e-Partograph
 
@@ -48,19 +52,28 @@ Do **not** mutate a released form in ways that change clinical meaning
 ([IMPLEMENTATION.md §9](../../../../../IMPLEMENTATION.md)). Meaning-changing form
 changes need a new version and migration analysis.
 
-Initializer's AmpathFormsLoader does **not** use the JSON `uuid` as identity. It
-derives the Form UUID from **name + version**, and the form loaded through Initializer
-**replaces** any previous version of the same name. Keeping multiple JSON schemas
-with the same form name does not preserve independently loaded historical versions.
+Initializer 2.12.0 `AmpathFormsLoader` ignores the JSON `uuid` field. Form UUID is
+derived from namespace + name + version:
 
-**Non-semantic corrections** (validators, min/max bounds, whole-number enforcement,
-validation messages) that keep the same concepts, question meaning, encounter
-semantics, and workflow may retain the existing name and version so Initializer
-updates the existing FormResource.
+`Utils.generateUuidFromObjects("794c4598-ab82-47ca-8d18-483a8abe6f4f", formName, formVersion)`
+
+**Same name + same version** derives the same UUID. The existing Form is found by
+that UUID and the existing Form/FormResource is updated in place. That path is
+appropriate only for **non-semantic corrections** (validators, min/max bounds,
+whole-number enforcement, validation messages) that keep the same concepts, question
+meaning, encounter semantics, and workflow, and where retaining the same form
+identity/version is intentional.
+
+**Same name + bumped version** derives a **new** Form UUID and creates a new Form
+row/version. Initializer's replacement path retires the prior same-name active form.
+The previous Form/FormResource remains available for historical encounters. A version
+bump is therefore the correct mechanism for preserving historical schemas when
+clinical meaning changes.
 
 **Meaning-changing changes** (different concept semantics, repurposed questions,
 altered encounter meaning, a materially different workflow or data interpretation)
-require explicit migration/version analysis per §9.
+require a new version, migration/reporting analysis, and preservation of historical
+rendering/data semantics per §9.
 
 ## Before writing any of these
 

@@ -681,14 +681,15 @@ Updated against the DAK read on 2026-08-06 — see
     compatibility determined, and form version/update semantics applied under §9. Until then
     any flowsheet or indicator on these three elements must read both concepts. See
     *Converged ANC concepts*; related to item 22.
-24. **Upper bounds for the ANC obstetric counts are unspecified.** Gravida, full-term births,
-    preterm births, abortions and living children on `anc-initial.json` enforce non-negative
-    whole numbers (`min: 0`, `step: 1`, `disallowDecimals: true`) per the QA ticket, but carry
-    no `max`. No approved clinical upper bound was supplied and none was invented. Needs
-    clinical/product sign-off before any limit is configured. The same review noted that
-    `min: 0` permits Gravida 0, which is clinically questionable for a patient already in ANC;
-    it implements the ticket's written criterion ("whole values from zero and above") and
-    should not be changed without clinical/product confirmation.
+24. **Upper bounds for the ANC obstetric counts are unspecified.** Gravida on
+    `anc-initial.json` is a whole-number field (`min: 1`, `step: 1`,
+    `disallowDecimals: true`) because Gravida includes the current pregnancy and
+    must be ≥ 1 for a patient in ANC. Full-term births, preterm births, abortions
+    and living children remain whole-number fields with `min: 0`, `step: 1`,
+    `disallowDecimals: true`. No approved clinical upper bound is currently
+    configured. The remaining open question is whether clinically approved upper
+    bounds should be introduced; that needs clinical/product sign-off before any
+    `max` is configured.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any
