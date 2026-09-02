@@ -45,7 +45,7 @@
     "@carbon/charts": "^1.15.0",
     "@carbon/charts-react": "^1.15.0",
     "@carbon/react": "^1.71.0",
-    "@openmrs/esm-patient-common-lib": "next",
+    "@openmrs/esm-patient-common-lib": "12.3.5-pre.12074",
     "lodash-es": "^4.17.21",
     "swr": "^2.2.5"
   },

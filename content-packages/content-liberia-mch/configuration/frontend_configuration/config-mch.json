@@ -21,21 +21,30 @@
     "_comment_epartograph": [
       "The e-partograph is a Custom Build ESM pinned in distribution/distro.properties.",
       "Its clinical concepts are supplied here rather than compiled into the module, so",
-      "a concept correction ships as a config change, not a frontend release."
+      "a concept correction ships as a config change, not a frontend release.",
+      "The formUuid below is the compiled UUID from partograph-national.json."
     ],
     "encounterTypeUuid": "${var.encountertype.partograph.uuid}",
+    "deliveryEncounterTypeUuid": "${var.encountertype.delivery.uuid}",
+    "formUuid": "${var.form.partograph.uuid}",
+    "thirdStageFormUuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
     "concepts": {
       "cervicalDilationUuid": "${var.concept.partograph.cervical-dilation.uuid}",
       "descentOfHeadUuid": "${var.concept.partograph.descent-of-head.uuid}",
       "contractionsPerTenMinutesUuid": "${var.concept.partograph.contractions-per-10min.uuid}",
       "contractionDurationUuid": "${var.concept.partograph.contraction-duration.uuid}",
       "amnioticFluidUuid": "${var.concept.partograph.amniotic-fluid.uuid}",
-      "mouldingUuid": "${var.concept.ciel.moulding.uuid}",
+      "mouldingUuid": "${var.concept.mch.moulding.uuid}",
       "fetalHeartRateUuid": "${var.concept.ciel.fetal-heart-rate.uuid}",
       "systolicBloodPressureUuid": "${var.concept.ciel.systolic-bp.uuid}",
       "diastolicBloodPressureUuid": "${var.concept.ciel.diastolic-bp.uuid}",
       "pulseUuid": "${var.concept.ciel.pulse.uuid}",
-      "temperatureUuid": "${var.concept.ciel.temperature.uuid}"
+      "temperatureUuid": "${var.concept.ciel.temperature.uuid}",
+      "oxytocinUnitsPerLitreUuid": "${var.concept.mch.units-of-oxytocin-litre-given-per-minute.uuid}",
+      "drugsAndIvFluidsUuid": "${var.concept.mch.drugs-given-and-iv-fluids.uuid}",
+      "proteinsInUrineUuid": "${var.concept.mch.proteins-in-urine.uuid}",
+      "acetoneInUrineUuid": "${var.concept.mch.acetone-in-urine.uuid}",
+      "urineVolumeUuid": "${var.concept.mch.urine-volume.uuid}"
     },
     "alertLine": {
       "_comment": "WHO partograph alert/action lines. Confirm against the DAK before go-live.",

@@ -22,3 +22,18 @@ in [`../eip/routes/README.md`](../eip/routes/README.md).
 - **Every access is audited.** Reading another facility's patient record is exactly the
   access pattern the MOH ICT SOPs expect to see logged.
 - **Consent and access policy are the MOH's to set**, and must be agreed before build.
+
+## Design
+
+Identity resolution at central assigns a **Central Person Identifier (CPI)** and maintains a
+link table; this read path resolves a local patient to a CPI and returns the linked view. The
+CPI is never written into a facility database and never typed by a clinician; see
+[sync-eip.md](../../docs/architecture/sync-eip.md) §2.5 for how it is generated, stored and
+attached.
+
+The query flow, and what a query is allowed to return, are designed in
+[`docs/architecture/sync-eip.md`](../../docs/architecture/sync-eip.md) §6 and §3. The scope
+decision is [ADR 0007](../../docs/adr/0007-pulled-record-scope.md) (demographics plus an
+enumerated clinical summary, never full history), and the identity resolution it depends on
+is [ADR 0005](../../docs/adr/0005-cross-facility-identity-reconciliation.md). Both are
+**Proposed** and need MOH sign-off before this is built.

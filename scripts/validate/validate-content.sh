@@ -323,6 +323,62 @@ while IFS= read -r f; do
 done < <(find_src -name '*.csv')
 ok "no blank lines in CSVs"
 
+section "CSV short rows"
+# The blank line above is only the extreme case of a more general one: a row with FEWER
+# cells than the header has columns. Initializer addresses cells by header position, so a
+# row that stops early throws ArrayIndexOutOfBoundsException the moment a line processor
+# reads past its end — and when the row is a concept, every other concept naming it as an
+# answer fails too, with a much less obvious "could not be found in database". That is how
+# 54 of the 126 rows in concepts-mch.csv were rejected while this script stayed green:
+# csv.DictReader pads a short row with None, so none of the checks above could see it.
+#
+# Only SHORT rows are an error. A row with extra trailing cells is tolerated by Initializer
+# (the surplus is past the last named column and never read) and several of the concept
+# exports vendored from upstream have them; failing on those would fail files we do not own.
+#
+# Columns whose name begins with '_' are Initializer directives ('_order:1000',
+# '_version:1') rather than data, and how far a row must reach past them is NOT uniform
+# across domains — so this asks each domain the question it actually answers to.
+#
+# In concepts/, rows must reach the FULL header, directives included. Every concept export
+# that carries directives pads through them, and the one attempt to add '_order:1800' to
+# concepts-national.csv without widening its rows rejected all 142 of them with
+# "Index 9 out of bounds for length 9" — the concept line processors address cells across
+# the whole header. Excluding directives here would have called that change clean.
+#
+# Everywhere else a row may stop before trailing directives: privileges_stockmanagement-
+# common.csv declares '_order:1000' as a 4th column and its 3-cell rows load correctly,
+# because nothing in that domain reads that far.
+python3 - "$PKG_DIR" <<'PY' || err "short CSV rows (see above)"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+
+for f in sorted(glob.glob(f"{pkg_dir}/**/*.csv", recursive=True)):
+    if f"{os.sep}target{os.sep}" in f:
+        continue
+    rel = f[len(pkg_dir) - len("content-packages"):]
+    with open(f, newline="", encoding="utf-8") as fh:
+        rows = list(csv.reader(fh))
+    if not rows:
+        continue
+    in_concepts = f"{os.sep}concepts{os.sep}" in f
+    if in_concepts:
+        width, what = len(rows[0]), "header has"
+    else:
+        width = len([c for c in rows[0] if not c.strip().startswith("_")])
+        what = "header names"
+    for n, row in enumerate(rows[1:], start=2):
+        if len(row) < width:
+            problems.append(f"{rel}:{n} has {len(row)} cells, {what} {width} columns")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "no CSV row stops before its header does"
+
 section "location tags"
 # Two failures live here, and both cost a full install cycle to find the hard way.
 #
@@ -378,6 +434,132 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
 ok "location tags resolve and are declared once"
+
+section "CSV row column counts"
+# Initializer's CsvLine.get(header) accesses line[columnIndex] directly.
+# If a row has fewer columns than the non-metadata headers, it throws ArrayIndexOutOfBoundsException.
+python3 - "$PKG_DIR" <<'PY' || err "CSV row has fewer columns than non-metadata headers"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/**/*.csv", recursive=True)):
+    with open(f, newline="", encoding="utf-8", errors="replace") as fh:
+        reader = csv.reader(fh)
+        try:
+            header = next(reader)
+        except StopIteration:
+            continue
+        data_headers = [h for h in header if not h.startswith("_")]
+        for line_num, row in enumerate(reader, start=2):
+            if len(row) < len(data_headers):
+                problems.append(f"{f[len(pkg_dir)+1:]}:{line_num}: row has {len(row)} columns, expected at least {len(data_headers)}")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "all CSV rows match or exceed data header column count"
+
+section "concept answer dependencies"
+# Initializer processes concept CSV rows sequentially top-to-bottom. If an answer concept is declared
+# in the same CSV file AFTER the question concept referencing it in Answers, Initializer fails to find
+# the answer in the database and throws IllegalArgumentException.
+python3 - "$PKG_DIR" <<'PY' || err "concept references answer declared later in CSV"
+import csv, glob, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/concepts/*.csv")):
+    with open(f, newline="", encoding="utf-8", errors="replace") as fh:
+        reader = list(csv.reader(fh))
+    if not reader:
+        continue
+    header = reader[0]
+    if "Answers" not in header:
+        continue
+    ans_col = header.index("Answers")
+    uuid_col = header.index("Uuid") if "Uuid" in header else 0
+    name_col = header.index("Fully specified name:en") if "Fully specified name:en" in header else 2
+
+    file_concepts = set()
+    for row in reader[1:]:
+        if len(row) > uuid_col and row[uuid_col].strip():
+            file_concepts.add(row[uuid_col].strip())
+        if len(row) > name_col and row[name_col].strip():
+            file_concepts.add(row[name_col].strip())
+
+    seen = set()
+    for line_num, row in enumerate(reader[1:], start=2):
+        if len(row) > ans_col and row[ans_col].strip():
+            for a in row[ans_col].split(";"):
+                a = a.strip()
+                if a in file_concepts and a not in seen:
+                    problems.append(f"{f[len(pkg_dir)+1:]}:{line_num}: forward reference to answer '{a}' before its declaration")
+        if len(row) > uuid_col and row[uuid_col].strip():
+            seen.add(row[uuid_col].strip())
+        if len(row) > name_col and row[name_col].strip():
+            seen.add(row[name_col].strip())
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "all intra-file concept answer dependencies are declared before use"
+
+section "AMPATH form UUID consistency"
+# Initializer's AmpathFormsLoader computes the form entity UUID deterministically from:
+#   Utils.generateUuidFromObjects("794c4598-ab82-47ca-8d18-483a8abe6f4f", formName, formVersion)
+# It does NOT use arbitrary UUIDs. Any variable referenced as the form's UUID must match this derivation.
+python3 - "$PKG_DIR" <<'PY' || err "form UUID variable mismatch (see above)"
+import glob, hashlib, json, os, re, sys, uuid
+
+pkg_dir = sys.argv[1]
+AMPATH_FORMS_UUID = "794c4598-ab82-47ca-8d18-483a8abe6f4f"
+
+def java_uuid(seed):
+    md5 = hashlib.md5(seed.encode("utf-8")).digest()
+    b = bytearray(md5)
+    b[6] = (b[6] & 0x0f) | 0x30
+    b[8] = (b[8] & 0x3f) | 0x80
+    return str(uuid.UUID(bytes=bytes(b)))
+
+variables = {}
+for vf in glob.glob(f"{pkg_dir}/*/configuration/variables.properties"):
+    for line in open(vf):
+        s = line.strip()
+        if s and not s.startswith("#") and "=" in s:
+            k, v = s.split("=", 1)
+            variables[k.strip()] = v.strip()
+
+problems = []
+for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/ampathforms/*.json")):
+    try:
+        d = json.load(open(jf))
+        name = d.get("name")
+        version = d.get("version")
+        uuid_ref = d.get("uuid")
+        if not (name and version and uuid_ref):
+            continue
+        m = re.match(r"\$\{([^}]+)\}", uuid_ref)
+        if not m:
+            continue
+        var_name = m.group(1)
+        declared_uuid = variables.get(var_name)
+        if not declared_uuid:
+            problems.append(f"{jf[len(pkg_dir)+1:]}: references undefined variable ${{{var_name}}}")
+            continue
+        computed_uuid = java_uuid(f"{AMPATH_FORMS_UUID}_{name}_{version}")
+        if declared_uuid != computed_uuid:
+            problems.append(f"{jf[len(pkg_dir)+1:]}: form '{name}' (v{version}) has ${{{var_name}}}={declared_uuid}, expected {computed_uuid}")
+    except Exception as e:
+        problems.append(f"{jf[len(pkg_dir)+1:]}: error {e}")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "all form UUID variables match Initializer deterministic derivation"
 
 echo
 if [[ $fail -ne 0 ]]; then

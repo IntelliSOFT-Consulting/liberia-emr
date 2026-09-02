@@ -1,7 +1,7 @@
 {
   "name": "4. Fourth Stage Monitoring for Woman and Baby",
   "uuid": "${var.form.fourth-stage-monitoring-for-woman-and-baby.uuid}",
-  "version": "1.0",
+  "version": "1.1",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -121,7 +121,7 @@
               "type": "obs",
               "id": "bp_sys",
               "questionOptions": {
-                "concept": "${var.concept.national.blood-pressure-systolic.uuid}",
+                "concept": "${var.concept.ciel.systolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 250,
@@ -140,7 +140,7 @@
               "type": "obs",
               "id": "bp_dia",
               "questionOptions": {
-                "concept": "${var.concept.national.blood-pressure-diastolic.uuid}",
+                "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
                 "max": 200,
