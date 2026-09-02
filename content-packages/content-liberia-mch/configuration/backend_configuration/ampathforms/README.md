@@ -15,7 +15,7 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 | ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
-| Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | not written |
+| 3. Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | released (`family_planning.json`, v2.0) |
 
 The `Variable` column is the repository alias for each form's **runtime Form UUID**.
 `AmpathFormsLoader` ignores the JSON `uuid` field when deriving Form identity. Runtime

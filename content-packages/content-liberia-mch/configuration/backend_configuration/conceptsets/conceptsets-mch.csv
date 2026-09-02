@@ -1,0 +1,12 @@
+Concept,Member,Member Type,Sort Weight,Void/Retire
+${var.concept.national.purpose-of-visit.uuid},${var.concept.mch.fp-purpose-side-effects.uuid},Q-AND-A,2.0,
+${var.concept.national.purpose-of-visit.uuid},${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid},Q-AND-A,3.0,
+${var.concept.national.purpose-of-visit.uuid},${var.concept.mch.fp-purpose-post-partum-fp.uuid},Q-AND-A,4.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.male-condoms.uuid},Q-AND-A,1.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.female-condoms.uuid},Q-AND-A,2.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-cycle-beads.uuid},Q-AND-A,3.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-microgynon.uuid},Q-AND-A,4.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-microlut.uuid},Q-AND-A,5.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid},Q-AND-A,6.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-implants.uuid},Q-AND-A,8.0,
+${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-sayana-press.uuid},Q-AND-A,9.0,

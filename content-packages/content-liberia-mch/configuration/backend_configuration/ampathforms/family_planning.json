@@ -1,0 +1,674 @@
+{
+  "name": "3. Family Planning",
+  "uuid": "${var.form.family-planning.uuid}",
+  "version": "2.0",
+  "published": true,
+  "retired": false,
+  "encounter": "Family Planning Visit",
+  "encounterType": "${var.encountertype.family-planning.uuid}",
+  "processor": "EncounterFormProcessor",
+  "referencedForms": [],
+  "description": "Captures family planning counselling, visit purpose, contraceptive method selection and provision, pregnancy and eligibility assessment, LAM guidance, implant insertion or removal, and follow-up requirements.",
+  "pages": [
+    {
+      "label": "Family Planning Visit",
+      "sections": [
+        {
+          "label": "Visit & Counselling",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-client-type.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.fp-client-new.uuid}",
+                    "label": "New Family Planning Client"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-client-continuing.uuid}",
+                    "label": "Continuing Family Planning Client"
+                  }
+                ]
+              },
+              "id": "familyPlanningClientType",
+              "label": "Family Planning Client Type",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.counselling-done.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "counsellingDone",
+              "label": "Counselling Done",
+              "required": true
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "checkbox",
+                "concept": "${var.concept.national.purpose-of-visit.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.for-commodities.uuid}",
+                    "label": "For Commodities"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid}",
+                    "label": "Jadelle or IUCD Removal"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-purpose-post-partum-fp.uuid}",
+                    "label": "Post-partum Family Planning"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-purpose-side-effects.uuid}",
+                    "label": "Side Effects Management"
+                  }
+                ]
+              },
+              "id": "purposeOfVisit",
+              "label": "Purpose of Visit",
+              "required": true
+            }
+          ]
+        },
+        {
+          "label": "Obstetric Profile",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.gravida.uuid}",
+                "disallowDecimals": true,
+                "step": 1,
+                "min": "0"
+              },
+              "id": "gravida",
+              "label": "Gravida",
+              "required": false
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.parity.uuid}",
+                "disallowDecimals": true,
+                "step": 1,
+                "min": "0"
+              },
+              "id": "parity",
+              "label": "Parity",
+              "required": false
+            }
+          ]
+        },
+        {
+          "label": "Method Record",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.mch.fp-chosen-method.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.fp-implants.uuid}",
+                    "label": "Contraceptive Implants"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-cycle-beads.uuid}",
+                    "label": "Cycle Beads"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.female-condoms.uuid}",
+                    "label": "Female condom"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.injectable-contraceptives.uuid}",
+                    "label": "Injectable contraceptives"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.iud.uuid}",
+                    "label": "Intrauterine device"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-lam.uuid}",
+                    "label": "Lactational Amenorrhea Method (LAM)"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.male-condoms.uuid}",
+                    "label": "Male condom"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-microgynon.uuid}",
+                    "label": "Oral Contraceptive Pills (Microgynon)"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-microlut.uuid}",
+                    "label": "Oral Contraceptive Pills (Microlut)"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-sayana-press.uuid}",
+                    "label": "Sayana Press"
+                  }
+                ]
+              },
+              "id": "chosenFamilyPlanningMethod",
+              "label": "Chosen Family Planning Method"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.national.family-planning-method-dispensed.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.fp-implants.uuid}",
+                    "label": "Contraceptive Implants"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-cycle-beads.uuid}",
+                    "label": "Cycle Beads"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid}",
+                    "label": "Depo-provera"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.female-condoms.uuid}",
+                    "label": "Female condom"
+                  },
+                  {
+                    "concept": "${var.concept.national.iuds.uuid}",
+                    "label": "IUDs"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.male-condoms.uuid}",
+                    "label": "Male condom"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-microgynon.uuid}",
+                    "label": "Oral Contraceptive Pills (Microgynon)"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-microlut.uuid}",
+                    "label": "Oral Contraceptive Pills (Microlut)"
+                  },
+                  {
+                    "concept": "${var.concept.mch.fp-sayana-press.uuid}",
+                    "label": "Sayana Press"
+                  }
+                ]
+              },
+              "id": "familyPlanningMethodDispensed",
+              "label": "Family Planning Method Dispensed",
+              "required": false
+            }
+          ]
+        },
+        {
+          "label": "Pregnancy Assessment",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-amenorrhea.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "amenorrhea",
+              "label": "Amenorrhea (Menses Not Returned)"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-missed-menses.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "missedOrLateMenses",
+              "label": "Missed or Late Menses"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.mch.fp-days-since-unprotected-sex.uuid}",
+                "disallowDecimals": true,
+                "step": 1,
+                "min": "0"
+              },
+              "id": "daysSinceUnprotectedSex",
+              "label": "Days Since Unprotected Sex"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ciel.pregnancy-test-result.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.664.uuid}",
+                    "label": "Negative"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.703.uuid}",
+                    "label": "Positive"
+                  }
+                ]
+              },
+              "id": "pregnancyTestResult",
+              "label": "Pregnancy Test Result"
+            },
+            {
+              "type": "markdown",
+              "id": "fpProvideMethodNow",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && (chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}'))"
+              },
+              "value": [
+                "**Provide the method now.** Pregnancy is not ruled out.",
+                "Schedule a follow-up pregnancy test in 3–4 weeks. Counsel all women to come back any time they have a reason to suspect pregnancy (for example, she misses a period).",
+                "_Liberia decision table FP.LO.004-3 PregTestNegative, rows 1–2._"
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "fpImplantProvideAndCounsel",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}')"
+              },
+              "value": [
+                "**Provide the implant now.** Pregnancy is not ruled out.",
+                "**Counsel about the need to remove the implant if pregnancy is confirmed and she wishes to continue the pregnancy.**",
+                "Schedule a follow-up pregnancy test in 3–4 weeks. Counsel all women to come back any time they have a reason to suspect pregnancy (for example, she misses a period).",
+                "_Liberia decision table FP.LO.004-3 PregTestNegative, rows 3–4._"
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "fpIudDefer",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}')"
+              },
+              "value": [
+                "⚠️ **Do not insert the IUD at this visit.** Pregnancy is not ruled out.",
+                "Advise the woman to use COCs, DMPA or condoms, or to abstain, for 3–4 weeks, then repeat the pregnancy test. **If the second pregnancy test is negative, provide the IUD.**",
+                "Counsel all women to come back any time they have a reason to suspect pregnancy (for example, she misses a period).",
+                "_Liberia decision table FP.LO.004-3 PregTestNegative, rows 9–10._"
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "fpEmergencyContraception",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && ((chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}') || chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}') && !isEmpty(daysSinceUnprotectedSex) && daysSinceUnprotectedSex <= 5)"
+              },
+              "value": [
+                "**Offer emergency contraception.** Unprotected sex was 5 or fewer days ago and pregnancy has not been ruled out.",
+                "_Liberia decision table FP.LO.004-3 PregTestNegative, rows 1, 3 and 9._"
+              ]
+            },
+            {
+              "type": "obs",
+              "id": "repeatPregnancyTestDate",
+              "label": "Repeat pregnancy test due (Encounter Date + 21 days)",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.ciel.return-visit-date.uuid}",
+                "calculate": {
+                  "calculateExpression": "(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && ((chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}') || chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}')) ? addDaysToDate(sessionDate, 21) : null"
+                }
+              },
+              "datePickerFormat": "calendar",
+              "readonly": true,
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && ((chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}') || chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}'))"
+              }
+            }
+          ],
+          "hide": {
+            "hideWhenExpression": "isEmpty(chosenFamilyPlanningMethod) || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.injectable-contraceptives.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-sayana-press.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microgynon.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microlut.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.iud.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}')"
+          }
+        },
+        {
+          "label": "LAM Assessment",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-exclusive-breastfeeding.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "exclusiveBreastfeeding",
+              "label": "Exclusive Breastfeeding"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.mch.fp-date-of-delivery.uuid}"
+              },
+              "id": "dateOfLastDelivery",
+              "label": "Date of Last Delivery",
+              "datePickerFormat": "calendar",
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": false
+                }
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "lamCriteriaMet",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(amenorrhea === '${var.concept.ciel.yes.uuid}' && exclusiveBreastfeeding === '${var.concept.ciel.yes.uuid}' && !isEmpty(dateOfLastDelivery) && dayjs(dateOfLastDelivery).isBefore(dayjs()) && dayjs().isBefore(dayjs(dateOfLastDelivery).add(6, 'month')))"
+              },
+              "value": [
+                "✅ **LAM criteria met.** Menses have not returned, the infant is exclusively breastfed, and the client is within 6 months of delivery. All three WHO conditions for lactational amenorrhoea are satisfied.",
+                "Counsel that protection ends as soon as **any one** of the three stops being true — menses return, breastfeeding reduces, or the infant reaches 6 months — and agree a follow-on method before that point."
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "lamNotEligible",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(chosenFamilyPlanningMethod === '${var.concept.mch.fp-lam.uuid}' && (amenorrhea === '${var.concept.ciel.no.uuid}' || (!isEmpty(dateOfLastDelivery) && dayjs(dateOfLastDelivery).isBefore(dayjs()) && !(dayjs().isBefore(dayjs(dateOfLastDelivery).add(6, 'month'))))))"
+              },
+              "value": [
+                "⚠️ **LAM cannot be relied on.** Either menses have returned or the client is 6 or more months postpartum, so the lactational amenorrhoea method no longer provides contraceptive protection. Counsel on an alternative method."
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "lamBreastfeedingUncertain",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(exclusiveBreastfeeding === '${var.concept.ciel.no.uuid}' && amenorrhea === '${var.concept.ciel.yes.uuid}' && !isEmpty(dateOfLastDelivery) && dayjs(dateOfLastDelivery).isBefore(dayjs()) && dayjs().isBefore(dayjs(dateOfLastDelivery).add(6, 'month')))"
+              },
+              "value": [
+                "ℹ️ **Breastfeeding criterion not confirmed.** This form records *exclusive* breastfeeding only. WHO's LAM criterion is **fully or nearly fully** breastfeeding, which is broader — a client who is not exclusively breastfeeding may still qualify.",
+                "Assess feeding pattern directly before relying on LAM; a 'No' here is not by itself a determination that LAM is unavailable."
+              ]
+            }
+          ],
+          "hide": {
+            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}'"
+          }
+        },
+        {
+          "label": "Implant Eligibility Assessment",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-unexplained-vaginal-bleeding.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "unexplainedVaginalBleeding",
+              "label": "Unexplained Vaginal Bleeding"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-history-breast-cancer.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "historyOfBreastCancer",
+              "label": "History of Breast Cancer"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-severe-liver-disease.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "severeLiverDisease",
+              "label": "Severe Liver Disease"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-current-dvt-pe.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "currentDvtOrPulmonaryEmbolism",
+              "label": "Current DVT or Pulmonary Embolism"
+            },
+            {
+              "type": "markdown",
+              "id": "implantBreastCancerWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(historyOfBreastCancer === '${var.concept.ciel.yes.uuid}')"
+              },
+              "value": [
+                "🚨 **Breast cancer reported — do not proceed on this screen alone.** Under WHO Medical Eligibility Criteria, **current** breast cancer is Category 4 (implants must not be used). **Past** breast cancer with no evidence of disease for 5 years is Category 3 (generally not recommended).",
+                "This form captures *history of breast cancer* as a single yes/no and therefore **cannot distinguish Category 4 from Category 3**. Establish current versus past disease clinically before any implant is provided."
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "implantMecCautionWarning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!((unexplainedVaginalBleeding === '${var.concept.ciel.yes.uuid}' || severeLiverDisease === '${var.concept.ciel.yes.uuid}' || currentDvtOrPulmonaryEmbolism === '${var.concept.ciel.yes.uuid}') && historyOfBreastCancer !== '${var.concept.ciel.yes.uuid}')"
+              },
+              "value": [
+                "⚠️ **WHO MEC Category 3 condition present.** Unexplained vaginal bleeding before evaluation, severe liver disease, and current DVT or pulmonary embolism are each Category 3 for progestogen-only implants: the risks usually outweigh the benefits, so the implant is generally not recommended unless other methods are unavailable or unacceptable, and only with clinical judgement and follow-up.",
+                "Investigate the underlying condition first where the finding is unexplained bleeding."
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "implantScreenNegative",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "!(unexplainedVaginalBleeding === '${var.concept.ciel.no.uuid}' && historyOfBreastCancer === '${var.concept.ciel.no.uuid}' && severeLiverDisease === '${var.concept.ciel.no.uuid}' && currentDvtOrPulmonaryEmbolism === '${var.concept.ciel.no.uuid}')"
+              },
+              "value": [
+                "✅ **No Category 3 or 4 condition found among the four conditions screened here.** This is **not** a complete WHO MEC assessment — the full criteria cover many more conditions. Confirm the remainder of the client's history clinically before providing the implant."
+              ]
+            }
+          ],
+          "hide": {
+            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}'"
+          }
+        },
+        {
+          "label": "Implant Procedure",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.fp-implant-inserted.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              },
+              "id": "implantInserted",
+              "label": "Implant Inserted"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.mch.fp-implant-insertion-date.uuid}"
+              },
+              "id": "implantInsertionDate",
+              "label": "Implant Insertion Date",
+              "datePickerFormat": "calendar",
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": false
+                }
+              ],
+              "required": {
+                "type": "conditionalRequired",
+                "message": "Implant insertion date is required when an implant has been inserted",
+                "referenceQuestionId": "implantInserted",
+                "referenceQuestionAnswers": [
+                  "${var.concept.ciel.yes.uuid}"
+                ]
+              }
+            }
+          ],
+          "hide": {
+            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}'"
+          }
+        },
+        {
+          "label": "Method Removal",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}"
+              },
+              "id": "dateMethodRemoved",
+              "label": "Date Method Removed",
+              "datePickerFormat": "calendar",
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": false
+                }
+              ]
+            }
+          ],
+          "hide": {
+            "hideWhenExpression": "isEmpty(purposeOfVisit) || !arrayContains(purposeOfVisit, '${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid}')"
+          }
+        }
+      ]
+    }
+  ]
+}
