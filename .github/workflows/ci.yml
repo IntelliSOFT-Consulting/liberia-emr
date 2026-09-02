@@ -19,9 +19,27 @@ on:
   # run is the pull_request one. The cost is that a branch gets no CI until a PR
   # exists for it; workflow_dispatch below covers an ad-hoc run before then, and
   # a draft PR gets the full pipeline.
+  #
+  # pull_request_target runs in the context of the BASE repo (upstream), so it
+  # fires even when the PR originates from a fork — eliminating the GitHub
+  # org-level "require approval for fork PRs" gate that was silently skipping CI.
+  # Secrets are still absent on fork PRs (that is a GitHub security invariant),
+  # but every secrets-dependent step already soft-fails gracefully when its
+  # secret is unset (see SONAR_TOKEN, NVD_API_KEY, OCL_API_TOKEN guards below).
+  # All post-merge jobs (publish-latest, deploy-dev, smoke-test, rollback-dev,
+  # dast) are hard-gated on github.event_name == 'push', so they never run on
+  # any pull_request or pull_request_target event.
+  #
+  # IMPORTANT: every checkout in PR-path jobs must specify
+  #   ref: ${{ github.event.pull_request.head.sha }}
+  # On pull_request_target the default ref is the BASE branch, not the
+  # contributor's head — without the override we would test the wrong code.
+  # (On a plain push or workflow_dispatch this key is ignored.)
   push:
     branches: [main]
   pull_request:
+    branches: [main, develop]
+  pull_request_target:
     branches: [main, develop]
   workflow_dispatch:
 
@@ -83,13 +101,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # the diff below needs both ends of the range
+          # pull_request_target defaults to the base branch ref; override so
+          # we diff the contributor's actual head, not the base branch tip.
+          ref: ${{ github.event.pull_request.head.sha }}
       - id: filter
         name: Does this commit touch anything that can change metadata?
         env:
-          # On a PR, compare against the branch point. On a push, against the
-          # commit that was there before. Both come from the event payload;
-          # neither is guaranteed to be usable, which the check below handles.
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          # On a PR (same-repo or fork via pull_request_target), compare
+          # against the branch point. On a push, against the commit before.
+          # Both come from the event payload; neither is guaranteed to be
+          # usable, which the check below handles.
+          BASE_SHA: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -euo pipefail
 
@@ -103,7 +125,8 @@ jobs:
           # Three dots on a PR: changes since the branch point, not changes
           # main has made in the meantime. Two on a push: exactly what the
           # push added.
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          event="${{ github.event_name }}"
+          if [[ "$event" == "pull_request" || "$event" == "pull_request_target" ]]; then
             files="$(git diff --name-only "${BASE_SHA}...HEAD")"
           else
             files="$(git diff --name-only "${BASE_SHA}" HEAD)"
@@ -130,6 +153,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # no-secrets.sh uses git ls-files and git grep
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Validate JSON / CSV / version discipline / variables
         run: ./scripts/validate/validate-content.sh
       - name: Refuse secrets, keys and PHI
@@ -172,6 +196,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0   # sonar wants blame history
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -249,6 +274,8 @@ jobs:
     needs: build-test
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -277,6 +304,8 @@ jobs:
       NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -350,6 +379,8 @@ jobs:
       OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -420,6 +451,8 @@ jobs:
       OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -524,6 +557,8 @@ jobs:
     needs: initializer-clean-db
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Cypress
         run: 'echo "TODO: qa/e2e — see qa/e2e/README.md"'
 
@@ -536,6 +571,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
