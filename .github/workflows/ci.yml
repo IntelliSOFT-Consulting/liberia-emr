@@ -561,6 +561,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/e2e-certs"
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
             -subj "/CN=liberiaemr-e2e" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
             -keyout "$RUNNER_TEMP/e2e-certs/privkey.pem" \
             -out    "$RUNNER_TEMP/e2e-certs/fullchain.pem"
 
@@ -615,7 +616,7 @@ jobs:
       - name: Wait for the gateway to serve the SPA
         run: |
           deadline=$(( SECONDS + 120 ))
-          until curl -sk -o /dev/null https://localhost/openmrs/spa/; do
+          until curl -fsk -o /dev/null https://localhost/openmrs/spa/; do
             if (( SECONDS > deadline )); then
               echo "FAIL: gateway did not serve /openmrs/spa/ within 2 minutes" >&2
               docker compose \
