@@ -1,0 +1,23 @@
+@use '@carbon/layout';
+
+.persistentNotificationContainer {
+  position: fixed;
+  bottom: layout.$spacing-06;
+  left: layout.$spacing-06;
+  z-index: 9001;
+  width: 22rem;
+  max-width: calc(100vw - 3rem);
+  pointer-events: auto;
+
+  :global(.cds--actionable-notification),
+  :global(.cds--inline-notification) {
+    width: 100%;
+    margin: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+
+  // Elevate above bottom navigation on tablets and smaller screens
+  :global(.omrs-breakpoint-lt-desktop) & {
+    bottom: 5.5rem;
+  }
+}

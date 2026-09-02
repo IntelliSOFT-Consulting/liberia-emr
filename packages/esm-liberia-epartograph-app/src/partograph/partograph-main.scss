@@ -1,0 +1,179 @@
+// partograph-main.scss
+// Styles for the WHO Electronic Partograph widget.
+// Mirrors the design of liberia-obs-widget for visual consistency.
+
+.widgetContainer {
+  background-color: #ffffff;
+  border: 1px solid var(--cds-border-subtle);
+  margin-bottom: 1rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loadingIndicator {
+  display: flex;
+  align-items: center;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Graph container
+// ──────────────────────────────────────────────────────────────────────────────
+
+.graphWidgetContainer {
+  display: flex;
+  margin: 0 1rem;
+  flex-direction: row;
+  justify-content: space-between;
+
+  // Fix Carbon Charts overflow menu position
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options) {
+    inset-inline-start: auto !important;
+    inset-inline-end: 0;
+    width: auto;
+    min-width: 0;
+    margin-top: 0.5rem;
+  }
+
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options .cds--overflow-menu-options__option) {
+    inline-size: auto;
+  }
+
+  :global(.cds--chart-holder .cds--cc--toolbar .cds--overflow-menu-options .cds--overflow-menu-options__btn) {
+    max-inline-size: none !important;
+  }
+
+  :global(.cds--tabs--vertical ~ .cds--tab-content) {
+    overflow-y: visible;
+  }
+}
+
+.conceptPickerTabs {
+  margin: 0.5rem 0;
+  flex-grow: 1;
+}
+
+.vitalsSignLabel {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.33333;
+  letter-spacing: 0.32px;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.tabsAndChartArea {
+  :global(.cds--tabs--vertical) {
+    min-height: 24rem;
+  }
+
+  :global(.cds--tabs--vertical .cds--tab-list) {
+    background-color: var(--cds-layer-01, #f4f4f4);
+  }
+}
+
+.lineChartContainer {
+  flex-grow: 1;
+  margin: 0.5rem 0;
+
+  :global {
+    // Hide dots on ALERT and ACTION reference lines so only monitored patient data has points
+    circle.dot[style*="#161616"],
+    circle.dot[style*="rgb(22, 22, 22)"],
+    circle.dot[style*="rgb(22,22,22)"],
+    circle.dot[style*="stroke: #161616"],
+    circle.dot[style*="stroke:#161616"],
+    circle.dot[style*="stroke: rgb(22, 22, 22)"],
+    circle.dot[style*="stroke:rgb(22,22,22)"],
+    circle.dot[style*="fill: #161616"],
+    circle.dot[style*="fill:#161616"],
+    circle.dot[style*="fill: rgb(22, 22, 22)"],
+    circle.dot[style*="fill:rgb(22,22,22)"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      r: 0 !important;
+      pointer-events: none !important;
+    }
+
+    // Give ALERT and ACTION reference lines a crisp solid stroke matching WHO design
+    path.line[style*="#161616"],
+    path.line[style*="rgb(22, 22, 22)"],
+    path.line[style*="rgb(22,22,22)"] {
+      stroke-width: 2.5px !important;
+    }
+  }
+}
+
+.graphPlaceholder {
+  padding: 2rem;
+  text-align: center;
+  color: var(--cds-text-secondary);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Vertical tab styles (Clinical parameter selector on the left side)
+// ──────────────────────────────────────────────────────────────────────────────
+
+.tab {
+  outline: 0;
+  outline-offset: 0;
+  min-height: 2rem !important;
+  height: 2rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+
+  & > * {
+    min-height: 2rem !important;
+    height: 2rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  &:active,
+  &:focus {
+    outline: 2px solid var(--brand-03, #0f62fe) !important;
+  }
+
+  &[aria-selected='true'] {
+    box-shadow: inset 4px 0 0 0 var(--brand-03, #0f62fe) !important;
+    margin-inline-start: 0 !important;
+    line-height: normal !important;
+    background-color: var(--cds-layer, #ffffff) !important;
+    font-weight: 600 !important;
+  }
+
+  &[aria-selected='false'] {
+    border-bottom: none;
+    border-inline-start: 2px solid var(--cds-border-subtle, #e0e0e0) !important;
+    margin-inline-start: 0 !important;
+    background-color: transparent !important;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Observation table (table view)
+// ──────────────────────────────────────────────────────────────────────────────
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.pageInfo {
+  font-size: var(--cds-label-01-font-size);
+  color: var(--cds-text-secondary);
+}

@@ -17,9 +17,14 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
 | Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | not written |
 
-Intrapartum observations are **not** a form. They are captured by
-`packages/esm-liberia-epartograph-app` against the `Partograph Observation` encounter type,
-because a serial time-plotted chart is not something the form engine renders.
+## Labour & Delivery Workflow and the e-Partograph
+
+Labour and Delivery in Liberia EMR follows the 4 clinical stages:
+
+1. **Stage 1 (Labour Admission / Latent phase):** `1. First and Second Stage of Labor and Delivery`. Records admission examination, baseline history, and initial vaginal examination. When cervical dilatation reaches $\ge 4\text{ cm}$, active labour begins.
+2. **Active Labour Monitoring (Partograph):** Serial observations are recorded on the Partograph form (`partograph-national.json` / `2. Partograph`) and visualised by `packages/esm-liberia-epartograph-app` plotted against WHO Alert and Action lines.
+3. **Stage 3 (Delivery):** `3. Third Stage of Labor and Delivery` or `Delivery Summary`. Captures delivery of infant and placenta, APGAR, AMTSL, and blood loss. **Clinically concludes the Partograph.** When a Stage 3 or Delivery encounter is recorded, the Partograph CDS engine automatically suppresses intrapartum alerts ("Update Due", "Action Line").
+4. **Stage 4 (Immediate Postpartum):** `4. Fourth Stage Monitoring for Woman and Baby`. Monitors maternal recovery, uterine tone, lochia, and newborn feeding for the first 1–2 hours post-delivery. These are kept distinct from the intrapartum partograph table.
 
 ## Layout
 
