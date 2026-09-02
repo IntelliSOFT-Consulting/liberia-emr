@@ -14,6 +14,8 @@ class VisitPage {
             birthdate: randomAdultBirthdateParts()
         });
         this.registrationPage.clickRegisterPatient();
+        cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
+        cy.contains('button', 'Actions', { timeout: 20000 }).should('be.visible');
     }
 
     startVisit(visitType?: string, paymentDetails: 'paying' | 'non-paying' = 'paying') {
