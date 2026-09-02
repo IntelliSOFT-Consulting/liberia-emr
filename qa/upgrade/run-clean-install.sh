@@ -33,17 +33,23 @@ COMPOSE="$ROOT/distribution/compose/facility/docker-compose.yml"
 ENV_FILE="$ROOT/qa/upgrade/clean-install.env"
 VERSION="${LIBERIAEMR_VERSION:-1.0.0-SNAPSHOT}"
 FRONTEND="true"
+PROJECT_NAME="${COMPOSE_PROJECT_NAME:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version)     VERSION="$2"; shift 2 ;;
     --no-frontend) FRONTEND="false"; shift ;;
+    --project-name) PROJECT_NAME="$2"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
+dc() {
+  docker compose -f "$COMPOSE" --env-file "$ENV_FILE" ${PROJECT_NAME:+-p "$PROJECT_NAME"} "$@"
+}
+
 cleanup() {
-  docker compose -f "$COMPOSE" --env-file "$ENV_FILE" down -v >/dev/null 2>&1 || true
+  dc down -v >/dev/null 2>&1 || true
   rm -f "$ENV_FILE"
   rm -rf "$ROOT/qa/upgrade/.ci-certs"
 }
@@ -87,7 +93,7 @@ TLS_CERT_DIR=${CERT_DIR}
 CENTRAL_URL=http://localhost
 ENV
 echo "== starting a clean stack at ${VERSION} =="
-docker compose -f "$COMPOSE" --env-file "$ENV_FILE" up -d db backend
+dc up -d db backend
 
 echo "== waiting for the backend to report started =="
 # Initializer logs a rejected row and carries on, so a boot that completes is NOT by itself
@@ -124,7 +130,11 @@ probe_missing_uuids() {
   echo "  are the unresolved UUIDs in the database at the END of the run?" >&2
   echo "  (present => load order between CSVs; absent => never created)" >&2
   in_list="$(sed "s/^/'/; s/$/'/" <<<"$missing" | paste -sd, -)"
-  docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+  # Through dc(), not a raw `docker compose`: dc() carries -p "$PROJECT_NAME", and without it
+  # this query addresses a different compose project than the stack under test — returning
+  # nothing, and reporting every UUID as absent when they may well be present. That is the
+  # exact distinction the probe exists to draw, so getting it wrong here is worse than useless.
+  dc exec -T db \
     mariadb -uroot -p"$DB_ROOT_PASSWORD" -t -e \
     "select c.uuid, n.name, c.retired
        from openmrs.concept c
@@ -139,7 +149,7 @@ probe_missing_uuids() {
 
 TIMEOUT="${CLEAN_INSTALL_TIMEOUT:-5400}"
 deadline=$(( SECONDS + TIMEOUT ))
-until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+until dc exec -T backend \
         curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
   if (( SECONDS > deadline )); then
     echo "FAIL: backend did not start within $(( TIMEOUT / 60 )) minutes" >&2
@@ -148,12 +158,12 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
     echo "  healthy and only needed longer (CLEAN_INSTALL_TIMEOUT raises the budget)." >&2
     echo "  A suspended host burns wall-clock without doing work; this script holds macOS" >&2
     echo "  awake, but a VM or CI runner that suspends will fail here for the same reason." >&2
-    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+    dc exec -T db \
       mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
       'select concat("concepts: ", count(*),
                      ", OCL items: ", (select count(*) from openmrs.openconceptlab_item))
          from openmrs.concept;' >&2 2>/dev/null || true
-    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 200 backend >&2
+    dc logs --tail 200 backend >&2
     exit 1
   fi
   # A metadata failure does not stop the backend, so this would otherwise wait out the whole
@@ -161,10 +171,10 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
   # the failure is in the log. Matched on Initializer's own loader rather than 'error'
   # anywhere, because the boot legitimately logs unrelated errors (a Tomcat filter warning,
   # a Liquibase notice) that say nothing about whether the configuration applied.
-  if docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend 2>/dev/null \
+  if dc logs backend 2>/dev/null \
        | grep -qE 'could not be constructed or saved|Unable to start OpenMRS'; then
     echo "FAIL: Initializer could not apply the configuration" >&2
-    backend_log="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend 2>/dev/null || true)"
+    backend_log="$(dc logs backend 2>/dev/null || true)"
     grep -A6 'could not be constructed or saved' <<<"$backend_log" | head -60 >&2
     probe_missing_uuids "$backend_log"
     exit 1
@@ -181,7 +191,7 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
   # its final value early and then sits flat for over an hour while the 300,000 mappings
   # import, which reads as a hang and is not one. The item count keeps moving throughout.
   loaded=""
-  if query_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+  if query_out="$(dc exec -T db \
        mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
        'select concat(count(*), " concepts, ",
                       (select count(*) from openmrs.openconceptlab_item), " OCL items, ",
@@ -195,7 +205,7 @@ until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
 done
 
 echo "== asserting Initializer completed without error =="
-logs="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs backend)"
+logs="$(dc logs backend)"
 
 # A reachable backend does NOT mean the metadata applied. Initializer logs a rejected row
 # and moves on, and its module failing to start does not stop the web application, so
@@ -239,7 +249,7 @@ echo "   waiting for Initializer to finish applying metadata"
 iniz_deadline=$(( SECONDS + 3600 ))
 while true; do
   state=""
-  if state_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+  if state_out="$(dc exec -T db \
        mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
        'select concat((select count(*) from openmrs.openconceptlab_import where local_date_stopped is null),
                       ":", (select count(*) from openmrs.order_frequency));' 2>/dev/null)"; then
@@ -254,13 +264,13 @@ while true; do
   if (( SECONDS > iniz_deadline )); then
     echo "FAIL: Initializer did not finish within 60 minutes" >&2
     echo "  imports still running: ${running:-?}, order frequencies: ${freqs:-0}" >&2
-    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 60 backend >&2
+    dc logs --tail 60 backend >&2
     exit 1
   fi
   sleep 20
 done
 
-iniz_log="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+iniz_log="$(dc exec -T backend \
   cat /openmrs/data/initializer.log 2>/dev/null || true)"
 
 # An EMPTY log is a pass, not a failure. This used to read "no log means it did not run",
@@ -268,7 +278,7 @@ iniz_log="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend 
 # content came clean, success started failing the gate. What actually proves Initializer ran
 # is metadata in the database that nothing else creates, so assert that directly.
 echo "== asserting Initializer applied its metadata =="
-sentinels="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+sentinels="$(dc exec -T db \
   mariadb -uroot -p"$DB_ROOT_PASSWORD" -N -e \
   'select concat((select count(*) from openmrs.order_frequency), " ",
                  (select count(*) from openmrs.location_tag_map), " ",
@@ -292,7 +302,7 @@ if grep -q 'ERROR' <<<"$iniz_log"; then
   # record of WHY the run failed is the excerpt below — and an Initializer rejection prints a
   # full ASCII table per row, so 40 lines is often a single failure. Diagnosing the rest then
   # costs another full install.
-  if cp_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+  if cp_out="$(dc exec -T backend \
        cat /openmrs/data/initializer.log 2>/dev/null)"; then
     printf '%s\n' "$cp_out" > "$ROOT/qa/upgrade/initializer-failure.log"
     echo "  full log saved to qa/upgrade/initializer-failure.log" >&2
@@ -324,7 +334,7 @@ if grep -q 'ERROR' <<<"$iniz_log"; then
   if grep -q 'Errors found' <<<"$iniz_log"; then
     echo >&2
     echo "  'Errors found' is an OCL import failure. Failed items:" >&2
-    docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T db \
+    dc exec -T db \
       mariadb -uroot -p"$DB_ROOT_PASSWORD" -t -e \
       'select i.type, left(i.url, 60) as url, left(i.error_message, 90) as error
          from openmrs.openconceptlab_item i
@@ -345,7 +355,7 @@ fi
 
 if [[ "$FRONTEND" == "true" ]]; then
   echo "== starting the frontend and the gateway =="
-  docker compose -f "$COMPOSE" --env-file "$ENV_FILE" up -d frontend gateway
+  dc up -d frontend gateway
 
   # The gateway is the only way anyone actually reaches this stack, and it fails CLOSED on a
   # bad certificate mount or a proxy_pass naming a service that is not there. Leaving it out
@@ -354,11 +364,11 @@ if [[ "$FRONTEND" == "true" ]]; then
   # depend on host ports 80/443 being free. -k because the CI certificate is self-signed.
   echo "== asserting the gateway serves the SPA and the API =="
   gw_deadline=$(( SECONDS + 120 ))
-  until docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+  until dc exec -T backend \
           curl -fsk -o /dev/null https://gateway/openmrs/spa/ 2>/dev/null; do
     if (( SECONDS > gw_deadline )); then
       echo "FAIL: gateway did not serve /openmrs/spa/ within 2 minutes" >&2
-      docker compose -f "$COMPOSE" --env-file "$ENV_FILE" logs --tail 40 gateway >&2
+      dc logs --tail 40 gateway >&2
       exit 1
     fi
     sleep 5
@@ -368,7 +378,7 @@ if [[ "$FRONTEND" == "true" ]]; then
   # Same rule as the progress query above: a non-zero exec must not kill the run before the
   # assertion below can report what actually happened.
   code=""
-  if code_out="$(docker compose -f "$COMPOSE" --env-file "$ENV_FILE" exec -T backend \
+  if code_out="$(dc exec -T backend \
        curl -s -o /dev/null -w '%{http_code}' http://gateway/ 2>/dev/null)"; then
     code="$(printf '%s' "$code_out" | tr -d '[:space:]')"
   fi

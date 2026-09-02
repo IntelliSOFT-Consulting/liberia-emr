@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Build frontend packages
@@ -82,43 +82,73 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Version & Publish Pre-releases to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
+          failed=()
+
           for pkg_dir in packages/*; do
             [ -d "$pkg_dir" ] || continue
+            [ -f "$pkg_dir/package.json" ] || continue
             pkg_name=$(basename "$pkg_dir")
 
-            if [[ -f "$pkg_dir/package.json" ]]; then
-              if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
-                echo "== Skipping $pkg_name (private) =="
-                continue
+            if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
+              echo "== Skipping $pkg_name (private) =="
+              continue
+            fi
+
+            echo "== Packaging and Publishing $pkg_name (pre-release) =="
+            # Each package runs in its own subshell so one failure does not
+            # abandon the packages that come after it in the loop. The subshell
+            # is a standalone command, never an `if` condition — bash suppresses
+            # errexit inside a condition, which would let a failed build publish.
+            set +e
+            (
+              set -euo pipefail
+              cd "$pkg_dir"
+
+              # Read the published name from package.json — the directory
+              # basename is unscoped and will not resolve on the registry.
+              npm_name=$(node -p "require('./package.json').name")
+              base_version=$(node -p "require('./package.json').version.split('-')[0]")
+              pre_version="${base_version}-pre.${RUN_NUMBER}"
+
+              # Re-runs reuse github.run_number, so skip what is already up.
+              if npm view "${npm_name}@${pre_version}" version >/dev/null 2>&1; then
+                echo "${npm_name}@${pre_version} already published — skipping"
+                exit 0
               fi
 
-              echo "== Packaging and Publishing $pkg_name (pre-release) =="
-              (
-                cd "$pkg_dir"
-                yarn install --frozen-lockfile
-                yarn typescript
-                yarn build
+              yarn install --frozen-lockfile
+              yarn typescript
+              yarn build
 
-                # Extract base version from package.json
-                base_version=$(node -p "require('./package.json').version.split('-')[0]")
-                pre_version="${base_version}-pre.${{ github.run_number }}"
+              echo "Updating version to ${pre_version}"
+              npm version "$pre_version" --no-git-tag-version --allow-same-version
 
-                echo "Updating version to ${pre_version}"
-                npm version "$pre_version" --no-git-tag-version --allow-same-version
-
-                echo "Publishing ${pkg_name}@${pre_version} with tag 'next'..."
-                npm publish --access public --tag next
-              )
+              echo "Publishing ${npm_name}@${pre_version} with tag 'next'..."
+              npm publish --access public --tag next
+            )
+            status=$?
+            set -e
+            if (( status != 0 )); then
+              echo "::error::Pre-release publish failed for ${pkg_name}"
+              failed+=("$pkg_name")
             fi
           done
+
+          if (( ${#failed[@]} > 0 )); then
+            echo "::error::Pre-release publish failed for: ${failed[*]}"
+            exit 1
+          fi
+
+          echo "All pre-release packages published."
 
   release:
     name: Publish Stable Release to npm
@@ -134,7 +164,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Publish Stable Releases to npm
@@ -142,31 +172,58 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
         run: |
           set -euo pipefail
+          failed=()
+
           for pkg_dir in packages/*; do
             [ -d "$pkg_dir" ] || continue
+            [ -f "$pkg_dir/package.json" ] || continue
             pkg_name=$(basename "$pkg_dir")
 
-            if [[ -f "$pkg_dir/package.json" ]]; then
-              if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
-                echo "== Skipping $pkg_name (private) =="
-                continue
+            if [[ "$(node -p "require('./$pkg_dir/package.json').private === true")" == "true" ]]; then
+              echo "== Skipping $pkg_name (private) =="
+              continue
+            fi
+
+            echo "== Packaging and Publishing $pkg_name (stable release) =="
+            # Each package runs in its own subshell so one failure does not
+            # abandon the packages that come after it in the loop. The subshell
+            # is a standalone command, never an `if` condition — bash suppresses
+            # errexit inside a condition, which would let a failed build publish.
+            set +e
+            (
+              set -euo pipefail
+              cd "$pkg_dir"
+
+              # Read the published name from package.json — the directory
+              # basename is unscoped and will not resolve on the registry.
+              npm_name=$(node -p "require('./package.json').name")
+              pkg_version="${GITHUB_REF_NAME#v}"
+
+              if npm view "${npm_name}@${pkg_version}" version >/dev/null 2>&1; then
+                echo "${npm_name}@${pkg_version} already published — skipping"
+                exit 0
               fi
 
-              echo "== Packaging and Publishing $pkg_name (stable release) =="
-              (
-                cd "$pkg_dir"
-                yarn install --frozen-lockfile
-                yarn typescript
-                yarn build
+              yarn install --frozen-lockfile
+              yarn typescript
+              yarn build
 
-                pkg_version="${GITHUB_REF_NAME#v}"
-                npm version "$pkg_version" --no-git-tag-version --allow-same-version
-                if npm view "${pkg_name}@${pkg_version}" version >/dev/null 2>&1; then
-                  echo "${pkg_name}@${pkg_version} already published — skipping"
-                else
-                  echo "Publishing ${pkg_name}@${pkg_version} with tag 'latest'..."
-                  npm publish --access public --tag latest
-                fi
-              )
+              npm version "$pkg_version" --no-git-tag-version --allow-same-version
+
+              echo "Publishing ${npm_name}@${pkg_version} with tag 'latest'..."
+              npm publish --access public --tag latest
+            )
+            status=$?
+            set -e
+            if (( status != 0 )); then
+              echo "::error::Stable release publish failed for ${pkg_name}"
+              failed+=("$pkg_name")
             fi
           done
+
+          if (( ${#failed[@]} > 0 )); then
+            echo "::error::Stable release publish failed for: ${failed[*]}"
+            exit 1
+          fi
+
+          echo "All stable release packages published."
