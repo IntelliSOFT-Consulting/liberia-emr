@@ -1,8 +1,8 @@
 import { loginWithSession } from '../support/session';
-import Visit from '../pages/visit';
+import VisitPage from '../pages/visit';
 
 describe('Visit', () => {
-    const visitPage = new Visit();
+    const visitPage = new VisitPage();
 
     beforeEach(() => {
         loginWithSession();

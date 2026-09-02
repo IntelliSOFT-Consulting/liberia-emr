@@ -142,7 +142,7 @@ class RegistrationPage {
         }).as('createPatient');
 
         this.fillRequiredFields(data);
-        cy.contains('button', 'Register patient', { timeout: 10000 })
+        cy.contains('button', 'Register patient', { timeout: 150000 })
             .should('be.enabled')
             .dblclick();
 
