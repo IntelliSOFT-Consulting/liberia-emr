@@ -6,7 +6,7 @@
   ],
   "@openmrs/esm-patient-chart-app": {
     "visitTypeResourceUrl": "/ws/rest/v1/visittype?v=default",
-    "showRecommendedVisitTypeTab": true
+    "showRecommendedVisitTypeTab": false
   },
   "@openmrs/esm-patient-programs-app": {
     "_comment_programs": "Programme UUIDs come from variables.properties; never inline one here.",
