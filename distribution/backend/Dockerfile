@@ -126,3 +126,20 @@ COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/
 # on Initializer's own log, which records the failures under either mode. Switch this to
 # fail_on_error only once that gate is green.
 ENV OMRS_CONFIG_INITIALIZER_STARTUP_LOAD=continue_on_error
+
+# Row-level checksums: Initializer tracks a checksum per CSV row rather than per file.
+# Without this, adding new rows to an existing concept CSV (e.g. concepts-national.csv)
+# can be silently skipped on an in-place upgrade — the file-level checksum changes, but
+# if the resolved output is identical to the previous build's cached checksum (e.g. because
+# variable resolution produced the same bytes), Initializer skips the whole file and the
+# new concept is never inserted, causing "getConcept() is null" REST errors when saving forms.
+# With row checksums enabled, every new row has no stored checksum and is always loaded.
+# Existing unchanged rows are still skipped (idempotent and fast).
+#
+# NOTE: OMRS_CONFIG_* only covers a hardcoded list in openmrs-core's startup_init.sh —
+# it does NOT generically map to runtime properties. The correct way to set custom module
+# properties in Docker is via -D JVM system properties in JAVA_OPTS, which Initializer reads
+# via System.getProperty() before falling back to Context.getRuntimeProperties().
+# See: InitializerConfig.init() → Utils.getPropertyValue() → System.getProperties()
+# The actual -Dinitializer.row.checksums.enabled=true flag lives in JAVA_OPTS in
+# distribution/compose/*/docker-compose.yml (compose overrides Dockerfile ENV for JAVA_OPTS).

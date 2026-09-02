@@ -50,7 +50,7 @@ services:
       # this is the same behaviour spelled validly. See distribution/backend/Dockerfile for
       # why fail_on_error is not the safer-sounding choice it appears to be.
       OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error
-      JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
+      JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia -Dinitializer.row.checksums.enabled=true
     volumes:
       - openmrs-data:/openmrs/data
     healthcheck:

@@ -59,6 +59,7 @@ services:
       JAVA_OPTS: >-
         -Xmx${BACKEND_HEAP:-3g}
         -Duser.timezone=Africa/Monrovia
+        -Dinitializer.row.checksums.enabled=true
     volumes:
       - openmrs-data:/openmrs/data
     healthcheck:
