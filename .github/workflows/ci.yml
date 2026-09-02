@@ -518,14 +518,148 @@ jobs:
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
-    # Skips along with initializer-clean-db on a commit that cannot change
-    # metadata, which is correct: it exists to exercise the stack that job
-    # builds. Nothing to do here until qa/e2e is written either way.
-    needs: initializer-clean-db
+    # No `needs:` on purpose — it must run on every commit, not only the ones
+    # initializer-clean-db's own metadata gate lets through. Nothing built by
+    # initializer-clean-db or docker-build is reusable here anyway: both build
+    # with plain `docker build` into their own runner's local daemon and
+    # neither pushes or saves an artifact (the only push happens in
+    # publish-latest, post-merge, gated on `needs: gate` — which this job is
+    # itself a dependency of). So this job builds its own throwaway --demo
+    # images and boots them itself, per docs/runbooks/demo-stack.md.
+    env:
+      REGISTRY: intellisoftdev
+      LIBERIAEMR_VERSION: 0.0.0-ci
     steps:
       - uses: actions/checkout@v4
+      # Needed to build the demo images below (build-distribution.sh runs `mvn package` to
+      # resolve content-packages before the Docker build stage) — nothing upstream produced
+      # an image this job can reuse instead, see above.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Cypress test dependencies
+        working-directory: qa/e2e
+        run: npm ci
+
+      # --demo: the priority journeys log in as admin/Admin123, which only content-demo
+      # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —
+      # Cypress drives the real SPA, unlike initializer-clean-db.
+      - name: Build the demo images under test
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version "$LIBERIAEMR_VERSION" --site careysburg --demo
+
+      # Self-signed and thrown away with the stack, same as qa/upgrade/run-clean-install.sh —
+      # the gateway will not start at all without fullchain.pem/privkey.pem present.
+      - name: Generate a throwaway TLS certificate for the gateway
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e-certs"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj "/CN=liberiaemr-e2e" \
+            -keyout "$RUNNER_TEMP/e2e-certs/privkey.pem" \
+            -out    "$RUNNER_TEMP/e2e-certs/fullchain.pem"
+
+      # Ephemeral credentials for a database that lives only as long as this job — never a
+      # facility secret. cypress.env.json is for local development only and must never drive
+      # a CI run (Cypress base URL comes from CYPRESS_BASE_URL below instead).
+      - name: Start the disposable demo stack
+        run: |
+          cat > "$RUNNER_TEMP/e2e.env" <<ENV
+          REGISTRY=${REGISTRY}
+          LIBERIAEMR_VERSION=${LIBERIAEMR_VERSION}
+          FACILITY_CODE=careysburg
+          MYSQL_DATABASE=openmrs
+          MYSQL_USER=openmrs
+          MYSQL_PASSWORD=ci-ephemeral
+          MYSQL_ROOT_PASSWORD=ci-ephemeral-root
+          OMRS_CREATE_TABLES=true
+          TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
+          CENTRAL_URL=http://localhost
+          ENV
+          docker compose \
+            -f distribution/compose/facility/docker-compose.yml \
+            -f distribution/compose/facility/docker-compose.demo.yml \
+            --env-file "$RUNNER_TEMP/e2e.env" up -d db backend
+
+      - name: Wait for the backend to become healthy
+        run: |
+          deadline=$(( SECONDS + 1800 ))
+          until docker compose \
+                  -f distribution/compose/facility/docker-compose.yml \
+                  -f distribution/compose/facility/docker-compose.demo.yml \
+                  --env-file "$RUNNER_TEMP/e2e.env" exec -T backend \
+                  curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
+            if (( SECONDS > deadline )); then
+              echo "FAIL: backend did not become healthy within 30 minutes" >&2
+              docker compose \
+                -f distribution/compose/facility/docker-compose.yml \
+                -f distribution/compose/facility/docker-compose.demo.yml \
+                --env-file "$RUNNER_TEMP/e2e.env" logs --tail 200 backend >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Start the frontend and the gateway
+        run: |
+          docker compose \
+            -f distribution/compose/facility/docker-compose.yml \
+            -f distribution/compose/facility/docker-compose.demo.yml \
+            --env-file "$RUNNER_TEMP/e2e.env" up -d frontend gateway
+
+      - name: Wait for the gateway to serve the SPA
+        run: |
+          deadline=$(( SECONDS + 120 ))
+          until curl -sk -o /dev/null https://localhost/openmrs/spa/; do
+            if (( SECONDS > deadline )); then
+              echo "FAIL: gateway did not serve /openmrs/spa/ within 2 minutes" >&2
+              docker compose \
+                -f distribution/compose/facility/docker-compose.yml \
+                -f distribution/compose/facility/docker-compose.demo.yml \
+                --env-file "$RUNNER_TEMP/e2e.env" logs --tail 40 gateway >&2
+              exit 1
+            fi
+            sleep 5
+          done
+
+      # cypress.config.ts refuses any CYPRESS_BASE_URL host other than localhost unless it
+      # is explicitly allowlisted — so this can never resolve to
+      # liberiaemrfacilitydev.intellisoftkenya.com or any other shared/production host, only
+      # to the disposable stack just started. admin/Admin123 is the demo stack's own
+      # well-known training account (docs/runbooks/demo-stack.md), not a facility credential.
+      # RUN_LIVE_REGISTRATION is deliberately left unset: the normal CI run must not create
+      # real patient records, and the gated test stays skipped (qa/e2e/README.md Rules).
       - name: Cypress
-        run: 'echo "TODO: qa/e2e — see qa/e2e/README.md"'
+        working-directory: qa/e2e
+        env:
+          CYPRESS_BASE_URL: https://localhost
+          CYPRESS_USERNAME: admin
+          CYPRESS_PASSWORD: Admin123
+        run: npm test
+
+      - name: Upload Cypress screenshots and videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            qa/e2e/cypress/screenshots
+            qa/e2e/cypress/videos
+          if-no-files-found: ignore
+
+      - name: Tear down the disposable demo stack
+        if: always()
+        run: |
+          docker compose \
+            -f distribution/compose/facility/docker-compose.yml \
+            -f distribution/compose/facility/docker-compose.demo.yml \
+            --env-file "$RUNNER_TEMP/e2e.env" down -v || true
+          rm -rf "$RUNNER_TEMP/e2e-certs" "$RUNNER_TEMP/e2e.env"
 
   # ---------------------------------------------------------------------
   # Frontend module build — independent of the Maven reactor, runs in
