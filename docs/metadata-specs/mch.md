@@ -498,6 +498,37 @@ Five schemas; ANC Initial and `3. Family Planning` (v2.0) are written. See the
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
 
+### Legacy national Family Planning form superseded
+
+The national `3. Family Planning` v1.0 schema
+(`content-liberia-national/.../ampathforms/family_planning-national.json`) remains declared
+in metadata and is superseded by MCH `3. Family Planning` v2.0, which is the active FP
+workflow. Both schemas carry the same form name, `3. Family Planning`, and are told apart by
+version. The legacy schema's JSON `uuid` field reads
+`d82ce32c-65fa-4ec5-b644-6517a8359133`; that is the source schema's own identifier for
+traceability, not the Form identity Initializer works with at load time, so identify the
+legacy form as `3. Family Planning` v1.0 rather than by that value.
+
+Source state and runtime state are not the same thing here, and the difference is the whole
+point of the note:
+
+- **At source**, the legacy schema is retained as `published=false` and `retired=false`.
+- `retired=false` is intentional at source, not an oversight. Initializer 2.12.0 cannot
+  create a brand-new already-retired form on a clean database — its creation path supplies
+  no retire reason — so a clean install fails if the schema ships retired.
+- **At runtime, `retired=false` is the creation state, not the end state.** On a clean load
+  the legacy v1.0 schema is created first; MCH `3. Family Planning` v2.0 is then loaded
+  under the same form name, and Initializer's same-name replacement path retires v1 with the
+  reason `Replaced with new version by Iniz` before creating v2. Do not read the source
+  `retired=false` as a guarantee about the form's state once a complete load has run.
+- `published=false` withdraws the legacy form independently of any of that: clinicians
+  should no longer launch it for new FP encounters, whatever its retired flag happens to
+  read at a given moment.
+- MCH `3. Family Planning` v2.0 is the active, published workflow once the load completes.
+- Historical encounters stay associated with the legacy form and keep rendering against
+  its preserved v1.0 schema.
+- This PR performs **no patient-data migration**. Existing FP observations are untouched.
+
 ### Mother PNC terminology and schema contract
 
 The Mother PNC form (`content-packages/content-liberia-mch/configuration/backend_configuration/ampathforms/pnc-visit.json`) was designed and validated through Form Builder, and the exported/versioned JSON in the content package is the deployable, reproducible source of truth. Rendering, requiredness, and hide/show logic live in the form schema, while concept metadata supplies terminology and value sets.
@@ -715,6 +746,25 @@ Updated against the DAK read on 2026-08-06 — see
     rules 19 and 22 are otherwise identical and cannot be told apart. Rule 19 is additionally
     self-inconsistent at source (`Provide method` = 0 while its Action reads "Provide the method
     now"). Needs the DAK owner — raise with items 10 and 20.
+
+26. **"Oral Contraceptive Pills (Microlut)" has no confirmed decision-table category.**
+    Microlut is a progestogen-only pill and is *deliberately unmapped* in decision table
+    `FP.LO.004-3`, which has no POP branch (recorded against `EMR.FP.DE27` in
+    [`traceability-mch.csv`](../dak/traceability-mch.csv)). It is therefore absent from
+    `fpProvideMethodNow`, `fpEmergencyContraception` and `repeatPregnancyTestDate`, while
+    Microgynon (a combined oral contraceptive) is present. Confirm which decision-table
+    method category, if any, Microlut maps to before applying `FP.LO.004-3` pregnancy
+    guidance to it. Do not infer equivalence with the COC branch from the shared "oral
+    contraceptive" label alone. Raise with items 10, 20 and 25.
+27. **LAM eligibility cannot be conclusively evaluated when Date of Last Delivery is
+    unknown.** The six-month post-partum criterion is guarded by `!isEmpty(dateOfLastDelivery)`,
+    so with the date blank the form shows neither the eligible nor the not-eligible guidance
+    rather than guessing. LAM has no DAK source at all (`no-dak-source` against Chosen
+    method, LAM, Exclusive Breastfeeding and Date of Last Delivery in
+    [`traceability-mch.csv`](../dak/traceability-mch.csv)), so **requiredness is not
+    sourced** and none has been imposed. Confirm with the clinical/DAK owner whether the
+    date should be required for LAM clients, or whether explicit fallback guidance should
+    be shown instead.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any

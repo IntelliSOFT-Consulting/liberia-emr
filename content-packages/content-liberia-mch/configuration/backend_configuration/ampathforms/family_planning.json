@@ -377,7 +377,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "isEmpty(chosenFamilyPlanningMethod) || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.injectable-contraceptives.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-sayana-press.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microgynon.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microlut.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.iud.uuid}')"
+            "hideWhenExpression": "isEmpty(chosenFamilyPlanningMethod) || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.injectable-contraceptives.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-sayana-press.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microgynon.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microlut.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.iud.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}')"
           }
         },
         {
@@ -588,7 +588,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}'"
+            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}'"
           }
         },
         {
