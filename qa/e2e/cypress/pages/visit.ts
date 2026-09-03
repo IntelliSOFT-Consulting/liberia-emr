@@ -28,7 +28,6 @@ class VisitPage {
 
         cy.contains('Start a visit', { timeout: 20000 }).should('be.visible');
 
-        //cy.contains('.cds--content-switcher-btn', 'All', { timeout: 20000 }).click();
         cy.get('input[name="visit-types"]', { timeout: 20000 }).should('have.length.greaterThan', 0);
 
         if (visitType) {
