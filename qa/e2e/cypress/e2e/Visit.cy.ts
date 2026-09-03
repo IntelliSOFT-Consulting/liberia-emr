@@ -13,4 +13,12 @@ describe('Visit', () => {
         visitPage.startVisit();
         visitPage.verifyVisitActive();
     })
+
+    it('should hide the Active Visit tag after ending the visit', () => {
+        visitPage.registerPatient();
+        visitPage.startVisit();
+        visitPage.verifyVisitActive();
+        visitPage.endVisit();
+        visitPage.verifyVisitNotActive();
+    })
 })

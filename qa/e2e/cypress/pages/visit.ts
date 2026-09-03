@@ -4,6 +4,11 @@ import { faker, randomAdultBirthdateParts } from '../support/faker';
 class VisitPage {
     private registrationPage = new RegistrationPage();
 
+    private openActionsMenuItem(itemText: string) {
+        cy.contains('button', 'Actions', { timeout: 20000 }).click();
+        cy.contains(itemText, { timeout: 10000 }).click();
+    }
+
     // Minimal setup so a visit test has a patient to work with — not itself a registration test.
     registerPatient() {
         this.registrationPage.visitPage();
@@ -19,12 +24,11 @@ class VisitPage {
     }
 
     startVisit(visitType?: string, paymentDetails: 'paying' | 'non-paying' = 'paying') {
-        cy.contains('button', 'Actions', { timeout: 20000 }).click();
-        cy.contains('Add visit', { timeout: 10000 }).click();
+        this.openActionsMenuItem('Add visit');
 
         cy.contains('Start a visit', { timeout: 20000 }).should('be.visible');
 
-        cy.contains('.cds--content-switcher-btn', 'All', { timeout: 20000 }).click();
+        //cy.contains('.cds--content-switcher-btn', 'All', { timeout: 20000 }).click();
         cy.get('input[name="visit-types"]', { timeout: 20000 }).should('have.length.greaterThan', 0);
 
         if (visitType) {
@@ -39,8 +43,19 @@ class VisitPage {
         cy.contains('button', 'Start visit', { timeout: 20000 }).should('be.enabled').click();
     }
 
+    endVisit() {
+        this.openActionsMenuItem('End active visit');
+
+        cy.contains('Are you sure you want to end this active visit?', { timeout: 20000 }).should('be.visible');
+        cy.contains('button', 'End Visit', { timeout: 10000 }).click();
+    }
+
     verifyVisitActive() {
         cy.contains('.cds--tag__label', 'Active Visit', { timeout: 20000 }).should('be.visible');
+    }
+
+    verifyVisitNotActive() {
+        cy.contains('.cds--tag__label', 'Active Visit', { timeout: 20000 }).should('not.exist');
     }
 }
 
