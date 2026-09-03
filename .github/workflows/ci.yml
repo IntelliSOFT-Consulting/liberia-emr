@@ -518,14 +518,11 @@ jobs:
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
-    # No `needs:` on purpose — it must run on every commit, not only the ones
-    # initializer-clean-db's own metadata gate lets through. Nothing built by
-    # initializer-clean-db or docker-build is reusable here anyway: both build
-    # with plain `docker build` into their own runner's local daemon and
-    # neither pushes or saves an artifact (the only push happens in
-    # publish-latest, post-merge, gated on `needs: gate` — which this job is
-    # itself a dependency of). So this job builds its own throwaway --demo
-    # images and boots them itself, per docs/runbooks/demo-stack.md.
+    # The job builds its own throwaway --demo images and boots them itself, but
+    # waits for the shared validation/build jobs so failures stop the expensive
+    # stack setup before it starts.
+    needs: [changes, build-test]
+    if: always() && needs.build-test.result == 'success'
     env:
       REGISTRY: intellisoftdev
       LIBERIAEMR_VERSION: 0.0.0-ci
@@ -689,13 +686,13 @@ jobs:
   # or was skipped. Point branch protection at this one job instead of
   # every job above — new jobs added later only need `gate` updated once.
   #
-  # Two jobs may legitimately be skipped: initializer-clean-db, which the
-  # `changes` job stands down on a commit that cannot affect metadata, and
-  # e2e, which follows it. They are named explicitly rather than allowing
-  # "skipped" across the board — a skip anywhere else means a dependency
-  # failed, and that must still block the merge. `changes` is in this list
-  # too, so a fault in the detection itself fails the gate rather than
-  # quietly excusing the job it was meant to schedule.
+  # One job may legitimately be skipped: initializer-clean-db, which the
+  # `changes` job stands down on a commit that cannot affect metadata. It is
+  # named explicitly rather than allowing "skipped" across the board — a skip
+  # anywhere else means a dependency failed, and that must still block the
+  # merge. `changes` is in this list too, so a fault in the detection itself
+  # fails the gate rather than quietly excusing the job it was meant to
+  # schedule.
   # ---------------------------------------------------------------------
   gate:
     name: CI gate
@@ -732,7 +729,7 @@ jobs:
               .key as $k
               | .value.result == "success"
                 or (.value.result == "skipped"
-                    and (["initializer-clean-db", "e2e"] | index($k) != null));
+                    and $k == "initializer-clean-db");
         run: |
           echo '${{ toJSON(needs) }}' | jq -e "$JQ_OK"'
             to_entries | all(acceptable)
