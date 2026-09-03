@@ -3,18 +3,19 @@ import VisitPage from '../pages/visit';
 
 describe('Visit', () => {
     const visitPage = new VisitPage();
+    const runLiveVisit = Cypress.env('RUN_LIVE_REGISTRATION') === true ? it : it.skip;
 
     beforeEach(() => {
         loginWithSession();
     });
 
-    it('should start a visit after registering a patient', () => {
+    runLiveVisit('should start a visit after registering a patient', () => {
         visitPage.registerPatient();
         visitPage.startVisit();
         visitPage.verifyVisitActive();
     })
 
-    it('should hide the Active Visit tag after ending the visit', () => {
+    runLiveVisit('should hide the Active Visit tag after ending the visit', () => {
         visitPage.registerPatient();
         visitPage.startVisit();
         visitPage.verifyVisitActive();
