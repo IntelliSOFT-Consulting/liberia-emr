@@ -12,12 +12,9 @@ services:
   db:
     image: mariadb:10.11
     restart: unless-stopped
-    # The binary log is what the sync sender's Debezium engine reads (sync-eip.md §1.3):
-    # ROW format, FULL row image, and a server id distinct from the sender's
-    # DEBEZIUM_SERVER_ID. Retention is the real maximum-outage ceiling; the default here
-    # is the six-month floor from the architecture doc, and the disk must be sized for it
-    # (risk F2). Enabling binlog on an existing data volume is safe: logging starts at
-    # the restart.
+    # Binlog feeds the sync sender's Debezium engine (sync-eip.md §1.3). Retention is
+    # the maximum-outage ceiling and the disk must be sized for it (risk F2); the
+    # default is the architecture doc's six-month floor. Safe on an existing volume.
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -32,9 +29,8 @@ services:
       MARIADB_USER: ${MYSQL_USER}
       MARIADB_PASSWORD: ${MYSQL_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      # Read by initdb/10-sync-db-users.sh on the FIRST boot of an empty volume to
-      # create the sync layer's database principals. Unset means the script does
-      # nothing and the stack boots exactly as before.
+      # For initdb/10-sync-db-users.sh, which runs ONLY on the first boot of an empty
+      # volume; unset passwords mean it does nothing.
       DEBEZIUM_DB_USER: ${DEBEZIUM_DB_USER:-debezium}
       DEBEZIUM_DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD:-}
       SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
@@ -138,10 +134,9 @@ services:
       - ${TLS_CERT_DIR}:/etc/nginx/certs:ro
     networks: [liberiaemr]
 
-  # Unidirectional facility -> central push: the dbsync sender application
-  # (distribution/sync/), reading the database binary log and queueing locally while
-  # offline; see integration/eip/routes/README.md. It waits for a healthy backend
-  # because it reads the platform version over REST at start-up.
+  # Unidirectional facility -> central push: the dbsync sender (distribution/sync/).
+  # Waits for a healthy backend because it reads the platform version over REST at
+  # start-up. Contract and guarantees: integration/eip/routes/README.md.
   sync:
     image: ${REGISTRY}/liberia-emr-sync:${LIBERIAEMR_VERSION}
     restart: unless-stopped
