@@ -3,11 +3,14 @@
 Apache Camel routes (OpenMRS EIP) that push clinical data from a facility instance to the
 central instance. **Unidirectional** in this release: central never writes back.
 
-## Status: placeholder
+## Status: sender in build
 
-No routes are implemented. This directory holds the contract they must satisfy, so that
-the first route written is written against agreed semantics rather than discovering them
-in production.
+The routes themselves are dbsync's own (ADR 0008): we deploy and configure them rather
+than write them. The facility-side sender ships as the `liberia-emr-sync` image, built in
+[`distribution/sync/`](../../../distribution/sync/) from the pinned dbsync tag and wired
+into the facility compose behind `--profile sync`. The central side (Artemis broker and
+receiver) is the next build. This directory remains the contract that deployment and
+configuration must satisfy.
 
 The design these routes implement (change capture, transport, wire format, retry and
 reconciliation) is in [`docs/architecture/sync-eip.md`](../../../docs/architecture/sync-eip.md).
@@ -78,11 +81,15 @@ on `openmrs-eip` **4.2.0** (`openmrs-eip` alone is a toolbox, not a sync applica
 its transport is JMS via ActiveMQ Artemis, and that our MariaDB 10.11 and platform 2.8.8 pins
 both sit outside its documented support envelope.
 
-**Prove Debezium streams from our database before writing any route.** If it does not, the
-database platform changes, which is nearly free today and a data migration after go-live.
+**Prove Debezium streams from our database before writing any route.** DONE 2026-09-02:
+it does. The sender attached to MariaDB 10.11 and streamed a live registration; the
+platform 2.8.8 version gate it hit, and the one-line patch that clears it, are recorded
+in [sync-eip.md](../../../docs/architecture/sync-eip.md) §1.8 and
+[`distribution/sync/patches/`](../../../distribution/sync/patches/).
 
 1. ADR 0005 accepted (identity, above).
-2. Confirm the EIP module version pinned in `distribution/distro.properties`.
+2. ~~Confirm the EIP module version pinned in `distribution/distro.properties`.~~ Pinned:
+   `sync.dbsync=4.0.0`, `sync.eip=4.2.0`.
 3. Confirm the mutual-TLS setup with the MOH ICT Unit — the certificate lifecycle is
    theirs, not ours.
 4. Decide the retention policy for the local queue after a successful push.

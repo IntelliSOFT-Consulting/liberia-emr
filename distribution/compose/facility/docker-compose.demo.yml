@@ -46,5 +46,7 @@ services:
       - -c
       - 'echo "sync is disabled on a demo stack: fabricated patients must never reach central" >&2; exit 1'
     environment:
-      # Nothing to push to even if a container is forced up by hand.
-      EIP_CENTRAL_URL: ""
+      # Nothing to push to even if a container is forced up by hand: with ARTEMIS_URL
+      # empty the sender's entrypoint refuses to start (distribution/sync/
+      # docker-entrypoint.sh checks every required variable before launching).
+      ARTEMIS_URL: ""

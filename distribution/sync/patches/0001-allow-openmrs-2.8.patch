@@ -1,0 +1,37 @@
+Allow OpenMRS 2.8.x through the dbsync version whitelist.
+
+Upstream openmrs-dbsync 4.0.0 (and master, checked 2026-09-02) refuses to start
+against any OpenMRS platform newer than 2.7: AppUtils.adjustJpaMappings() reads the
+version from the REST systeminformation endpoint and throws for anything outside
+its whitelist. LiberiaEMR pins platform 2.8.8 (distro.properties, ADR 0006).
+
+The whitelist guards the JPA entity mappings. The openmrs-core liquibase changelog
+for 2.8.x touches exactly one synced table: provider gains a nullable
+provider_role_id column, which an unmapped JPA entity never selects. The other 2.8
+changes (new provider_role table, a type widening on concept_reference_range) are
+outside the synced set. The 2.7 mappings therefore remain structurally valid on
+2.8.8, with one recorded fidelity gap: provider role assignments are not carried
+in sync payloads until upstream maps them.
+
+Verified end to end on 2026-09-02 against MariaDB 10.11 and platform 2.8.8: schema
+snapshot, binlog attach, and correct payloads for a patient registration
+(PatientModel, PersonNameModel, PatientIdentifierModel).
+
+This is a deviation from the stock artefact and is flagged on LE-22 per the LE-35
+scope rule. Modify+PR tracking, including the upstream PR that retires this patch,
+lives in packages/modify-pr/.patches/0001-openmrs-dbsync-allow-openmrs-2.8.md
+(whitelist is in api/src/main/java/org/openmrs/eip/dbsync/AppUtils.java).
+
+diff --git a/api/src/main/java/org/openmrs/eip/dbsync/AppUtils.java b/api/src/main/java/org/openmrs/eip/dbsync/AppUtils.java
+index 9b84123..c075fb0 100644
+--- a/api/src/main/java/org/openmrs/eip/dbsync/AppUtils.java
++++ b/api/src/main/java/org/openmrs/eip/dbsync/AppUtils.java
+@@ -64,7 +64,7 @@ public class AppUtils {
+ 			if (openmrsFullVersion.startsWith("2.5")) {
+ 				List<Class<? extends Annotation>> annotations = List.of(JoinColumn.class, ManyToOne.class);
+ 				SyncUtils.makeTransient("patientProgram", PatientIdentifier.class, annotations);
+-			} else if (!openmrsFullVersion.startsWith("2.6") && !openmrsFullVersion.startsWith("2.7")) {
++			} else if (!openmrsFullVersion.startsWith("2.6") && !openmrsFullVersion.startsWith("2.7") && !openmrsFullVersion.startsWith("2.8")) {
+ 				final String openmrsVersion = StringUtils.split(openmrsFullVersion, " ")[0];
+ 				throw new EIPException("DB sync does not support OpenMRS version " + openmrsVersion);
+ 			}

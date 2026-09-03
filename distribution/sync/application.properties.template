@@ -1,0 +1,94 @@
+# dbsync sender configuration, rendered by docker-entrypoint.sh from the environment.
+# ${VAR} placeholders are substituted with envsubst; everything else is literal and
+# follows the upstream template (sender-app/configuration/application.properties in
+# mekomsolutions/openmrs-dbsync at the pinned tag).
+
+eip.home=/opt/eip
+spring.jpa.open-in-view=false
+
+# Unique identifier of this facility on the receiving side. The receiver authorises
+# senders by this id, so it must match what central has been told to expect.
+db-sync.senderId=${DBSYNC_SENDER_ID}
+
+db-event.destinations=direct:sender-db-sync
+debezium-event-reader.initial.delay=5000
+debezium-event-reader.repeat.interval=5000
+db-event.retry.interval=1800000
+db-event.retry.initial.delay=120000
+
+# Log to the console; the container runtime owns log collection. NO PHI in logs: the
+# routes log UUIDs and outcomes only (integration/eip/routes/README.md).
+logging.config=classpath:logback-console.xml
+openmrs.eip.log.level=${LOG_LEVEL}
+logging.level.org.openmrs.eip=${LOG_LEVEL}
+logging.level.sender-db-sync=${LOG_LEVEL}
+logging.level.sender-complex-obs-sync=${LOG_LEVEL}
+
+# Health and Prometheus metrics for the alerting build (LE-35 acceptance criterion 3).
+management.endpoints.enabled-by-default=false
+management.endpoint.prometheus.enabled=true
+management.endpoint.health.enabled=true
+management.endpoints.web.exposure.include=health,prometheus
+
+# REST access to the local OpenMRS instance. Used at start-up to read the platform
+# version, and by the complex-obs route to fetch file payloads.
+openmrs.baseUrl=${OPENMRS_BASE_URL}
+openmrs.username=${OPENMRS_REST_USER}
+openmrs.password=${OPENMRS_REST_PASSWORD}
+
+openmrs.db.host=${OPENMRS_DB_HOST}
+openmrs.db.port=${OPENMRS_DB_PORT}
+openmrs.db.name=${OPENMRS_DB_NAME}
+
+spring.openmrs-datasource.driverClassName=com.mysql.cj.jdbc.Driver
+spring.openmrs-datasource.jdbcUrl=jdbc:mysql://${OPENMRS_DB_HOST}:${OPENMRS_DB_PORT}/${OPENMRS_DB_NAME}
+spring.openmrs-datasource.username=${OPENMRS_DB_USER}
+spring.openmrs-datasource.password=${OPENMRS_DB_PASSWORD}
+
+# The management database holds the sender's durable queues (debezium_event_queue,
+# sender_retry_queue). It lives on the facility database server, in its own schema with
+# its own principal; created on first boot by the initdb script in
+# distribution/compose/facility/initdb/.
+spring.mngt-datasource.driverClassName=com.mysql.cj.jdbc.Driver
+spring.mngt-datasource.jdbcUrl=jdbc:mysql://${OPENMRS_DB_HOST}:${OPENMRS_DB_PORT}/${MGMT_DB_NAME}
+spring.mngt-datasource.username=${MGMT_DB_USER}
+spring.mngt-datasource.password=${MGMT_DB_PASSWORD}
+
+# Debezium reads the binary log with its own replication-privileged account, never the
+# application user. serverId must be unique among everything attached to this database
+# and distinct from the database's own server-id; neither it nor serverName may change
+# once set, or the offset and schema history are orphaned.
+debezium.db.serverId=${DEBEZIUM_SERVER_ID}
+debezium.db.serverName=${DBSYNC_SENDER_ID}
+debezium.db.user=${DEBEZIUM_DB_USER}
+debezium.db.password=${DEBEZIUM_DB_PASSWORD}
+debezium.snapshotMode=schema_only
+debezium.snapshotLockingMode=extended
+debezium.reader.maxBatchSize=2048
+debezium.offsetFilename=/opt/eip/.debezium/offsets.txt
+debezium.historyFilename=/opt/eip/.debezium/dbhistory.txt
+
+# The Artemis broker at central. TLS and client certificates arrive with the security
+# hardening build; see docs/architecture/sync-eip.md section 7.8.
+spring.activemq.broker-url=${ARTEMIS_URL}
+spring.activemq.user=${ARTEMIS_USER}
+spring.activemq.password=${ARTEMIS_PASSWORD}
+
+# activemq:topic:openmrs.sync.topic in every deployed environment. A file: endpoint is
+# upstream's supported testing mode and is what the QA capture check uses; never point
+# a deployed facility at one.
+camel.output.endpoint=${SYNC_OUTPUT_ENDPOINT}
+
+openmrs.complex.obs.data.directory=${COMPLEX_OBS_DIR}
+
+# Payload encryption lands with the security hardening build (control D2/D6 negative
+# tests); until then transport protection is the broker connection itself.
+openmrs.eip.dbsync.encryption.enabled=false
+
+# Disabled, but the oauth Camel route resolves these placeholders at start-up even so;
+# the keys must exist with empty values or the application fails to boot.
+oauth.enabled=false
+oauth.access.token.uri=
+oauth.client.id=
+oauth.client.secret=
+oauth.client.scope=
