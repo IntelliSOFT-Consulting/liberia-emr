@@ -18,7 +18,9 @@ export const randomAdultBirthdateParts = (minAge = 0, maxAge = 80): DateParts =>
 };
 
 export const futureBirthdateParts = (daysAhead = 1): DateParts => {
-    const futureDate = faker.date.soon({ days: daysAhead });
+    // faker.date.soon() can return a time later today, which isn't a future date of birth
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
     return toDateParts(futureDate);
 };
 

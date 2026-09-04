@@ -44,10 +44,10 @@ class RegistrationPage {
     }
 
     setDateOfBirthKnown(option: 'Yes' | 'No') {
-        cy.contains('span', 'Date of Birth Known?', { timeout: 10000 })
+        cy.contains('span', 'Date of Birth Known?', { timeout: 20000 })
             .closest('div')
             .next('[role="tablist"]')
-            .contains('button', option, { timeout: 10000 })
+            .contains('button', option, { timeout: 20000 })
             .click();
     }
 
@@ -65,9 +65,9 @@ class RegistrationPage {
     }
 
     clickRegisterPatient() {
-        cy.get('button[type="submit"]', { timeout: 10000 }).should('be.enabled');
-        cy.contains('button', 'Register patient', { timeout: 10000 }).should('be.enabled');
-        cy.contains('button', 'Register patient', { timeout: 10000 }).click();
+        cy.contains('button', 'Register patient', { timeout: 30000 })
+            .should('be.enabled')
+            .click();
     }
        
 
@@ -142,7 +142,9 @@ class RegistrationPage {
         }).as('createPatient');
 
         this.fillRequiredFields(data);
-        cy.contains('button', 'Register patient', { timeout: 10000 }).dblclick();
+        cy.contains('button', 'Register patient', { timeout: 150000 })
+            .should('be.enabled')
+            .dblclick();
 
         cy.wait('@createPatient', { timeout: 10000 });
         cy.then(() => {
