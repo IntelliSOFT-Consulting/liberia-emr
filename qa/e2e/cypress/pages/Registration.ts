@@ -136,6 +136,7 @@ class RegistrationPage {
         cy.intercept('POST', '**/ws/rest/v1/patient**', (req) => {
             requestCount += 1;
             req.reply({
+                delay: 1500,
                 statusCode: 201,
                 body: { uuid: Cypress._.random(100000, 999999).toString() }
             });
@@ -147,6 +148,7 @@ class RegistrationPage {
             .dblclick();
 
         cy.wait('@createPatient', { timeout: 10000 });
+        cy.wait(1000);
         cy.then(() => {
             expect(requestCount).to.eq(1);
         });

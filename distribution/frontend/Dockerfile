@@ -52,6 +52,12 @@ RUN set -eu; \
     openmrs build --target /app/spa --build-config /app/spa-assemble-config.json \
       --spa-path /openmrs/spa/ --api-url /openmrs/ --page-title LiberiaEMR ${config_args}
 
+# Registration app 11.1.0 disables its button through Formik state, but two click events can
+# enter onSubmit before React commits that state. The patch is pinned and asserts the exact
+# compiled input, so an upstream release cannot silently receive an incompatible rewrite.
+COPY patch-patient-registration.cjs /app/patch-patient-registration.cjs
+RUN node /app/patch-patient-registration.cjs
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime configuration + branding
 # ---------------------------------------------------------------------------
