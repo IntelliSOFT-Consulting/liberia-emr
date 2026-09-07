@@ -71,7 +71,6 @@ export default defineConfig({
   env: {
     ...localEnv,
     baseUrl: defaultBaseUrl,
-    RUN_LIVE_REGISTRATION: process.env.RUN_LIVE_REGISTRATION === 'true',
   },
   e2e: {
     baseUrl: defaultBaseUrl,
