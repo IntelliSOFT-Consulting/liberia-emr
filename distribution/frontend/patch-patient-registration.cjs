@@ -63,7 +63,17 @@ if (importMap.split(originalDirName).length - 1 !== 1 || importMap.includes(patc
   throw new Error(`Expected exactly one unpatched ${originalDirName} import-map entry`);
 }
 fs.writeFileSync(importMapPath, importMap.replace(originalDirName, patchedDirName));
-fs.renameSync(moduleDir, path.join('/app/spa', patchedDirName));
+const targetDir = path.join('/app/spa', patchedDirName);
+try {
+  fs.renameSync(moduleDir, targetDir);
+} catch (error) {
+  if (error && error.code === 'EXDEV') {
+    fs.cpSync(moduleDir, targetDir, { recursive: true });
+    fs.rmSync(moduleDir, { recursive: true, force: true });
+  } else {
+    throw error;
+  }
+}
 
 console.log(
   `Patched duplicate patient registration submission in ${patchedDirName}/${path.basename(match.filePath)}`,
