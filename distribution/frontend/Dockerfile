@@ -58,6 +58,12 @@ RUN set -eu; \
 COPY patch-patient-registration.cjs /app/patch-patient-registration.cjs
 RUN node /app/patch-patient-registration.cjs
 
+# Orders app 12.3.4 swallows validation errors (like globalErrors and fieldErrors) when 
+# posting encounters and just says "Invalid Submission". This patch extracts detailed
+# validation errors and displays them.
+COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
+RUN node /app/patch-patient-orders.cjs
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime configuration + branding
 # ---------------------------------------------------------------------------

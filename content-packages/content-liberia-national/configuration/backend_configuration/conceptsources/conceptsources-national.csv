@@ -1,0 +1,4 @@
+Uuid,Name,Description,HL7 Code
+${var.conceptsource.snomed-ct.uuid},SNOMED CT,SNOMED Preferred mapping,SCT
+${var.conceptsource.snomed-np.uuid},SNOMED NP,SNOMED Non-Preferred mapping,
+${var.conceptsource.snomed-ct-hyphen.uuid},SNOMED-CT,SNOMED CT (CIEL/OCL hyphenated name),
