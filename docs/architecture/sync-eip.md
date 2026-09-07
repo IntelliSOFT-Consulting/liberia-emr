@@ -1081,8 +1081,8 @@ can invalidate the Sprint 3 plan.
 | E1 | MariaDB 10.11 versus DB-sync's documented MySQL 5.7/8.0: Debezium now treats MariaDB as a separate connector | Experiment, before anything else is built (§1.8a) | **Highest**: may change the database platform of the whole deployment |
 | E2 | Platform 2.8.8 versus documented 2.5/2.6: the sender reads the physical schema | Establish DB-sync 2.8.x support; budget upstream work (§1.8b) | High |
 | E3 | `order-push` sits on DB-sync's known-defective `Order` subclasses | Reconcile the route inventory with DB-sync's coverage; consider deferring (§1.6) | High: sets lab/pharmacy scope |
-| E4 | Neither `openmrs-eip` nor DB-sync is version-pinned anywhere | Pin both, as their own artefacts (§1.1) | Medium |
-| E5 | Artemis broker and sender management database do not exist in the compose files | Add both (§1.2) | Medium |
+| E4 | ~~Neither `openmrs-eip` nor DB-sync is version-pinned anywhere~~ RESOLVED: pinned as `sync.dbsync` / `sync.eip` in `distro.properties` | Pin both, as their own artefacts (§1.1) | Closed |
+| E5 | ~~Artemis broker and sender management database do not exist in the compose files~~ RESOLVED: `artemis` service in the central compose, management schemas created by each stack's `initdb/` | Add both (§1.2) | Closed |
 | E6 | Central is only safe if clinical data there is read-only, and nothing enforces that | Enforce with roles at central (§1.8c) | Medium |
 | E7 | A shared broker with wrong permissions lets one facility read another's clinical data | Send-only, own-address-only per facility, **proven by a negative test in `qa/`** (§7.3) | **Highest**: national-scale data leak from one config line |
 | E8 | Facility disk filled by binlog and queue during a long outage halts the database | Size disk for the full retention window; separate binlog volume; alarms (F2) | **Highest**: the only path where sync stops care |

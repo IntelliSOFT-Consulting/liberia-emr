@@ -303,20 +303,29 @@ docker build \
   -t "${REGISTRY}/liberia-emr-gateway:${VERSION}" \
   "$ROOT/distribution/gateway"
 
-# The sync sender never ships in a demo distribution: the demo overlay disables the
-# service three ways over, so building the image would only invite running it.
+# The sync images never ship in a demo distribution: the demo overlay disables the
+# service three ways over, so building them would only invite running them.
 if [[ "$SYNC" == "true" && "$DEMO" == "false" ]]; then
-  echo "== sync sender =="
   dbsync_version="$(grep -E '^sync\.dbsync=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
   [[ -n "$dbsync_version" ]] || { echo "sync.dbsync is not pinned in distro.properties" >&2; exit 1; }
+  echo "== sync sender =="
   docker build \
     -f "$ROOT/distribution/sync/Dockerfile" \
+    --target sender \
     --build-arg "DBSYNC_VERSION=${dbsync_version}" \
     --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
     -t "${REGISTRY}/liberia-emr-sync:${VERSION}" \
     "$ROOT/distribution/sync"
+  echo "== sync receiver =="
+  docker build \
+    -f "$ROOT/distribution/sync/Dockerfile" \
+    --target receiver \
+    --build-arg "DBSYNC_VERSION=${dbsync_version}" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-sync-receiver:${VERSION}" \
+    "$ROOT/distribution/sync"
 else
-  echo "== sync sender == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
+  echo "== sync sender/receiver == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
 fi
 
 echo

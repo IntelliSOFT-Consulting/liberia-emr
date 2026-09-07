@@ -80,8 +80,8 @@ first, not the second.
 
 | # | Control | Baseline | Where | Status |
 | --- | --- | --- | --- | --- |
-| D1 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` | Enforced |
-| D2 | Mutual TLS on sync | — | Artemis broker at central: per-facility client certificate on `sync`, authorised on certificate subject; see [sync architecture](../architecture/sync-eip.md) §1.4 and §7.8 | **Open**; the broker is not yet in any compose file (risk E5), and the certificate lifecycle is the MOH ICT Unit's |
+| D1 | TLS for facility↔cloud sync | TLS 1.2+ | Web traffic: `distribution/gateway/default.conf.template`. Sync push: the Artemis broker connection (central compose) | **Split**: Enforced for web traffic through the gateway; **Open** for the sync push, whose interim broker listener is plain TCP on the MOH-internal network until the TLS listener lands with D2 |
+| D2 | Mutual TLS on sync | — | Artemis broker at central: per-facility client certificate on `sync`, authorised on certificate subject; see [sync architecture](../architecture/sync-eip.md) §1.4 and §7.8 | **Open**; the broker now exists in the central compose (risk E5 closed) but its interim listener is shared-credential plain TCP for the MOH-internal network only, and the certificate lifecycle is the MOH ICT Unit's |
 | D3 | Encrypted backups | — | `docs/runbooks/backup-restore.md` | **Open** |
 | D4 | No secrets in the repository | — | Only `.env.example` templates committed; enforced by `scripts/validate/no-secrets.sh` in CI | Enforced |
 | D5 | Legacy admin UI disabled | production only | `LEGACY_ADMIN_UI` drives both `OMRS_CONFIG_MODULE_WEB_ADMIN` and the gateway `/openmrs/admin/` block | Enforced in production — see the note below |
