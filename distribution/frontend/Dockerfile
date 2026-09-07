@@ -58,6 +58,12 @@ RUN set -eu; \
 COPY patch-patient-registration.cjs /app/patch-patient-registration.cjs
 RUN node /app/patch-patient-registration.cjs
 
+# Orders app 12.3.4 swallows validation errors (like globalErrors and fieldErrors) when
+# posting encounters and just says "Invalid Submission". This patch extracts detailed
+# validation errors and displays them.
+COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
+RUN node /app/patch-patient-orders.cjs
+
 # Service queues app 11.1.0: the QueueFields component sets `queueLocation` default as
 # `sessionLocation?.uuid ?? ''` in react-hook-form's `defaultValues`, but because
 # `useSession()` resolves asynchronously the value is always undefined at first render
