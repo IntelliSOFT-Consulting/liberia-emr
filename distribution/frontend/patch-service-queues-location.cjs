@@ -53,8 +53,10 @@ const lock            = '__liberiaEmrServiceQueuesLocation';
 const anchor = '(0,n.useEffect)(function(){null==r||r(ee)},[ee,r])';
 
 // The fix to inject immediately after the anchor.
+// The lock token is embedded as a JS comment so source.includes(lock) fires
+// correctly if this script is ever run a second time against the same tree.
 const injected =
-  ',(0,n.useEffect)(function(){' +
+  ',(0,n.useEffect)(/* ' + lock + ' */function(){' +
     'O||(G?k.some(function(e){return e.id===G})||F("queueLocation",""):E&&E.uuid&&k.some(function(e){return e.id===E.uuid})&&F("queueLocation",E.uuid))' +
   '},[O,G,E,k,F])';
 
