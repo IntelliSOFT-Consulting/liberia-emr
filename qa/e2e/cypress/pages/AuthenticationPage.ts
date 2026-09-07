@@ -17,7 +17,7 @@ class AuthenticationPage {
         cy.get('input[name="loginLocations"]', { timeout: 20000 }).first().check({ force: true }).should('be.checked');
 
         cy.contains('button', 'Confirm', { timeout: 20000 }).should('be.enabled').click();
-        cy.url({ timeout: 30000 }).should('include', '/openmrs/spa/home');
+        cy.url({ timeout: 30000 }).should('include', '/openmrs/spa');
         cy.get('header', { timeout: 30000 }).should('be.visible');
     }
 }

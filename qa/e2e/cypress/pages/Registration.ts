@@ -10,11 +10,10 @@ class RegistrationPage {
     }
 
     verifyMandatoryFields() {
-        // Name fields marked as required by the form
+       
         cy.get('#givenName', { timeout: 10000 }).should('be.visible').and('have.attr', 'required');
         cy.get('#familyName', { timeout: 10000 }).should('be.visible').and('have.attr', 'required');
 
-        // Mandatory sections should be present for user input
         cy.contains('legend', 'Sex', { timeout: 10000 }).should('be.visible');
         cy.get('#gender-option-male', { timeout: 10000 }).should('be.visible');
         cy.get('#gender-option-female', { timeout: 10000 }).should('be.visible');
