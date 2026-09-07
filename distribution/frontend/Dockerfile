@@ -58,6 +58,14 @@ RUN set -eu; \
 COPY patch-patient-registration.cjs /app/patch-patient-registration.cjs
 RUN node /app/patch-patient-registration.cjs
 
+# Service queues app 11.1.0: the QueueFields component sets `queueLocation` default as
+# `sessionLocation?.uuid ?? ''` in react-hook-form's `defaultValues`, but because
+# `useSession()` resolves asynchronously the value is always undefined at first render
+# and the field starts blank. This patch adds the missing `useEffect` that selects the
+# session location once both the location UUID and the queue-location list are loaded.
+COPY patch-service-queues-location.cjs /app/patch-service-queues-location.cjs
+RUN node /app/patch-service-queues-location.cjs
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime configuration + branding
 # ---------------------------------------------------------------------------
