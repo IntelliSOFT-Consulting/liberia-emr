@@ -99,10 +99,10 @@ Then set:
 | `TLS_CERT_DIR` | the directory from step 2, absolute path |
 | `MYSQL_*` | throwaway passwords — never a facility credential |
 | `OMRS_CREATE_TABLES` | `true` for the first boot on an empty database |
-| `CENTRAL_URL` | leave on localhost |
+| `ARTEMIS_URL` | leave empty; a demo stack must have nowhere to sync to |
 
 `demo.env` is git-ignored. The deploy script refuses an env file that points a training
-stack at a real central instance.
+stack at the real central broker.
 
 ## 4. Start the stack
 

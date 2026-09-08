@@ -314,12 +314,32 @@ whether the Debezium engine attaches and streams. Three outcomes:
 Do this first. It is cheap to test and it changes the database platform of the whole
 deployment, which is not a change to make after a facility is live.
 
+> **RESOLVED 2026-09-02, outcome 1: it works.** The dbsync 4.0.0 sender was run against
+> a facility stack on MariaDB 10.11 with binlog enabled (ROW, FULL row image). The
+> Debezium MySQL connector tested its connection, completed a schema-only snapshot,
+> attached to the binlog and streamed a live patient registration into correct payloads
+> (PatientModel, PersonNameModel, PatientIdentifierModel). The sender's own liquibase
+> also built its management schema on MariaDB. Recorded as a tested-but-unsupported
+> configuration; the upgrade rehearsal must re-run this check on every dbsync or MariaDB
+> bump. No switch to MySQL is required.
+
 **(b) Platform 2.8.8 versus the documented 2.5/2.6.** The sender reads the physical schema,
 so the risk is concrete: a table or column that moved between 2.6 and 2.8 is a broken route,
 not a warning. Establish whether a DB-sync version supporting 2.8.x exists. If not, the
 choice is to contribute the compatibility work upstream, carry a fork, or, worst and to be
 avoided, pin the platform back, which would undo [ADR 0006](../adr/0006-pin-o3-refapp-3.7.1.md)
 and its reasoning about staying on the mainline. Budget for the first.
+
+> **RESOLVED 2026-09-02: a version gate, patched.** No dbsync version supports 2.8.x
+> (4.0.0 and master both whitelist 2.5 to 2.7 in `AppUtils.adjustJpaMappings()` and
+> refuse to boot otherwise; the actual envelope is wider than this document assumed,
+> since 2.7 is accepted). The openmrs-core 2.8.x changelog touches exactly one synced
+> table: `provider` gains a nullable `provider_role_id` column, invisible to an unmapped
+> JPA entity. The sender image therefore builds from source with a one-line whitelist
+> patch ([`distribution/sync/patches/`](../../distribution/sync/patches/)), verified end
+> to end on 2.8.8. Known fidelity gap: provider role assignments are not carried until
+> upstream maps them. The patch is a recorded deviation on LE-22, and the compatibility
+> work is to be offered upstream so the patch can retire.
 
 **(c) The receiver is not a point-of-care system.** DB-sync says so explicitly, because of
 conflict-overwrite risk. Our central stack runs a full OpenMRS backend *and* frontend, and

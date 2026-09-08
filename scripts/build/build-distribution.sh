@@ -2,9 +2,9 @@
 # Builds the immutable, versioned LiberiaEMR images.
 #
 #   scripts/build/build-distribution.sh --version 1.0.0 [--site careysburg] [--demo]
-#                                       [--no-frontend]
+#                                       [--no-frontend] [--no-sync]
 #
-# Images: liberia-emr-backend|-frontend|-gateway :<version>
+# Images: liberia-emr-backend|-frontend|-gateway|-sync :<version>
 # A mutable git checkout is never mounted into a production container.
 #
 # --no-frontend skips ONLY the frontend image, whose assemble stage npm-installs the O3 app
@@ -20,6 +20,7 @@ VERSION=""
 SITE="careysburg"
 DEMO="false"
 FRONTEND=true
+SYNC=true
 REGISTRY="${REGISTRY:-intellisoftdev}"
 
 while [[ $# -gt 0 ]]; do
@@ -28,6 +29,7 @@ while [[ $# -gt 0 ]]; do
     --site)        SITE="$2";    shift 2 ;;
     --demo)        DEMO="true";  shift ;;
     --no-frontend) FRONTEND="false"; shift ;;
+    --no-sync)     SYNC="false"; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -301,5 +303,21 @@ docker build \
   -t "${REGISTRY}/liberia-emr-gateway:${VERSION}" \
   "$ROOT/distribution/gateway"
 
+# The sync sender never ships in a demo distribution: the demo overlay disables the
+# service three ways over, so building the image would only invite running it.
+if [[ "$SYNC" == "true" && "$DEMO" == "false" ]]; then
+  echo "== sync sender =="
+  dbsync_version="$(grep -E '^sync\.dbsync=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
+  [[ -n "$dbsync_version" ]] || { echo "sync.dbsync is not pinned in distro.properties" >&2; exit 1; }
+  docker build \
+    -f "$ROOT/distribution/sync/Dockerfile" \
+    --build-arg "DBSYNC_VERSION=${dbsync_version}" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-sync:${VERSION}" \
+    "$ROOT/distribution/sync"
+else
+  echo "== sync sender == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
+fi
+
 echo
-echo "built ${VERSION} (site: ${SITE}, demo: ${DEMO}, frontend: ${FRONTEND})"
+echo "built ${VERSION} (site: ${SITE}, demo: ${DEMO}, frontend: ${FRONTEND}, sync: ${SYNC})"

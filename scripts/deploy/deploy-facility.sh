@@ -41,10 +41,12 @@ if [[ "$DEMO" == "true" ]]; then
   compose_args+=(-f "$COMPOSE_DIR/docker-compose.demo.yml")
 
   # A demo stack pointed at the production database or the real central instance stops
-  # being a demo stack. Both are cheap to check and expensive to discover afterwards.
-  if grep -qiE '^[[:space:]]*CENTRAL_URL[[:space:]]*=.*(central\.moh\.gov\.lr|https://)' "$ENV_FILE"; then
-    echo "refusing: ${ENV_FILE##*/} points CENTRAL_URL at a real central instance" >&2
-    echo "          A training stack must never be able to reach central." >&2
+  # being a demo stack. ARTEMIS_URL is where the sync sender actually delivers
+  # (distribution/sync/), and a training stack has NO legitimate broker, by IP or by
+  # name — so any non-empty value is refused, not just recognisable central hostnames.
+  if grep -qiE '^[[:space:]]*ARTEMIS_URL[[:space:]]*=[[:space:]]*[^[:space:]#]' "$ENV_FILE"; then
+    echo "refusing: ${ENV_FILE##*/} sets ARTEMIS_URL; a training stack must have nowhere to sync to" >&2
+    echo "          Leave it empty in a demo env file (see demo.env.example)." >&2
     exit 1
   fi
 
@@ -73,9 +75,9 @@ PROMPT
 
   # Sync is not started here (no --profile sync), but the env file is usually a copy of
   # facility.env.example, so say out loud where this stack would sync to if it were.
-  if grep -qiE '^[[:space:]]*CENTRAL_URL[[:space:]]*=.*(central\.moh\.gov\.lr|https://)' "$ENV_FILE"; then
+  if grep -qiE '^[[:space:]]*ARTEMIS_URL[[:space:]]*=.*(central\.moh\.gov\.lr|moh\.gov\.lr)' "$ENV_FILE"; then
     echo
-    echo "  WARNING: ${ENV_FILE##*/} points CENTRAL_URL at a real central instance."
+    echo "  WARNING: ${ENV_FILE##*/} points ARTEMIS_URL at the real central broker."
     echo "           Do not start the sync profile against it from simulated data."
   fi
 else

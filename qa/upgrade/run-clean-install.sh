@@ -90,7 +90,6 @@ MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
 OMRS_CREATE_TABLES=true
 BACKEND_HEAP=2g
 TLS_CERT_DIR=${CERT_DIR}
-CENTRAL_URL=http://localhost
 ENV
 echo "== starting a clean stack at ${VERSION} =="
 dc up -d db backend

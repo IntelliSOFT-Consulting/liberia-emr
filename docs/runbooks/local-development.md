@@ -38,9 +38,9 @@ Liberia configuration behaves on its own:
 ```
 
 The env file still wants to be a throwaway (`demo.env`, or a copy of `facility.env.example`
-with the database and `CENTRAL_URL` pointed somewhere local) — without `--demo` the compose
+with the database and `ARTEMIS_URL` pointed somewhere local) — without `--demo` the compose
 overlay that neutralises sync is not applied. The deploy prompts you to confirm that, and
-warns if `CENTRAL_URL` still points at the real central instance.
+warns if `ARTEMIS_URL` still points at the real central broker.
 
 `--local` matters in both cases: without it the deploy pulls from the registry and fails on a
 tag nobody has pushed. It is the flag that says "run what this daemon already has", so the
