@@ -180,6 +180,7 @@
     "defaultCurrency": "LRD"
   },
   "@openmrs/esm-patient-chart-app": {
+    "showServiceQueueFields": true,
     "extensionSlots": {
       "patient-chart-summary-dashboard-slot": {
         "add": [],
