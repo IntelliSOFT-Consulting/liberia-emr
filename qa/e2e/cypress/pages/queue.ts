@@ -20,12 +20,27 @@ class QueuePage {
             .click({ force: true });
     }
 
-    startVisitFromSearch(visitType = 'Outpatient', paymentDetails: 'paying' | 'non-paying' = 'paying') {
+    // The visit form now includes the queue fields (location/service/priority) as part of the same submit
+    startVisitFromSearch(
+        visitType = 'Outpatient',
+        paymentDetails: 'paying' | 'non-paying' = 'paying',
+        service = 'TB Screening',
+        priority: 'Routine' | 'Emergency (status)' = 'Routine',
+        queueLocation = 'Careysburg OPD'
+    ) {
         cy.contains('.cds--radio-button-wrapper', visitType, { timeout: 20000 })
             .find('input[name="visit-types"]')
             .check({ force: true });
 
         cy.get(`#payment-details-${paymentDetails}`, { timeout: 20000 }).check({ force: true });
+
+        // These fields render lower in the form and can be scrolled out of view within the workspace panel
+        cy.get('#queueLocation', { timeout: 20000 }).scrollIntoView().should('be.visible').select(queueLocation, { force: true });
+        cy.get('#queueService', { timeout: 20000 }).scrollIntoView().should('be.visible').select(service, { force: true });
+        cy.contains('.cds--radio-button-wrapper', priority, { timeout: 20000 })
+            .scrollIntoView()
+            .find('input[name="priority"]')
+            .check({ force: true });
 
         cy.get('[data-openmrs-role="Start Visit Form"]', { timeout: 20000 })
             .find('button[type="submit"]')
@@ -33,24 +48,6 @@ class QueuePage {
             .click();
 
         cy.wait(2000);
-    }
-
-    openQueueFormForPatient(name: string) {
-        cy.contains('[role="banner"]', name, { timeout: 20000 })
-            .find('button:not([aria-label])')
-            .first()
-            .click({ force: true });
-
-    }
-
-    addPatientToServiceQueue(service: string, priority: 'Routine' | 'Emergency (status)' = 'Routine', queueLocation = 'Careysburg OPD') {
-        cy.get('#queueLocation', { timeout: 20000 }).should('be.visible').select(queueLocation);
-        cy.get('#queueService', { timeout: 20000 }).should('be.visible').select(service);
-        cy.contains('.cds--radio-button-wrapper', priority, { timeout: 20000 })
-            .find('input[name="priority"]')
-            .check({ force: true });
-
-        cy.contains('button', 'Add patient to queue', { timeout: 20000 }).should('be.enabled').click();
     }
 
     verifyPatientInQueue(patientName: string, service: string) {

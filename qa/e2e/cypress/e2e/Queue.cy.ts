@@ -34,8 +34,6 @@ describe('Queue', () => {
         queuePage.visitHomePage();
         queuePage.searchAndSelectPatient(patientName);
         queuePage.startVisitFromSearch();
-        queuePage.openQueueFormForPatient(patientName);
-        queuePage.addPatientToServiceQueue('TB Screening');
         queuePage.verifyPatientInQueue(patientName, 'TB Screening');
     })
 })
