@@ -90,7 +90,6 @@
                             "label": "Presenting Complaint",
                             "type": "obs",
                             "required": true,
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.ciel.presenting-complaint.uuid}",
@@ -102,7 +101,6 @@
                             "id": "hpc",
                             "label": "History of Presenting Complaint",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.ciel.history-presenting-complaint.uuid}",
@@ -114,7 +112,6 @@
                             "id": "pmh",
                             "label": "Past Medical History",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.ciel.past-medical-history.uuid}",
@@ -316,7 +313,6 @@
                             "id": "general_exam",
                             "label": "General Examination Findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.ciel.general-exam-findings.uuid}",
@@ -472,7 +468,6 @@
                             "id": "heentFindings",
                             "label": "Head, eyes, ears, nose and throat findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.head-neck-findings.uuid}",
@@ -484,7 +479,6 @@
                             "id": "cvsFindings",
                             "label": "Cardiovascular system findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.cardiovascular-findings.uuid}",
@@ -496,7 +490,6 @@
                             "id": "respiratoryFindings",
                             "label": "Respiratory system findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.respiratory-findings.uuid}",
@@ -508,7 +501,6 @@
                             "id": "giFindings",
                             "label": "Gastrointestinal system findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.abdominal-findings.uuid}",
@@ -520,7 +512,6 @@
                             "id": "cnsFindings",
                             "label": "Central nervous system findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.neurological-findings.uuid}",
@@ -532,7 +523,6 @@
                             "id": "musculoskeletalFindings",
                             "label": "Musculoskeleta system findings",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.musculoskeletal-findings.uuid}",
@@ -544,7 +534,6 @@
                             "id": "nonPharmAdvice",
                             "label": "Non-Pharmacological Advice Given",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.advice-non-pharmacological.uuid}",
@@ -616,7 +605,6 @@
                             "id": "referralDestination",
                             "label": "Referral Destination",
                             "type": "obs",
-                            "placeholder": "Lorem Ipsum",
                             "questionOptions": {
                                 "rendering": "text",
                                 "concept": "${var.concept.referral-destination.uuid}"
@@ -629,7 +617,6 @@
                             "id": "referralReason",
                             "label": "Reason for the referral.",
                             "type": "obs",
-                            "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                             "questionOptions": {
                                 "rendering": "textarea",
                                 "concept": "${var.concept.referral-reason.uuid}",
