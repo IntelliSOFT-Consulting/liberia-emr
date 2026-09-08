@@ -17,3 +17,42 @@ ${var.concept.ciel.general-exam-findings.uuid},,Question,Text,General Exam Findi
 ${var.concept.ciel.primary-diagnosis.uuid},,Diagnosis,Coded,Primary Diagnosis,The primary diagnosis for the encounter.,
 ${var.concept.ciel.disposition.uuid},,Question,Coded,Inpatient patient disposition,The planned outcome or next step for the patient.,${var.concept.ciel.disposition-discharge.uuid};${var.concept.ciel.disposition-admit.uuid};${var.concept.ciel.disposition-refer.uuid}
 ${var.concept.ciel.followup-date.uuid},,Question,Date,Follow-up Date,The date the patient should return for a follow-up visit.,
+${var.concept.duration-of-symptoms.uuid},,Question,Numeric,Duration of Symptoms (days),Number of days the presenting complaint has been present.,
+${var.concept.surgical-history.uuid},,Question,Text,Surgical History,Previous surgical procedures.,
+${var.concept.medications-prescribed.uuid},,Question,Text,Medications Prescribed,Medications prescribed during this encounter.,
+${var.concept.visit-type-opd-new.uuid},,Misc,N/A,OPD New Visit,First visit for this complaint or new patient.,
+${var.concept.visit-type-opd-followup.uuid},,Misc,N/A,Follow-up Visit,Returning visit for an existing condition.,
+${var.concept.visit-type-opd-referral.uuid},,Misc,N/A,Referral Visit,Patient referred from another facility or provider.,
+${var.concept.visit-type-opd.uuid},,Question,Coded,OPD Visit Type,Whether this is a new or follow-up outpatient visit.,${var.concept.visit-type-opd-new.uuid};${var.concept.visit-type-opd-followup.uuid};${var.concept.visit-type-opd-referral.uuid}
+${var.concept.head-neck-findings.uuid},,Question,Text,Head and Neck Examination Findings,Clinical findings on examination of the head and neck.,
+${var.concept.cardiovascular-findings.uuid},,Question,Text,Cardiovascular Examination Findings,Clinical findings on cardiovascular examination.,
+${var.concept.respiratory-findings.uuid},,Question,Text,Respiratory Examination Findings,Clinical findings on respiratory examination.,
+${var.concept.abdominal-findings.uuid},,Question,Text,Abdominal Examination Findings,Clinical findings on abdominal examination.,
+${var.concept.musculoskeletal-findings.uuid},,Question,Text,Musculoskeletal Examination Findings,Clinical findings on musculoskeletal examination.,
+${var.concept.neurological-findings.uuid},,Question,Text,Neurological Examination Findings,Clinical findings on neurological examination.,
+${var.concept.skin-findings.uuid},,Question,Text,Skin Examination Findings,Clinical findings on skin and integument examination.,
+${var.concept.ros-fever.uuid},,Question,Coded,Fever or Chills (patient reported),Patient reports fever or chills.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-cough.uuid},,Question,Coded,Cough (patient reported),Patient reports cough.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-dyspnoea.uuid},,Question,Coded,Shortness of Breath (patient reported),Patient reports difficulty breathing or shortness of breath.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-chest-pain.uuid},,Question,Coded,Chest Pain (patient reported),Patient reports chest pain or tightness.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-abdominal-pain.uuid},,Question,Coded,Abdominal Pain (patient reported),Patient reports abdominal or stomach pain.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-nausea-vomiting.uuid},,Question,Coded,Nausea or Vomiting (patient reported),Patient reports nausea or vomiting.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-diarrhoea.uuid},,Question,Coded,Diarrhoea (patient reported),Patient reports loose or watery stools.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-headache.uuid},,Question,Coded,Headache (patient reported),Patient reports headache.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-skin-rash.uuid},,Question,Coded,Skin Rash (patient reported),Patient reports skin rash or eruption.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.ros-other-symptoms.uuid},,Question,Text,Other Symptoms (patient reported),Any other symptoms reported by the patient not listed above.,
+${var.concept.treatment-plan.uuid},,Question,Text,Treatment Plan,Clinical management plan for the current encounter.,
+${var.concept.referral-details.uuid},,Question,Text,Referral Details,Details of the referral including facility and reason.,
+${var.concept.admission-ward.uuid},,Question,Text,Ward or Unit for Admission,The ward or unit to which the patient is admitted.,
+${var.concept.patient-education-given.uuid},,Question,Coded,Patient Education Given,Whether patient education or counselling was provided.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-jaundice.uuid},,Question,Coded,General Exam: Jaundice,Presence of jaundice on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-pallor.uuid},,Question,Coded,General Exam: Pallor,Presence of pallor on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-cyanosis.uuid},,Question,Coded,General Exam: Cyanosis,Presence of cyanosis on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-lymphadenopathy.uuid},,Question,Coded,General Exam: Lymphadenopathy,Presence of lymphadenopathy on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-dehydration.uuid},,Question,Coded,General Exam: Dehydration,Presence of dehydration on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-finger-clubbing.uuid},,Question,Coded,General Exam: Finger Clubbing,Presence of digital clubbing on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.exam-edema.uuid},,Question,Coded,General Exam: Edema,Presence of peripheral or general edema on examination.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.advice-non-pharmacological.uuid},,Question,Text,Non-Pharmacological Advice Given,Non-pharmacological advice and guidance provided to the patient.,
+${var.concept.followup-required.uuid},,Question,Coded,Follow-up Required,Whether a follow-up visit is required.,${var.concept.ciel.yes.uuid};${var.concept.ciel.no.uuid}
+${var.concept.referral-destination.uuid},,Question,Text,Referral Destination Facility,The destination facility or service where patient was referred.,
+${var.concept.referral-reason.uuid},,Question,Text,OPD Reason for Referral,Clinical or administrative reason for patient referral.,
