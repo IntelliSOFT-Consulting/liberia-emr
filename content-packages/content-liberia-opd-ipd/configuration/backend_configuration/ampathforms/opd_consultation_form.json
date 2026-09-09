@@ -138,8 +138,8 @@
                                 },
                                 {
                                     "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 35 || myValue > 39",
-                                    "message": "Temperature is outside the normal range (35–39 °C). Please verify the reading."
+                                    "warnsWhenExpression": "myValue < 35 || myValue > 37.7",
+                                    "message": "Temperature is outside the normal range (35–37.7 °C). Please verify the reading."
                                 }
                             ]
                         },
