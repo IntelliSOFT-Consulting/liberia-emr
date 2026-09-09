@@ -321,7 +321,7 @@
                                 "concept": "${var.concept.ciel.bmi.uuid}",
                                 "disallowDecimals": false,
                                 "calculate": {
-                                    "calculateExpression": "calcBMI(height, weight)"
+                                    "calculateExpression": "age >= 16 ? calcBMI(height, weight) : ''"
                                 }
                             },
                             "disabled": {
@@ -605,6 +605,11 @@
                                 {
                                     "type": "date",
                                     "allowFutureDates": "true"
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
+                                    "message": "follow up date cannot be set to previous dates"
                                 }
                             ]
                         },
