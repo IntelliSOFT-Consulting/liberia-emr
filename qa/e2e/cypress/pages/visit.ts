@@ -9,7 +9,6 @@ class VisitPage {
         cy.contains(itemText, { timeout: 10000 }).click();
     }
 
-    // Minimal setup so a visit test has a patient to work with — not itself a registration test.
     registerPatient() {
         this.registrationPage.visitPage();
         this.registrationPage.fillRequiredFields({
@@ -30,7 +29,7 @@ class VisitPage {
 
         cy.get('input[name="visit-types"]', { timeout: 20000 }).should('have.length.greaterThan', 0);
 
-        if (visitType) {
+        if (visitType) { 
             cy.contains('.cds--radio-button-wrapper', visitType, { timeout: 20000 })
                 .find('input[name="visit-types"]')
                 .check({ force: true });
@@ -38,8 +37,17 @@ class VisitPage {
             cy.get('input[name="visit-types"]', { timeout: 20000 }).first().check({ force: true });
         }
 
-        cy.get(`#payment-details-${paymentDetails}`, { timeout: 20000 }).check({ force: true });
-        cy.contains('button', 'Start visit', { timeout: 20000 }).should('be.enabled').click();
+        cy.get(`#payment-details-${paymentDetails}`, { timeout: 20000 }).scrollIntoView().should('exist').check({ force: true });
+
+        // The queue location field renders further down the form and can be scrolled out of view
+        cy.get('#queueLocation', { timeout: 20000 }).scrollIntoView().should('be.visible');
+
+        cy.contains('button', 'Start visit', { timeout: 20000 })
+            .scrollIntoView()
+            .should('be.enabled')
+            .click({ force: true });
+
+        cy.contains('.cds--tag__label', 'Active Visit', { timeout: 20000 }).should('be.visible');
     }
 
     endVisit() {

@@ -71,10 +71,11 @@ export default defineConfig({
   env: {
     ...localEnv,
     baseUrl: defaultBaseUrl,
-    RUN_LIVE_REGISTRATION: process.env.RUN_LIVE_REGISTRATION === 'true',
   },
   e2e: {
     baseUrl: defaultBaseUrl,
+    viewportWidth: 1440,
+    viewportHeight: 900,
     setupNodeEvents(on, config) {
       return config
     },
