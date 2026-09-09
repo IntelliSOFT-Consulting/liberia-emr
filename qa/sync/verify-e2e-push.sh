@@ -73,8 +73,8 @@ CENTRAL_BIRTHDATE="$(curl -sk -u "$CENTRAL_USER:$CENTRAL_PASSWORD" \
   "$CENTRAL_URL/openmrs/ws/rest/v1/patient/$PATIENT_UUID?v=custom:(person:(birthdate))" \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["person"]["birthdate"])')"
 if [[ "$FACILITY_BIRTHDATE" != "$CENTRAL_BIRTHDATE" ]]; then
+  # The values are deliberately not printed: no PHI in output, fabricated or not.
   echo "FAIL: patient $PATIENT_UUID exists at both ends but the birthdate differs" >&2
-  echo "      facility: $FACILITY_BIRTHDATE  central: $CENTRAL_BIRTHDATE" >&2
   exit 1
 fi
 

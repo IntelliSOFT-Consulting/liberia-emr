@@ -143,13 +143,15 @@ services:
       OPENMRS_DB_PASSWORD: ${MYSQL_PASSWORD}
       MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
-      MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:-}
+      # :? so a missing credential fails the deploy loudly instead of leaving the EMR up
+      # with a crash-looping receiver, which is the E11 silent-discard hazard in waiting.
+      MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:?set in central.env}
       ARTEMIS_URL: tcp://artemis:61616
       ARTEMIS_USER: ${ARTEMIS_USER}
       ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD}
       OPENMRS_BASE_URL: http://backend:8080/openmrs
-      OPENMRS_REST_USER: ${SYNC_REST_USER:-}
-      OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:-}
+      OPENMRS_REST_USER: ${SYNC_REST_USER:?set in central.env}
+      OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:?set in central.env}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
       - receiver-state:/opt/eip
