@@ -121,7 +121,7 @@
                         },
                         {
                             "id": "temperature",
-                            "label": "Temperature",
+                            "label": "Temperature (°C)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
@@ -135,37 +135,47 @@
                                     "type": "js_expression",
                                     "failsWhenExpression": "myValue < 25 || myValue > 43",
                                     "message": "Temperature must be between 25 and 43 °C."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 35 || myValue > 39",
+                                    "message": "Temperature is outside the normal range (35–39 °C). Please verify the reading."
                                 }
                             ]
                         },
                         {
                             "id": "pulse",
-                            "label": "Pulse/Heart Rate",
+                            "label": "Pulse/Heart Rate (beats/min)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.pulse.uuid}",
-                                "min": "30",
-                                "max": "300",
+                                "min": "0",
+                                "max": "230",
                                 "step": 1,
                                 "disallowDecimals": true
                             },
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 30 || myValue > 300",
-                                    "message": "Pulse must be between 30 and 300 beats/min."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 230",
+                                    "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 55 || myValue > 100",
+                                    "message": "Pulse is outside the normal range (55–100 beats/min). Please verify the reading."
                                 }
                             ]
                         },
                         {
                             "id": "respiratoryRate",
-                            "label": "Respiratory Rate",
+                            "label": "Respiratory Rate (breaths/min)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.rr.uuid}",
-                                "min": "5",
+                                "min": "0",
                                 "max": "80",
                                 "step": 1,
                                 "disallowDecimals": true
@@ -173,64 +183,79 @@
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 5 || myValue > 80",
-                                    "message": "Respiratory rate must be between 5 and 80 breaths/min."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 80",
+                                    "message": "Respiratory Rate must be between 0 and 80 breaths/min."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 12 || myValue > 26",
+                                    "message": "Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading."
                                 }
                             ]
                         },
                         {
                             "id": "systolic",
-                            "label": "Systolic",
+                            "label": "Systolic Blood Pressure (mmHg)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.systolic.uuid}",
-                                "min": "50",
-                                "max": "300",
+                                "min": "0",
+                                "max": "250",
                                 "step": 1,
                                 "disallowDecimals": true
                             },
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 50 || myValue > 300",
-                                    "message": "Systolic BP must be between 50 and 300 mmHg."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
+                                    "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 100 || myValue > 140",
+                                    "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
                                 }
                             ]
                         },
                         {
                             "id": "diastolic",
-                            "label": "Dystolic",
+                            "label": "Diastolic Blood Pressure (mmHg)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.diastolic.uuid}",
-                                "min": "20",
-                                "max": "200",
+                                "min": "0",
+                                "max": "150",
                                 "step": 1,
                                 "disallowDecimals": true
                             },
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 20 || myValue > 200",
-                                    "message": "Diastolic BP must be between 20 and 200 mmHg."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 150",
+                                    "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
                                 },
                                 {
                                     "type": "js_expression",
                                     "failsWhenExpression": "!isEmpty(systolic) && myValue >= systolic",
                                     "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 55 || myValue > 90",
+                                    "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
                                 }
                             ]
                         },
                         {
                             "id": "spo2",
-                            "label": "Oxygen saturation (SO2)",
+                            "label": "Oxygen Saturation — SpO₂ (%)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.spo2.uuid}",
-                                "min": "50",
+                                "min": "0",
                                 "max": "100",
                                 "step": 1,
                                 "disallowDecimals": true
@@ -238,33 +263,38 @@
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 50 || myValue > 100",
-                                    "message": "SpO2 must be between 50 and 100%."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 100",
+                                    "message": "Oxygen Saturation (SpO₂) must be between 0 and 100%."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 95",
+                                    "message": "SpO₂ below 95% — please verify the reading and consider clinical review."
                                 }
                             ]
                         },
                         {
                             "id": "weight",
-                            "label": "Weight",
+                            "label": "Weight (kg)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
                                 "concept": "${var.concept.ciel.weight.uuid}",
-                                "min": "0.5",
+                                "min": "0",
                                 "max": "250",
                                 "step": 0.1
                             },
                             "validators": [
                                 {
                                     "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0.5 || myValue > 250",
-                                    "message": "Weight must be between 0.5 and 250 kg."
+                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
+                                    "message": "Weight must be between 0 and 250 kg."
                                 }
                             ]
                         },
                         {
                             "id": "height",
-                            "label": "Height/Length",
+                            "label": "Height/Length (cm)",
                             "type": "obs",
                             "questionOptions": {
                                 "rendering": "number",
@@ -277,7 +307,7 @@
                                 {
                                     "type": "js_expression",
                                     "failsWhenExpression": "myValue < 10 || myValue > 272",
-                                    "message": "Height must be between 10 and 272 cm."
+                                    "message": "Height/Length must be between 10 and 272 cm."
                                 }
                             ]
                         },
