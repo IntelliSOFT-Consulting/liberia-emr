@@ -62,6 +62,19 @@ class QueuePage {
                 cy.contains('td', service, { timeout: 20000 }).should('be.visible');
             });
     }
+
+    callAndServePatient(patientName: string) {
+        cy.get('tbody', { timeout: 30000 })
+            .contains('a', patientName, { timeout: 30000 })
+            .closest('tr')
+            .within(() => {
+                cy.contains('button', 'Call', { timeout: 20000 }).click();
+            });
+
+        cy.get('.cds--modal-footer', { timeout: 20000 })
+            .contains('button', 'Serve', { timeout: 20000 })
+            .click();
+    }
 }
 
 export default QueuePage;
