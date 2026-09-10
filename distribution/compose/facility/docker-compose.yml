@@ -173,10 +173,49 @@ services:
     profiles: ["sync"]
     networks: [liberiaemr]
 
+  # Watches the sync sender (distribution/monitoring/); rides the sync profile because
+  # it monitors nothing else. UI binds loopback by default: reach it over an SSH tunnel,
+  # or set PROM_BIND_ADDR consciously.
+  prometheus:
+    image: prom/prometheus:v2.53.4
+    restart: unless-stopped
+    profiles: ["sync"]
+    ports:
+      - "${PROM_BIND_ADDR:-127.0.0.1}:${PROM_PORT:-9090}:9090"
+    volumes:
+      - ../../monitoring/prometheus-facility.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/rules-facility.yml:/etc/prometheus/rules.yml:ro
+      - prom-data:/prometheus
+    networks: [liberiaemr]
+
+  # Delivers alerts to ALERT_WEBHOOK_URL; with it unset, alerts are UI-only (dev boxes).
+  # The image has no config templating, so the entrypoint picks and renders with sed.
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    profiles: ["sync"]
+    environment:
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        if [ -n "$$ALERT_WEBHOOK_URL" ]; then
+        sed "s|__WEBHOOK_URL__|$$ALERT_WEBHOOK_URL|" /etc/amtpl/alertmanager-webhook.yml > /tmp/am.yml;
+        else cp /etc/amtpl/alertmanager-null.yml /tmp/am.yml; fi
+        && exec /bin/alertmanager --config.file=/tmp/am.yml --storage.path=/alertmanager
+    ports:
+      - "${PROM_BIND_ADDR:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ../../monitoring:/etc/amtpl:ro
+      - alertmanager-data:/alertmanager
+    networks: [liberiaemr]
+
 volumes:
   db-data:
   openmrs-data:
   sync-queue:
+  prom-data:
+  alertmanager-data:
 
 networks:
   liberiaemr:

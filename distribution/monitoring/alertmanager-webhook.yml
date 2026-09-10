@@ -1,0 +1,14 @@
+# Used when ALERT_WEBHOOK_URL is set: every alert goes to the webhook, which is the
+# channel-agnostic integration point (Slack, Teams, an SMS gateway, OpenHIM, all take
+# webhooks). The compose entrypoint substitutes the placeholder at start-up.
+route:
+  receiver: admins
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: admins
+    webhook_configs:
+      - url: "__WEBHOOK_URL__"
+        send_resolved: true
