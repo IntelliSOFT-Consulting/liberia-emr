@@ -1,0 +1,40 @@
+# Facility alert rules. Metric names are dbsync's own, verified against the running
+# 4.0.0 sender: openmrs_dbsync_watcher_errors is the sender's error/retry queue depth,
+# openmrs_dbsync_watcher_datasource_status_* is 1 when the datasource answers.
+groups:
+  - name: sync-sender
+    rules:
+      - alert: SyncPushErrors
+        expr: openmrs_dbsync_watcher_errors > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sync push errors queued at the facility"
+          description: "The sender's error/retry queue has been non-empty for 5 minutes. Records are safe and will retry; investigate the broker link if this persists. NEVER a reason to stop clinical work."
+
+      - alert: SyncPushErrorsSustained
+        expr: openmrs_dbsync_watcher_errors > 0
+        for: 2h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync push failing for over 2 hours"
+          description: "Sustained failure suggests an outage or misconfiguration rather than a blip. Check connectivity to the central broker; queued records remain safe."
+
+      - alert: SyncSenderDown
+        expr: up{job="sync-sender"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync sender is not running"
+          description: "Nothing is capturing changes from the binlog. Change capture resumes from the saved offset when the sender returns; the binlog retention window (99 days) is the deadline."
+
+      - alert: SyncSenderDatasourceDown
+        expr: openmrs_dbsync_watcher_datasource_status_openmrs == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync sender cannot reach the facility database"

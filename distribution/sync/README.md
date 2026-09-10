@@ -67,3 +67,6 @@ at rest (sync-eip.md section 7.4).
   asserts every record lands at central exactly once with empty retry queues. Also
   asserts the binlog retention floor (risk F1), the one thing time compression cannot
   exercise.
+- `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,
+  asserts the SyncPushErrors alert fires and is admin visible, and that it resolves on
+  recovery (resolution rides the sender's 30 minute retry cycle).
