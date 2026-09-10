@@ -97,11 +97,20 @@ class RegistrationPage {
         cy.get('[data-testid="birthdate"] [data-type="year"]', { timeout: 10000 }).click().type(year);
     }
 
+    enterPhoneNumber(phoneNumber: string) {
+        cy.get('input#phone, input[name="attributes.14d4f066-15f5-102d-96e4-000c29c2a5d7"]', { timeout: 10000 })
+            .should('exist')
+            .scrollIntoView()
+            .clear({ force: true })
+            .type(phoneNumber, { force: true });
+    }
+
     fillRequiredFields(data: {
         firstName?: string;
         familyName?: string;
         sex?: 'male' | 'female';
         birthdate?: { day: string; month: string; year: string };
+        phoneNumber?: string;
     }) {
         if (data.firstName) {
             this.enterFirstName(data.firstName);
@@ -122,6 +131,10 @@ class RegistrationPage {
         if (data.birthdate) {
             this.enterBirthdate(data.birthdate.day, data.birthdate.month, data.birthdate.year);
         }
+
+        if (data.phoneNumber) {
+            this.enterPhoneNumber(data.phoneNumber);
+        }
     }
 
     preventDoubleSubmitOnRapidClicks(data: {
@@ -129,6 +142,7 @@ class RegistrationPage {
         familyName: string;
         sex: 'male' | 'female';
         birthdate: { day: string; month: string; year: string };
+        phoneNumber: string;
     }) {
         let requestCount = 0;
 

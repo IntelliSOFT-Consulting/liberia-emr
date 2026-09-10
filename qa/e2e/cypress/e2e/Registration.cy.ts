@@ -1,13 +1,14 @@
 import AuthenticationPage from '../pages/AuthenticationPage';
 import { loginWithSession } from '../support/session';
 import Registration from '../pages/Registration';
-import { faker, futureBirthdateParts, randomAdultBirthdateParts } from '../support/faker';
+import { faker, futureBirthdateParts, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 
 type RegistrationTestData = {
     firstName: string;
     familyName: string;
     sex: 'male' | 'female';
     birthdate: { day: string; month: string; year: string };
+    phoneNumber: string;
 };
 
 const createRegistrationTestData = (): RegistrationTestData => {
@@ -15,7 +16,8 @@ const createRegistrationTestData = (): RegistrationTestData => {
         firstName: faker.person.firstName(),
         familyName: faker.person.lastName(),
         sex: faker.helpers.arrayElement(['male', 'female'] as const),
-        birthdate: randomAdultBirthdateParts()
+        birthdate: randomAdultBirthdateParts(),
+        phoneNumber: liberiaPhoneNumber()
     };
 };
 
@@ -41,7 +43,8 @@ describe('Registration', () => {
             firstName: testData.firstName,
             familyName: testData.familyName,
             sex: testData.sex,
-            birthdate: testData.birthdate
+            birthdate: testData.birthdate,
+            phoneNumber: testData.phoneNumber
         });
         registrationPage.clickRegisterPatient();
     };
@@ -122,7 +125,8 @@ describe('Registration', () => {
             firstName: testData.firstName,
             familyName: testData.familyName,
             sex: testData.sex,
-            birthdate: futureBirthdateParts(2)
+            birthdate: futureBirthdateParts(2),
+            phoneNumber: testData.phoneNumber
         });
         registrationPage.clickRegisterPatient();
         registrationPage.verifyRequiredFieldErrors(['birthdate']);

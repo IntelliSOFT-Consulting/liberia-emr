@@ -1,5 +1,5 @@
 import RegistrationPage from './Registration';
-import { faker, randomAdultBirthdateParts } from '../support/faker';
+import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 
 class VisitPage {
     private registrationPage = new RegistrationPage();
@@ -15,7 +15,8 @@ class VisitPage {
             firstName: faker.person.firstName(),
             familyName: faker.person.lastName(),
             sex: faker.helpers.arrayElement(['male', 'female'] as const),
-            birthdate: randomAdultBirthdateParts()
+            birthdate: randomAdultBirthdateParts(),
+            phoneNumber: liberiaPhoneNumber()
         });
         this.registrationPage.clickRegisterPatient();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
