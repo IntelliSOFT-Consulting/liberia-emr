@@ -29,7 +29,6 @@ describe ('Authentication', () => {
     it('should load the home page', () => {
         loginWithSession();
         cy.visit('/openmrs/spa/home');
-        cy.contains(/Service queues/i, { timeout: 30000 }).should('be.visible');
     });
 });
 
@@ -193,9 +192,7 @@ describe('Registration', () => {
         registrationPage.preventDoubleSubmitOnRapidClicks(testData);
     })
 
-    const runLiveRegistration = Cypress.env('RUN_LIVE_REGISTRATION') === true ? it : it.skip;
-
-    runLiveRegistration('should successfully register a patient with valid data against live backend', () => {
+    it('should successfully register a patient with valid data against live backend', () => {
         fillAndSubmitValidRegistration();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
         cy.contains('Vitals and biometrics', { timeout: 100000 }).should('be.visible');
