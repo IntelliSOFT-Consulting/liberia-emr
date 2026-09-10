@@ -91,6 +91,17 @@ first, not the second.
 
 ---
 
+### D1 — recorded deviation: sync push transport ships without TLS
+
+| Field | |
+| --- | --- |
+| Recorded | 2026-09-10 (PR #68 review) |
+| What deviates | The facility to central sync push runs over the Artemis broker on plain TCP with a shared credential, below the SOP baseline "TLS for facility↔cloud sync". Web traffic through the gateway remains TLS-enforced. |
+| Why | The broker and receiver land before the mTLS hardening build; running the push interim was judged preferable to shipping an untested TLS layer with it. |
+| Compensating controls | The broker must not be reachable from outside the MOH network (mandatory firewall, stated at the port mapping in the central compose and via `ARTEMIS_BIND_ADDR`); facility disks under D7; payloads carry no credentials for other systems. |
+| Closing milestone | The LE-35 security hardening build: TLS listener, per-facility client certificates and broker authorisation (D2/D6/D8), each proven by a negative test. This entry is deleted when that merges. |
+| MOH ICT Unit acceptance | **Pending.** This deviation is not accepted until a named MOH ICT Unit owner signs here with a date. |
+
 ### D5 — the dev/staging exception
 
 The legacy admin UI is off by default and on only where it is deliberately switched on.

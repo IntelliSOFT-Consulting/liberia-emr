@@ -114,7 +114,10 @@ services:
       ARTEMIS_USER: ${ARTEMIS_USER:?set in central.env}
       ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:?set in central.env}
     ports:
-      - "61616:61616"
+      # MANDATORY FIREWALL: with the interim plain-tcp listener, this port must not be
+      # reachable from outside the MOH network. Bind it to the MOH-facing interface via
+      # ARTEMIS_BIND_ADDR; the 0.0.0.0 default exists for single-host development only.
+      - "${ARTEMIS_BIND_ADDR:-0.0.0.0}:61616:61616"
     volumes:
       - artemis-data:/var/lib/artemis-instance
     healthcheck:
