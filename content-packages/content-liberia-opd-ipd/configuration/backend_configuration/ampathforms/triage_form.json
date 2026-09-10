@@ -1,7 +1,7 @@
 {
     "name": "Triage Form",
     "uuid": "cc825000-8dc4-4d87-b9ba-a47d2b4f9712",
-    "version": "1.0",
+    "version": "2.0",
     "published": true,
     "retired": false,
     "encounter": "Triage",
@@ -22,7 +22,7 @@
                             },
                             "questionOptions": {
                                 "rendering": "radio",
-                                "concept": "a7f5a894-3a05-4f32-84db-6c5847e923e2",
+                                "concept": "${var.concept.ebola-screening-result.uuid}",
                                 "answers": [
                                     {
                                         "label": "Negative",
@@ -337,17 +337,17 @@
                             },
                             "questionOptions": {
                                 "rendering": "checkbox",
-                                "concept": "${var.concept.red-emergency-signs.uuid}",
+                                "concept": "${var.concept.red-emergency-signs-coded.uuid}",
                                 "answers": [
                                     { "label": "Apnoea", "concept": "${var.concept.sign.apnoea.uuid}" },
-                                    { "label": "Cyanosis", "concept": "${var.concept.ciel.cyanosis.uuid}" },
+                                    { "label": "Cyanosis", "concept": "${var.concept.ciel.143050.uuid}" },
                                     { "label": "Severe resp. distress", "concept": "${var.concept.sign.severe-resp-distress.uuid}" },
                                     { "label": "Circulatory failure", "concept": "${var.concept.sign.circulatory-failure.uuid}" },
                                     { "label": "Shock + dehydration", "concept": "${var.concept.sign.shock-dehydration.uuid}" },
-                                    { "label": "Bleeding", "concept": "${var.concept.ciel.bleeding.uuid}" },
-                                    { "label": "Anaphylaxis", "concept": "${var.concept.ciel.anaphylaxis.uuid}" },
-                                    { "label": "Coma", "concept": "${var.concept.ciel.coma.uuid}" },
-                                    { "label": "Convulsions", "concept": "${var.concept.ciel.convulsions.uuid}" },
+                                    { "label": "Bleeding", "concept": "${var.concept.ciel.147241.uuid}" },
+                                    { "label": "Anaphylaxis", "concept": "${var.concept.ciel.148888.uuid}" },
+                                    { "label": "Coma", "concept": "${var.concept.ciel.144576.uuid}" },
+                                    { "label": "Convulsions", "concept": "${var.concept.ciel.113054.uuid}" },
                                     { "label": "Severe trauma", "concept": "${var.concept.sign.severe-trauma.uuid}" },
                                     { "label": "Severe burns", "concept": "${var.concept.sign.severe-burns.uuid}" },
                                     { "label": "Contagious disease", "concept": "${var.concept.sign.contagious-disease.uuid}" }
@@ -363,7 +363,7 @@
                             },
                             "questionOptions": {
                                 "rendering": "checkbox",
-                                "concept": "${var.concept.yellow-priority-signs.uuid}",
+                                "concept": "${var.concept.yellow-priority-signs-coded.uuid}",
                                 "answers": [
                                     { "label": "Tiny baby (<2 months)", "concept": "${var.concept.sign.tiny-baby.uuid}" },
                                     { "label": "Abnormal temperature", "concept": "${var.concept.sign.abnormal-temp.uuid}" },
