@@ -200,7 +200,8 @@ services:
     command:
       - >-
         if [ -n "$$ALERT_WEBHOOK_URL" ]; then
-        sed "s|__WEBHOOK_URL__|$$ALERT_WEBHOOK_URL|" /etc/amtpl/alertmanager-webhook.yml > /tmp/am.yml;
+        printf %s "$$ALERT_WEBHOOK_URL" > /tmp/webhook-url
+        && cp /etc/amtpl/alertmanager-webhook.yml /tmp/am.yml;
         else cp /etc/amtpl/alertmanager-null.yml /tmp/am.yml; fi
         && exec /bin/alertmanager --config.file=/tmp/am.yml --storage.path=/alertmanager
     ports:
