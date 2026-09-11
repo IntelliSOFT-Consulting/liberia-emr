@@ -1,0 +1,55 @@
+<?xml version='1.0'?>
+<!-- LiberiaEMR sync broker. Rendered to broker.xml by the entrypoint; see README.md. -->
+<configuration xmlns="urn:activemq" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <core xmlns="urn:activemq:core">
+    <name>liberiaemr-sync</name>
+
+    <persistence-enabled>true</persistence-enabled>
+    <journal-directory>/var/lib/artemis-data/journal</journal-directory>
+    <bindings-directory>/var/lib/artemis-data/bindings</bindings-directory>
+    <large-messages-directory>/var/lib/artemis-data/large-messages</large-messages-directory>
+    <paging-directory>/var/lib/artemis-data/paging</paging-directory>
+
+    <acceptors>
+      <!-- Facilities and the receiver. supportAdvisory=false: OpenWire clients would otherwise
+           need permissions on advisory topics this broker has no use for. -->
+      <acceptor name="sync">tcp://0.0.0.0:61617?protocols=OPENWIRE;sslEnabled=true;needClientAuth=true;enabledProtocols=TLSv1.2,TLSv1.3;keyStorePath=/etc/broker-certs/broker.p12;keyStorePassword=__KEYSTORE_PASSWORD__;trustStorePath=/etc/broker-certs/truststore.p12;trustStorePassword=__TRUSTSTORE_PASSWORD__;crlPath=/etc/broker-certs/public/crl.pem;supportAdvisory=false;suppressInternalManagementObjects=true;securityDomain=sync</acceptor>
+      <!-- Operators only, from inside the container. The admin certificate cannot log in on 61617. -->
+      <acceptor name="admin">tcp://127.0.0.1:61618?protocols=CORE;sslEnabled=true;needClientAuth=true;enabledProtocols=TLSv1.2,TLSv1.3;keyStorePath=/etc/broker-certs/broker.p12;keyStorePassword=__KEYSTORE_PASSWORD__;trustStorePath=/etc/broker-certs/truststore.p12;trustStorePassword=__TRUSTSTORE_PASSWORD__;crlPath=/etc/broker-certs/public/crl.pem;securityDomain=admin</acceptor>
+    </acceptors>
+
+    <security-enabled>true</security-enabled>
+    <!-- The login cache is not scoped to an acceptor's security domain; with it on, an admin
+         login on the loopback acceptor would be reused on 61617. -->
+    <authentication-cache-size>0</authentication-cache-size>
+    <!-- Stamps the authenticated identity on each message while it is on the broker. -->
+    <populate-validated-user>true</populate-validated-user>
+
+    <metrics>
+      <plugin class-name="com.redhat.amq.broker.core.server.metrics.plugins.ArtemisPrometheusMetricsPlugin"/>
+    </metrics>
+
+    <xi:include href="/etc/broker-certs/sync-security.xml"/>
+    <xi:include href="/etc/broker-certs/sync-addresses.xml"/>
+    <xi:include href="/etc/broker-certs/sync-diverts.xml"/>
+
+    <address-settings>
+      <address-setting match="openmrs.sync.topic">
+        <!-- Never bounce a facility send; a long receiver outage pages to disk. -->
+        <address-full-policy>PAGE</address-full-policy>
+        <max-size-bytes>104857600</max-size-bytes>
+        <!-- A message the receiver cannot apply after 10 attempts is kept for an operator,
+             not dropped, and stops blocking everything behind it. -->
+        <dead-letter-address>DLA</dead-letter-address>
+        <max-delivery-attempts>10</max-delivery-attempts>
+        <auto-create-addresses>false</auto-create-addresses>
+        <auto-create-queues>false</auto-create-queues>
+        <auto-delete-queues>false</auto-delete-queues>
+      </address-setting>
+      <address-setting match="#">
+        <auto-create-addresses>false</auto-create-addresses>
+        <auto-create-queues>false</auto-create-queues>
+      </address-setting>
+    </address-settings>
+  </core>
+</configuration>

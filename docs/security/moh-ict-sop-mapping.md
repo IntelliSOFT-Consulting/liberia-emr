@@ -80,27 +80,16 @@ first, not the second.
 
 | # | Control | Baseline | Where | Status |
 | --- | --- | --- | --- | --- |
-| D1 | TLS for facility↔cloud sync | TLS 1.2+ | Web traffic: `distribution/gateway/default.conf.template`. Sync push: the Artemis broker connection (central compose) | **Split**: Enforced for web traffic through the gateway; **Open** for the sync push, whose interim broker listener is plain TCP on the MOH-internal network until the TLS listener lands with D2 |
-| D2 | Mutual TLS on sync | — | Artemis broker at central: per-facility client certificate on `sync`, authorised on certificate subject; see [sync architecture](../architecture/sync-eip.md) §1.4 and §7.8 | **Open**; the broker now exists in the central compose (risk E5 closed) but its interim listener is shared-credential plain TCP for the MOH-internal network only, and the certificate lifecycle is the MOH ICT Unit's |
+| D1 | TLS for facility↔cloud sync | TLS 1.2+ | Web traffic: `distribution/gateway/default.conf.template`. Sync push: `distribution/broker/` (TLS 1.2/1.3 only, no plain listener) | Enforced for web traffic. **Partial** for the sync push: built and proven by `qa/sync/verify-hardening.sh`, not yet deployed with MOH-issued certificates |
+| D2 | Mutual TLS on sync | — | `distribution/broker/`: per-facility client certificate required, identity from the certificate subject, no passwords; see [sync architecture](../architecture/sync-eip.md) §1.4 and §7.8 | **Partial**: built and proven by refusal tests. Open items: MOH ICT Unit certificate lifecycle, and the §7.2 check that a payload's facility code matches the sending certificate |
 | D3 | Encrypted backups | — | `docs/runbooks/backup-restore.md` | **Open** |
 | D4 | No secrets in the repository | — | Only `.env.example` templates committed; enforced by `scripts/validate/no-secrets.sh` in CI | Enforced |
 | D5 | Legacy admin UI disabled | production only | `LEGACY_ADMIN_UI` drives both `OMRS_CONFIG_MODULE_WEB_ADMIN` and the gateway `/openmrs/admin/` block | Enforced in production — see the note below |
-| D6 | Per-facility broker authorisation: send-only, own address only | — | Artemis broker at central; see [sync architecture](../architecture/sync-eip.md) §7.3 | **Open** |
+| D6 | Per-facility broker authorisation: send-only, own address only | — | `scripts/security/render-broker-config.sh`; see [sync architecture](../architecture/sync-eip.md) §7.3 | **Partial**: built and proven by refusal tests (other addresses, topic, subscriptions); not yet deployed |
 | D7 | Full-disk encryption on facility servers | — | Facility host build | **Open**; not previously in this register |
-| D8 | Facility certificate revocation enforced at central | — | Broker CRL/OCSP; [sync architecture](../architecture/sync-eip.md) §7.2 | **Open** |
+| D8 | Facility certificate revocation enforced at central | — | Broker CRL, reloaded when replaced; `distribution/broker/README.md` | **Partial**: built and proven by refusal tests; the MOH ICT Unit must publish and refresh the CRL |
 
 ---
-
-### D1 — recorded deviation: sync push transport ships without TLS
-
-| Field | |
-| --- | --- |
-| Recorded | 2026-09-10 (PR #68 review) |
-| What deviates | The facility to central sync push runs over the Artemis broker on plain TCP with a shared credential, below the SOP baseline "TLS for facility↔cloud sync". Web traffic through the gateway remains TLS-enforced. |
-| Why | The broker and receiver land before the mTLS hardening build; running the push interim was judged preferable to shipping an untested TLS layer with it. |
-| Compensating controls | The broker must not be reachable from outside the MOH network (mandatory firewall, stated at the port mapping in the central compose and via `ARTEMIS_BIND_ADDR`); facility disks under D7; payloads carry no credentials for other systems. |
-| Closing milestone | The LE-35 security hardening build: TLS listener, per-facility client certificates and broker authorisation (D2/D6/D8), each proven by a negative test. This entry is deleted when that merges. |
-| MOH ICT Unit acceptance | **Pending.** This deviation is not accepted until a named MOH ICT Unit owner signs here with a date. |
 
 ### D5 — the dev/staging exception
 

@@ -13,11 +13,11 @@ while IFS= read -r f; do
   fail=1
 done < <(cd "$ROOT" && git ls-files | grep -E '(^|/)[^/]*\.env$' || true)
 
-# Private keys and certificates.
+# Private keys, certificates, keystore passwords and PGP secret keys.
 while IFS= read -r f; do
   echo "FAIL: key or certificate committed: $f" >&2
   fail=1
-done < <(cd "$ROOT" && git ls-files | grep -E '\.(pem|key|p12|pfx|jks)$' || true)
+done < <(cd "$ROOT" && git ls-files | grep -E '\.(pem|key|p12|pfx|jks|pass)$|-sec\.asc$' || true)
 
 # Assigned-looking credentials outside the templates.
 while IFS= read -r hit; do
