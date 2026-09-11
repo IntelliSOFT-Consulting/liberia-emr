@@ -48,6 +48,14 @@
           "dateOfReferral",
           "reasonForReferral"
         ]
+      },
+      {
+        "id": "contact",
+        "name": "Contact Details",
+        "fields": [
+          "address",
+          "telephoneNumber"
+        ]
       }
     ],
     "fieldDefinitions": [
@@ -95,11 +103,26 @@
         "uuid": "${var.personattribute.reason-for-referral.uuid}",
         "label": "Reason for referral",
         "placeholder": "Reason for referral"
+      },
+      {
+        "id": "telephoneNumber",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.telephone-number.uuid}",
+        "label": "Telephone Number",
+        "validation": {
+          "required": true
+        }
       }
     ],
     "fieldConfigurations": {
       "name": {
         "displayMiddleName": true
+      },
+      "phone": {
+        "personAttributeUuid": "${var.personattributetypes.telephone-number.uuid}",
+        "validation": {
+          "required": true
+        }
       },
       "address": {
         "useAddressHierarchy": {
