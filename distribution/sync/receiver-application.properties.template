@@ -1,0 +1,85 @@
+# dbsync receiver configuration, rendered by docker-entrypoint-receiver.sh from the
+# environment. ${VAR} placeholders are substituted with envsubst; everything else is
+# literal and follows the upstream template (receiver-app/configuration/
+# application.properties in mekomsolutions/openmrs-dbsync at the pinned tag).
+
+eip.home=/opt/eip
+spring.jpa.open-in-view=false
+
+# Empty on purpose: the entity set is decided at the sender (sync-entity-coverage.md);
+# excluding here silently drops data the facility believes it delivered.
+db-sync.excludedEntities=
+
+inbound.retry.interval=1800000
+inbound.retry.initial.delay=120000
+
+# true is a MAINTENANCE mode that halts all sync and batch-recomputes hashes; normal
+# per-message hash storage happens regardless of this flag.
+hashes.update=false
+hashes.update.tables=
+
+# Log to the console; the container runtime owns log collection. NO PHI in logs
+# (integration/eip/routes/README.md).
+logging.config=classpath:logback-console.xml
+openmrs.eip.log.level=${LOG_LEVEL}
+logging.level.oauth2-token-route=${LOG_LEVEL}
+logging.level.receiver=${LOG_LEVEL}
+logging.level.receiver-db-sync=${LOG_LEVEL}
+logging.level.receiver-complex-obs-sync=${LOG_LEVEL}
+logging.level.receiver-error-handler=${LOG_LEVEL}
+logging.level.receiver-retry=${LOG_LEVEL}
+logging.level.receiver-update-search-index=${LOG_LEVEL}
+logging.level.receiver-clear-db-cache=${LOG_LEVEL}
+logging.level.org.openmrs.eip=${LOG_LEVEL}
+
+# Health and Prometheus metrics for the alerting build (LE-35 acceptance criterion 3).
+management.endpoints.enabled-by-default=false
+management.endpoint.prometheus.enabled=true
+management.endpoint.health.enabled=true
+management.endpoints.web.exposure.include=health,prometheus
+
+# REST access to the central OpenMRS instance: platform version at start-up, search
+# index updates, complex-obs writes.
+openmrs.baseUrl=${OPENMRS_BASE_URL}
+openmrs.username=${OPENMRS_REST_USER}
+openmrs.password=${OPENMRS_REST_PASSWORD}
+
+openmrs.db.host=${OPENMRS_DB_HOST}
+openmrs.db.port=${OPENMRS_DB_PORT}
+openmrs.db.name=${OPENMRS_DB_NAME}
+
+spring.openmrs-datasource.driverClassName=com.mysql.cj.jdbc.Driver
+spring.openmrs-datasource.jdbcUrl=jdbc:mysql://${OPENMRS_DB_HOST}:${OPENMRS_DB_PORT}/${OPENMRS_DB_NAME}
+spring.openmrs-datasource.username=${OPENMRS_DB_USER}
+spring.openmrs-datasource.password=${OPENMRS_DB_PASSWORD}
+
+# The management database holds the receiver's durable state: inbound queues, the
+# conflict queue, retry queues, and the per-entity hashes. Its principal is created on
+# the first boot of the central database by distribution/compose/central/initdb/.
+spring.mngt-datasource.driverClassName=com.mysql.cj.jdbc.Driver
+spring.mngt-datasource.jdbcUrl=jdbc:mysql://${OPENMRS_DB_HOST}:${OPENMRS_DB_PORT}/${MGMT_DB_NAME}
+spring.mngt-datasource.username=${MGMT_DB_USER}
+spring.mngt-datasource.password=${MGMT_DB_PASSWORD}
+
+spring.artemis.brokerUrl=${ARTEMIS_URL}
+spring.artemis.user=${ARTEMIS_USER}
+spring.artemis.password=${ARTEMIS_PASSWORD}
+
+# Durable subscription: exists after the first successful connection, then holds
+# messages across downtime. Never change the name or clientId; the backlog strands.
+camel.input.endpoint=activemq:topic:openmrs.sync.topic?subscriptionDurable=true&durableSubscriptionName=DB-SYNC-RECEIVER&connectionFactory=activeMqConnFactory&acknowledgementModeName=CLIENT_ACKNOWLEDGE&messageListenerContainerFactory=customMessageListenerContainerFactory
+activemq.clientId=DB-SYNC-REC
+
+openmrs.complex.obs.data.directory=${COMPLEX_OBS_DIR}
+
+# Payload decryption lands with the security hardening build, together with sender-side
+# encryption; both flip in the same release or nothing is readable.
+openmrs.eip.dbsync.encryption.enabled=false
+
+# Disabled, but the oauth Camel route resolves these placeholders at start-up even so;
+# the keys must exist with empty values or the application fails to boot.
+oauth.enabled=false
+oauth.access.token.uri=
+oauth.client.id=
+oauth.client.secret=
+oauth.client.scope=

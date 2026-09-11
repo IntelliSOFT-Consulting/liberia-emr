@@ -19,8 +19,14 @@ services:
       MARIADB_USER: ${MYSQL_USER}
       MARIADB_PASSWORD: ${MYSQL_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # For initdb/10-sync-mgmt-db.sh, which runs ONLY on the first boot of an empty
+      # volume; an unset password means it does nothing.
+      SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
+      SYNC_MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
+      SYNC_MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:-}
     volumes:
       - db-data:/var/lib/mysql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -40,6 +46,8 @@ services:
       OMRS_CONFIG_CONNECTION_DATABASE: ${MYSQL_DATABASE}
       OMRS_CONFIG_CONNECTION_USERNAME: ${MYSQL_USER}
       OMRS_CONFIG_CONNECTION_PASSWORD: ${MYSQL_PASSWORD}
+      # true for the FIRST boot on an empty database only, then back to false.
+      OMRS_CONFIG_CREATE_TABLES: "${OMRS_CREATE_TABLES:-false}"
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
       # Legacy admin UI, MOH ICT SOP control D5. Hard-coded false here, unlike the
       # facility stack: central holds the national data set and has no dev/staging
@@ -89,18 +97,67 @@ services:
       - ${TLS_CERT_DIR}:/etc/nginx/certs:ro
     networks: [liberiaemr]
 
-  # Receives facility pushes over TLS with mutual authentication.
+  # The JMS broker every facility pushes to (sync-eip.md §1.4). Durable delivery has
+  # one precondition (risk E11): the receiver's subscription exists only after its
+  # FIRST successful connection, so on a fresh deploy the receiver comes up before any
+  # facility sender points here, or early messages are silently discarded. The journal
+  # is an enumerated copy of clinical data at rest (§7.4).
+  #
+  # INTERIM posture until the hardening build (D2/D6/D8): plain tcp with a shared
+  # credential, MOH-internal networks only; D2 stays Open in the SOP mapping.
+  artemis:
+    image: apache/activemq-artemis:2.33.0
+    restart: unless-stopped
+    environment:
+      # Baked into the broker instance on the FIRST boot of an empty volume and ignored
+      # afterwards (rotation goes through the artemis CLI), so unset must fail loudly.
+      ARTEMIS_USER: ${ARTEMIS_USER:?set in central.env}
+      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:?set in central.env}
+    ports:
+      # MANDATORY FIREWALL: with the interim plain-tcp listener, this port must not be
+      # reachable from outside the MOH network. Bind it to the MOH-facing interface via
+      # ARTEMIS_BIND_ADDR; the 0.0.0.0 default exists for single-host development only.
+      - "${ARTEMIS_BIND_ADDR:-0.0.0.0}:61616:61616"
+    volumes:
+      - artemis-data:/var/lib/artemis-instance
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/61616'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [liberiaemr]
+
+  # Applies facility pushes to the central database: the dbsync receiver
+  # (distribution/sync/). Waits for a healthy backend because it reads the platform
+  # version over REST at start-up. Contract: integration/eip/routes/README.md.
   sync-receiver:
     image: ${REGISTRY}/liberia-emr-sync-receiver:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
+      artemis:
+        condition: service_healthy
     environment:
-      EIP_ALLOWED_FACILITIES: ${ALLOWED_FACILITY_CODES}
+      OPENMRS_DB_HOST: db
+      OPENMRS_DB_PORT: "3306"
+      OPENMRS_DB_NAME: ${MYSQL_DATABASE}
+      OPENMRS_DB_USER: ${MYSQL_USER}
+      OPENMRS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
+      MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
+      # :? so a missing credential fails the deploy loudly instead of leaving the EMR up
+      # with a crash-looping receiver, which is the E11 silent-discard hazard in waiting.
+      MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:?set in central.env}
+      ARTEMIS_URL: tcp://artemis:61616
+      ARTEMIS_USER: ${ARTEMIS_USER}
+      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD}
+      OPENMRS_BASE_URL: http://backend:8080/openmrs
+      OPENMRS_REST_USER: ${SYNC_REST_USER:?set in central.env}
+      OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:?set in central.env}
+      LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
-      - ${TLS_CERT_DIR}:/etc/eip/certs:ro
-      - sync-inbox:/opt/eip/inbox
+      - receiver-state:/opt/eip
     networks: [liberiaemr]
 
   # DHIS2 aggregate export runs from central only, never from a facility.
@@ -122,7 +179,8 @@ services:
 volumes:
   db-data:
   openmrs-data:
-  sync-inbox:
+  artemis-data:
+  receiver-state:
 
 networks:
   liberiaemr:

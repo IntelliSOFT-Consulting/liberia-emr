@@ -6,8 +6,8 @@
 eip.home=/opt/eip
 spring.jpa.open-in-view=false
 
-# Unique identifier of this facility on the receiving side. The receiver authorises
-# senders by this id, so it must match what central has been told to expect.
+# Identifies this facility in every payload; it does not authorise. Who may push is
+# decided at the broker (hardening build).
 db-sync.senderId=${DBSYNC_SENDER_ID}
 
 db-event.destinations=direct:sender-db-sync
