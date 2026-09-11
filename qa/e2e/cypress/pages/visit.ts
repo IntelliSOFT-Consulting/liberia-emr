@@ -1,5 +1,5 @@
 import RegistrationPage from './Registration';
-import { faker, randomAdultBirthdateParts } from '../support/faker';
+import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 
 class VisitPage {
     private registrationPage = new RegistrationPage();
@@ -15,11 +15,16 @@ class VisitPage {
             firstName: faker.person.firstName(),
             familyName: faker.person.lastName(),
             sex: faker.helpers.arrayElement(['male', 'female'] as const),
-            birthdate: randomAdultBirthdateParts()
+            birthdate: randomAdultBirthdateParts(),
+            phoneNumber: liberiaPhoneNumber()
         });
         this.registrationPage.clickRegisterPatient();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
-        cy.contains('button', 'Actions', { timeout: 20000 }).should('be.visible');
+
+        // The chart shell (including the Actions menu) can take a moment to mount after navigation
+        cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
+            .should('be.visible');
+        cy.contains('button', 'Actions', { timeout: 30000 }).should('be.visible');
     }
 
     startVisit(visitType?: string, paymentDetails: 'paying' | 'non-paying' = 'paying') {

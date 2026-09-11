@@ -1,7 +1,7 @@
 import { loginWithSession } from '../support/session';
 import RegistrationPage from '../pages/Registration';
 import QueuePage from '../pages/queue';
-import { faker, randomAdultBirthdateParts } from '../support/faker';
+import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 
 describe('Queue', () => {
     const registrationPage = new RegistrationPage();
@@ -16,7 +16,8 @@ describe('Queue', () => {
             firstName,
             familyName,
             sex: faker.helpers.arrayElement(['male', 'female'] as const),
-            birthdate: randomAdultBirthdateParts()
+            birthdate: randomAdultBirthdateParts(),
+            phoneNumber: liberiaPhoneNumber()
         });
         registrationPage.clickRegisterPatient();
         cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');

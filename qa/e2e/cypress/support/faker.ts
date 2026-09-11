@@ -24,4 +24,6 @@ export const futureBirthdateParts = (daysAhead = 1): DateParts => {
     return toDateParts(futureDate);
 };
 
+export const liberiaPhoneNumber = (): string => `077${faker.string.numeric(7)}`;
+
 export { faker };
