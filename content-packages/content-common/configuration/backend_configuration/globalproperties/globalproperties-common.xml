@@ -9,5 +9,9 @@
             <property>attachments.allowedFileExtensions</property>
             <value>jpeg,jpg,png,pdf</value>
         </globalProperty>
+        <globalProperty>
+            <property>visits.allowOverlappingVisits</property>
+            <value>false</value>
+        </globalProperty>
     </globalProperties>
 </config>
