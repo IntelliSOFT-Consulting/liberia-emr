@@ -62,3 +62,11 @@ at rest (sync-eip.md section 7.4).
   payload, no PHI in logs.
 - `qa/sync/verify-e2e-push.sh`: the full chain, a patient registered at the facility
   appears at central with the same UUID intact. Acceptance criterion 1 of LE-35.
+- `qa/sync/outage-drill.sh`: acceptance criterion 2. Cuts the broker link, registers a
+  counted batch through the outage including container restarts, restores the link, and
+  asserts every record lands at central exactly once with empty retry queues. Also
+  asserts the binlog retention floor (risk F1), the one thing time compression cannot
+  exercise.
+- `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,
+  asserts the SyncPushErrors alert fires and is admin visible, and that it resolves on
+  recovery (resolution rides the sender's 30 minute retry cycle).

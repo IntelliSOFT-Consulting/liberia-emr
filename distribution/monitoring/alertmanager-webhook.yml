@@ -1,0 +1,15 @@
+# Used when ALERT_WEBHOOK_URL is set: every alert goes to the webhook, which is the
+# channel-agnostic integration point (Slack, Teams, an SMS gateway, OpenHIM, all take
+# webhooks). The URL is read from a file the compose entrypoint writes verbatim, so no
+# character in it is ever interpreted by a substitution tool.
+route:
+  receiver: admins
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: admins
+    webhook_configs:
+      - url_file: /tmp/webhook-url
+        send_resolved: true

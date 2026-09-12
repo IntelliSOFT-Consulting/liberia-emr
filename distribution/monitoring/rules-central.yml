@@ -1,0 +1,38 @@
+# Central alert rules. Metric names verified against the running dbsync 4.0.0 receiver.
+groups:
+  - name: sync-receiver
+    rules:
+      - alert: ReceiverErrors
+        expr: openmrs_dbsync_receiver_errors > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Receiver error queue is non-empty"
+          description: "Messages from facilities failed to apply and are parked for retry. Persistent errors mean a schema or metadata mismatch; nothing is lost, but nothing parked reaches the national record until resolved."
+
+      - alert: ReceiverConflicts
+        expr: openmrs_dbsync_receiver_conflicts > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Records in the receiver conflict queue"
+          description: "Central's copy was newer than an incoming payload. Each entry needs a human decision; central must stay read-only for clinical data (sync-eip.md section 1.8c), so conflicts should be rare and investigated."
+
+      - alert: ReceiverDown
+        expr: up{job="sync-receiver"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync receiver is not running"
+          description: "Facility pushes are waiting on the broker's durable subscription. They are safe, but nothing reaches the national record until the receiver returns."
+
+      - alert: ReceiverDatasourceDown
+        expr: openmrs_dbsync_receiver_datasource_status_openmrs == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Receiver cannot reach the central database"
