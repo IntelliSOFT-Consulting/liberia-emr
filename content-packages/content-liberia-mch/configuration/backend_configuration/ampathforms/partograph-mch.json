@@ -28,7 +28,7 @@
               ]
             },
             {
-              "label": "Fetal heart rate",
+              "label": "Fetal heart rate (beats/min)",
               "type": "obs",
               "id": "fetal_heart_rate",
               "questionOptions": {
@@ -36,13 +36,19 @@
                 "rendering": "number",
                 "min": 40,
                 "max": 250,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
-                  "message": "Value must be between 40 and 250"
+                  "message": "Fetal heart rate must be between 40 and 250 beats/min."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "!isEmpty(myValue) && (myValue < 120 || myValue > 160)",
+                  "message": "Fetal heart rate is outside the normal range (120–160 beats/min). Please verify the reading."
                 }
               ]
             },
@@ -169,7 +175,7 @@
                 "concept": "${var.concept.mch.units-of-oxytocin-litre-given-per-minute.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "step": "1"
+                "step": 1
               },
               "validators": [
                 {
@@ -189,21 +195,27 @@
               }
             },
             {
-              "label": "Pulse Rate",
+              "label": "Pulse Rate (bpm)",
               "type": "obs",
               "id": "pulse_rate",
               "questionOptions": {
                 "concept": "${var.concept.ciel.pulse.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 230,
-                "step": 1
+                "max": 300,
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
-                  "message": "Value must be between 0 and 230"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 300)",
+                  "message": "Pulse Rate must be between 0 and 300 bpm."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "!isEmpty(myValue) && (myValue < 60 || myValue > 100)",
+                  "message": "Pulse Rate is outside the normal range (60–100 bpm). Please verify the reading."
                 }
               ]
             }
@@ -214,7 +226,7 @@
           "isExpanded": true,
           "questions": [
             {
-              "label": "Systolic",
+              "label": "Systolic (mmHg)",
               "type": "obs",
               "id": "bp_sys",
               "questionOptions": {
@@ -222,32 +234,49 @@
                 "rendering": "number",
                 "min": 0,
                 "max": 250,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
-                  "message": "Value must be between 0 and 250"
+                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "!isEmpty(myValue) && (myValue < 100 || myValue > 140)",
+                  "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
                 }
               ]
             },
             {
-              "label": "Diastolic",
+              "label": "Diastolic (mmHg)",
               "type": "obs",
               "id": "bp_dia",
               "questionOptions": {
                 "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 200,
-                "step": 1
+                "max": 150,
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
-                  "message": "Value must be between 0 and 200"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150)",
+                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(bp_sys) && !isEmpty(myValue) && myValue >= bp_sys",
+                  "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "!isEmpty(myValue) && (myValue < 55 || myValue > 90)",
+                  "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
                 }
               ]
             }
@@ -258,21 +287,26 @@
           "isExpanded": true,
           "questions": [
             {
-              "label": "Temperature",
+              "label": "Temperature (°C)",
               "type": "obs",
               "id": "temperature",
               "questionOptions": {
                 "concept": "${var.concept.ciel.temperature.uuid}",
                 "rendering": "number",
-                "min": 25,
-                "max": 47,
+                "min": 20,
+                "max": 45,
                 "step": 0.1
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 25 || myValue > 47)",
-                  "message": "Value must be between 25 and 47"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 20 || myValue > 45)",
+                  "message": "Temperature must be between 20 and 45 °C."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "!isEmpty(myValue) && (myValue < 36 || myValue > 38)",
+                  "message": "Temperature is outside the normal range (36–38 °C). Please verify the reading."
                 }
               ]
             },

@@ -43,5 +43,7 @@
   "labourProgressNormal": "Labour Progress Normal",
   "labourProgressNormalSubtitle": "Cervical dilatation is progressing as expected and remains on or to the left of the Alert Line. Continue routine monitoring.",
   "labourConcluded": "Labour Concluded",
-  "labourConcludedSubtitle": "Delivery has been recorded. Active intrapartum monitoring is complete."
+  "labourConcludedSubtitle": "Delivery has been recorded. Active intrapartum monitoring is complete.",
+  "oxytocinUnitsTable": "Oxytocin (U/L/min)",
+  "partographFemaleOnly": "The Partograph is only available for female patients."
 }

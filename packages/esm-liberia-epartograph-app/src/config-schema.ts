@@ -48,6 +48,11 @@ export const configSchema = {
     proteinsInUrineUuid: { _type: Type.ConceptUuid, _default: 'ae5975cf-3db6-5af8-bdba-862ffc0971b9' },
     acetoneInUrineUuid: { _type: Type.ConceptUuid, _default: '3b1719eb-8a36-5954-b8b5-168dba013ed7' },
     urineVolumeUuid: { _type: Type.ConceptUuid, _default: '8910504d-b468-5616-94b8-35c970ab1324' },
+    negativeDipstickUuid: { _type: Type.ConceptUuid, _default: '' },
+    plus1DipstickUuid: { _type: Type.ConceptUuid, _default: '' },
+    plus2DipstickUuid: { _type: Type.ConceptUuid, _default: '' },
+    plus3DipstickUuid: { _type: Type.ConceptUuid, _default: '' },
+    plus4DipstickUuid: { _type: Type.ConceptUuid, _default: '' },
   },
   alertLine: {
     _description:
@@ -92,6 +97,11 @@ export interface EPartographConfig {
     proteinsInUrineUuid: string;
     acetoneInUrineUuid: string;
     urineVolumeUuid: string;
+    negativeDipstickUuid?: string;
+    plus1DipstickUuid?: string;
+    plus2DipstickUuid?: string;
+    plus3DipstickUuid?: string;
+    plus4DipstickUuid?: string;
   };
   alertLine: {
     startDilationCm: number;

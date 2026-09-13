@@ -18,6 +18,7 @@ import {
   TabPanel,
   TabPanels,
   TabsVertical,
+  Tooltip,
 } from '@carbon/react';
 import { Add, Analytics, Table as TableIcon } from '@carbon/react/icons';
 import {
@@ -28,6 +29,7 @@ import {
   restBaseUrl,
   showSnackbar,
   useConfig,
+  usePatient,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -55,12 +57,8 @@ interface PartographMainProps {
  */
 const PARTOGRAPH_TABS = [
   { labelKey: 'fetalHeartRate', label: 'Fetal Heart Rate', conceptKey: 'fetalHeartRateUuid', unit: 'beats/min' },
-  { labelKey: 'amnioticFluid', label: 'Amniotic fluid', conceptKey: 'amnioticFluidUuid', unit: '' },
-  { labelKey: 'moulding', label: 'Moulding', conceptKey: 'mouldingUuid', unit: '' },
   { labelKey: 'compositeChart', label: 'Cervical dilatation and Fetal Head Descent', conceptKey: null, unit: '' },
   { labelKey: 'contractions', label: 'Contractions per 10 minutes', conceptKey: 'contractionsPerTenMinutesUuid', unit: '' },
-  { labelKey: 'oxytocinUnits', label: 'Units of oxytocin/litre given per minute', conceptKey: 'oxytocinUnitsPerLitreUuid', unit: '' },
-  { labelKey: 'drugsIvFluids', label: 'Drugs given and IV Fluids', conceptKey: 'drugsAndIvFluidsUuid', unit: '' },
   { labelKey: 'pulseRate', label: 'Pulse Rate', conceptKey: 'pulseUuid', unit: 'bpm' },
   { labelKey: 'bloodPressure', label: 'Blood Pressure', conceptKey: 'systolicBloodPressureUuid', unit: 'mmHg' },
   { labelKey: 'temperature', label: 'Temperature', conceptKey: 'temperatureUuid', unit: '°C' },
@@ -86,9 +84,16 @@ const PAGE_SIZE = 10;
 const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<EPartographConfig>();
+  const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
   const { encounters, isDelivered, isLoading, error, mutate } = usePartographEncounters(patientUuid);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
+
+  const isFemale = useMemo(() => {
+    if (!patient) return true;
+    const gender = patient.gender?.toLowerCase();
+    return gender === 'female' || gender === 'f';
+  }, [patient]);
 
   // Graph/table view toggle
   const [showGraph, setShowGraph] = useState(false); // default to table view
@@ -157,8 +162,21 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
 
   // ── Loading / Error / Empty states ──────────────────────────────────────────
 
-  if (isLoading) {
+  if (isLoading || isLoadingPatient) {
     return <DataTableSkeleton columnCount={5} rowCount={5} />;
+  }
+
+  if (patient && !isFemale) {
+    return (
+      <div className={styles.widgetContainer}>
+        <CardHeader title={t('partograph', 'Partograph')}>
+          <span />
+        </CardHeader>
+        <div className={styles.femaleOnlyNotice}>
+          <p>{t('partographFemaleOnly', 'The Partograph is only available for female patients.')}</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -284,6 +302,24 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
 // Sub-component: Serial observation table
 // ──────────────────────────────────────────────────────────────────────────────
 
+interface TruncatedTextCellProps {
+  text: string;
+  maxLength?: number;
+}
+
+const TruncatedTextCell: React.FC<TruncatedTextCellProps> = ({ text, maxLength = 25 }) => {
+  if (!text || text === '--') return <span>--</span>;
+  if (text.length <= maxLength) return <span>{text}</span>;
+
+  return (
+    <Tooltip align="bottom" label={text}>
+      <span className={styles.truncatedText} title={text}>
+        {text.slice(0, maxLength)}…
+      </span>
+    </Tooltip>
+  );
+};
+
 interface PartographObsTableProps {
   encounters: ReturnType<typeof usePartographEncounters>['encounters'];
   config: EPartographConfig;
@@ -291,14 +327,19 @@ interface PartographObsTableProps {
 
 /**
  * Renders a Carbon DataTable with rows = encounters (newest-first) and
- * columns = the key partograph concepts from the current tab.
- *
- * Table columns are fixed to the three shown in the mockup for quick glance:
- * Date/Time, Fetal Heart Rate, Cervical Dilatation, Contractions.
+ * columns = the key partograph concepts.
  */
 const PartographObsTable: React.FC<PartographObsTableProps> = ({ encounters, config }) => {
   const { t } = useTranslation();
-  const { fetalHeartRateUuid, cervicalDilationUuid, contractionsPerTenMinutesUuid } = config.concepts;
+  const {
+    fetalHeartRateUuid,
+    amnioticFluidUuid,
+    mouldingUuid,
+    cervicalDilationUuid,
+    contractionsPerTenMinutesUuid,
+    oxytocinUnitsPerLitreUuid,
+    drugsAndIvFluidsUuid,
+  } = config.concepts;
 
   return (
     <div className={styles.tableContainer}>
@@ -308,8 +349,12 @@ const PartographObsTable: React.FC<PartographObsTableProps> = ({ encounters, con
             <TableRow>
               <TableHeader>{t('dateAndTime', 'Date and Time')}</TableHeader>
               <TableHeader>{t('fetalHeartRate', 'Fetal Heart Rate (bpm)')}</TableHeader>
+              <TableHeader>{t('amnioticFluid', 'Amniotic fluid')}</TableHeader>
+              <TableHeader>{t('moulding', 'Moulding')}</TableHeader>
               <TableHeader>{t('cervicalDilationCm', 'Cervical dilatation (cm)')}</TableHeader>
               <TableHeader>{t('contractions', 'Contractions')}</TableHeader>
+              <TableHeader>{t('oxytocinUnitsTable', 'Oxytocin (U/L/min)')}</TableHeader>
+              <TableHeader>{t('drugsIvFluids', 'Drugs given and IV Fluids')}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -317,8 +362,14 @@ const PartographObsTable: React.FC<PartographObsTableProps> = ({ encounters, con
               <TableRow key={enc.uuid}>
                 <TableCell>{formatDatetime(new Date(enc.encounterDatetime), { mode: 'wide' })}</TableCell>
                 <TableCell>{getObsDisplayValue(findObs(enc, fetalHeartRateUuid))}</TableCell>
+                <TableCell>{getObsDisplayValue(findObs(enc, amnioticFluidUuid))}</TableCell>
+                <TableCell>{getObsDisplayValue(findObs(enc, mouldingUuid))}</TableCell>
                 <TableCell>{getObsDisplayValue(findObs(enc, cervicalDilationUuid))}</TableCell>
                 <TableCell>{getObsDisplayValue(findObs(enc, contractionsPerTenMinutesUuid))}</TableCell>
+                <TableCell>{getObsDisplayValue(findObs(enc, oxytocinUnitsPerLitreUuid))}</TableCell>
+                <TableCell>
+                  <TruncatedTextCell text={getObsDisplayValue(findObs(enc, drugsAndIvFluidsUuid))} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

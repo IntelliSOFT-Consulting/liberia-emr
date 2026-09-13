@@ -42,24 +42,73 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
     if (!config.concepts.cervicalDilationUuid) return null;
     for (const enc of encounters) {
       const obs = findObs(enc, config.concepts.cervicalDilationUuid);
-      const dilation = getNumericObsValue(obs);
+      const dilation = getNumericObsValue(obs, config);
       if (dilation !== null && dilation >= startDilationCm) {
         return new Date(enc.encounterDatetime);
       }
     }
     return null;
-  }, [encounters, config.concepts.cervicalDilationUuid, startDilationCm]);
+  }, [encounters, config, startDilationCm]);
+
+  const isUrinalysis = Boolean(
+    seriesConceptUuid &&
+      (seriesConceptUuid === config.concepts?.proteinsInUrineUuid ||
+        seriesConceptUuid === config.concepts?.acetoneInUrineUuid),
+  );
+
+  const isBloodPressure = Boolean(
+    seriesConceptUuid &&
+      seriesConceptUuid === config.concepts?.systolicBloodPressureUuid &&
+      config.concepts?.diastolicBloodPressureUuid,
+  );
 
   // --- Build chart data ---
   const chartData = useMemo(() => {
     if (seriesConceptUuid) {
-      // Single-series mode (FHR, Pulse, BP, Temp, etc.)
+      if (isBloodPressure) {
+        const systolicPoints = encounters
+          .map((enc) => {
+            const obs = findObs(enc, config.concepts.systolicBloodPressureUuid);
+            const value = getNumericObsValue(obs, config);
+            if (value === null) return null;
+            return {
+              group: t('systolicBp', 'Systolic BP'),
+              key: new Date(enc.encounterDatetime),
+              value,
+              date: enc.encounterDatetime,
+            };
+          })
+          .filter(Boolean);
+
+        const diastolicPoints = encounters
+          .map((enc) => {
+            const obs = findObs(enc, config.concepts.diastolicBloodPressureUuid);
+            const value = getNumericObsValue(obs, config);
+            if (value === null) return null;
+            return {
+              group: t('diastolicBp', 'Diastolic BP'),
+              key: new Date(enc.encounterDatetime),
+              value,
+              date: enc.encounterDatetime,
+            };
+          })
+          .filter(Boolean);
+
+        return [...systolicPoints, ...diastolicPoints];
+      }
+
+      // Single-series mode (FHR, Pulse, Temp, Proteins in urine, Acetone in urine, Urine volume)
       return encounters
         .map((enc) => {
           const obs = findObs(enc, seriesConceptUuid);
-          const value = getNumericObsValue(obs);
+          const value = getNumericObsValue(obs, config);
           if (value === null) return null;
-          return { group: seriesLabel ?? seriesConceptUuid, key: new Date(enc.encounterDatetime), value, date: enc.encounterDatetime };
+          return {
+            group: seriesLabel ?? seriesConceptUuid,
+            key: new Date(enc.encounterDatetime),
+            value,
+            date: enc.encounterDatetime,
+          };
         })
         .filter(Boolean);
     }
@@ -68,7 +117,7 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
     const dilationPoints = encounters
       .map((enc) => {
         const obs = findObs(enc, config.concepts.cervicalDilationUuid);
-        const value = getNumericObsValue(obs);
+        const value = getNumericObsValue(obs, config);
         if (value === null) return null;
         return { group: t('cervicalDilation', 'Cervical Dilatation'), key: new Date(enc.encounterDatetime), value, date: enc.encounterDatetime };
       })
@@ -77,7 +126,7 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
     const descentPoints = encounters
       .map((enc) => {
         const obs = findObs(enc, config.concepts.descentOfHeadUuid);
-        const value = getNumericObsValue(obs);
+        const value = getNumericObsValue(obs, config);
         if (value === null) return null;
         return { group: t('fetalHeadDescent', 'Fetal Head Descent'), key: new Date(enc.encounterDatetime), value, date: enc.encounterDatetime };
       })
@@ -103,7 +152,26 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
       : [];
 
     return [...dilationPoints, ...descentPoints, ...alertPoints, ...actionPoints];
-  }, [encounters, config, seriesConceptUuid, seriesLabel, t, t0, startDilationCm, cmPerHour, actionLineOffsetHours]);
+  }, [
+    encounters,
+    config,
+    seriesConceptUuid,
+    seriesLabel,
+    isBloodPressure,
+    t,
+    t0,
+    startDilationCm,
+    cmPerHour,
+    actionLineOffsetHours,
+  ]);
+
+  const URINE_SCALE_LABELS: Record<number, string> = {
+    0: 'Negative',
+    1: '+',
+    2: '++',
+    3: '+++',
+    4: '++++',
+  };
 
   const chartOptions: LineChartOptions = useMemo(
     () => ({
@@ -119,7 +187,16 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
           scaleType: ScaleTypes.LINEAR,
           includeZero: true,
           ...(seriesConceptUuid
-            ? {}
+            ? isUrinalysis
+              ? {
+                  title,
+                  domain: [0, 4],
+                  ticks: {
+                    values: [0, 1, 2, 3, 4],
+                    formatter: (val: number) => URINE_SCALE_LABELS[val] ?? String(val),
+                  },
+                }
+              : {}
             : {
                 title: t('dilation', 'Dilation / Descent'),
                 domain: [0, 10],
@@ -128,6 +205,9 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
       },
       color: {
         scale: {
+          ...(seriesConceptUuid && seriesLabel ? { [seriesLabel]: '#0f62fe' } : {}),
+          [t('systolicBp', 'Systolic BP')]: '#da1e28',
+          [t('diastolicBp', 'Diastolic BP')]: '#0f62fe',
           // WHO-standard colours for the partograph
           [t('cervicalDilation', 'Cervical Dilatation')]: '#8a3ffc',    // purple
           [t('fetalHeadDescent', 'Fetal Head Descent')]: '#24a148',      // green
@@ -146,12 +226,13 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
           return 4;
         }) as any,
       },
-      legend: { enabled: !seriesConceptUuid }, // hide legend for single-series
+      legend: { enabled: !seriesConceptUuid || isBloodPressure },
       tooltip: {
         customHTML: ([{ value, group, date }]: any) => {
           const dateLabel = t('date', 'Date');
+          const displayVal = isUrinalysis ? (URINE_SCALE_LABELS[value] ?? value) : value;
           return `<div class="cds--tooltip cds--tooltip--shown" style="min-width:max-content;font-weight:600">
-              <div style="font-size:1rem;line-height:1.4">${group}: <span>${value}</span></div>
+              <div style="font-size:1rem;line-height:1.4">${group}: <span>${displayVal}</span></div>
               <div style="color:#6F6F6F;font-size:0.875rem;font-weight:500;margin-top:0.125rem">${dateLabel}: ${formatDatetime(new Date(date), { mode: 'wide' })}</div>
             </div>`;
         },
@@ -170,7 +251,7 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
       zoomBar: { top: { enabled: true } },
       height: '400px',
     }),
-    [t, title, seriesConceptUuid],
+    [t, title, seriesConceptUuid, isUrinalysis],
   );
 
   if (!chartData.length) {
