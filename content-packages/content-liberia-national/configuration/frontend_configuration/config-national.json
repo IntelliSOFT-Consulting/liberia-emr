@@ -28,7 +28,10 @@
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": [
       "${var.identifiertype.moh-health-record.uuid}",
-      "${var.identifiertype.national-id.uuid}"
+      "${var.identifiertype.national-id.uuid}",
+      "${var.patientidentifiertypes.birth-certificate.uuid}",
+      "${var.patientidentifiertypes.driving-license.uuid}",
+      "${var.patientidentifiertypes.passport.uuid}"
     ],
     "sections": [
       "demographics",
