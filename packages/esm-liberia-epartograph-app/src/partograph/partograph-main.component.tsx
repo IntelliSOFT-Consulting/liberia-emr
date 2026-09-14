@@ -86,6 +86,12 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const config = useConfig<EPartographConfig>();
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
+  const isFemale = useMemo(() => {
+    if (!patient) return false;
+    const gender = patient.gender?.toLowerCase();
+    return gender === 'female' || gender === 'f';
+  }, [patient]);
+
   const {
     encounters,
     isDelivered,
@@ -94,14 +100,8 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     isLoading,
     error,
     mutate,
-  } = usePartographEncounters(patientUuid);
+  } = usePartographEncounters(isFemale ? patientUuid : null);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
-
-  const isFemale = useMemo(() => {
-    if (!patient) return true;
-    const gender = patient.gender?.toLowerCase();
-    return gender === 'female' || gender === 'f';
-  }, [patient]);
 
   // Graph/table view toggle
   const [showGraph, setShowGraph] = useState(false); // default to table view
@@ -222,7 +222,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     return <DataTableSkeleton columnCount={5} rowCount={5} />;
   }
 
-  if (patient && !isFemale) {
+  if (!isLoadingPatient && !isFemale) {
     return (
       <div className={styles.widgetContainer}>
         <CardHeader title={t('partograph', 'Partograph')}>

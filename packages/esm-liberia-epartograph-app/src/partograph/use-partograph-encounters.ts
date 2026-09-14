@@ -71,9 +71,9 @@ export interface UsePartographEncountersResult {
  *     - Excluded from the Partograph table because active labour has concluded.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-export function usePartographEncounters(patientUuid: string): UsePartographEncountersResult {
+export function usePartographEncounters(patientUuid: string | null): UsePartographEncountersResult {
   const config = useConfig<EPartographConfig>();
-  const { visitContext } = usePatientChartStore(patientUuid);
+  const { visitContext } = usePatientChartStore(patientUuid ?? '');
 
   const queryString = [
     `patient=${patientUuid}`,
