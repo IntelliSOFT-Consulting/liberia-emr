@@ -222,7 +222,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     return <DataTableSkeleton columnCount={8} rowCount={5} />;
   }
 
-  if (!isLoadingPatient && !isFemale) {
+  if (!isFemale) {
     return (
       <div className={styles.widgetContainer}>
         <CardHeader title={t('partograph', 'Partograph')}>
