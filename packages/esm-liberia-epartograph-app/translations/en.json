@@ -45,5 +45,9 @@
   "labourConcluded": "Labour Concluded",
   "labourConcludedSubtitle": "Delivery has been recorded. Active intrapartum monitoring is complete.",
   "oxytocinUnitsTable": "Oxytocin (U/L/min)",
-  "partographFemaleOnly": "The Partograph is only available for female patients."
+  "partographFemaleOnly": "The Partograph is only available for female patients.",
+  "noPartographsUntil4cm": "There are no Partograph to display for this patient until cervical dilatation is 4cm",
+  "partographAdmissionRequired": "The Partograph is only available after a \"1. First and Second Stage of Labor and Delivery\" encounter has been completed.",
+  "noPartographToDisplay": "There are no Partograph to display for this patient",
+  "recordPartograph": "Record Partograph"
 }

@@ -33,12 +33,12 @@ import {
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
-  EmptyState,
   ErrorState,
   PatientChartPagination,
   useStartVisitIfNeeded,
   type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
+import { PartographEmptyState } from './partograph-empty-state.component';
 import { usePartographEncounters, findObs, getObsDisplayValue } from './use-partograph-encounters';
 import { usePartographAlerts } from './cds/use-partograph-alerts';
 import PartographAlertsDisplay from './cds/partograph-alerts-display.component';
@@ -86,7 +86,15 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const config = useConfig<EPartographConfig>();
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
-  const { encounters, isDelivered, isLoading, error, mutate } = usePartographEncounters(patientUuid);
+  const {
+    encounters,
+    isDelivered,
+    hasAdmissionEncounter,
+    hasActiveLabourDilation,
+    isLoading,
+    error,
+    mutate,
+  } = usePartographEncounters(patientUuid);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   const isFemale = useMemo(() => {
@@ -183,12 +191,42 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     return <ErrorState error={error} headerTitle={t('partograph', 'Partograph')} />;
   }
 
+  // Prerequisite 1: Admission check ("1. First and Second Stage of Labor and Delivery")
+  if (!hasAdmissionEncounter && !hasActiveLabourDilation) {
+    return (
+      <PartographEmptyState
+        headerTitle={t('partograph', 'Partograph')}
+        message={t(
+          'partographAdmissionRequired',
+          'The Partograph is only available after a "1. First and Second Stage of Labor and Delivery" encounter has been completed.',
+        )}
+      />
+    );
+  }
+
+  // Prerequisite 2: Cervical dilatation threshold (≥ 4 cm / active labour)
+  if (!hasActiveLabourDilation) {
+    return (
+      <PartographEmptyState
+        headerTitle={t('partograph', 'Partograph')}
+        message={t(
+          'noPartographsUntil4cm',
+          'There are no Partograph to display for this patient until cervical dilatation is 4cm',
+        )}
+        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+      />
+    );
+  }
+
   if (!encounters.length) {
     return (
-      <EmptyState
-        displayText={t('partograph', 'partograph')}
+      <PartographEmptyState
         headerTitle={t('partograph', 'Partograph')}
-        launchForm={() => handleLaunchForm()}
+        message={t(
+          'noPartographToDisplay',
+          'There are no Partograph to display for this patient',
+        )}
+        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
       />
     );
   }

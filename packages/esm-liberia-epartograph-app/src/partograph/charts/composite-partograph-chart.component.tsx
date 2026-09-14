@@ -118,7 +118,7 @@ const CompositePartographChart: React.FC<CompositePartographChartProps> = ({
       .map((enc) => {
         const obs = findObs(enc, config.concepts.cervicalDilationUuid);
         const value = getNumericObsValue(obs, config);
-        if (value === null) return null;
+        if (value === null || value < startDilationCm) return null;
         return { group: t('cervicalDilation', 'Cervical Dilatation'), key: new Date(enc.encounterDatetime), value, date: enc.encounterDatetime };
       })
       .filter(Boolean);

@@ -21,12 +21,18 @@ export interface PartographEncounter {
 }
 
 export interface UsePartographEncountersResult {
-  /** All partograph serial encounters, sorted oldest-first (earliest record = index 0). */
+  /** All active labour partograph serial encounters (from T₀ onwards), sorted oldest-first. */
   encounters: PartographEncounter[];
   /** Encounter representing delivery (from Stage 3 or Delivery encounter type), if recorded. */
   deliveryEncounter?: PartographEncounter;
   /** Whether delivery has been documented for this patient/labour course. */
   isDelivered: boolean;
+  /** Whether a "1. First and Second Stage of Labor and Delivery" admission encounter exists. */
+  hasAdmissionEncounter: boolean;
+  /** Whether cervical dilatation has reached the active labour threshold (>= 4 cm). */
+  hasActiveLabourDilation: boolean;
+  /** The timestamp of the first encounter where cervical dilatation reached >= 4 cm (T₀). */
+  t0?: Date;
   isLoading: boolean;
   error: Error | undefined;
   mutate: () => Promise<any>;
@@ -82,7 +88,19 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
 
   const rawEncounters = data?.data?.results ?? [];
 
-  // 1. Identify all Partograph serial encounters (sorted chronologically)
+  // 1. Identify if a Stage 1 admission encounter exists
+  const hasAdmissionEncounter = useMemo(() => {
+    return rawEncounters.some((enc) => {
+      const formName = enc.form?.name || enc.form?.display || '';
+      const encTypeName = enc.encounterType?.display || '';
+      if (/first and second stage|labour admission/i.test(formName)) return true;
+      if (/first and second stage|labour admission/i.test(encTypeName)) return true;
+      if (config.firstAndSecondStageFormUuid && enc.form?.uuid === config.firstAndSecondStageFormUuid) return true;
+      return false;
+    });
+  }, [rawEncounters, config]);
+
+  // 2. Identify all Partograph serial encounters (sorted chronologically)
   const allPartographEncounters = useMemo(() => {
     const filtered = rawEncounters.filter((enc) => {
       const formName = enc.form?.name || enc.form?.display || '';
@@ -209,7 +227,61 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
     };
   }, [allPartographEncounters, deliveryEncounters]);
 
-  return { encounters: currentLabourEncounters, deliveryEncounter, isDelivered, isLoading, error, mutate };
+  // 4. Active Labour Threshold & T₀ Resolution (WHO Guidelines):
+  //
+  // Active intrapartum monitoring and partograph plotting only begin when
+  // cervical dilatation reaches ≥ 4 cm (the active phase of labour).
+  // Latent phase assessments (< 4 cm) are not plotted on the active partograph.
+  //
+  // - Scan candidate encounters in chronological order for the first encounter
+  //   where cervical dilatation is ≥ 4 cm. This encounter timestamp establishes T₀.
+  // - If found, filter encounters to only include those at or after T₀.
+  // - If not found, labour has not yet reached 4 cm. hasActiveLabourDilation is false,
+  //   and encounters are empty so the dashboard displays the appropriate clinical notice.
+  const { activeEncounters, t0, hasActiveLabourDilation } = useMemo(() => {
+    const startDilationCm = config.alertLine?.startDilationCm ?? 4;
+    let t0Date: Date | undefined;
+
+    for (const enc of currentLabourEncounters) {
+      const obs = findObs(enc, config.concepts?.cervicalDilationUuid);
+      const dilation = getNumericObsValue(obs, config);
+      if (dilation !== null && dilation >= startDilationCm) {
+        t0Date = new Date(enc.encounterDatetime);
+        break;
+      }
+    }
+
+    if (!t0Date) {
+      return {
+        activeEncounters: [] as PartographEncounter[],
+        t0: undefined,
+        hasActiveLabourDilation: false,
+      };
+    }
+
+    const t0Time = t0Date.getTime();
+    const filtered = currentLabourEncounters.filter(
+      (enc) => new Date(enc.encounterDatetime).getTime() >= t0Time,
+    );
+
+    return {
+      activeEncounters: filtered,
+      t0: t0Date,
+      hasActiveLabourDilation: true,
+    };
+  }, [currentLabourEncounters, config]);
+
+  return {
+    encounters: activeEncounters,
+    deliveryEncounter,
+    isDelivered,
+    hasAdmissionEncounter,
+    hasActiveLabourDilation,
+    t0,
+    isLoading,
+    error,
+    mutate,
+  };
 }
 
 /**
