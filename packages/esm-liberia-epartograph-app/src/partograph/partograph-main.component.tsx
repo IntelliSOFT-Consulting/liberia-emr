@@ -219,7 +219,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   // ── Loading / Error / Empty states ──────────────────────────────────────────
 
   if (isLoading || isLoadingPatient) {
-    return <DataTableSkeleton columnCount={5} rowCount={5} />;
+    return <DataTableSkeleton columnCount={8} rowCount={5} />;
   }
 
   if (!isLoadingPatient && !isFemale) {
@@ -401,7 +401,7 @@ const TruncatedTextCell: React.FC<TruncatedTextCellProps> = ({ text, maxLength =
 
   return (
     <Tooltip align="bottom" label={text}>
-      <span className={styles.truncatedText} title={text}>
+      <span className={styles.truncatedText} title={text} tabIndex={0} aria-label={text}>
         {text.slice(0, maxLength)}…
       </span>
     </Tooltip>
