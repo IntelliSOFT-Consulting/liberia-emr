@@ -177,3 +177,20 @@
   font-size: var(--cds-label-01-font-size);
   color: var(--cds-text-secondary);
 }
+
+.truncatedText {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.femaleOnlyNotice {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--cds-text-secondary);
+  font-size: 0.9375rem;
+}

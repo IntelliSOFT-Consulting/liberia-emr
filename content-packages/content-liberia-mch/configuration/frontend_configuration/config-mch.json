@@ -44,7 +44,12 @@
       "drugsAndIvFluidsUuid": "${var.concept.mch.drugs-given-and-iv-fluids.uuid}",
       "proteinsInUrineUuid": "${var.concept.mch.proteins-in-urine.uuid}",
       "acetoneInUrineUuid": "${var.concept.mch.acetone-in-urine.uuid}",
-      "urineVolumeUuid": "${var.concept.mch.urine-volume.uuid}"
+      "urineVolumeUuid": "${var.concept.mch.urine-volume.uuid}",
+      "negativeDipstickUuid": "${var.concept.mch.negative.uuid}",
+      "plus1DipstickUuid": "${var.concept.mch.plus-1.uuid}",
+      "plus2DipstickUuid": "${var.concept.mch.plus-2.uuid}",
+      "plus3DipstickUuid": "${var.concept.mch.plus-3.uuid}",
+      "plus4DipstickUuid": "${var.concept.mch.plus-4.uuid}"
     },
     "alertLine": {
       "_comment": "WHO partograph alert/action lines. Confirm against the DAK before go-live.",

@@ -214,13 +214,69 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
 
 /**
  * Extracts a numeric value from an obs REST response.
- * Returns `null` if the value cannot be parsed as a finite number.
+ * Returns `null` if the value cannot be parsed as a finite number or ordinal scale.
+ * Supports configurable concept UUIDs via config, plus generic clinical parsing
+ * for semi-quantitative scales (Negative -> 0, + -> 1, ++ -> 2, +++ -> 3, ++++ -> 4).
  */
-export function getNumericObsValue(obs: ObsRep | undefined): number | null {
+export function getNumericObsValue(
+  obs: ObsRep | undefined,
+  config?: EPartographConfig,
+): number | null {
   if (!obs) return null;
-  const raw = typeof obs.value === 'object' && obs.value !== null ? (obs.value as { display: string }).display : obs.value;
-  const num = parseFloat(String(raw));
-  return Number.isFinite(num) ? num : null;
+
+  // 1. If obs.value is already a numeric type
+  if (typeof obs.value === 'number' && Number.isFinite(obs.value)) {
+    return obs.value;
+  }
+
+  // 2. Configured concept UUID matching from runtime configuration (no hardcoded UUIDs)
+  const valueUuid =
+    typeof obs.value === 'object' && obs.value !== null
+      ? (obs.value as { uuid?: string }).uuid
+      : undefined;
+
+  if (valueUuid && config?.concepts) {
+    if (config.concepts.negativeDipstickUuid && valueUuid === config.concepts.negativeDipstickUuid) return 0;
+    if (config.concepts.plus1DipstickUuid && valueUuid === config.concepts.plus1DipstickUuid) return 1;
+    if (config.concepts.plus2DipstickUuid && valueUuid === config.concepts.plus2DipstickUuid) return 2;
+    if (config.concepts.plus3DipstickUuid && valueUuid === config.concepts.plus3DipstickUuid) return 3;
+    if (config.concepts.plus4DipstickUuid && valueUuid === config.concepts.plus4DipstickUuid) return 4;
+  }
+
+  // 3. Generic clinical text matching for ordinal scales
+  // Works dynamically across any OpenMRS concept dictionary (CIEL, SNOMED, local, etc.)
+  const raw =
+    typeof obs.value === 'object' && obs.value !== null
+      ? (obs.value as { display?: string }).display
+      : obs.value;
+  const str = String(raw ?? '').trim().toLowerCase();
+
+  if (!str) return null;
+
+  // Negative / Nil / Normal / 0 / None
+  if (/negative|neg\b|^0$|^-$/i.test(str)) return 0;
+
+  // Check 4+, 3+, 2+, 1+ (accounting for "(Dipstick)", "+ — ...", words like "four plus")
+  if (str.includes('4+') || str.includes('++++') || /four\s*plus/i.test(str)) return 4;
+  if (str.includes('3+') || str.includes('+++') || /three\s*plus/i.test(str)) return 3;
+  if (str.includes('2+') || str.includes('++') || /two\s*plus/i.test(str)) return 2;
+  if (
+    str.includes('1+') ||
+    str === '+' ||
+    /one\s*plus/i.test(str) ||
+    /^\+\s/.test(str) ||
+    str.startsWith('+ (') ||
+    str.startsWith('+ -') ||
+    str.startsWith('+ —')
+  ) {
+    return 1;
+  }
+
+  // 4. Standard float parsing for continuous numbers (FHR, BP, Temp, dilation, etc.)
+  const num = parseFloat(str);
+  if (Number.isFinite(num)) return num;
+
+  return null;
 }
 
 /**
