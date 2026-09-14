@@ -161,11 +161,59 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           mutateVisitContext: () => {
             chartStore?.mutateVisitContext?.();
             mutate();
+            setTimeout(() => mutate(), 1000);
           },
         },
       );
     },
     [config.formUuid, startVisitIfNeeded, patientUuid, mutate, t],
+  );
+
+  /** Launch the 1. First and Second Stage of Labor and Delivery admission form in the O3 workspace drawer. */
+  const handleLaunchAdmissionForm = useCallback(
+    async (encounterUuid?: string) => {
+      const admissionFormUuid = config.firstAndSecondStageFormUuid || '97880e6c-25e9-30bc-8ab8-bd190e2fc5e4';
+      const didStartVisit = await startVisitIfNeeded();
+      if (!didStartVisit) return;
+
+      let formData: { uuid: string; name?: string; display?: string } | undefined;
+      try {
+        const response = await openmrsFetch(`${restBaseUrl}/form/${admissionFormUuid}?v=custom:(uuid,name,display)`);
+        formData = response.data;
+      } catch (err: any) {
+        showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
+        return;
+      }
+
+      const chartStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
+
+      launchWorkspace2(
+        'patient-form-entry-workspace',
+        {
+          workspaceTitle:
+            formData?.display ?? formData?.name ?? t('labourAdmission', '1. First and Second Stage of Labor and Delivery'),
+          form: formData,
+          encounterUuid: encounterUuid ?? '',
+          additionalProps: {
+            mode: encounterUuid ? 'edit' : 'enter',
+            formSessionIntent: '*',
+            openClinicalFormsWorkspaceOnFormClose: false,
+          },
+        },
+        {},
+        {
+          patient: chartStore?.patient,
+          patientUuid,
+          visitContext: chartStore?.visitContext,
+          mutateVisitContext: () => {
+            chartStore?.mutateVisitContext?.();
+            mutate();
+            setTimeout(() => mutate(), 1000);
+          },
+        },
+      );
+    },
+    [config.firstAndSecondStageFormUuid, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
   // ── Loading / Error / Empty states ──────────────────────────────────────────
@@ -200,6 +248,8 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           'partographAdmissionRequired',
           'The Partograph is only available after a "1. First and Second Stage of Labor and Delivery" encounter has been completed.',
         )}
+        launchForm={() => handleLaunchAdmissionForm()}
+        buttonText={t('recordLabourAdmission', 'Record Labour Admission')}
       />
     );
   }

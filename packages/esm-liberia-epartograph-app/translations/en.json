@@ -49,5 +49,6 @@
   "noPartographsUntil4cm": "There are no Partograph to display for this patient until cervical dilatation is 4cm",
   "partographAdmissionRequired": "The Partograph is only available after a \"1. First and Second Stage of Labor and Delivery\" encounter has been completed.",
   "noPartographToDisplay": "There are no Partograph to display for this patient",
-  "recordPartograph": "Record Partograph"
+  "recordPartograph": "Record Partograph",
+  "recordLabourAdmission": "Record Labour Admission"
 }

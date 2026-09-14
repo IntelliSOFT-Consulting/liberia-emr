@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import useSWR from 'swr';
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { getGlobalStore, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { usePatientChartStore, type PatientChartStore } from '@openmrs/esm-patient-common-lib';
 import type { EPartographConfig } from '../config-schema';
 
 /** Shape of a single obs from the REST custom representation. */
@@ -72,6 +73,7 @@ export interface UsePartographEncountersResult {
  */
 export function usePartographEncounters(patientUuid: string): UsePartographEncountersResult {
   const config = useConfig<EPartographConfig>();
+  const { visitContext } = usePatientChartStore(patientUuid);
 
   const queryString = [
     `patient=${patientUuid}`,
@@ -84,9 +86,57 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: PartographEncounter[] } }, Error>(
     patientUuid ? url : null,
     (fetchUrl: string) => openmrsFetch(`${fetchUrl}&_=${Date.now()}`),
+    {
+      revalidateOnFocus: true,
+      refreshInterval: 3000,
+    },
   );
 
+  // 1. Automatically revalidate when patient chart visit context changes
+  useEffect(() => {
+    if (patientUuid) {
+      mutate();
+    }
+  }, [visitContext, patientUuid, mutate]);
+
+  // 2. Subscribe to patient-chart-global-store updates (e.g. form saves that update visits/encounters)
+  useEffect(() => {
+    const store = getGlobalStore<PatientChartStore>('patient-chart-global-store');
+    if (!store) return;
+    let timer: NodeJS.Timeout | undefined;
+    const unsubscribe = store.subscribe(() => {
+      mutate();
+      timer = setTimeout(() => mutate(), 1000);
+    });
+    return () => {
+      unsubscribe();
+      if (timer) clearTimeout(timer);
+    };
+  }, [mutate]);
+
+  // 3. Subscribe to workspace2 store to revalidate when workspace drawer closes (e.g. form entry closed with saved changes)
+  useEffect(() => {
+    const wsStore = getGlobalStore<{ openedWindows: any[] }>('workspace2');
+    if (!wsStore) return;
+    let prevCount = wsStore.getState()?.openedWindows?.length ?? 0;
+    let timer: NodeJS.Timeout | undefined;
+    const unsubscribe = wsStore.subscribe((state) => {
+      const currentCount = state?.openedWindows?.length ?? 0;
+      if (prevCount > 0 && currentCount === 0) {
+        mutate();
+        timer = setTimeout(() => mutate(), 1000);
+      }
+      prevCount = currentCount;
+    });
+    return () => {
+      unsubscribe();
+      if (timer) clearTimeout(timer);
+    };
+  }, [mutate]);
+
   const rawEncounters = data?.data?.results ?? [];
+
+  const admissionFormUuid = config.firstAndSecondStageFormUuid || '97880e6c-25e9-30bc-8ab8-bd190e2fc5e4';
 
   // 1. Identify if a Stage 1 admission encounter exists
   const hasAdmissionEncounter = useMemo(() => {
@@ -95,10 +145,10 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
       const encTypeName = enc.encounterType?.display || '';
       if (/first and second stage|labour admission/i.test(formName)) return true;
       if (/first and second stage|labour admission/i.test(encTypeName)) return true;
-      if (config.firstAndSecondStageFormUuid && enc.form?.uuid === config.firstAndSecondStageFormUuid) return true;
+      if (enc.form?.uuid === admissionFormUuid) return true;
       return false;
     });
-  }, [rawEncounters, config]);
+  }, [rawEncounters, admissionFormUuid]);
 
   // 2. Identify all Partograph serial encounters (sorted chronologically)
   const allPartographEncounters = useMemo(() => {
@@ -115,7 +165,7 @@ export function usePartographEncounters(patientUuid: string): UsePartographEncou
       }
 
       // C. Check if Stage 1 Admission recorded active-phase cervical dilation (>= 4 cm)
-      if (/first and second stage|labour admission/i.test(formName)) {
+      if (/first and second stage|labour admission/i.test(formName) || enc.form?.uuid === admissionFormUuid) {
         const dilationObs = config.concepts?.cervicalDilationUuid
           ? enc.obs?.find((o) => o.concept?.uuid === config.concepts.cervicalDilationUuid)
           : undefined;
