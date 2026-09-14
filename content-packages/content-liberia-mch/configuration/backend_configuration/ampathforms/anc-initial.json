@@ -19,7 +19,14 @@
               },
               "id": "gravida",
               "label": "Gravida",
-              "required": true
+              "required": true,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && !isEmpty(abortions) && myValue !== fullTermBirths + pretermBirths + abortions + 1",
+                  "message": "The obstetric history is inconsistent. Gravida includes the current pregnancy and must correspond to the number of previous pregnancy outcomes. Please review Gravida, Full-term births, Preterm births and Abortions."
+                }
+              ]
             },
             {
               "type": "obs",
@@ -54,7 +61,14 @@
               },
               "id": "fullTermBirths",
               "label": "Full-term births (FT)",
-              "required": true
+              "required": true,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(gravida) && !isEmpty(myValue) && !isEmpty(pretermBirths) && !isEmpty(abortions) && gravida !== myValue + pretermBirths + abortions + 1",
+                  "message": "The obstetric history is inconsistent. Gravida includes the current pregnancy and must correspond to the number of previous pregnancy outcomes. Please review Gravida, Full-term births, Preterm births and Abortions."
+                }
+              ]
             },
             {
               "type": "obs",
@@ -67,7 +81,14 @@
               },
               "id": "pretermBirths",
               "label": "Preterm births (P)",
-              "required": true
+              "required": true,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(gravida) && !isEmpty(fullTermBirths) && !isEmpty(myValue) && !isEmpty(abortions) && gravida !== fullTermBirths + myValue + abortions + 1",
+                  "message": "The obstetric history is inconsistent. Gravida includes the current pregnancy and must correspond to the number of previous pregnancy outcomes. Please review Gravida, Full-term births, Preterm births and Abortions."
+                }
+              ]
             },
             {
               "type": "obs",
@@ -80,7 +101,14 @@
               },
               "id": "abortions",
               "label": "Abortions (A)",
-              "required": true
+              "required": true,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(gravida) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && !isEmpty(myValue) && gravida !== fullTermBirths + pretermBirths + myValue + 1",
+                  "message": "The obstetric history is inconsistent. Gravida includes the current pregnancy and must correspond to the number of previous pregnancy outcomes. Please review Gravida, Full-term births, Preterm births and Abortions."
+                }
+              ]
             },
             {
               "type": "obs",
@@ -93,7 +121,14 @@
               },
               "id": "livingChildren",
               "label": "Living children (LN)",
-              "required": true
+              "required": true,
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && myValue > 0 && fullTermBirths + pretermBirths === 0",
+                  "message": "Living children cannot be recorded without a previous pregnancy resulting in a birth. Please review the obstetric history."
+                }
+              ]
             }
           ]
         },
