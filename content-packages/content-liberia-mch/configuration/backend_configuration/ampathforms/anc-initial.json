@@ -124,6 +124,20 @@
             {
               "type": "obs",
               "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.colour-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "colourAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "physicalExamColour !== '${var.concept.ciel.abnormal.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.heart.uuid}",
                 "answers": [
@@ -140,6 +154,20 @@
               "id": "heart",
               "label": "Heart",
               "required": false
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.heart-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "heartAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "heart !== '${var.concept.ciel.abnormal.uuid}'"
+              }
             },
             {
               "type": "obs",
@@ -164,6 +192,20 @@
             {
               "type": "obs",
               "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.lungs-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "lungsAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "lungs !== '${var.concept.ciel.abnormal.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.breasts.uuid}",
                 "answers": [
@@ -180,6 +222,20 @@
               "id": "breasts",
               "label": "Breasts",
               "required": false
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.breasts-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "breastsAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "breasts !== '${var.concept.ciel.abnormal.uuid}'"
+              }
             },
             {
               "type": "obs",
@@ -204,6 +260,20 @@
             {
               "type": "obs",
               "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.nipples-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "nipplesAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "nipples !== '${var.concept.ciel.abnormal.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.abdomen.uuid}",
                 "answers": [
@@ -224,6 +294,20 @@
             {
               "type": "obs",
               "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.abdomen-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "abdomenAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "abdomen !== '${var.concept.ciel.abnormal.uuid}'"
+              }
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.extremities.uuid}",
                 "answers": [
@@ -240,6 +324,20 @@
               "id": "extremities",
               "label": "Extremities",
               "required": false
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.extremities-abnormality-description.uuid}",
+                "maxLength": "2000"
+              },
+              "id": "extremitiesAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "extremities !== '${var.concept.ciel.abnormal.uuid}'"
+              }
             },
             {
               "type": "obs",
@@ -265,21 +363,14 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "textarea",
-                "concept": "${var.concept.national.explain-abnormalities.uuid}",
+                "concept": "${var.concept.mch.pelvic-examination-abnormality-description.uuid}",
                 "maxLength": "2000"
               },
-              "id": "explainAbnormalities",
-              "label": "Explain abnormalities",
-              "required": false,
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "(physicalExamColour === '${var.concept.ciel.abnormal.uuid}' || heart === '${var.concept.ciel.abnormal.uuid}' || lungs === '${var.concept.ciel.abnormal.uuid}' || breasts === '${var.concept.ciel.abnormal.uuid}' || nipples === '${var.concept.ciel.abnormal.uuid}' || abdomen === '${var.concept.ciel.abnormal.uuid}' || extremities === '${var.concept.ciel.abnormal.uuid}' || pelvicExamination === '${var.concept.ciel.abnormal.uuid}') && isEmpty(myValue)",
-                  "message": "Explain the abnormal physical examination finding(s)"
-                }
-              ],
+              "id": "pelvicExaminationAbnormalityDescription",
+              "label": "Describe abnormality",
+              "required": true,
               "hide": {
-                "hideWhenExpression": "physicalExamColour !== '${var.concept.ciel.abnormal.uuid}' && heart !== '${var.concept.ciel.abnormal.uuid}' && lungs !== '${var.concept.ciel.abnormal.uuid}' && breasts !== '${var.concept.ciel.abnormal.uuid}' && nipples !== '${var.concept.ciel.abnormal.uuid}' && abdomen !== '${var.concept.ciel.abnormal.uuid}' && extremities !== '${var.concept.ciel.abnormal.uuid}' && pelvicExamination !== '${var.concept.ciel.abnormal.uuid}'"
+                "hideWhenExpression": "pelvicExamination !== '${var.concept.ciel.abnormal.uuid}'"
               }
             }
           ]
@@ -642,7 +733,7 @@
     }
   ],
   "uuid": "${var.form.anc-initial.uuid}",
-  "version": "1.0",
+  "version": "1.1",
   "published": true,
   "retired": false,
   "encounter": "ANC Initial Visit",

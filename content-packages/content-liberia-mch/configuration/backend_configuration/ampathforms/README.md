@@ -11,7 +11,7 @@ UUID — from [`../../variables.properties`](../../variables.properties).
 
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
-| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`) |
+| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`, v1.1) |
 | ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
