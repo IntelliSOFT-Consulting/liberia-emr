@@ -61,20 +61,24 @@ spring.mngt-datasource.jdbcUrl=jdbc:mysql://${OPENMRS_DB_HOST}:${OPENMRS_DB_PORT
 spring.mngt-datasource.username=${MGMT_DB_USER}
 spring.mngt-datasource.password=${MGMT_DB_PASSWORD}
 
+# The broker, over mutual TLS with the receiver's client certificate (JVM properties set
+# by the entrypoint); no username or password.
 spring.artemis.brokerUrl=${ARTEMIS_URL}
-spring.artemis.user=${ARTEMIS_USER}
-spring.artemis.password=${ARTEMIS_PASSWORD}
 
-# Durable subscription: exists after the first successful connection, then holds
-# messages across downtime. Never change the name or clientId; the backlog strands.
+# The broker declares this subscription's queue (DB-SYNC-REC.DB-SYNC-RECEIVER), so a
+# change here must be matched in scripts/security/render-broker-config.sh.
 camel.input.endpoint=activemq:topic:openmrs.sync.topic?subscriptionDurable=true&durableSubscriptionName=DB-SYNC-RECEIVER&connectionFactory=activeMqConnFactory&acknowledgementModeName=CLIENT_ACKNOWLEDGE&messageListenerContainerFactory=customMessageListenerContainerFactory
 activemq.clientId=DB-SYNC-REC
 
 openmrs.complex.obs.data.directory=${COMPLEX_OBS_DIR}
 
-# Payload decryption lands with the security hardening build, together with sender-side
-# encryption; both flip in the same release or nothing is readable.
-openmrs.eip.dbsync.encryption.enabled=false
+# PGP: every message is decrypted with the receiver's key and must carry a valid
+# signature from the facility key it names; pgp/ holds every enrolled facility's public
+# key. Must match every facility's setting, or nothing is readable.
+openmrs.eip.dbsync.encryption.enabled=${SYNC_PAYLOAD_ENCRYPTION}
+# dbsync reads this relative to its working directory, /app.
+pgp.receiver.keysFolderPath=/sync-certs/pgp
+pgp.receiver.password=${PGP_PASSWORD}
 
 # Disabled, but the oauth Camel route resolves these placeholders at start-up even so;
 # the keys must exist with empty values or the application fails to boot.

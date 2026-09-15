@@ -36,7 +36,8 @@ FROM eclipse-temurin:17-jre AS runtime-base
 
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends gettext-base \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --home-dir /opt/eip --shell /usr/sbin/nologin eip \
+    && groupadd --system --gid 999 eip \
+    && useradd --system --uid 999 --gid 999 --home-dir /opt/eip --shell /usr/sbin/nologin eip \
     && mkdir -p /opt/eip /app/config \
     && chown -R eip:eip /opt/eip /app
 
@@ -59,7 +60,7 @@ LABEL org.opencontainers.image.title="LiberiaEMR Sync Sender" \
       lr.gov.moh.liberiaemr.dbsync.version="${DBSYNC_VERSION}"
 
 COPY --from=build --chown=eip:eip /src/sender-app/target/dbsync-sender-*-exe.jar /app/sender.jar
-COPY --chown=eip:eip application.properties.template docker-entrypoint.sh /app/
+COPY --chown=eip:eip application.properties.template docker-entrypoint.sh sync-security.sh /app/
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
@@ -74,6 +75,6 @@ LABEL org.opencontainers.image.title="LiberiaEMR Sync Receiver" \
       lr.gov.moh.liberiaemr.dbsync.version="${DBSYNC_VERSION}"
 
 COPY --from=build --chown=eip:eip /src/receiver-app/target/dbsync-receiver-*-exe.jar /app/receiver.jar
-COPY --chown=eip:eip receiver-application.properties.template docker-entrypoint-receiver.sh /app/
+COPY --chown=eip:eip receiver-application.properties.template docker-entrypoint-receiver.sh sync-security.sh /app/
 
 ENTRYPOINT ["/app/docker-entrypoint-receiver.sh"]

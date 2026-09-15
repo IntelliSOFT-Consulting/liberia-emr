@@ -79,6 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       metadata: ${{ steps.filter.outputs.metadata }}
+      sync: ${{ steps.filter.outputs.sync }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,6 +98,7 @@ jobs:
              || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
             echo "No usable base commit (${BASE_SHA:-none}) — running the metadata gate."
             echo "metadata=true" >> "$GITHUB_OUTPUT"
+            echo "sync=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -118,6 +120,13 @@ jobs:
           else
             echo "metadata=false" >> "$GITHUB_OUTPUT"
             echo "-> nothing here can change what Initializer loads; skipping the clean-database gate."
+          fi
+
+          if grep -qE '^(distribution/(sync|broker|monitoring)/|distribution/distro\.properties$|scripts/security/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
+            echo "sync=true" >> "$GITHUB_OUTPUT"
+            echo "-> the sync security surface changed; the broker refusal suite will run."
+          else
+            echo "sync=false" >> "$GITHUB_OUTPUT"
           fi
 
   # ---------------------------------------------------------------------
@@ -512,6 +521,83 @@ jobs:
           sarif_file: trivy-gateway.sarif
           category: trivy-gateway
 
+  # Sync broker hardening (sync-eip.md sections 7.2 and 7.3): every permission and
+  # certificate control is proven by a refusal, over OpenWire, the protocol both sync
+  # apps use. Runs only when something that can move those controls changed.
+  sync-hardening:
+    name: Sync broker hardening
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.sync == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the broker, sync sender and expiry exporter images
+        run: |
+          set -euo pipefail
+          dbsync_version="$(grep -E '^sync\.dbsync=' distribution/distro.properties | cut -d= -f2)"
+          docker build -f distribution/broker/Dockerfile -t lemr-broker:ci distribution/broker
+          docker build -f distribution/sync/Dockerfile --target sender \
+            --build-arg "DBSYNC_VERSION=${dbsync_version}" -t lemr-sync:ci distribution/sync
+          docker build -f distribution/monitoring/cert-expiry/Dockerfile \
+            -t lemr-cert-expiry:ci distribution/monitoring/cert-expiry
+      - name: Broker refusal suite
+        run: |
+          qa/sync/verify-hardening.sh --broker-image lemr-broker:ci --sender-image lemr-sync:ci \
+            --exporter-image lemr-cert-expiry:ci
+      - name: Sender refuses a weaker configuration
+        run: |
+          set -euo pipefail
+          env_args=(-e DBSYNC_SENDER_ID=careysburg -e OPENMRS_DB_HOST=db -e OPENMRS_DB_PORT=3306
+            -e OPENMRS_DB_NAME=openmrs -e OPENMRS_DB_USER=u -e OPENMRS_DB_PASSWORD=p
+            -e MGMT_DB_NAME=m -e MGMT_DB_USER=u -e MGMT_DB_PASSWORD=p -e DEBEZIUM_SERVER_ID=20001
+            -e DEBEZIUM_DB_USER=u -e DEBEZIUM_DB_PASSWORD=p -e OPENMRS_BASE_URL=http://backend
+            -e OPENMRS_REST_USER=u -e OPENMRS_REST_PASSWORD=p)
+          refuses() { # expected-message docker-args...
+            local want="$1"; shift
+            local out
+            out="$(docker run --rm "${env_args[@]}" "$@" lemr-sync:ci 2>&1 || true)"
+            grep -q "$want" <<<"$out" || { echo "expected '$want', got: $out"; exit 1; }
+            echo "refused as expected: $want"
+          }
+          refuses 'plain tcp is not accepted' -e ARTEMIS_URL=tcp://central:61616
+          refuses 'without options' -e 'ARTEMIS_URL=ssl://central:61617?socket.verifyHostName=false'
+          refuses 'sync-certs is missing or cannot be entered' -e ARTEMIS_URL=ssl://central:61617
+          refuses "this facility's own address" -e ARTEMIS_URL=ssl://central:61617 \
+            -e SYNC_OUTPUT_ENDPOINT=activemq:topic:openmrs.sync.topic
+      - name: Receiver refuses a weaker configuration
+        run: |
+          set -euo pipefail
+          V="$(grep -E '^sync\.dbsync=' distribution/distro.properties | cut -d= -f2)"
+          docker build -q -f distribution/sync/Dockerfile --target receiver \
+            --build-arg "DBSYNC_VERSION=${V}" -t lemr-sync-receiver:ci distribution/sync >/dev/null
+          env_args=(-e OPENMRS_DB_HOST=db -e OPENMRS_DB_PORT=3306 -e OPENMRS_DB_NAME=openmrs
+            -e OPENMRS_DB_USER=u -e OPENMRS_DB_PASSWORD=p -e MGMT_DB_NAME=m -e MGMT_DB_USER=u
+            -e MGMT_DB_PASSWORD=p -e OPENMRS_BASE_URL=http://backend -e OPENMRS_REST_USER=u
+            -e OPENMRS_REST_PASSWORD=p)
+          refuses() {
+            local want="$1"; shift
+            local out
+            out="$(docker run --rm "${env_args[@]}" "$@" lemr-sync-receiver:ci 2>&1 || true)"
+            grep -q "$want" <<<"$out" || { echo "expected '$want', got: $out"; exit 1; }
+            echo "refused as expected: $want"
+          }
+          refuses 'plain tcp is not accepted' -e ARTEMIS_URL=tcp://artemis:61616
+          refuses 'sync-certs is missing or cannot be entered' -e ARTEMIS_URL=ssl://artemis:61617
+      - name: Certificate alert rules behave (promtool unit tests)
+        run: |
+          docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
+            prom/prometheus:v2.53.4 test rules /m/tests/rules-central-test.yml
+      - name: Expiry exporter reads issued material
+        run: |
+          set -euo pipefail
+          out="$(mktemp -d)"
+          scripts/security/gen-sync-certs.sh --out "$out" --facilities careysburg >/dev/null
+          chmod -R a+rX "$out"
+          metrics="$(docker run --rm -v "$out/broker/public:/public:ro" lemr-cert-expiry:ci --once)"
+          echo "$metrics"
+          grep -q 'sync_cert_not_after_seconds{identity="careysburg",kind="facility"}' <<<"$metrics"
+          grep -q '^sync_crl_next_update_seconds ' <<<"$metrics"
+
   # ---------------------------------------------------------------------
   # Stage 5 — end to end
   # ---------------------------------------------------------------------
@@ -717,6 +803,7 @@ jobs:
       - dependency-check
       - initializer-clean-db
       - docker-build
+      - sync-hardening
       - e2e
       - frontend
     steps:
@@ -729,7 +816,7 @@ jobs:
               .key as $k
               | .value.result == "success"
                 or (.value.result == "skipped"
-                    and $k == "initializer-clean-db");
+                    and ($k == "initializer-clean-db" or $k == "sync-hardening"));
         run: |
           echo '${{ toJSON(needs) }}' | jq -e "$JQ_OK"'
             to_entries | all(acceptable)

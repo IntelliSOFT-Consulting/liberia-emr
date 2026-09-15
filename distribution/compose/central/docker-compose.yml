@@ -97,31 +97,26 @@ services:
       - ${TLS_CERT_DIR}:/etc/nginx/certs:ro
     networks: [liberiaemr]
 
-  # The JMS broker every facility pushes to (sync-eip.md §1.4). Durable delivery has
-  # one precondition (risk E11): the receiver's subscription exists only after its
-  # FIRST successful connection, so on a fresh deploy the receiver comes up before any
-  # facility sender points here, or early messages are silently discarded. The journal
-  # is an enumerated copy of clinical data at rest (§7.4).
-  #
-  # INTERIM posture until the hardening build (D2/D6/D8): plain tcp with a shared
-  # credential, MOH-internal networks only; D2 stays Open in the SOP mapping.
+  # The broker facilities push to, mutual TLS only (distribution/broker/README.md). Its
+  # journal is a copy of clinical data at rest (sync-eip.md 7.4). Metrics on 8161 stay on
+  # the internal network.
   artemis:
-    image: apache/activemq-artemis:2.33.0
+    image: ${REGISTRY}/liberia-emr-broker:${LIBERIAEMR_VERSION}
     restart: unless-stopped
-    environment:
-      # Baked into the broker instance on the FIRST boot of an empty volume and ignored
-      # afterwards (rotation goes through the artemis CLI), so unset must fail loudly.
-      ARTEMIS_USER: ${ARTEMIS_USER:?set in central.env}
-      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:?set in central.env}
     ports:
-      # MANDATORY FIREWALL: with the interim plain-tcp listener, this port must not be
-      # reachable from outside the MOH network. Bind it to the MOH-facing interface via
-      # ARTEMIS_BIND_ADDR; the 0.0.0.0 default exists for single-host development only.
-      - "${ARTEMIS_BIND_ADDR:-0.0.0.0}:61616:61616"
+      # Only enrolled facilities can authenticate, but still firewall it to the networks
+      # they connect from and bind it to that interface.
+      - "${ARTEMIS_BIND_ADDR:-0.0.0.0}:61617:61617"
     volumes:
-      - artemis-data:/var/lib/artemis-instance
+      - type: bind
+        source: ${BROKER_CERTS_DIR:-/etc/liberiaemr/broker-certs}
+        target: /etc/broker-certs
+        read_only: true
+        bind:
+          create_host_path: false
+      - broker-data:/var/lib/artemis-data
     healthcheck:
-      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/61616'"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/61617'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -147,17 +142,38 @@ services:
       MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
       # :? so a missing credential fails the deploy loudly instead of leaving the EMR up
-      # with a crash-looping receiver, which is the E11 silent-discard hazard in waiting.
+      # with a crash-looping receiver.
       MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:?set in central.env}
-      ARTEMIS_URL: tcp://artemis:61616
-      ARTEMIS_USER: ${ARTEMIS_USER}
-      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD}
+      # "artemis" is in the broker certificate's names, so hostname verification holds.
+      ARTEMIS_URL: ssl://artemis:61617
       OPENMRS_BASE_URL: http://backend:8080/openmrs
       OPENMRS_REST_USER: ${SYNC_REST_USER:?set in central.env}
       OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:?set in central.env}
+      SYNC_PAYLOAD_ENCRYPTION: ${SYNC_PAYLOAD_ENCRYPTION:-true}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
       - receiver-state:/opt/eip
+      - type: bind
+        source: ${RECEIVER_CERTS_DIR:-/etc/liberiaemr/receiver-certs}
+        target: /app/sync-certs
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [liberiaemr]
+
+  # Certificate and revocation list expiry for Prometheus. At central, so an expiring
+  # facility certificate alerts while that facility is offline (sync-eip.md 7.6).
+  # Mounts public material only.
+  cert-expiry:
+    image: ${REGISTRY}/liberia-emr-cert-expiry:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${BROKER_CERTS_DIR:-/etc/liberiaemr/broker-certs}/public
+        target: /public
+        read_only: true
+        bind:
+          create_host_path: false
     networks: [liberiaemr]
 
   # DHIS2 aggregate export runs from central only, never from a facility.
@@ -214,7 +230,8 @@ services:
 volumes:
   db-data:
   openmrs-data:
-  artemis-data:
+  # Renamed from artemis-data so the interim broker's plaintext journal is never reused.
+  broker-data:
   receiver-state:
   prom-data:
   alertmanager-data:

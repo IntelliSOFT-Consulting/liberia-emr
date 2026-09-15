@@ -1,5 +1,5 @@
-# Central-side Prometheus: watches the sync receiver. Mounted read-only by the central
-# compose; rules in rules-central.yml.
+# Central-side Prometheus: watches the sync receiver, the broker, and the expiry of the
+# sync security material. Mounted read-only by the central compose; rules in rules-central.yml.
 global:
   scrape_interval: 30s
   evaluation_interval: 30s
@@ -17,3 +17,12 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["sync-receiver:8080"]
+
+  - job_name: cert-expiry
+    static_configs:
+      - targets: ["cert-expiry:9101"]
+
+  - job_name: broker
+    metrics_path: /metrics/
+    static_configs:
+      - targets: ["artemis:8161"]

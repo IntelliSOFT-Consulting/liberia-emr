@@ -26,27 +26,52 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   first boot of an empty database by
   `distribution/compose/facility/initdb/10-sync-db-users.sh`; on an existing database,
   run its statements by hand once.
-- The broker at central, or, before it is reachable, a `file:` output endpoint
-  (`SYNC_OUTPUT_ENDPOINT`), upstream's QA-only testing mode.
+- The broker at central as `ARTEMIS_URL=ssl://<central>:61617`, where the host is one of
+  the names in the broker certificate. Plain `tcp://` and URL options are refused. Before
+  central is reachable, a `file:` output endpoint (`SYNC_OUTPUT_ENDPOINT`) is upstream's
+  QA-only testing mode.
+- This facility's security material mounted at `/app/sync-certs`: `client.p12`,
+  `truststore.p12` and their `.pass` files, and `pgp/` holding its own `*-sec.asc` plus the
+  receiver's `*-pub.asc`, with `pgp.pass`. The sender publishes only to its own address,
+  `sync.facility.<FACILITY_CODE>`.
 - The environment contract in `docker-entrypoint.sh`; the entrypoint refuses to start
   with anything missing.
 
 ## What the receiver needs (central)
 
-- The Artemis broker (the `artemis` service in the central compose) and its
-  credentials.
+- The broker (the `artemis` service in the central compose, `distribution/broker/`).
+- Its security material mounted at `/app/sync-certs`: `client.p12`, `truststore.p12` and
+  their `.pass` files, and `pgp/` holding its own `*-sec.asc` plus every enrolled
+  facility's `*-pub.asc`, with `pgp.pass`. A facility enrolled on the broker but missing
+  from `pgp/` has every message rejected at signature verification.
 - A **management schema** on the central database, created on first boot by
   `distribution/compose/central/initdb/10-sync-mgmt-db.sh`; by hand on an existing
   database. It holds the inbound queues, the conflict queue, retries, and the
   per-entity hashes.
 - The environment contract in `docker-entrypoint-receiver.sh`.
-- Its broker subscription is **durable** under a fixed name and clientId: once it has
-  connected successfully **once**, messages published while it is down wait on the
-  broker. Until that first connection the subscription does not exist and the broker
-  silently discards published messages (risk E11 in sync-eip.md, rated highest), so a
-  fresh deploy brings the receiver up and confirms it subscribed before any facility
-  sender is pointed at the broker. Never change the subscription name or clientId once
-  set; the old subscription's backlog would strand.
+- Its subscription queue, `DB-SYNC-REC.DB-SYNC-RECEIVER`, is declared by the broker, so
+  messages wait there from the broker's first start, whether or not the receiver has
+  connected (risk E11). Never change the clientId or subscription name in the receiver
+  template without changing the broker enrolment to match.
+
+## Security
+
+Both apps run as uid 999 and connect over mutual TLS with a client certificate and no
+broker password; the mounted material must be readable by that uid. The entrypoints pass
+the keystore settings to Java through an argument file written with umask 077, so store
+passwords never reach the process arguments. Payloads are PGP-signed
+by the facility and encrypted to the receiver (`SYNC_PAYLOAD_ENCRYPTION`, on by default
+for the broker); the setting has to be the same at central and every facility, so it is
+switched in one coordinated change. Material shapes and a development issuer are in
+`scripts/security/gen-sync-certs.sh`; production material comes from the MOH ICT Unit.
+
+Open gap (sync-eip.md 7.2): PGP binds each message to the facility key named in its sender
+header, but nothing yet checks that the facility code inside the payload matches that key.
+An enrolled facility could still attribute records to another site.
+
+One consequence of the JVM-wide truststore: it replaces Java's default CA list inside the
+sync containers. That is fine while `OPENMRS_BASE_URL` is the internal http address; an
+https address signed by a public CA would stop verifying.
 
 ## Durable state
 
@@ -67,6 +92,13 @@ at rest (sync-eip.md section 7.4).
   asserts every record lands at central exactly once with empty retry queues. Also
   asserts the binlog retention floor (risk F1), the one thing time compression cannot
   exercise.
+- `qa/sync/verify-hardening.sh`: the broker's refusals, from real certificates over
+  OpenWire (the apps' protocol): other facilities' addresses, the topic, subscriptions,
+  missing, foreign and revoked certificates, wrong host names, removed enrolment, the
+  admin certificate on the facility port, messages kept before the receiver connects, and
+  unacknowledged messages kept in the dead-letter queue. Also runs payloads through
+  dbsync's own PGP services, including a sender header naming another facility. Runs in
+  CI on every change to the sync security surface.
 - `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,
   asserts the SyncPushErrors alert fires and is admin visible, and that it resolves on
   recovery (resolution rides the sender's 30 minute retry cycle).
