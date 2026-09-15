@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Identifier type,Name,Description,Prefix,Suffix,First identifier base,Min length,Max length,Base character set
+${var.idgen.moh-health-record.uuid},,MOH Health Record Number,MOH ID Gen,"Sequence generator for MOH Health Record Number, prefixed with this site's MOH HRN prefix",${var.site.moh-hrn-prefix}-,,10000,,,0123456789
