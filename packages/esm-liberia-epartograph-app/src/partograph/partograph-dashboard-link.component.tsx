@@ -32,7 +32,7 @@ const PartographDashboardLink: React.FC<PartographDashboardLinkProps> = ({ baseP
   const gender = currentPatient?.gender?.toLowerCase();
 
   // Hide the Partograph dashboard link if the patient is not female
-  if (currentPatient && gender !== 'female' && gender !== 'f') {
+  if (!currentPatient || (gender !== 'female' && gender !== 'f')) {
     return null;
   }
 

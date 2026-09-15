@@ -33,12 +33,12 @@ import {
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
-  EmptyState,
   ErrorState,
   PatientChartPagination,
   useStartVisitIfNeeded,
   type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
+import { PartographEmptyState } from './partograph-empty-state.component';
 import { usePartographEncounters, findObs, getObsDisplayValue } from './use-partograph-encounters';
 import { usePartographAlerts } from './cds/use-partograph-alerts';
 import PartographAlertsDisplay from './cds/partograph-alerts-display.component';
@@ -86,14 +86,22 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const config = useConfig<EPartographConfig>();
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
-  const { encounters, isDelivered, isLoading, error, mutate } = usePartographEncounters(patientUuid);
-  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
-
   const isFemale = useMemo(() => {
-    if (!patient) return true;
+    if (!patient) return false;
     const gender = patient.gender?.toLowerCase();
     return gender === 'female' || gender === 'f';
   }, [patient]);
+
+  const {
+    encounters,
+    isDelivered,
+    hasAdmissionEncounter,
+    hasActiveLabourDilation,
+    isLoading,
+    error,
+    mutate,
+  } = usePartographEncounters(isFemale ? patientUuid : null);
+  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table view toggle
   const [showGraph, setShowGraph] = useState(false); // default to table view
@@ -153,6 +161,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           mutateVisitContext: () => {
             chartStore?.mutateVisitContext?.();
             mutate();
+            setTimeout(() => mutate(), 1000);
           },
         },
       );
@@ -160,13 +169,60 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     [config.formUuid, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
+  /** Launch the 1. First and Second Stage of Labor and Delivery admission form in the O3 workspace drawer. */
+  const handleLaunchAdmissionForm = useCallback(
+    async (encounterUuid?: string) => {
+      const admissionFormUuid = config.firstAndSecondStageFormUuid;
+      const didStartVisit = await startVisitIfNeeded();
+      if (!didStartVisit) return;
+
+      let formData: { uuid: string; name?: string; display?: string } | undefined;
+      try {
+        const response = await openmrsFetch(`${restBaseUrl}/form/${admissionFormUuid}?v=custom:(uuid,name,display)`);
+        formData = response.data;
+      } catch (err: any) {
+        showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
+        return;
+      }
+
+      const chartStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
+
+      launchWorkspace2(
+        'patient-form-entry-workspace',
+        {
+          workspaceTitle:
+            formData?.display ?? formData?.name ?? t('labourAdmission', '1. First and Second Stage of Labor and Delivery'),
+          form: formData,
+          encounterUuid: encounterUuid ?? '',
+          additionalProps: {
+            mode: encounterUuid ? 'edit' : 'enter',
+            formSessionIntent: '*',
+            openClinicalFormsWorkspaceOnFormClose: false,
+          },
+        },
+        {},
+        {
+          patient: chartStore?.patient,
+          patientUuid,
+          visitContext: chartStore?.visitContext,
+          mutateVisitContext: () => {
+            chartStore?.mutateVisitContext?.();
+            mutate();
+            setTimeout(() => mutate(), 1000);
+          },
+        },
+      );
+    },
+    [config.firstAndSecondStageFormUuid, startVisitIfNeeded, patientUuid, mutate, t],
+  );
+
   // ── Loading / Error / Empty states ──────────────────────────────────────────
 
   if (isLoading || isLoadingPatient) {
-    return <DataTableSkeleton columnCount={5} rowCount={5} />;
+    return <DataTableSkeleton columnCount={8} rowCount={5} />;
   }
 
-  if (patient && !isFemale) {
+  if (!isFemale) {
     return (
       <div className={styles.widgetContainer}>
         <CardHeader title={t('partograph', 'Partograph')}>
@@ -183,12 +239,44 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
     return <ErrorState error={error} headerTitle={t('partograph', 'Partograph')} />;
   }
 
+  // Prerequisite 1: Admission check ("1. First and Second Stage of Labor and Delivery")
+  if (!hasAdmissionEncounter && !hasActiveLabourDilation) {
+    return (
+      <PartographEmptyState
+        headerTitle={t('partograph', 'Partograph')}
+        message={t(
+          'partographAdmissionRequired',
+          'The Partograph is only available after a "1. First and Second Stage of Labor and Delivery" encounter has been completed.',
+        )}
+        launchForm={() => handleLaunchAdmissionForm()}
+        buttonText={t('recordLabourAdmission', 'Record Labour Admission')}
+      />
+    );
+  }
+
+  // Prerequisite 2: Cervical dilatation threshold (≥ 4 cm / active labour)
+  if (!hasActiveLabourDilation) {
+    return (
+      <PartographEmptyState
+        headerTitle={t('partograph', 'Partograph')}
+        message={t(
+          'noPartographsUntil4cm',
+          'There are no Partograph to display for this patient until cervical dilatation is 4cm',
+        )}
+        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+      />
+    );
+  }
+
   if (!encounters.length) {
     return (
-      <EmptyState
-        displayText={t('partograph', 'partograph')}
+      <PartographEmptyState
         headerTitle={t('partograph', 'Partograph')}
-        launchForm={() => handleLaunchForm()}
+        message={t(
+          'noPartographToDisplay',
+          'There are no Partograph to display for this patient',
+        )}
+        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -313,7 +401,7 @@ const TruncatedTextCell: React.FC<TruncatedTextCellProps> = ({ text, maxLength =
 
   return (
     <Tooltip align="bottom" label={text}>
-      <span className={styles.truncatedText} title={text}>
+      <span className={styles.truncatedText} title={text} tabIndex={0} aria-label={text}>
         {text.slice(0, maxLength)}…
       </span>
     </Tooltip>
