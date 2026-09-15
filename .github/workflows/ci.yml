@@ -122,7 +122,7 @@ jobs:
             echo "-> nothing here can change what Initializer loads; skipping the clean-database gate."
           fi
 
-          if grep -qE '^(distribution/(sync|broker|monitoring)/|distribution/distro\.properties$|scripts/security/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(distribution/(sync|broker|monitoring|compose|env)/|distribution/distro\.properties$|scripts/security/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "sync=true" >> "$GITHUB_OUTPUT"
             echo "-> the sync security surface changed; the broker refusal suite will run."
           else
@@ -540,6 +540,8 @@ jobs:
             --build-arg "DBSYNC_VERSION=${dbsync_version}" -t lemr-sync:ci distribution/sync
           docker build -f distribution/monitoring/cert-expiry/Dockerfile \
             -t lemr-cert-expiry:ci distribution/monitoring/cert-expiry
+      - name: Compose keeps the sync security wiring
+        run: qa/sync/verify-compose-wiring.sh
       - name: Broker refusal suite
         run: |
           qa/sync/verify-hardening.sh --broker-image lemr-broker:ci --sender-image lemr-sync:ci \
