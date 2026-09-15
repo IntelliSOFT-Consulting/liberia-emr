@@ -136,7 +136,7 @@ export function usePartographEncounters(patientUuid: string | null): UsePartogra
 
   const rawEncounters = data?.data?.results ?? [];
 
-  const admissionFormUuid = config.firstAndSecondStageFormUuid || '97880e6c-25e9-30bc-8ab8-bd190e2fc5e4';
+  const admissionFormUuid = config.firstAndSecondStageFormUuid;
 
   // 1. Identify if a Stage 1 admission encounter exists
   const hasAdmissionEncounter = useMemo(() => {

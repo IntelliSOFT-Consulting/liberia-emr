@@ -172,7 +172,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   /** Launch the 1. First and Second Stage of Labor and Delivery admission form in the O3 workspace drawer. */
   const handleLaunchAdmissionForm = useCallback(
     async (encounterUuid?: string) => {
-      const admissionFormUuid = config.firstAndSecondStageFormUuid || '97880e6c-25e9-30bc-8ab8-bd190e2fc5e4';
+      const admissionFormUuid = config.firstAndSecondStageFormUuid;
       const didStartVisit = await startVisitIfNeeded();
       if (!didStartVisit) return;
 
