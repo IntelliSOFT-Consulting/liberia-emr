@@ -9,7 +9,7 @@ groups:
           severity: critical
         annotations:
           summary: "Receiver error queue is non-empty"
-          description: "Messages from facilities failed to apply and are parked for retry. Persistent errors mean a schema or metadata mismatch; nothing is lost, but nothing parked reaches the national record until resolved."
+          description: "Messages from facilities failed to apply and wait for the receiver's retry run, every 30 minutes. That includes updates held behind an open conflict (ReceiverConflicts). Otherwise persistent errors mean a schema or metadata mismatch; nothing is lost, but nothing parked reaches the national record until resolved."
 
       - alert: ReceiverConflicts
         expr: openmrs_dbsync_receiver_conflicts > 0
@@ -18,7 +18,7 @@ groups:
           severity: warning
         annotations:
           summary: "Records in the receiver conflict queue"
-          description: "Central's copy was newer than an incoming payload. Each entry needs a human decision; central must stay read-only for clinical data (sync-eip.md section 1.8c), so conflicts should be rare and investigated."
+          description: "Central's copy of a record was changed outside sync, so a facility update to it is held back, with every later one. Resolve it with dbsync's procedure in docs/runbooks/sync-operations.md; the alert clears once resolved rows are removed. Central should be read-only for clinical data (sync-eip.md section 1.8c), so find out what wrote to it."
 
       - alert: ReceiverDown
         expr: up{job="sync-receiver"} == 0

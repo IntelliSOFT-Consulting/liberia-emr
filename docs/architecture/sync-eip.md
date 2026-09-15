@@ -64,7 +64,7 @@ be reimplemented:
 | Wire format | Its own serialisation: entity loaded by UUID and serialised |
 | Transport | JMS, with **ActiveMQ Artemis the recommended and documented broker** |
 | Retry | Management-database queues: `sender_retry_queue`, `ReceiverRetryQueueItem` |
-| **Conflict detection** | `receiver_conflict_queue`: diverts when central's row is newer than the payload |
+| **Conflict detection** | `receiver_conflict_queue`: diverts when central's row was changed outside sync (it no longer matches its stored hash) |
 | **Change detection** | Per-entity hash tables (`*Hash`, `HashBatchUpdater`) |
 | **Payload encryption** | PGP-style, independent of TLS (`SenderEncryptionProperties`) |
 | **Metrics** | Prometheus endpoint (`ReceiverPrometheusConfig`) |
@@ -350,8 +350,9 @@ rule rather than leave implicit: **central is read-only for clinical data.** No 
 registers a patient, writes a note or places an order at central. Cross-facility query
 (§6) reads; the identity layer (§2) writes only its own link table, never facility-owned
 clinical rows. Enforce it with roles at central, not with convention: a single clinical
-write at central is a conflict that the next facility push silently overwrites, and the
-clinician who made it gets no error.
+write at central turns the next facility update to that record into a conflict that holds
+back every later update until someone resolves it, and the clinician who made it gets no
+error.
 
 ---
 
@@ -499,8 +500,8 @@ evidence needed to detect and correct the mistake.
 central's OpenMRS tables.**
 
 The reason is dbsync's conflict model. Central's OpenMRS database is a **replica maintained
-by the receiver**, and dbsync detects conflicts by comparing modification dates: if a row was
-edited at central more recently than the incoming payload, the message is diverted to
+by the receiver**, and dbsync detects a row changed outside sync by comparing it with the hash
+it stored when it last applied that row: if they differ, the incoming message is diverted to
 `receiver_conflict_queue` and requires manual resolution. So writing a CPI into
 `patient_identifier` at central would:
 
@@ -735,9 +736,10 @@ A retry loop proves that what entered the queue eventually left it. It proves no
 what never entered: a missed binlog window, a pruned log, a restore from backup, an offset
 reset.
 
-**The building block already exists**: DB-sync maintains per-entity hash tables on both
-sides (`*Hash`, `HashBatchUpdater`), which is the primitive a parity check needs.
-What does not exist is the periodic report over them.
+**Half of the building block exists**: DB-sync keeps a per-entity hash table at central
+(`*_hash`, `HashBatchUpdater`), one content hash per record it applied. A facility keeps
+none, so its side of a parity check has to compute the same hashes. What does not exist is
+that computation or the periodic report over both.
 
 So: a **scheduled reconciliation job** compares per-entity, per-day counts and content
 hashes between facility and central, and reports divergence. Divergence triggers a targeted
@@ -753,7 +755,7 @@ way to tell when it started.
 | Queue disk over threshold | Approaching the real outage ceiling | Escalate before it is reached |
 | Oldest unacknowledged message age | The true "how far behind is this facility" number | Dashboard metric, per facility |
 | Dead-letter queue non-empty | A defect exists | Human inspection |
-| Conflict queue non-empty | Central's row is newer than an incoming payload | Human resolution: and if it is not rare, something is writing at central that should not be |
+| Conflict queue non-empty | Central's row was changed outside sync, so an incoming update is held | Human resolution (`scripts/sync/conflicts.sh`): and if it is not rare, something is writing at central that should not be |
 | Parked-dependency message aged out | Something upstream was lost | Investigate; likely reconciliation |
 | Binlog retention approaching sender offset | Replay territory, not retry territory | Urgent |
 
@@ -931,9 +933,13 @@ is shared between facilities; a shared credential makes revocation collective pu
 and makes the audit trail unable to answer "which facility sent this".
 
 - **Authorisation comes from the authenticated certificate**, never from the payload. The
-  facility code in a message is a label. The receiver rejects any message whose claimed
+  facility code in a message is a label. The receiver must reject any message whose claimed
   facility does not match the authenticated identity of the connection that carried it,
-  and rejection is an alert: it is either a misconfiguration or an attempt.
+  and rejection is an alert: it is either a misconfiguration or an attempt. dbsync 4.0.0 does
+  not do this. It checks the signature against the sender named in the message and never
+  compares that with the facility code in the payload, so a facility with a valid key can
+  label its messages as another one. The broker still proves who sent each message, but only
+  while it is queued there. This is an open item in the security register (D2).
 - **Enrolment is out-of-band.** A new facility's certificate is issued through an MOH ICT
   process and installed by a person. There is no self-service enrolment endpoint; an
   automated one is a way to become a facility.
