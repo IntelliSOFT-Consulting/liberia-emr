@@ -157,20 +157,28 @@ services:
       DEBEZIUM_SERVER_ID: ${DEBEZIUM_SERVER_ID:-20001}
       DEBEZIUM_DB_USER: ${DEBEZIUM_DB_USER:-debezium}
       DEBEZIUM_DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD:-}
+      # ssl://<central>:61617; the host must be one of the names in the broker certificate.
       ARTEMIS_URL: ${ARTEMIS_URL:-}
-      ARTEMIS_USER: ${ARTEMIS_USER:-}
-      ARTEMIS_PASSWORD: ${ARTEMIS_PASSWORD:-}
       OPENMRS_BASE_URL: http://backend:8080/openmrs
       OPENMRS_REST_USER: ${SYNC_REST_USER:-}
       OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:-}
-      # Defaults to the broker topic in the image; a file: endpoint is QA-only
-      # (distribution/sync/README.md) and never a deployed configuration.
+      # Defaults to this facility's own broker address in the image; a file: endpoint is
+      # QA-only (distribution/sync/README.md) and never a deployed configuration.
       SYNC_OUTPUT_ENDPOINT: ${SYNC_OUTPUT_ENDPOINT:-}
+      SYNC_PAYLOAD_ENCRYPTION: ${SYNC_PAYLOAD_ENCRYPTION:-}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
       # Debezium offset and schema history; losing this volume means re-snapshotting.
       # One of the enumerated copies of clinical data at rest (sync-eip.md §7.4).
       - sync-queue:/opt/eip
+      # This facility's client certificate and PGP keys. A missing directory fails the
+      # start rather than being created empty.
+      - type: bind
+        source: ${SYNC_CERTS_DIR:-/etc/liberiaemr/sync-certs}
+        target: /app/sync-certs
+        read_only: true
+        bind:
+          create_host_path: false
     profiles: ["sync"]
     networks: [liberiaemr]
 

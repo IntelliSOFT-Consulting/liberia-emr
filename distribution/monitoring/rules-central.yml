@@ -36,3 +36,89 @@ groups:
           severity: critical
         annotations:
           summary: "Receiver cannot reach the central database"
+
+  - name: sync-broker
+    rules:
+      - alert: SyncDeadLetters
+        expr: sum(artemis_message_count{queue="DLQ"}) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync messages are in the broker's dead-letter queue"
+          description: "The receiver failed on these 10 times. They are not in the national record; inspect DLQ with the admin certificate (distribution/broker/README.md)."
+
+      - alert: SyncBrokerDown
+        expr: up{job="broker"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The sync broker is not answering"
+          description: "Facilities queue locally and deliver when it returns; nothing reaches central meanwhile."
+
+  # sync-eip.md section 7.6: a facility certificate that expires during an outage stops
+  # that facility reconnecting at the exact moment connectivity returns. Renew early.
+  - name: sync-certificates
+    rules:
+      - alert: SyncCertExpiresIn90Days
+        expr: (sync_cert_not_after_seconds - time()) < 90 * 86400
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Sync certificate {{ $labels.identity }} expires within 90 days"
+          description: "Start renewal with the MOH ICT Unit now; issuing and installing a facility certificate takes a site visit or a trusted remote session."
+
+      - alert: SyncCertExpiresIn60Days
+        expr: (sync_cert_not_after_seconds - time()) < 60 * 86400
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sync certificate {{ $labels.identity }} expires within 60 days"
+
+      - alert: SyncCertExpiresIn30Days
+        expr: (sync_cert_not_after_seconds - time()) < 30 * 86400
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync certificate {{ $labels.identity }} expires within 30 days"
+          description: "If it lapses, that identity is refused by the broker. A facility keeps working locally and queues, but cannot deliver until the certificate is replaced."
+
+      - alert: SyncCrlStale
+        # A quarter of the list's validity left, so it scales from weekly to yearly CRLs.
+        expr: (sync_crl_next_update_seconds - time()) < 0.25 * (sync_crl_next_update_seconds - sync_crl_last_update_seconds)
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "The broker's revocation list must be replaced soon"
+          description: "Once it lapses the broker refuses EVERY client certificate. Replace crl.pem (atomically) from the MOH ICT Unit's CA; the broker reloads it within a minute."
+
+      - alert: SyncCrlInvalid
+        expr: sync_crl_valid == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The revocation list in place does not verify against the CA"
+          description: "The broker keeps the list it loaded and will not load this one. Replace crl.pem with one issued by the CA in public/certs/ca.pem."
+
+      - alert: SyncCertExpiryBlind
+        expr: sync_cert_files_read == 0 or sync_cert_read_errors > 0 or absent(sync_crl_next_update_seconds)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Certificate expiry is not being checked"
+          description: "The exporter found no readable certificates, could not parse one, or cannot read the revocation list."
+
+      - alert: SyncCertExpiryExporterDown
+        expr: up{job="cert-expiry"} == 0 or (time() - sync_cert_expiry_last_run_seconds) > 3 * 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Certificate expiry exporter is down"

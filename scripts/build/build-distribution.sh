@@ -4,7 +4,7 @@
 #   scripts/build/build-distribution.sh --version 1.0.0 [--site careysburg] [--demo]
 #                                       [--no-frontend] [--no-sync]
 #
-# Images: liberia-emr-backend|-frontend|-gateway|-sync :<version>
+# Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry :<version>
 # A mutable git checkout is never mounted into a production container.
 #
 # --no-frontend skips ONLY the frontend image, whose assemble stage npm-installs the O3 app
@@ -324,8 +324,20 @@ if [[ "$SYNC" == "true" && "$DEMO" == "false" ]]; then
     --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
     -t "${REGISTRY}/liberia-emr-sync-receiver:${VERSION}" \
     "$ROOT/distribution/sync"
+  echo "== sync broker =="
+  docker build \
+    -f "$ROOT/distribution/broker/Dockerfile" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-broker:${VERSION}" \
+    "$ROOT/distribution/broker"
+  echo "== certificate expiry exporter =="
+  docker build \
+    -f "$ROOT/distribution/monitoring/cert-expiry/Dockerfile" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-cert-expiry:${VERSION}" \
+    "$ROOT/distribution/monitoring/cert-expiry"
 else
-  echo "== sync sender/receiver == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
+  echo "== sync sender/receiver/broker/cert-expiry == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
 fi
 
 echo

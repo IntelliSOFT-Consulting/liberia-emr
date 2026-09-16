@@ -12,7 +12,7 @@
 # (verify-e2e-push.sh) must already pass. The default outage/restore commands stop and
 # start the central broker container, which from the sender's side is indistinguishable
 # from a WAN outage; on a staging pair with separate hosts, pass firewall commands
-# instead, e.g. --outage-cmd 'ssh central sudo ufw deny 61616'.
+# instead, e.g. --outage-cmd 'ssh central sudo ufw deny 61617'.
 #
 # What "simulated 24h" means: the clock is compressed, the dangers are not. The drill
 # exercises what makes a long outage dangerous: queue volume during the outage,

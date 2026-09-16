@@ -7,7 +7,7 @@ eip.home=/opt/eip
 spring.jpa.open-in-view=false
 
 # Identifies this facility in every payload; it does not authorise. Who may push is
-# decided at the broker (hardening build).
+# decided at the broker, by the client certificate.
 db-sync.senderId=${DBSYNC_SENDER_ID}
 
 db-event.destinations=direct:sender-db-sync
@@ -68,22 +68,27 @@ debezium.reader.maxBatchSize=2048
 debezium.offsetFilename=/opt/eip/.debezium/offsets.txt
 debezium.historyFilename=/opt/eip/.debezium/dbhistory.txt
 
-# The Artemis broker at central. TLS and client certificates arrive with the security
-# hardening build; see docs/architecture/sync-eip.md section 7.8.
+# The broker at central, over mutual TLS. The facility authenticates with its client
+# certificate (keystore settings are JVM properties set by the entrypoint), so there is
+# no broker username or password.
 spring.activemq.broker-url=${ARTEMIS_URL}
-spring.activemq.user=${ARTEMIS_USER}
-spring.activemq.password=${ARTEMIS_PASSWORD}
 
-# activemq:topic:openmrs.sync.topic in every deployed environment. A file: endpoint is
-# upstream's supported testing mode and is what the QA capture check uses; never point
-# a deployed facility at one.
+# This facility's own address, sync.facility.<code>, the only one the broker lets it
+# publish to. A file: endpoint is upstream's testing mode, used by the QA capture check
+# only; never point a deployed facility at one.
 camel.output.endpoint=${SYNC_OUTPUT_ENDPOINT}
 
 openmrs.complex.obs.data.directory=${COMPLEX_OBS_DIR}
 
-# Payload encryption lands with the security hardening build (control D2/D6 negative
-# tests); until then transport protection is the broker connection itself.
-openmrs.eip.dbsync.encryption.enabled=false
+# PGP: each payload is signed with this facility's key and encrypted to the receiver's,
+# so the broker journal and any backup of it hold ciphertext (sync-eip.md section 7.7).
+# Must match the receiver's setting.
+openmrs.eip.dbsync.encryption.enabled=${SYNC_PAYLOAD_ENCRYPTION}
+# dbsync reads this relative to its working directory, /app.
+pgp.sender.keysFolderPath=/sync-certs/pgp
+pgp.sender.userId=${PGP_USER_ID}
+pgp.sender.password=${PGP_PASSWORD}
+pgp.sender.receiverUserId=${PGP_RECEIVER_USER_ID}
 
 # Disabled, but the oauth Camel route resolves these placeholders at start-up even so;
 # the keys must exist with empty values or the application fails to boot.
