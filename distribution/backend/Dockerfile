@@ -54,8 +54,11 @@ RUN set -eu; \
                liberiaemr-opd-ipd \
                "${SITE_PACKAGE}" \
                ${DEMO_PACKAGE}; do \
-      zip=$(find /build/zips -name "${pkg}-*.zip" | head -n1); \
-      [ -n "$zip" ] || { echo "missing content package: ${pkg}" >&2; exit 1; }; \
+      set -- /build/zips/"${pkg}"-*.zip; \
+      [ -f "$1" ] && [ "$#" -eq 1 ] \
+        || { echo "expected exactly one content package: ${pkg}" >&2; exit 1; }; \
+      zip="$1"; \
+
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \
