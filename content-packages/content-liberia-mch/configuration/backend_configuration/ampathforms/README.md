@@ -5,16 +5,16 @@ is deliberate: concepts → identifiers/locations/providers → visit & encounte
 programmes & workflows → *then* forms. Starting with forms is how implementations end up
 with duplicated concepts and encounters that do not aggregate.
 
-Everything above forms in that chain is already in this package. What remains is to write
-the five form schemas against the concepts that exist, using the variables — never a bare
-UUID — from [`../../variables.properties`](../../variables.properties).
+Everything above forms in that chain is already in this package. The status of the six forms below
+is recorded against the existing concepts, using the variables — never a bare UUID — from [`../../variables.properties`](../../variables.properties).
 
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
 | ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`, v1.1) |
 | ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
-| Postnatal Visit | `${var.form.pnc-visit.uuid}` | Postnatal Visit | not written |
+| Mother PNC | `${var.form.pnc-visit.uuid}` | Postnatal Visit | released (`pnc-visit.json`, v1.0) |
+| Newborn PNC | `${var.form.newborn-pnc.uuid}` | Postnatal Visit | released (`newborn-pnc.json`, v1.0) |
 | 3. Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | released (`family_planning.json`, v2.0) |
 
 The `Variable` column is the repository alias for each form's **runtime Form UUID**.

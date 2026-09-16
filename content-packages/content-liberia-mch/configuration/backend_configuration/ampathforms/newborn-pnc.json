@@ -1,0 +1,253 @@
+{
+  "name": "Newborn PNC",
+  "uuid": "${var.form.newborn-pnc.uuid}",
+  "processor": "EncounterFormProcessor",
+  "encounter": "Postnatal Visit",
+  "published": true,
+  "retired": false,
+  "version": "1.0",
+  "referencedForms": [],
+  "description": "Postnatal assessment and care of the newborn, including routine clinical assessment, identification of complications and danger signs, and recording of essential postnatal interventions.",
+  "pages": [
+    {
+      "label": "Newborn PNC Assessment",
+      "sections": [
+        {
+          "label": "PNC Contact",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "id": "newbornPostnatalContact",
+              "label": "Newborn Postnatal Contact",
+              "required": true,
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.mch.newborn-pnc-contact.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.mch.pnc-1-received-within-24hrs.uuid}",
+                    "label": "PNC 1: Received within 24 hours"
+                  },
+                  {
+                    "concept": "${var.concept.mch.pnc-2-received-within-7-days.uuid}",
+                    "label": "PNC 2: Received within 7 days"
+                  },
+                  {
+                    "concept": "${var.concept.mch.pnc-3-received-within-28-days.uuid}",
+                    "label": "PNC 3: Received within 28 days"
+                  },
+                  {
+                    "concept": "${var.concept.mch.pnc-4-received-within-42-days.uuid}",
+                    "label": "PNC 4: Received within 42 days"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "markdown",
+              "id": "pnc1_bcg_reminder",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "newbornPostnatalContact !== '${var.concept.mch.pnc-1-received-within-24hrs.uuid}'"
+              },
+              "value": [
+                "Ensure BCG vaccination is given before discharge. Record vaccination in the Immunizations workspace."
+              ]
+            },
+            {
+              "type": "markdown",
+              "id": "pnc4_6wk_vaccine_reminder",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "newbornPostnatalContact !== '${var.concept.mch.pnc-4-received-within-42-days.uuid}'"
+              },
+              "value": [
+                "At 6 weeks, confirm and record OPV1, Penta1, PCV1 and Rota1 in the Immunizations workspace."
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Newborn Measurements & Clinical Assessment",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "id": "birthWeight",
+              "label": "Birth Weight (kg)",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.birth-weight.uuid}"
+              }
+            },
+            {
+              "type": "obs",
+              "id": "currentWeight",
+              "label": "Current Weight (kg)",
+              "required": true,
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.weight-kg.uuid}"
+              }
+            },
+            {
+              "type": "obs",
+              "id": "weightLossPercent",
+              "label": "Weight Loss (%)",
+              "isDisabled": true,
+              "questionOptions": {
+                "rendering": "number",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "!isEmpty(birthWeight) && !isEmpty(currentWeight) && birthWeight > 0 ? (Math.round(((birthWeight - currentWeight) / birthWeight) * 100 * 10) / 10) : null"
+                }
+              }
+            },
+            {
+              "type": "markdown",
+              "id": "weight_loss_warning",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(weightLossPercent) || weightLossPercent <= 10"
+              },
+              "value": [
+                "⚠️ **Warning:** Newborn weight loss exceeds 10% of birth weight. Evaluate for severe dehydration or inadequate feeding."
+              ]
+            },
+            {
+              "type": "obs",
+              "id": "temperature",
+              "label": "Temperature (°C)",
+              "required": true,
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.temperature.uuid}"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(temperature) && temperature < 36.5",
+                  "warningMessage": "Warning: Temperature is below 36.5°C (Hypothermia alert). Provide thermal care / Kangaroo Mother Care immediately."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Newborn Complications & Danger Signs",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "id": "newbornPostnatalComplications",
+              "label": "Newborn Postnatal Complications",
+              "required": true,
+              "questionOptions": {
+                "rendering": "checkbox-searchable",
+                "concept": "${var.concept.mch.newborn-pnc-complications.uuid}"
+              }
+            },
+            {
+              "type": "markdown",
+              "id": "jaundice_urgent_alert",
+              "questionOptions": {
+                "rendering": "markdown"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(newbornPostnatalComplications) || !arrayContains(newbornPostnatalComplications, '${var.concept.mch.jaundice-first-24hrs.uuid}')"
+              },
+              "value": [
+                "🚨 **URGENT WARNING:** Jaundice in the first 24 hours of life is pathological. Urgent medical evaluation and immediate referral are required!"
+              ]
+            },
+            {
+              "type": "obs",
+              "id": "otherNewbornComplicationDetails",
+              "label": "Other newborn complication details",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.mch.other-newborn-complication-details.uuid}"
+              },
+              "hide": {
+                "hideWhenExpression": "isEmpty(newbornPostnatalComplications) || !arrayContains(newbornPostnatalComplications, '${var.concept.ciel.5622.uuid}')"
+              }
+            }
+          ]
+        },
+        {
+          "label": "Newborn Care & Interventions",
+          "isExpanded": "true",
+          "questions": [
+            {
+              "type": "obs",
+              "id": "receivedKangarooCare",
+              "label": "Received Kangaroo care",
+              "hide": {
+                "hideWhenExpression": "isEmpty(birthWeight) || birthWeight >= 2.5"
+              },
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.received-kangaroo-care.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "obs",
+              "id": "chlorhexidineAdministration",
+              "label": "Chlorhexidine administration",
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.chlorhexidine-administration.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.before-24hrs.uuid}",
+                    "label": "Before 24hrs"
+                  },
+                  {
+                    "concept": "${var.concept.national.after-24hrs.uuid}",
+                    "label": "After 24hrs"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "obs",
+              "id": "nevirapineStartDate",
+              "label": "Nevirapine start date",
+              "datePickerFormat": "calendar",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.national.nevirapine-start-date.uuid}"
+              }
+            },
+            {
+              "type": "obs",
+              "id": "complicationsIdentifiedAndManaged",
+              "label": "Complications Identified and Managed",
+              "questionOptions": {
+                "rendering": "textarea",
+                "concept": "${var.concept.national.complications-identified-and-managed.uuid}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

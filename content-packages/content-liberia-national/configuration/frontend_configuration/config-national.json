@@ -187,7 +187,8 @@
         "forms": [
           "ANC Initial Visit",
           "ANC Follow-up Visit",
-          "2. PNC",
+          "Mother PNC",
+          "Newborn PNC",
           "3. Family Planning"
         ]
       },
