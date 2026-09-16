@@ -356,9 +356,10 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       # run-clean-install.sh starts a built distribution; it does not build one, and the
-      # image is not published from a pull request, so this job builds it. The backend image
-      # resolves the content packages from source in its own first stage, which is why the
-      # build-test content-packages artifact is not downloaded here — it would not be read.
+      # image is not published from a pull request, so this job builds it via
+      # build-distribution.sh, which fetches the OCL/CIEL exports (OCL_API_TOKEN below) before
+      # running its own `mvn package`. The build-test content-packages artifact is not
+      # downloaded here — its build never fetches OCL content, so it isn't a substitute.
       #
       # 0.0.0-ci, not 1.0.0-SNAPSHOT: build-distribution.sh refuses to build at a -SNAPSHOT
       # or floating version, and rightly so. This is a fixed, obviously-not-a-release tag for
@@ -405,11 +406,13 @@ jobs:
   # release build runs too, so a green build-distribution.sh here is a
   # meaningful signal, not just "the Dockerfiles happen to work in CI."
   #
-  # Cost: the script runs its own `mvn package` and the backend Dockerfile
-  # runs a THIRD content-packages build inside its own build stage — on
-  # top of build-test's reactor build. Three Maven builds of the same
-  # module per pipeline run. Accepted for now in exchange for correctness;
-  # revisit if build time becomes a real problem.
+  # Cost: the script runs its own `mvn package`, on top of build-test's reactor build. That
+  # duplication is unavoidable here — build-test's build never fetches the OCL/CIEL exports
+  # (no OCL_API_TOKEN in that job), so its output isn't a valid substitute for what a real
+  # image needs. The backend Dockerfile used to ALSO rebuild content-packages a third time,
+  # from scratch, inside its own build stage; it now just unpacks the zips this script already
+  # built on the host moments earlier (see distribution/backend/Dockerfile), so this is down
+  # to two Maven builds per pipeline run, not three.
   docker-build:
     name: Build Docker Images
     runs-on: ubuntu-latest
