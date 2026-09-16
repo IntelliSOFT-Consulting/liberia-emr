@@ -122,7 +122,7 @@ jobs:
             echo "-> nothing here can change what Initializer loads; skipping the clean-database gate."
           fi
 
-          if grep -qE '^(distribution/(sync|broker|monitoring|compose|env)/|distribution/distro\.properties$|scripts/security/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(distribution/(sync|broker|monitoring|compose|env)/|distribution/distro\.properties$|scripts/(security|sync)/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "sync=true" >> "$GITHUB_OUTPUT"
             echo "-> the sync security surface changed; the broker refusal suite will run."
           else
@@ -566,6 +566,7 @@ jobs:
           refuses 'sync-certs is missing or cannot be entered' -e ARTEMIS_URL=ssl://central:61617
           refuses "this facility's own address" -e ARTEMIS_URL=ssl://central:61617 \
             -e SYNC_OUTPUT_ENDPOINT=activemq:topic:openmrs.sync.topic
+          refuses 'must be true for the broker' -e ARTEMIS_URL=ssl://central:61617 -e SYNC_PAYLOAD_ENCRYPTION=false
       - name: Receiver refuses a weaker configuration
         run: |
           set -euo pipefail
@@ -585,6 +586,18 @@ jobs:
           }
           refuses 'plain tcp is not accepted' -e ARTEMIS_URL=tcp://artemis:61616
           refuses 'sync-certs is missing or cannot be entered' -e ARTEMIS_URL=ssl://artemis:61617
+          refuses 'cannot be turned off at central' -e ARTEMIS_URL=ssl://artemis:61617 -e SYNC_PAYLOAD_ENCRYPTION=false
+          # The receiver's protections live in its configuration template; none may be dropped.
+          template=distribution/sync/receiver-application.properties.template
+          for setting in '^camel\.input\.endpoint=.*[?&]acknowledgementMode=4(&|$)' \
+                         '^camel\.input\.endpoint=.*[?&]disableReplyTo=true(&|$)' \
+                         '^openmrs\.eip\.dbsync\.encryption\.enabled=true$' \
+                         '^logging\.level\.receiver-retry=WARN$' \
+                         '^logging\.level\.org\.openmrs\.eip\.dbsync\.receiver\.ComplexObsProcessor=WARN$'; do
+            grep -Eq "$setting" "$template" || { echo "receiver template lost: $setting"; exit 1; }
+          done
+      - name: Alerts are delivered by email and webhook
+        run: qa/sync/verify-alert-delivery.sh
       - name: Certificate alert rules behave (promtool unit tests)
         run: |
           docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \

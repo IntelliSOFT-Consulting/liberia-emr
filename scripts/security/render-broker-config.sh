@@ -141,12 +141,15 @@ cat > "$OUT/sync-diverts.xml" <<EOF
 EOF
 
 # Facilities: send to their own address, nothing else. Receiver: consume its subscription.
-# Operators (amq, admin acceptor only): everything, including the dead-letter queue.
+# Operators (amq, admin acceptor only): everything, including exporting a revoked facility's
+# queued messages and replaying a dead letter to the topic once its cause is fixed. amq could
+# already purge any queue through management. The most specific match wins, so amq is repeated.
 cat > "$OUT/sync-security.xml" <<EOF
 <security-settings xmlns="urn:activemq:core">
   <security-setting match="openmrs.sync.topic">
-    <permission type="consume" roles="receiver"/>
+    <permission type="consume" roles="receiver,amq"/>
     <permission type="browse" roles="receiver,amq"/>
+    <permission type="send" roles="amq"/>
   </security-setting>$security
   <security-setting match="#">
     <permission type="send" roles="amq"/>

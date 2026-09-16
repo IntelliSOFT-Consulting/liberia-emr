@@ -62,7 +62,7 @@ following was verified in source, not inferred:
 | Change capture below the API | Debezium engine over the binlog (`openmrs-watcher`) |
 | 34 OpenMRS entities modelled and mapped | `TableToSyncEnum`: see [entity coverage](sync-entity-coverage.md) |
 | Durable retry | `sender_retry_queue`, `ReceiverRetryQueueItem` |
-| Conflict detection | `ConflictQueueItem` / `receiver_conflict_queue`, with modification-date comparison |
+| Conflict detection | `ConflictQueueItem` / `receiver_conflict_queue`, raised when central's row no longer matches its stored hash (changed outside sync); no resolution tooling, which LiberiaEMR adds (`scripts/sync/conflicts.sh`) |
 | Change detection / dedup | Per-entity hash tables (`*Hash`, `HashBatchUpdater`) |
 | Multi-facility identity | `SiteInfo` entity in receiver management |
 | **Payload encryption independent of TLS** | `SenderEncryptionProperties` / `ReceiverEncryptionProperties` (PGP-style: key folder, user id, passphrase, receiver user id) |
