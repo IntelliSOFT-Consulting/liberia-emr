@@ -567,6 +567,17 @@ jobs:
           refuses "this facility's own address" -e ARTEMIS_URL=ssl://central:61617 \
             -e SYNC_OUTPUT_ENDPOINT=activemq:topic:openmrs.sync.topic
           refuses 'must be true for the broker' -e ARTEMIS_URL=ssl://central:61617 -e SYNC_PAYLOAD_ENCRYPTION=false
+      - name: Sender template declares the table set
+        run: |
+          # The set is declared in the template, not inherited from the jar, and must stay
+          # exactly this (sync-entity-coverage.md §1.1). Order is free.
+          expected="ALLERGY CONDITIONS DIAGNOSIS_ATTRIBUTE DRUG_ORDER ENCOUNTER ENCOUNTER_DIAGNOSIS ENCOUNTER_PROVIDER OBS
+            ORDERS ORDER_ATTRIBUTE ORDER_GROUP ORDER_GROUP_ATTRIBUTE PATIENT PATIENT_IDENTIFIER PATIENT_PROGRAM
+            PATIENT_PROGRAM_ATTRIBUTE PATIENT_STATE PERSON PERSON_ADDRESS PERSON_ATTRIBUTE PERSON_NAME PROVIDER
+            REFERRAL_ORDER RELATIONSHIP TEST_ORDER USERS VISIT VISIT_ATTRIBUTE"
+          declared="$(sed -n 's/^eip\.watchedTables=//p' distribution/sync/application.properties.template | tr ',' '\n' | sort | paste -sd' ' -)"
+          [ "$declared" = "$(tr -s ' \n' '\n\n' <<<"$expected" | sed '/^$/d' | sort | paste -sd' ' -)" ] \
+            || { echo "sender template watches: ${declared:-nothing}"; echo "expected: $expected" | tr -s ' \n' ' '; echo; exit 1; }
       - name: Receiver refuses a weaker configuration
         run: |
           set -euo pipefail
