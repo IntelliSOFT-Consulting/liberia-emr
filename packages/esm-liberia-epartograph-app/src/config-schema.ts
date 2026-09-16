@@ -31,6 +31,11 @@ export const configSchema = {
     _description: 'UUID of the Stage 3 / Delivery of Infant and Placenta AMPATH form.',
     _default: 'a1f46814-43c4-3690-9b87-ae4644b8b93a',
   },
+  firstAndSecondStageFormUuid: {
+    _type: Type.String,
+    _description: 'UUID of the 1. First and Second Stage of Labor and Delivery AMPATH form.',
+    _default: '97880e6c-25e9-30bc-8ab8-bd190e2fc5e4',
+  },
   concepts: {
     cervicalDilationUuid: { _type: Type.ConceptUuid, _default: '34cffe7c-726f-5da4-ade1-c67e3209f5eb' },
     descentOfHeadUuid: { _type: Type.ConceptUuid, _default: 'f5306f9f-a41d-5750-9d19-cbc69da9d833' },
@@ -80,6 +85,7 @@ export interface EPartographConfig {
   deliveryEncounterTypeUuid?: string;
   formUuid: string;
   thirdStageFormUuid?: string;
+  firstAndSecondStageFormUuid?: string;
   concepts: {
     cervicalDilationUuid: string;
     descentOfHeadUuid: string;

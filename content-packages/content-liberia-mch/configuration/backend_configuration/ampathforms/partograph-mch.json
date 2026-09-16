@@ -117,15 +117,15 @@
               "questionOptions": {
                 "concept": "${var.concept.partograph.cervical-dilation.uuid}",
                 "rendering": "number",
-                "min": 0,
+                "min": 4,
                 "max": 10,
                 "step": 1
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
-                  "message": "Value must be between 0 and 10"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 4 || myValue > 10)",
+                  "message": "Cervical dilatation must be between 4 and 10 cm"
                 }
               ]
             },
