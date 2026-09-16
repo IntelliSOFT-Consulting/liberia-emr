@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button, PasswordInput, Tile, InlineNotification } from '@carbon/react';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
@@ -15,16 +15,25 @@ const ResetPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [token, setToken] = useState<string | null>(null);
+  const [isTokenInvalid, setIsTokenInvalid] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const urlToken = params.get('token');
+    
     if (urlToken) {
       setToken(urlToken);
+      // For demonstration: If the token is exactly 'expired', we mock an invalid state
+      if (urlToken === 'expired') {
+        setIsTokenInvalid(true);
+      } else {
+        // Placeholder for API pre-validation check
+        // e.g., openmrsFetch(`/ws/rest/v1/liberiaemr/password-reset/validate?token=${urlToken}`)
+      }
     } else {
-      setErrorMessage(t('missingResetToken', 'Missing reset token in URL.'));
+      setIsTokenInvalid(true);
     }
-  }, [location, t]);
+  }, [location]);
 
   const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
@@ -45,9 +54,49 @@ const ResetPassword = () => {
     // Placeholder for API integration
     setTimeout(() => {
       setIsSubmitting(false);
-      navigate('/login/reset-success');
+      // Mocking an error response where the backend says the token is expired upon submission
+      if (password === 'expiremetest') {
+        setIsTokenInvalid(true);
+      } else {
+        navigate('/login/reset-success');
+      }
     }, 1500);
   };
+
+  if (isTokenInvalid) {
+    return (
+      <div className={styles.container}>
+        <Tile className={styles.loginCard}>
+          <div className={styles.center}>
+            <Logo t={t} />
+          </div>
+          
+          <h2 className={styles.productiveHeading03} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+            {t('linkExpired', 'Link Expired or Invalid')}
+          </h2>
+          
+          <p className={styles.bodyShort01} style={{ marginBottom: '2rem', textAlign: 'center', color: '#525252' }}>
+            {t('linkExpiredInstructions', "The password reset link you clicked is either invalid or has expired. Please request a new password reset link.")}
+          </p>
+
+          <Button
+            onClick={() => navigate('/login/forgot-password')}
+            className={styles.continueButton}
+            style={{ width: '100%', marginBottom: '1rem' }}
+          >
+            {t('requestNewLink', 'Request new link')}
+          </Button>
+
+          <div style={{ textAlign: 'center' }}>
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              {t('backToLogin', 'Back to login')}
+            </Link>
+          </div>
+        </Tile>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
