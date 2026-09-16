@@ -29,8 +29,10 @@ case "$SYNC_HASHES_UPDATE" in
   true|false) ;;
   *) sync_refuse "SYNC_HASHES_UPDATE must be true or false, got '$SYNC_HASHES_UPDATE'" ;;
 esac
-echo "$SYNC_HASHES_UPDATE_TABLES" | grep -Eq '^[a-z_,]*$' \
-  || sync_refuse "SYNC_HASHES_UPDATE_TABLES must be comma-separated table names, got '$SYNC_HASHES_UPDATE_TABLES'"
+# A case pattern, not grep, so a value carrying a newline cannot slip a second property in.
+case "$SYNC_HASHES_UPDATE_TABLES" in
+  *[!a-z_,]*) sync_refuse "SYNC_HASHES_UPDATE_TABLES must be comma-separated table names, got '$SYNC_HASHES_UPDATE_TABLES'" ;;
+esac
 : "${COMPLEX_OBS_DIR:=/opt/eip/complex-obs}"
 : "${LOG_LEVEL:=INFO}"
 

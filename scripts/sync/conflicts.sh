@@ -44,7 +44,9 @@ service_container() { # compose-service [project]
 }
 [[ -n "$RECEIVER" ]] || RECEIVER="$(service_container sync-receiver)"
 [[ -n "$RECEIVER" ]] || { echo "no sync-receiver container found; pass --receiver" >&2; exit 1; }
-label() { docker inspect -f "{{index .Config.Labels \"com.docker.compose.$1\"}}" "$RECEIVER"; }
+# docker prints <no value> for a label the container does not carry; an empty answer is easier
+# for the callers to act on.
+label() { docker inspect -f "{{index .Config.Labels \"com.docker.compose.$1\"}}" "$RECEIVER" | sed 's/^<no value>$//'; }
 [[ -n "$DB" ]] || DB="$(service_container db "$(label project)")"
 [[ -n "$DB" ]] || { echo "no db container found; pass --db" >&2; exit 1; }
 
