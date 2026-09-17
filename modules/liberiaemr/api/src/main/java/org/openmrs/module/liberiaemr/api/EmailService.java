@@ -43,7 +43,7 @@ public class EmailService {
 		String host = getGlobalProperty("liberiaemr.email.host", "smtp.gmail.com");
 		String port = getGlobalProperty("liberiaemr.email.port", "587");
 		String username = getGlobalProperty("liberiaemr.email.username", "");
-		String password = getGlobalProperty("liberiaemr.email.password", "");
+		String smtpPass = getGlobalProperty("liberiaemr.email.password", "");
 		String fromAddress = getGlobalProperty("liberiaemr.email.from", "noreply@liberiaemr.org");
 		
 		Properties props = new Properties();
@@ -51,7 +51,7 @@ public class EmailService {
 		props.put("mail.smtp.port", port);
 		
 		// Enable authentication only if credentials are provided
-		if (!username.isEmpty() && !password.isEmpty()) {
+		if (!username.isEmpty() && !smtpPass.isEmpty()) {
 			props.put("mail.smtp.auth", "true");
 			// Use STARTTLS for ports 587, SSL for 465
 			if ("587".equals(port)) {
@@ -62,9 +62,9 @@ public class EmailService {
 		}
 		
 		Session session;
-		if (!username.isEmpty() && !password.isEmpty()) {
+		if (!username.isEmpty() && !smtpPass.isEmpty()) {
 			final String user = username;
-			final String pass = password;
+			final String pass = smtpPass;
 			session = Session.getInstance(props, new javax.mail.Authenticator() {
 				
 				@Override
