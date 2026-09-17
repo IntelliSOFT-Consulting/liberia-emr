@@ -27,7 +27,6 @@ public interface LiberiaEMRService extends OpenmrsService {
 	 * 
 	 * @param uuid
 	 * @return
-	 * @throws APIException
 	 */
 	@Authorized()
 	Item getItemByUuid(String uuid) throws APIException;
@@ -38,7 +37,6 @@ public interface LiberiaEMRService extends OpenmrsService {
 	 * 
 	 * @param item
 	 * @return
-	 * @throws APIException
 	 */
 	@Authorized(LiberiaEMRConfig.MODULE_PRIVILEGE)
 	Item saveItem(Item item) throws APIException;
