@@ -92,8 +92,8 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 		// Since email is a user property in OpenMRS
 		User user = null;
 		try {
-			Context.addProxyPrivilege("Get Users");
-			Context.addProxyPrivilege("Get Global Properties");
+			addProxyPrivilege("Get Users");
+			addProxyPrivilege("Get Global Properties");
 			List<User> users = userService.getAllUsers();
 			for (User u : users) {
 				String userEmail = null;
@@ -151,8 +151,8 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 				throw new APIException("Failed to send password reset email", e);
 			}
 		} finally {
-			Context.removeProxyPrivilege("Get Users");
-			Context.removeProxyPrivilege("Get Global Properties");
+			removeProxyPrivilege("Get Users");
+			removeProxyPrivilege("Get Global Properties");
 		}
 	}
 	
@@ -178,14 +178,14 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 		
 		try {
 			// Temporarily escalate privileges to change password if not authenticated
-			Context.addProxyPrivilege("Edit Users");
-			Context.addProxyPrivilege("Edit User Passwords");
-			Context.addProxyPrivilege("Get Global Properties");
+			addProxyPrivilege("Edit Users");
+			addProxyPrivilege("Edit User Passwords");
+			addProxyPrivilege("Get Global Properties");
 			userService.changePassword(user, newPassword);
 		} finally {
-			Context.removeProxyPrivilege("Edit Users");
-			Context.removeProxyPrivilege("Edit User Passwords");
-			Context.removeProxyPrivilege("Get Global Properties");
+			removeProxyPrivilege("Edit Users");
+			removeProxyPrivilege("Edit User Passwords");
+			removeProxyPrivilege("Get Global Properties");
 		}
 		
 		// Void the token so it can't be reused
@@ -193,5 +193,13 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 		tokenDao.savePasswordResetToken(token);
 		
 		log.info("AUDIT: Password successfully reset for user ID: {} (Username: {})", user.getUserId(), user.getUsername());
+	}
+
+	public void addProxyPrivilege(String privilege) {
+		Context.addProxyPrivilege(privilege);
+	}
+
+	public void removeProxyPrivilege(String privilege) {
+		Context.removeProxyPrivilege(privilege);
 	}
 }
