@@ -162,6 +162,7 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 		PasswordResetToken token = tokenDao.getPasswordResetToken(tokenString);
 		
 		if (token == null || token.isExpiredOrVoided()) {
+			log.warn("AUDIT: Password reset failed. Invalid or expired token provided.");
 			throw new APIException("Invalid or expired password reset token.");
 		}
 		
@@ -182,6 +183,9 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 			addProxyPrivilege("Edit User Passwords");
 			addProxyPrivilege("Get Global Properties");
 			userService.changePassword(user, newPassword);
+		} catch (Exception e) {
+			log.warn("AUDIT: Password reset failed for user ID: {} (Username: {}). Error: {}", user.getUserId(), user.getUsername(), e.getMessage());
+			throw e;
 		} finally {
 			removeProxyPrivilege("Edit Users");
 			removeProxyPrivilege("Edit User Passwords");
