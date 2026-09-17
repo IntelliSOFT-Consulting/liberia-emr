@@ -6,3 +6,4 @@ ${var.personattribute.referral-ref-number.uuid},,Referral Reference Number,Refer
 ${var.personattribute.reason-for-referral.uuid},,Reason for Referral,Detailed reason for patient referral,java.lang.String,false
 ${var.personattributetypes.telephone-number.uuid},,Telephone Number,The telephone number for the person,java.lang.String,false
 ${var.personattributetypes.unknown-patient.uuid},,Unknown patient,Used to flag patients that cannot be identified during the check-in process,java.lang.String,false
+${var.personattributetypes.email.uuid},,Email,Email Address,java.lang.String,false

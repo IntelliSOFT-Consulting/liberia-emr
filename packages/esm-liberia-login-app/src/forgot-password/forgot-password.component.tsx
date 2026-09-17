@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button, TextInput, Tile, InlineNotification } from '@carbon/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
 import styles from '../login/login.scss';
@@ -13,17 +14,31 @@ const ForgotPassword = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
     
-    // Placeholder for API integration
-    setTimeout(() => {
+    try {
+      const response = await openmrsFetch('/ws/liberiaemr/passwordReset/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+      
+      if (!response.ok) {
+        throw new Error(t('resetRequestFailed', 'Failed to request password reset. Please try again later.'));
+      }
+      
       setSuccessMessage(t('resetLinkSent', 'If an account exists with that email, a reset link has been sent.'));
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An error occurred');
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button, TextInput, Tile, InlineNotification } from '@carbon/react';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
@@ -8,7 +8,6 @@ import styles from '../login/login.scss';
 
 const MFAVerify = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');

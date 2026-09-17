@@ -7,7 +7,7 @@ import logoutButtonComponent from './logout/logout.extension';
 import rootComponent from './root.component';
 import twoFactorAuthLinkComponent from './two-factor-auth/two-factor-auth-link.extension';
 
-const moduleName = '@openmrs/esm-login-app';
+const moduleName = '@liberiaemr/esm-liberia-login-app';
 
 const options = {
   featureName: 'login',

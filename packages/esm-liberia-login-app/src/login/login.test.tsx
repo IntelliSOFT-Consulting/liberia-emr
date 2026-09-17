@@ -21,10 +21,6 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
 
-const loginLocations = [
-  { uuid: '111', display: 'Earth' },
-  { uuid: '222', display: 'Mars' },
-];
 
 describe('Login', () => {
   beforeEach(() => {

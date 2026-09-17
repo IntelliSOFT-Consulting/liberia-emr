@@ -9,6 +9,7 @@
   "scripts": {
     "start": "openmrs develop",
     "start:dev": "openmrs develop --backend https://liberiaemrfacilitydev.intellisoftkenya.com --config-file ../../distribution/frontend/config/config-national.json --config-file ../../distribution/frontend/config/config-mch.json",
+    "start:local": "openmrs develop --backend http://localhost:8080 --port 8081 --config-file ../../distribution/frontend/config/config-national.json --config-file ../../distribution/frontend/config/config-mch.json",
     "serve": "rspack serve --mode=development",
     "debug": "npm run serve",
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",

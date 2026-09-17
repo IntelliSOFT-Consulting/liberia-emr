@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button, PasswordInput, Tile, InlineNotification } from '@carbon/react';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
 import styles from '../login/login.scss';
@@ -35,7 +36,7 @@ const ResetPassword = () => {
     }
   }, [location]);
 
-  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
     setErrorMessage('');
     
@@ -51,16 +52,26 @@ const ResetPassword = () => {
 
     setIsSubmitting(true);
     
-    // Placeholder for API integration
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Mocking an error response where the backend says the token is expired upon submission
-      if (password === 'expiremetest') {
-        setIsTokenInvalid(true);
-      } else {
-        navigate('/login/reset-success');
+    try {
+      const response = await openmrsFetch('/ws/liberiaemr/passwordReset/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token, newPassword: password })
+      });
+      
+      if (!response.ok) {
+        throw new Error(t('resetFailed', 'Invalid or expired token. Please request a new link.'));
       }
-    }, 1500);
+      
+      navigate('/login/reset-success');
+    } catch (err: any) {
+      setIsTokenInvalid(true);
+      setErrorMessage(err.message || 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isTokenInvalid) {

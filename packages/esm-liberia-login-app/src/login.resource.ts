@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import useSwrInfinite, { type SWRInfiniteResponse } from 'swr/infinite';
 import useSwrImmutable from 'swr/immutable';
 import {
@@ -32,7 +31,6 @@ export function useLoginLocations(
   searchQuery: string = '',
   useLoginLocationTag: boolean,
 ): LoginLocationData {
-  const { t } = useTranslation();
   const debouncedSearchQuery = useDebounce(searchQuery);
 
   function constructUrl(page: number, prevPageData: FetchResponse<LocationResponse>) {

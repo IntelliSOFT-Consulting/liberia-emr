@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Button, Tile } from '@carbon/react';
-import { CheckmarkFilled } from '@carbon/icons-react';
+import { Button, Tile, InlineNotification } from '@carbon/react';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
 import styles from '../login/login.scss';
@@ -18,17 +17,15 @@ const ResetSuccess = () => {
           <Logo t={t} />
         </div>
         
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', marginTop: '1rem' }}>
-          <CheckmarkFilled size={48} style={{ color: '#24a148' }} />
+        <div style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
+          <InlineNotification
+            kind="success"
+            title={t('passwordResetSuccess', 'Password reset successful')}
+            subtitle={t('passwordResetSuccessMessage', 'Your password has been successfully reset. You can now log in with your new password.')}
+            hideCloseButton
+            lowContrast
+          />
         </div>
-        
-        <h2 className={styles.productiveHeading03} style={{ marginBottom: '1rem', textAlign: 'center' }}>
-          {t('passwordResetSuccess', 'Password reset')}
-        </h2>
-        
-        <p className={styles.bodyShort01} style={{ marginBottom: '2rem', textAlign: 'center', color: '#525252' }}>
-          {t('passwordResetSuccessMessage', 'Your password has been successfully reset. Click below to log in.')}
-        </p>
 
         <Button
           onClick={() => navigate('/login')}
