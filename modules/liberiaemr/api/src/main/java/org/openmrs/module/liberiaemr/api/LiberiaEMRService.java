@@ -46,7 +46,6 @@ public interface LiberiaEMRService extends OpenmrsService {
 	 * is generated and an email is sent.
 	 * 
 	 * @param email the email address (mapped via User Properties)
-	 * @throws APIException if an error occurs
 	 */
 	void requestPasswordReset(String email) throws APIException;
 	
@@ -55,7 +54,6 @@ public interface LiberiaEMRService extends OpenmrsService {
 	 * 
 	 * @param token the UUID token string
 	 * @param newPassword the new password to set
-	 * @throws APIException if the token is invalid or expired
 	 */
 	void confirmPasswordReset(String token, String newPassword) throws APIException;
 }
