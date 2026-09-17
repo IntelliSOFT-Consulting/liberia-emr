@@ -178,9 +178,11 @@ services:
       # QA-only (distribution/sync/README.md) and never a deployed configuration.
       SYNC_OUTPUT_ENDPOINT: ${SYNC_OUTPUT_ENDPOINT:-}
       SYNC_PAYLOAD_ENCRYPTION: ${SYNC_PAYLOAD_ENCRYPTION:-}
+      SYNC_SNAPSHOT_MODE: ${SYNC_SNAPSHOT_MODE:-initial}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
-      # Debezium offset and schema history; losing this volume means re-snapshotting.
+      # Debezium offset and schema history; losing this volume means the sender sends every
+      # record again on its next start (SYNC_SNAPSHOT_MODE=initial).
       # One of the enumerated copies of clinical data at rest (sync-eip.md §7.4).
       - sync-queue:/opt/eip
       # This facility's client certificate and PGP keys. A missing directory fails the

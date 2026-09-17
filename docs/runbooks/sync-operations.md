@@ -6,8 +6,8 @@ rotating certificates and keys, and handling what the alerts raise. The design i
 [distribution/broker/README.md](../../distribution/broker/README.md) and
 [distribution/sync/README.md](../../distribution/sync/README.md).
 
-**Rehearsal status:** sections 7 to 9 are exercised by the `qa/sync/` checks named in them.
-Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
+**Rehearsal status:** sections 7 to 9 and 11 are exercised by the `qa/sync/` checks named in
+them. Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
 before go-live.
 
 Commands assume the repository is checked out on the host and the stacks run with Docker
@@ -79,9 +79,32 @@ certificate, the PGP key and the broker address, and must be the facility's `FAC
    ```
 5. **Facility.** Set `FACILITY_CODE`, `ARTEMIS_URL=ssl://<central host>:61617`,
    `SYNC_CERTS_DIR` and the sync account (section 6) in the facility env, then `facility up -d`.
+
+   On its first start the sender sends every record already in the facility database, then
+   carries on with new changes (`SYNC_SNAPSHOT_MODE=initial`). The clinic can keep working
+   while it runs, but changes made meanwhile wait behind the load. It sent a few records a
+   second on the test stacks, so a database of hundreds of thousands of records takes hours
+   to days; time it on a copy of the facility's data first. Before that start:
+   - Enrol one facility at a time. The load reads the whole database, and central applies it
+     alongside every other facility's live changes.
+   - Remove any record that must never reach central, such as training data, before enrolling.
+     `SYNC_SNAPSHOT_MODE=schema_only` skips what is already there, but it defers rather than
+     excludes: the first edit to one of those records sends it, and central takes it as a new
+     record. The setting is read until the first load has completed, and again only if the
+     saved position is lost or set aside (section 11).
+   - Watch the facility database's CPU and disk while the load runs. The sender's own queue
+     table is scanned and sorted every five seconds until it drains, and upstream has no index
+     on it, so a large load keeps that scan going for as long as it lasts.
+   - Do not upgrade the facility until the load has finished: a migration that changes a table
+     the load is still reading waits for it, and the clinic's saves to that table wait too.
 6. **Check.** The sender logs `Started Application`; the receiver logs
    `Entity: ..., source=<code>` as the facility's changes arrive; Prometheus at central shows
-   `sync_cert_not_after_seconds{identity="<code>"}`.
+   `sync_cert_not_after_seconds{identity="<code>"}`. The first load is finished when the sender
+   has logged `Snapshot ended with SnapshotResult [status=COMPLETED`, the facility's
+   Prometheus shows `openmrs_dbsync_watcher_db_events` and `openmrs_dbsync_watcher_errors` at 0,
+   and `queue stat` shows nothing waiting for the receiver, with `ReceiverErrors`,
+   `ReceiverConflicts` and `SyncDeadLetters` quiet. `qa/sync/verify-initial-load.sh` rehearses
+   this on staging and compares the record ids in every synced table at both ends.
 
 ## 2. Remove or revoke a facility
 
@@ -91,7 +114,9 @@ removed only after the facility's messages have drained.
 
 - **Closing a facility:** stop its sender, wait until the subscription queue is empty, then
   re-render the enrolment without it, remove its `-pub.asc` from `RECEIVER_CERTS_DIR/pgp/`, and
-  restart the broker and the receiver.
+  restart the broker and the receiver. That removes its broker address, so
+  `SyncFacilitySilent` clears within three days; until the enrolment is re-rendered the alert
+  keeps firing for it, so silence it in Alertmanager for as long as that takes.
 - **Stolen or compromised server:** revoke its certificate at once (section 3); the broker
   refuses it from then on, even though the facility cannot be reached. Then decide what to do
   with its messages already queued at central. If they can still be trusted, let them drain
@@ -288,3 +313,69 @@ central exec alertmanager amtool --alertmanager.url=http://127.0.0.1:9093 alert 
 ```
 
 `qa/sync/verify-alert-delivery.sh` exercises this section.
+
+## 10. A facility goes quiet: `SyncFacilitySilent`
+
+Central has received nothing from the facility for three days. Either nothing was recorded
+there, or its sync is stopped, cut off from the network, or refused at the broker (a revoked
+or expired certificate). Ask the facility; its own `SyncSenderDown` and `SyncPushErrors` alerts
+name the cause when its monitoring is reachable. A clinic closed for longer than three days
+raises this too, and it clears on the first record after it reopens. A newly enrolled facility
+is not flagged until it has been enrolled for three days.
+
+## 11. Send a facility's records again
+
+Needed when central lost records the facility had already sent, for example after central was
+restored from an older backup, and when a sender was down for longer than the binary log is
+kept (about 99 days): it then refuses to start because its saved position is no longer in the
+log. A sender whose `/opt/eip` volume was lost does this by itself on its next start. Doing it
+on purpose resends the facility's whole database, so do one facility at a time and at a quiet
+time. Keep the old saved position under a dated name:
+
+```bash
+facility stop sync
+facility run --rm --no-deps --entrypoint sh sync -c \
+  'mv -T /opt/eip/.debezium "/opt/eip/.debezium.before-resend-$(date +%Y%m%d%H%M%S)" && ls -a /opt/eip'
+facility start sync
+```
+
+Records central already has are applied again unchanged. Records that were deleted outright at
+the facility since the sender last read are not resent; OpenMRS voids rather than deletes, so
+this is rare. Check the load finished as in section 1 step 6, then remove the dated copy:
+
+```bash
+facility run --rm --no-deps --entrypoint sh sync -c 'rm -rf /opt/eip/.debezium.before-resend-<date>'
+```
+
+To go back instead, before the load has finished:
+
+```bash
+facility stop sync
+facility run --rm --no-deps --entrypoint sh sync -c \
+  'rm -rf /opt/eip/.debezium && mv -T /opt/eip/.debezium.before-resend-<date> /opt/eip/.debezium'
+facility start sync
+```
+
+`qa/sync/verify-initial-load.sh` rehearses the same steps on staging.
+
+## 12. Records every install shares
+
+Every install creates the admin account, its person and name, the Unknown provider and the
+admin provider with the same uuids, and central holds its own copies without a sync hash.
+dbsync refuses such a record from a facility and retries it forever, so the receiver skips
+them (`db-sync.excludedEntities` in `distribution/sync/receiver-application.properties.template`).
+New rows attached to them still sync, so a name or attribute added to a facility's admin
+person ends up on central's admin person.
+
+A central that ran an earlier release may hold a retry item for one of them, left from an edit
+to a facility admin account; it shows as `ReceiverErrors`. With the receiver stopped
+(`central stop sync-receiver`), remove it in the management schema, then start the receiver:
+
+```sql
+DELETE FROM receiver_retry_queue WHERE
+     (model_class_name = 'org.openmrs.eip.dbsync.model.UserModel' AND identifier = '82f18b44-6814-11e8-923f-e9a88dcb533f')
+  OR (model_class_name = 'org.openmrs.eip.dbsync.model.PersonModel' AND identifier = '5f87c042-6814-11e8-923f-e9a88dcb533f')
+  OR (model_class_name = 'org.openmrs.eip.dbsync.model.PersonNameModel' AND identifier = '5f897a68-6814-11e8-923f-e9a88dcb533f')
+  OR (model_class_name = 'org.openmrs.eip.dbsync.model.ProviderModel'
+      AND identifier IN ('f9badd80-ab76-11e2-9e96-0800200c9a66', '55bc2590-ceb2-4832-8148-d163fbdebee3'));
+```

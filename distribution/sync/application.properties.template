@@ -71,8 +71,12 @@ debezium.db.serverId=${DEBEZIUM_SERVER_ID}
 debezium.db.serverName=${DBSYNC_SENDER_ID}
 debezium.db.user=${DEBEZIUM_DB_USER}
 debezium.db.password=${DEBEZIUM_DB_PASSWORD}
-debezium.snapshotMode=schema_only
-debezium.snapshotLockingMode=extended
+# Read until the sender's first load has completed: on its first start, or after /opt/eip was
+# lost. initial sends every existing row, then follows the binlog; schema_only skips existing
+# rows (docs/runbooks/sync-operations.md section 1). minimal locking holds the global read lock
+# only while reading the schema, so the clinic can keep saving during an initial load.
+debezium.snapshotMode=${SYNC_SNAPSHOT_MODE}
+debezium.snapshotLockingMode=minimal
 debezium.reader.maxBatchSize=2048
 debezium.offsetFilename=/opt/eip/.debezium/offsets.txt
 debezium.historyFilename=/opt/eip/.debezium/dbhistory.txt
