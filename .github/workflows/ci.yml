@@ -200,6 +200,10 @@ jobs:
       - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
 
+      - name: Build and Package LiberiaEMR Module
+        working-directory: modules/liberiaemr
+        run: mvn -B clean package
+
       # Sonar only runs if the secret is actually configured, so this
       # doesn't hard-fail on fork PRs (which never get repo secrets).
       - name: SonarQube Analysis
