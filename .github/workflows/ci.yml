@@ -200,10 +200,6 @@ jobs:
       - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
 
-      - name: Build and Package LiberiaEMR Module
-        working-directory: modules/liberiaemr
-        run: mvn -B clean package
-
       # Sonar only runs if the secret is actually configured, so this
       # doesn't hard-fail on fork PRs (which never get repo secrets).
       - name: SonarQube Analysis
@@ -767,6 +763,21 @@ jobs:
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
 
+  backend-module:
+    name: Build LiberiaEMR Module
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build and Package
+        working-directory: modules/liberiaemr
+        run: mvn -B clean package
+
   # ---------------------------------------------------------------------
   # Soft gate — the single required status check for branch protection.
   #
@@ -812,6 +823,7 @@ jobs:
       - sync-hardening
       - e2e
       - frontend
+      - backend-module
     steps:
       - name: Require all jobs to have succeeded
         env:
