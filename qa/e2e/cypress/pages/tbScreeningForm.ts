@@ -47,30 +47,40 @@ class TbScreeningFormPage {
         cy.get(`#${fieldId}-${answer}`, { timeout: 20000 }).check({ force: true });
     }
 
-    private fillScoreField(body: JQuery<HTMLElement>, fieldId: string, score: number, answer?: YesNo) {
-        if (body.find(`#${fieldId}_score`).length > 0) {
-            cy.get(`#${fieldId}_score`, { timeout: 20000 }).clear().type(String(score));
-            return;
-        }
+    private fillScoreField(fieldId: string, score: number, answer?: YesNo) {
+        const scoreSelector = `#${fieldId}_score`;
+        const yesSelector = `#${fieldId}-Yes`;
 
-        if (!answer) {
-            throw new Error(`Missing yes/no answer for TB screening field: ${fieldId}`);
-        }
+        cy.get('body', { timeout: 20000 })
+            .should((body) => {
+                expect(
+                    body.find(scoreSelector).length > 0 || body.find(yesSelector).length > 0,
+                    `expected ${fieldId} score or yes/no control`
+                ).to.equal(true);
+            })
+            .then((body) => {
+                if (body.find(scoreSelector).length > 0) {
+                    cy.get(scoreSelector, { timeout: 20000 }).clear().type(String(score));
+                    return;
+                }
 
-        this.selectYesNoField(fieldId, answer);
+                if (!answer) {
+                    throw new Error(`Missing yes/no answer for TB screening field: ${fieldId}`);
+                }
+
+                this.selectYesNoField(fieldId, answer);
+            });
     }
 
     fillForm(data: TbScreeningFormData) {
         this.selectYesNoField('contact_of_tb_patient', data.contactOfTbPatient);
         this.selectYesNoField('previously_treated_for_tb', data.previouslyTreatedForTb);
 
-        cy.get('body').then((body) => {
-            this.fillScoreField(body, 'coughing_2_weeks_or_more', data.coughing2WeeksOrMoreScore, data.coughing2WeeksOrMore);
-            this.fillScoreField(body, 'night_sweats', data.nightSweatsScore, data.nightSweats);
-            this.fillScoreField(body, 'weight_loss', data.weightLossScore, data.weightLoss);
-            this.fillScoreField(body, 'fever', data.feverScore, data.fever);
-            this.fillScoreField(body, 'swelling_in_any_part_of_the_body', data.swellingScore, data.swelling);
-        });
+        this.fillScoreField('coughing_2_weeks_or_more', data.coughing2WeeksOrMoreScore, data.coughing2WeeksOrMore);
+        this.fillScoreField('night_sweats', data.nightSweatsScore, data.nightSweats);
+        this.fillScoreField('weight_loss', data.weightLossScore, data.weightLoss);
+        this.fillScoreField('fever', data.feverScore, data.fever);
+        this.fillScoreField('swelling_in_any_part_of_the_body', data.swellingScore, data.swelling);
 
         this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
 
