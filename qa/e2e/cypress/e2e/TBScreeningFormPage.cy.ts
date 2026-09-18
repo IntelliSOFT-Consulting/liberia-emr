@@ -98,7 +98,6 @@ describe('TB Screening form page object', () => {
             fever: 'No',
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            dateTbTreatmentStarted: { day: '02', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
             observation: 'Legacy layout'
         });
@@ -113,9 +112,9 @@ describe('TB Screening form page object', () => {
         cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
-        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '02');
-        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '01');
-        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '2025');
+        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '');
+        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '');
+        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '');
         cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
         cy.get('#observation').should('have.value', 'Legacy layout');
     });
