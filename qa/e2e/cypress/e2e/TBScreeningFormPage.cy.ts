@@ -81,6 +81,13 @@ describe('TB Screening form page object', () => {
         cy.get('#weight_loss_score').should('have.value', '1');
         cy.get('#fever_score').should('have.value', '0');
         cy.get('#swelling_in_any_part_of_the_body_score').should('have.value', '1');
+        cy.get('#contact_of_tb_patient-No').should('be.checked');
+        cy.get('#previously_treated_for_tb-No').should('be.checked');
+        cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
+        cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
+        cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
+        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
+        cy.get('#observation').should('have.value', 'Legacy layout');
     });
 
     it('fills the yes/no symptom layout', () => {
@@ -104,5 +111,12 @@ describe('TB Screening form page object', () => {
         cy.get('#weight_loss-Yes').should('be.checked');
         cy.get('#fever-No').should('be.checked');
         cy.get('#swelling_in_any_part_of_the_body-Yes').should('be.checked');
+        cy.get('#contact_of_tb_patient-No').should('be.checked');
+        cy.get('#previously_treated_for_tb-No').should('be.checked');
+        cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
+        cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
+        cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
+        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
+        cy.get('#observation').should('have.value', 'Yes/no layout');
     });
 });
