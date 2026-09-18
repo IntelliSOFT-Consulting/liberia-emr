@@ -44,13 +44,11 @@ class TbScreeningFormPage {
         cy.get(`#${fieldId}-${answer}`, { timeout: this.timeout }).check({ force: true });
     }
 
-    private fillSymptomField(fieldId: string, answer: YesNo, positiveScore: number) {
-        const scoreSelector = `#${fieldId}_score`;
+    private fillSymptomField(fieldId: string, answer: YesNo) {
         const yesSelector = `#${fieldId}-Yes`;
         const noSelector = `#${fieldId}-No`;
-        const score = answer === 'Yes' ? positiveScore : 0;
 
-        const selector = `${scoreSelector}, ${yesSelector}, ${noSelector}`;
+        const selector = `${yesSelector}, ${noSelector}`;
 
         cy.wrap(null, { timeout: this.timeout })
             .should(() => {
@@ -58,23 +56,13 @@ class TbScreeningFormPage {
             })
             .then(() => {
                 const controls = Cypress.$(selector);
-                const hasScoreControl = controls.filter(scoreSelector).length > 0;
                 const hasYesControl = controls.filter(yesSelector).length > 0;
                 const hasNoControl = controls.filter(noSelector).length > 0;
                 const hasCompleteYesNoControl = hasYesControl && hasNoControl;
                 const hasPartialYesNoControl = hasYesControl !== hasNoControl;
 
-                if (hasScoreControl && (hasYesControl || hasNoControl)) {
-                    throw new Error(`Ambiguous TB screening field controls rendered: ${fieldId}`);
-                }
-
                 if (hasPartialYesNoControl) {
                     throw new Error(`Incomplete TB screening field controls rendered: ${fieldId}`);
-                }
-
-                if (hasScoreControl) {
-                    cy.get(scoreSelector, { timeout: this.timeout }).clear().type(String(score));
-                    return;
                 }
 
                 if (hasCompleteYesNoControl) {
@@ -90,11 +78,11 @@ class TbScreeningFormPage {
         this.selectYesNoField('contact_of_tb_patient', data.contactOfTbPatient);
         this.selectYesNoField('previously_treated_for_tb', data.previouslyTreatedForTb);
 
-        this.fillSymptomField('coughing_2_weeks_or_more', data.coughing2WeeksOrMore, 2);
-        this.fillSymptomField('night_sweats', data.nightSweats, 1);
-        this.fillSymptomField('weight_loss', data.weightLoss, 1);
-        this.fillSymptomField('fever', data.fever, 1);
-        this.fillSymptomField('swelling_in_any_part_of_the_body', data.swelling, 1);
+        this.fillSymptomField('coughing_2_weeks_or_more', data.coughing2WeeksOrMore);
+        this.fillSymptomField('night_sweats', data.nightSweats);
+        this.fillSymptomField('weight_loss', data.weightLoss);
+        this.fillSymptomField('fever', data.fever);
+        this.fillSymptomField('swelling_in_any_part_of_the_body', data.swelling);
 
         this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
 
@@ -102,7 +90,8 @@ class TbScreeningFormPage {
             .clear()
             .type(data.sputumTestResult);
 
-        if (data.dateTbTreatmentStarted) {
+        // date_tb_treatment_was_started is hidden unless previously treated for TB is Yes
+        if (data.dateTbTreatmentStarted && data.previouslyTreatedForTb === 'Yes') {
             this.fillDateField('date_tb_treatment_was_started', data.dateTbTreatmentStarted);
         }
 

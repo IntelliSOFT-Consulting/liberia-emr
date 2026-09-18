@@ -22,19 +22,6 @@ const commonFields = `
     <textarea id="observation"></textarea>
 `;
 
-const buildLegacyScoreLayout = () => `
-    <html>
-        <body>
-            ${commonFields}
-            <input id="coughing_2_weeks_or_more_score" />
-            <input id="night_sweats_score" />
-            <input id="weight_loss_score" />
-            <input id="fever_score" />
-            <input id="swelling_in_any_part_of_the_body_score" />
-        </body>
-    </html>
-`;
-
 const buildYesNoLayout = () => `
     <html>
         <body>
@@ -60,19 +47,6 @@ const buildLayoutMissingFeverControl = () => `
     </html>
 `;
 
-const buildAmbiguousCoughControlLayout = () => `
-    <html>
-        <body>
-            ${commonFields}
-            <input id="coughing_2_weeks_or_more_score" />
-            ${buildYesNoField('coughing_2_weeks_or_more')}
-            ${buildYesNoField('night_sweats')}
-            ${buildYesNoField('weight_loss')}
-            ${buildYesNoField('fever')}
-            ${buildYesNoField('swelling_in_any_part_of_the_body')}
-        </body>
-    </html>
-`;
 
 const buildIncompleteFeverControlLayout = () => `
     <html>
@@ -99,45 +73,12 @@ const mountForm = (markup: string) => {
 describe('TB Screening form page object', () => {
     const page = new TbScreeningFormPage();
 
-    it('fills the legacy score-based layout', () => {
-        mountForm(buildLegacyScoreLayout());
-
-        page.fillForm({
-            contactOfTbPatient: 'No',
-            previouslyTreatedForTb: 'No',
-            coughing2WeeksOrMore: 'Yes',
-            nightSweats: 'Yes',
-            weightLoss: 'Yes',
-            fever: 'No',
-            swelling: 'Yes',
-            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            sputumTestResult: 'Negative',
-            observation: 'Legacy layout'
-        });
-
-        cy.get('#coughing_2_weeks_or_more_score').should('have.value', '2');
-        cy.get('#night_sweats_score').should('have.value', '1');
-        cy.get('#weight_loss_score').should('have.value', '1');
-        cy.get('#fever_score').should('have.value', '0');
-        cy.get('#swelling_in_any_part_of_the_body_score').should('have.value', '1');
-        cy.get('#contact_of_tb_patient-No').should('be.checked');
-        cy.get('#previously_treated_for_tb-No').should('be.checked');
-        cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
-        cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
-        cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
-        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '');
-        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '');
-        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '');
-        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
-        cy.get('#observation').should('have.value', 'Legacy layout');
-    });
-
-    it('fills the yes/no symptom layout', () => {
+    it('fills the yes/no symptom layout and treatment start date when previously treated for TB', () => {
         mountForm(buildYesNoLayout());
 
         page.fillForm({
             contactOfTbPatient: 'No',
-            previouslyTreatedForTb: 'No',
+            previouslyTreatedForTb: 'Yes',
             coughing2WeeksOrMore: 'Yes',
             nightSweats: 'Yes',
             weightLoss: 'Yes',
@@ -155,7 +96,7 @@ describe('TB Screening form page object', () => {
         cy.get('#fever-No').should('be.checked');
         cy.get('#swelling_in_any_part_of_the_body-Yes').should('be.checked');
         cy.get('#contact_of_tb_patient-No').should('be.checked');
-        cy.get('#previously_treated_for_tb-No').should('be.checked');
+        cy.get('#previously_treated_for_tb-Yes').should('be.checked');
         cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
@@ -164,6 +105,28 @@ describe('TB Screening form page object', () => {
         cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '2025');
         cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
         cy.get('#observation').should('have.value', 'Yes/no layout');
+    });
+
+    it('skips the treatment start date when not previously treated for TB', () => {
+        mountForm(buildYesNoLayout());
+
+        page.fillForm({
+            contactOfTbPatient: 'No',
+            previouslyTreatedForTb: 'No',
+            coughing2WeeksOrMore: 'Yes',
+            nightSweats: 'Yes',
+            weightLoss: 'Yes',
+            fever: 'No',
+            swelling: 'Yes',
+            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            dateTbTreatmentStarted: { day: '02', month: '01', year: '2025' },
+            sputumTestResult: 'Negative'
+        });
+
+        cy.get('#previously_treated_for_tb-No').should('be.checked');
+        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '');
+        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '');
+        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '');
     });
 
     it('fails when neither symptom control variant is rendered', () => {
@@ -192,35 +155,6 @@ describe('TB Screening form page object', () => {
 
         cy.then(() => {
             expect(failureMessage).to.contain('Missing TB screening field controls: fever');
-        });
-    });
-
-    it('fails when both symptom control variants are rendered', () => {
-        const fastPage = new TbScreeningFormPage(100);
-        let failureMessage = '';
-
-        mountForm(buildAmbiguousCoughControlLayout());
-
-        Cypress.once('fail', (error) => {
-            failureMessage = error.message;
-            expect(error.message).to.contain('Ambiguous TB screening field controls rendered: coughing_2_weeks_or_more');
-            return false;
-        });
-
-        fastPage.fillForm({
-            contactOfTbPatient: 'No',
-            previouslyTreatedForTb: 'No',
-            coughing2WeeksOrMore: 'Yes',
-            nightSweats: 'Yes',
-            weightLoss: 'Yes',
-            fever: 'No',
-            swelling: 'Yes',
-            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            sputumTestResult: 'Negative'
-        });
-
-        cy.then(() => {
-            expect(failureMessage).to.contain('Ambiguous TB screening field controls rendered: coughing_2_weeks_or_more');
         });
     });
 

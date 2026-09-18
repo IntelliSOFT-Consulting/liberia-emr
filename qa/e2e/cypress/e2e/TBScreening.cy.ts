@@ -10,8 +10,7 @@ describe('TB Screening form', () => {
         loginWithSession();
     });
 
-    // Skipped for now: flaky TB Screening form control interactions need investigation
-    it.skip('should complete a TB Screening form for a patient with an active visit', () => {
+    it('should complete a TB Screening form for a patient with an active visit', () => {
         visitPage.registerPatient();
         visitPage.startVisit();
 
