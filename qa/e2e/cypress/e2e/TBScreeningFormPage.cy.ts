@@ -146,7 +146,7 @@ describe('TB Screening form page object', () => {
 
         mountForm(buildLayoutMissingFeverControl());
 
-        cy.on('fail', (error) => {
+        Cypress.once('fail', (error) => {
             failureMessage = error.message;
             expect(error.message).to.contain('expected fever score or yes/no control');
             return false;
