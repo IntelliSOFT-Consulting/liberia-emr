@@ -53,7 +53,11 @@ class TbScreeningFormPage {
             return;
         }
 
-        this.selectYesNoField(fieldId, answer ?? 'No');
+        if (!answer) {
+            throw new Error(`Missing yes/no answer for TB screening field: ${fieldId}`);
+        }
+
+        this.selectYesNoField(fieldId, answer);
     }
 
     fillForm(data: TbScreeningFormData) {
