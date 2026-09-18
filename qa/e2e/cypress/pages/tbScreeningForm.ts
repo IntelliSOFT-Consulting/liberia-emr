@@ -1,5 +1,21 @@
 type DateParts = { day: string; month: string; year: string };
 
+type YesNo = 'Yes' | 'No';
+
+type TbScreeningFormData = {
+    contactOfTbPatient: YesNo;
+    previouslyTreatedForTb: YesNo;
+    coughing2WeeksOrMoreScore: number;
+    nightSweatsScore: number;
+    weightLossScore: number;
+    feverScore: number;
+    swellingScore: number;
+    dateScreeningConducted: DateParts;
+    sputumTestResult: string;
+    dateTbTreatmentStarted?: DateParts;
+    observation?: string;
+};
+
 class TbScreeningFormPage {
     // The chart's dashboard slot must render before the forms icon/list can be interacted with reliably
     waitForChartToLoad() {
@@ -22,27 +38,31 @@ class TbScreeningFormPage {
         cy.get(`#${fieldId} [data-type="year"]`, { timeout: 20000 }).click().type(date.year);
     }
 
-    fillForm(data: {
-        contactOfTbPatient: 'Yes' | 'No';
-        previouslyTreatedForTb: 'Yes' | 'No';
-        coughing2WeeksOrMoreScore: number;
-        nightSweatsScore: number;
-        weightLossScore: number;
-        feverScore: number;
-        swellingScore: number;
-        dateScreeningConducted: DateParts;
-        sputumTestResult: string;
-        dateTbTreatmentStarted?: DateParts;
-        observation?: string;
-    }) {
-        cy.get(`#contact_of_tb_patient-${data.contactOfTbPatient}`, { timeout: 20000 }).check({ force: true });
-        cy.get(`#previously_treated_for_tb-${data.previouslyTreatedForTb}`, { timeout: 20000 }).check({ force: true });
+    private selectYesNoField(fieldId: string, answer: YesNo) {
+        cy.get(`#${fieldId}-${answer}`, { timeout: 20000 }).check({ force: true });
+    }
 
-        cy.get('#coughing_2_weeks_or_more_score', { timeout: 20000 }).clear().type(String(data.coughing2WeeksOrMoreScore));
-        cy.get('#night_sweats_score', { timeout: 20000 }).clear().type(String(data.nightSweatsScore));
-        cy.get('#weight_loss_score', { timeout: 20000 }).clear().type(String(data.weightLossScore));
-        cy.get('#fever_score', { timeout: 20000 }).clear().type(String(data.feverScore));
-        cy.get('#swelling_in_any_part_of_the_body_score', { timeout: 20000 }).clear().type(String(data.swellingScore));
+    private fillScoreField(body: JQuery<HTMLElement>, fieldId: string, score: number, yesScore: number) {
+        if (body.find(`#${fieldId}_score`).length > 0) {
+            cy.get(`#${fieldId}_score`, { timeout: 20000 }).clear().type(String(score));
+            return;
+        }
+
+        const answer: YesNo = score >= yesScore ? 'Yes' : 'No';
+        this.selectYesNoField(fieldId, answer);
+    }
+
+    fillForm(data: TbScreeningFormData) {
+        this.selectYesNoField('contact_of_tb_patient', data.contactOfTbPatient);
+        this.selectYesNoField('previously_treated_for_tb', data.previouslyTreatedForTb);
+
+        cy.get('body').then((body) => {
+            this.fillScoreField(body, 'coughing_2_weeks_or_more', data.coughing2WeeksOrMoreScore, 2);
+            this.fillScoreField(body, 'night_sweats', data.nightSweatsScore, 1);
+            this.fillScoreField(body, 'weight_loss', data.weightLossScore, 1);
+            this.fillScoreField(body, 'fever', data.feverScore, 1);
+            this.fillScoreField(body, 'swelling_in_any_part_of_the_body', data.swellingScore, 1);
+        });
 
         this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
 
