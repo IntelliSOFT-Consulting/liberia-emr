@@ -5,16 +5,11 @@ type YesNo = 'Yes' | 'No';
 type TbScreeningFormData = {
     contactOfTbPatient: YesNo;
     previouslyTreatedForTb: YesNo;
-    coughing2WeeksOrMoreScore: number;
-    nightSweatsScore: number;
-    weightLossScore: number;
-    feverScore: number;
-    swellingScore: number;
-    coughing2WeeksOrMore?: YesNo;
-    nightSweats?: YesNo;
-    weightLoss?: YesNo;
-    fever?: YesNo;
-    swelling?: YesNo;
+    coughing2WeeksOrMore: YesNo;
+    nightSweats: YesNo;
+    weightLoss: YesNo;
+    fever: YesNo;
+    swelling: YesNo;
     dateScreeningConducted: DateParts;
     sputumTestResult: string;
     dateTbTreatmentStarted?: DateParts;
@@ -47,9 +42,10 @@ class TbScreeningFormPage {
         cy.get(`#${fieldId}-${answer}`, { timeout: 20000 }).check({ force: true });
     }
 
-    private fillScoreField(fieldId: string, score: number, answer?: YesNo) {
+    private fillSymptomField(fieldId: string, answer: YesNo, positiveScore: number) {
         const scoreSelector = `#${fieldId}_score`;
         const yesSelector = `#${fieldId}-Yes`;
+        const score = answer === 'Yes' ? positiveScore : 0;
 
         cy.get('body', { timeout: 20000 })
             .should((body) => {
@@ -64,10 +60,6 @@ class TbScreeningFormPage {
                     return;
                 }
 
-                if (!answer) {
-                    throw new Error(`Missing yes/no answer for TB screening field: ${fieldId}`);
-                }
-
                 this.selectYesNoField(fieldId, answer);
             });
     }
@@ -76,11 +68,11 @@ class TbScreeningFormPage {
         this.selectYesNoField('contact_of_tb_patient', data.contactOfTbPatient);
         this.selectYesNoField('previously_treated_for_tb', data.previouslyTreatedForTb);
 
-        this.fillScoreField('coughing_2_weeks_or_more', data.coughing2WeeksOrMoreScore, data.coughing2WeeksOrMore);
-        this.fillScoreField('night_sweats', data.nightSweatsScore, data.nightSweats);
-        this.fillScoreField('weight_loss', data.weightLossScore, data.weightLoss);
-        this.fillScoreField('fever', data.feverScore, data.fever);
-        this.fillScoreField('swelling_in_any_part_of_the_body', data.swellingScore, data.swelling);
+        this.fillSymptomField('coughing_2_weeks_or_more', data.coughing2WeeksOrMore, 2);
+        this.fillSymptomField('night_sweats', data.nightSweats, 1);
+        this.fillSymptomField('weight_loss', data.weightLoss, 1);
+        this.fillSymptomField('fever', data.fever, 1);
+        this.fillSymptomField('swelling_in_any_part_of_the_body', data.swelling, 1);
 
         this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
 

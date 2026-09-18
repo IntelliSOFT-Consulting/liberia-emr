@@ -19,11 +19,6 @@ describe('TB Screening form', () => {
         tbScreeningForm.fillForm({
             contactOfTbPatient: 'No',
             previouslyTreatedForTb: 'No',
-            coughing2WeeksOrMoreScore: 2,
-            nightSweatsScore: 1,
-            weightLossScore: 1,
-            feverScore: 1,
-            swellingScore: 1,
             coughing2WeeksOrMore: 'Yes',
             nightSweats: 'Yes',
             weightLoss: 'Yes',
