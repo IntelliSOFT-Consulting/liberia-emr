@@ -24,6 +24,11 @@ describe('TB Screening form', () => {
             weightLossScore: 1,
             feverScore: 1,
             swellingScore: 1,
+            coughing2WeeksOrMore: 'Yes',
+            nightSweats: 'Yes',
+            weightLoss: 'Yes',
+            fever: 'Yes',
+            swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
             observation: 'Automated test entry'
