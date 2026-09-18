@@ -50,8 +50,14 @@ class TbScreeningFormPage {
         const noSelector = `#${fieldId}-No`;
         const score = answer === 'Yes' ? positiveScore : 0;
 
-        cy.get(`${scoreSelector}, ${yesSelector}, ${noSelector}`, { timeout: this.timeout })
-            .then((controls) => {
+        const selector = `${scoreSelector}, ${yesSelector}, ${noSelector}`;
+
+        cy.wrap(null, { timeout: this.timeout })
+            .should(() => {
+                expect(Cypress.$(selector).length, `Missing TB screening field controls: ${fieldId}`).to.be.greaterThan(0);
+            })
+            .then(() => {
+                const controls = Cypress.$(selector);
                 const hasScoreControl = controls.filter(scoreSelector).length > 0;
                 const hasYesControl = controls.filter(yesSelector).length > 0;
                 const hasNoControl = controls.filter(noSelector).length > 0;

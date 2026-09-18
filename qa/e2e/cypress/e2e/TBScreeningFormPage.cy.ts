@@ -174,7 +174,7 @@ describe('TB Screening form page object', () => {
 
         Cypress.once('fail', (error) => {
             failureMessage = error.message;
-            expect(error.message).to.contain('#fever_score, #fever-Yes');
+            expect(error.message).to.contain('Missing TB screening field controls: fever');
             return false;
         });
 
@@ -191,7 +191,7 @@ describe('TB Screening form page object', () => {
         });
 
         cy.then(() => {
-            expect(failureMessage).to.contain('#fever_score, #fever-Yes');
+            expect(failureMessage).to.contain('Missing TB screening field controls: fever');
         });
     });
 
