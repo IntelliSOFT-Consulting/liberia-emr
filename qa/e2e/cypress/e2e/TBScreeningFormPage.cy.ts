@@ -142,10 +142,12 @@ describe('TB Screening form page object', () => {
 
     it('fails when neither symptom control variant is rendered', () => {
         const fastPage = new TbScreeningFormPage(100);
+        let failureMessage = '';
 
         mountForm(buildLayoutMissingFeverControl());
 
         cy.on('fail', (error) => {
+            failureMessage = error.message;
             expect(error.message).to.contain('expected fever score or yes/no control');
             return false;
         });
@@ -160,6 +162,10 @@ describe('TB Screening form page object', () => {
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
             sputumTestResult: 'Negative'
+        });
+
+        cy.then(() => {
+            expect(failureMessage).to.contain('expected fever score or yes/no control');
         });
     });
 });
