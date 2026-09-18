@@ -17,6 +17,7 @@
               "label": "Contact of TB Patient",
               "id": "contact_of_tb_patient",
               "type": "obs",
+              "required": true,
               "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.contact-of-tb-patient.uuid}",
@@ -36,6 +37,7 @@
               "label": "Previously Treated for TB",
               "id": "previously_treated_for_tb",
               "type": "obs",
+              "required": true,
               "questionOptions": {
                 "rendering": "radio",
                 "concept": "${var.concept.national.previously-treated-for-tb.uuid}",
@@ -52,104 +54,135 @@
               }
             },
             {
-              "label": "Coughing 2 Weeks or More - Score",
-              "id": "coughing_2_weeks_or_more_score",
+              "label": "Date TB treatment was started for the person screened, if applicable",
+              "id": "date_tb_treatment_was_started",
               "type": "obs",
+              "required": {
+                "type": "conditionalRequired",
+                "message": "Date TB treatment was started is required if previously treated for TB",
+                "referenceQuestionId": "previously_treated_for_tb",
+                "referenceQuestionAnswers": [
+                  "${var.concept.ciel.yes.uuid}"
+                ]
+              },
+              "hide": {
+                "hideWhenExpression": "previously_treated_for_tb !== '${var.concept.ciel.yes.uuid}'"
+              },
               "questionOptions": {
-                "rendering": "number",
-                "disallowDecimals": true,
-                "step": "2",
-                "min": "0",
-                "max": "2",
-                "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}"
+                "rendering": "date",
+                "concept": "${var.concept.ciel.date-tb-treatment-was-started.uuid}"
               },
               "validators": [
                 {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                },
+                {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 2",
-                  "message": "Coughing score must be exactly 0 or 2"
+                  "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
+                  "message": "Date cannot be before the patient's date of birth."
                 }
               ]
             },
             {
-              "label": "Night Sweats - Score",
-              "id": "night_sweats_score",
+              "label": "Coughing 2 Weeks or More",
+              "id": "coughing_2_weeks_or_more",
               "type": "obs",
+              "required": true,
               "questionOptions": {
-                "rendering": "number",
-                "disallowDecimals": true,
-                "step": "1",
-                "min": "0",
-                "max": "1",
-                "concept": "${var.concept.national.night-sweats-score.uuid}"
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
-                  "message": "Score must be exactly 0 or 1"
-                }
-              ]
+                "rendering": "radio",
+                "concept": "${var.concept.national.coughing-2-weeks-or-more.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
             },
             {
-              "label": "Weight Loss - Score",
-              "id": "weight_loss_score",
+              "label": "Night Sweats",
+              "id": "night_sweats",
               "type": "obs",
+              "required": true,
               "questionOptions": {
-                "rendering": "number",
-                "disallowDecimals": true,
-                "step": "1",
-                "min": "0",
-                "max": "1",
-                "concept": "${var.concept.national.weight-loss-score.uuid}"
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
-                  "message": "Score must be exactly 0 or 1"
-                }
-              ]
+                "rendering": "radio",
+                "concept": "${var.concept.national.night-sweats.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
             },
             {
-              "label": "Fever - Score",
-              "id": "fever_score",
+              "label": "Weight Loss",
+              "id": "weight_loss",
               "type": "obs",
+              "required": true,
               "questionOptions": {
-                "rendering": "number",
-                "disallowDecimals": true,
-                "step": "1",
-                "min": "0",
-                "max": "1",
-                "concept": "${var.concept.national.fever-score.uuid}"
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
-                  "message": "Score must be exactly 0 or 1"
-                }
-              ]
+                "rendering": "radio",
+                "concept": "${var.concept.national.weight-loss.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
             },
             {
-              "label": "Swelling in Any Part of the Body - Score",
-              "id": "swelling_in_any_part_of_the_body_score",
+              "label": "Fever",
+              "id": "fever",
               "type": "obs",
+              "required": true,
               "questionOptions": {
-                "rendering": "number",
-                "disallowDecimals": true,
-                "step": "1",
-                "min": "0",
-                "max": "1",
-                "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}"
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && myValue !== 0 && myValue !== 1",
-                  "message": "Score must be exactly 0 or 1"
-                }
-              ]
+                "rendering": "radio",
+                "concept": "${var.concept.national.fever.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Swelling in Any Part of the Body",
+              "id": "swelling_in_any_part_of_the_body",
+              "type": "obs",
+              "required": true,
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.national.swelling-in-any-part-of-the-body.uuid}",
+                "answers": [
+                  {
+                    "concept": "${var.concept.ciel.yes.uuid}",
+                    "label": "Yes"
+                  },
+                  {
+                    "concept": "${var.concept.ciel.no.uuid}",
+                    "label": "No"
+                  }
+                ]
+              }
             },
             {
               "label": "Total Score",
@@ -169,7 +202,7 @@
                 "max": "6",
                 "concept": "${var.concept.national.total-score.uuid}",
                 "calculate": {
-                  "calculateExpression": "(coughing_2_weeks_or_more_score || 0) + (night_sweats_score || 0) + (weight_loss_score || 0) + (fever_score || 0) + (swelling_in_any_part_of_the_body_score || 0)"
+                  "calculateExpression": "(coughing_2_weeks_or_more === '${var.concept.ciel.yes.uuid}' ? 2 : 0) + (night_sweats === '${var.concept.ciel.yes.uuid}' ? 1 : 0) + (weight_loss === '${var.concept.ciel.yes.uuid}' ? 1 : 0) + (fever === '${var.concept.ciel.yes.uuid}' ? 1 : 0) + (swelling_in_any_part_of_the_body === '${var.concept.ciel.yes.uuid}' ? 1 : 0)"
                 }
               },
               "validators": [
@@ -184,6 +217,7 @@
               "label": "Date the screening was conducted",
               "id": "date_the_screening_was_conducted",
               "type": "obs",
+              "required": true,
               "questionOptions": {
                 "rendering": "date",
                 "concept": "${var.concept.national.date-the-screening-was-conducted.uuid}"
@@ -204,35 +238,17 @@
               "label": "Result of the sputum test or other diagnostic evaluation",
               "id": "result_of_the_sputum_test_or_other_diagnostic_evaluation",
               "type": "obs",
+              "required": true,
               "questionOptions": {
                 "rendering": "text",
                 "concept": "${var.concept.national.result-of-the-sputum-test-or-other-diagnostic-evaluation.uuid}"
               }
             },
             {
-              "label": "Date TB treatment was started for the person screened, if applicable",
-              "id": "date_tb_treatment_was_started",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "date",
-                "concept": "${var.concept.ciel.date-tb-treatment-was-started.uuid}"
-              },
-              "validators": [
-                {
-                  "type": "date",
-                  "allowFutureDates": "false"
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
-                  "message": "Date cannot be before the patient's date of birth."
-                }
-              ]
-            },
-            {
               "label": "Observation",
               "id": "observation",
               "type": "obs",
+              "required": true,
               "questionOptions": {
                 "rendering": "textarea",
                 "concept": "${var.concept.ciel.comments.uuid}"
