@@ -312,6 +312,28 @@
                             ]
                         },
                         {
+                            "id": "muac",
+                            "label": "MUAC (cm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.muac.uuid}",
+                                "min": "5",
+                                "max": "35",
+                                "step": 0.1
+                            },
+                            "hide": {
+                                "hideWhenExpression": "patientAgeInMonths < 6 || age >= 5"
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 5 || myValue > 35",
+                                    "message": "MUAC must be between 5 and 35 cm."
+                                }
+                            ]
+                        },
+                        {
                             "id": "bmi",
                             "label": "BMI",
                             "type": "obs",
@@ -321,11 +343,14 @@
                                 "concept": "${var.concept.ciel.bmi.uuid}",
                                 "disallowDecimals": false,
                                 "calculate": {
-                                    "calculateExpression": "age >= 16 ? calcBMI(height, weight) : ''"
+                                    "calculateExpression": "age >= 5 ? calcBMI(height, weight) : ''"
                                 }
                             },
                             "disabled": {
                                 "disableWhenExpression": "true"
+                            },
+                            "hide": {
+                                "hideWhenExpression": "age < 5"
                             }
                         }
                     ]
