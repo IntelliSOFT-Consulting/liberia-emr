@@ -181,6 +181,7 @@ describe('TB Screening form page object', () => {
             expect(failureMessage).to.contain('expected fever score or yes/no control');
         });
     });
+
     it('fails when both symptom control variants are rendered', () => {
         const fastPage = new TbScreeningFormPage(100);
         let failureMessage = '';
