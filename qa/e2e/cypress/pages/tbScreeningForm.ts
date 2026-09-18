@@ -49,16 +49,10 @@ class TbScreeningFormPage {
         const yesSelector = `#${fieldId}-Yes`;
         const score = answer === 'Yes' ? positiveScore : 0;
 
-        cy.get('body', { timeout: this.timeout })
-            .should((body) => {
-                expect(
-                    body.find(scoreSelector).length > 0 || body.find(yesSelector).length > 0,
-                    `expected ${fieldId} score or yes/no control`
-                ).to.equal(true);
-            })
-            .then((body) => {
-                const hasScoreControl = body.find(scoreSelector).length > 0;
-                const hasYesNoControl = body.find(yesSelector).length > 0;
+        cy.get(`${scoreSelector}, ${yesSelector}`, { timeout: this.timeout })
+            .then((controls) => {
+                const hasScoreControl = controls.filter(scoreSelector).length > 0;
+                const hasYesNoControl = controls.filter(yesSelector).length > 0;
 
                 if (hasScoreControl && hasYesNoControl) {
                     throw new Error(`Ambiguous TB screening field controls rendered: ${fieldId}`);

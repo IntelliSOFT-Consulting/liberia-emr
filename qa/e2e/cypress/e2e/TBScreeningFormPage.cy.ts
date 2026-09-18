@@ -161,7 +161,7 @@ describe('TB Screening form page object', () => {
 
         Cypress.once('fail', (error) => {
             failureMessage = error.message;
-            expect(error.message).to.contain('expected fever score or yes/no control');
+            expect(error.message).to.contain('#fever_score, #fever-Yes');
             return false;
         });
 
@@ -178,7 +178,7 @@ describe('TB Screening form page object', () => {
         });
 
         cy.then(() => {
-            expect(failureMessage).to.contain('expected fever score or yes/no control');
+            expect(failureMessage).to.contain('#fever_score, #fever-Yes');
         });
     });
 
