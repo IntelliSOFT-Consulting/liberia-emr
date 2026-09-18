@@ -47,15 +47,23 @@ class TbScreeningFormPage {
     private fillSymptomField(fieldId: string, answer: YesNo, positiveScore: number) {
         const scoreSelector = `#${fieldId}_score`;
         const yesSelector = `#${fieldId}-Yes`;
+        const noSelector = `#${fieldId}-No`;
         const score = answer === 'Yes' ? positiveScore : 0;
 
-        cy.get(`${scoreSelector}, ${yesSelector}`, { timeout: this.timeout })
+        cy.get(`${scoreSelector}, ${yesSelector}, ${noSelector}`, { timeout: this.timeout })
             .then((controls) => {
                 const hasScoreControl = controls.filter(scoreSelector).length > 0;
-                const hasYesNoControl = controls.filter(yesSelector).length > 0;
+                const hasYesControl = controls.filter(yesSelector).length > 0;
+                const hasNoControl = controls.filter(noSelector).length > 0;
+                const hasCompleteYesNoControl = hasYesControl && hasNoControl;
+                const hasPartialYesNoControl = hasYesControl !== hasNoControl;
 
-                if (hasScoreControl && hasYesNoControl) {
+                if (hasScoreControl && (hasYesControl || hasNoControl)) {
                     throw new Error(`Ambiguous TB screening field controls rendered: ${fieldId}`);
+                }
+
+                if (hasPartialYesNoControl) {
+                    throw new Error(`Incomplete TB screening field controls rendered: ${fieldId}`);
                 }
 
                 if (hasScoreControl) {
@@ -63,7 +71,12 @@ class TbScreeningFormPage {
                     return;
                 }
 
-                this.selectYesNoField(fieldId, answer);
+                if (hasCompleteYesNoControl) {
+                    this.selectYesNoField(fieldId, answer);
+                    return;
+                }
+
+                throw new Error(`Missing TB screening field controls: ${fieldId}`);
             });
     }
 

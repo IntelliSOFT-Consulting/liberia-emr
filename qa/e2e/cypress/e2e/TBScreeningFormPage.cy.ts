@@ -74,6 +74,19 @@ const buildAmbiguousCoughControlLayout = () => `
     </html>
 `;
 
+const buildIncompleteFeverControlLayout = () => `
+    <html>
+        <body>
+            ${commonFields}
+            ${buildYesNoField('coughing_2_weeks_or_more')}
+            ${buildYesNoField('night_sweats')}
+            ${buildYesNoField('weight_loss')}
+            <input id="fever-Yes" type="radio" name="fever" value="Yes" />
+            ${buildYesNoField('swelling_in_any_part_of_the_body')}
+        </body>
+    </html>
+`;
+
 const mountForm = (markup: string) => {
     cy.visit('about:blank');
     cy.document().then((doc) => {
@@ -208,6 +221,35 @@ describe('TB Screening form page object', () => {
 
         cy.then(() => {
             expect(failureMessage).to.contain('Ambiguous TB screening field controls rendered: coughing_2_weeks_or_more');
+        });
+    });
+
+    it('fails when a yes/no symptom control pair is incomplete', () => {
+        const fastPage = new TbScreeningFormPage(100);
+        let failureMessage = '';
+
+        mountForm(buildIncompleteFeverControlLayout());
+
+        Cypress.once('fail', (error) => {
+            failureMessage = error.message;
+            expect(error.message).to.contain('Incomplete TB screening field controls rendered: fever');
+            return false;
+        });
+
+        fastPage.fillForm({
+            contactOfTbPatient: 'No',
+            previouslyTreatedForTb: 'No',
+            coughing2WeeksOrMore: 'Yes',
+            nightSweats: 'Yes',
+            weightLoss: 'Yes',
+            fever: 'No',
+            swelling: 'Yes',
+            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            sputumTestResult: 'Negative'
+        });
+
+        cy.then(() => {
+            expect(failureMessage).to.contain('Incomplete TB screening field controls rendered: fever');
         });
     });
 
