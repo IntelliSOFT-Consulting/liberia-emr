@@ -86,11 +86,11 @@ ${var.concept.opd.resp-status.uuid},,Question,Coded,Respiratory system status,St
 ${var.concept.opd.gi-status.uuid},,Question,Coded,Gastrointestinal system status,Status of gastrointestinal system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
 ${var.concept.opd.cns-status.uuid},,Question,Coded,Central nervous system status,Status of central nervous system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
 ${var.concept.opd.msk-status.uuid},,Question,Coded,Musculoskeletal system status,Status of musculoskeletal system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
-${var.concept.opd.heent-construct.uuid},,Head eyes ears nose and throat construct,HEENT Construct,Construct for HEENT exam,ConvSet,N/A,,,
-${var.concept.opd.cvs-construct.uuid},,Cardiovascular system construct,CVS Construct,Construct for CVS exam,ConvSet,N/A,,,
-${var.concept.opd.resp-construct.uuid},,Respiratory system construct,Respiratory Construct,Construct for respiratory exam,ConvSet,N/A,,,
-${var.concept.opd.gi-construct.uuid},,Gastrointestinal system construct,GI Construct,Construct for GI exam,ConvSet,N/A,,,
-${var.concept.opd.cns-construct.uuid},,Central nervous system construct,CNS Construct,Construct for CNS exam,ConvSet,N/A,,,
-${var.concept.opd.msk-construct.uuid},,Musculoskeletal system construct,MSK Construct,Construct for MSK exam,ConvSet,N/A,,,
-${var.concept.opd.followup-construct.uuid},,Follow-up construct,Follow-up Construct,Construct for follow up details,ConvSet,N/A,,,
-${var.concept.opd.disposition-construct.uuid},,Disposition construct,Disposition Construct,Construct for disposition details,ConvSet,N/A,,,
+${var.concept.opd.heent-construct.uuid},,ConvSet,N/A,Head eyes ears nose and throat construct,Construct for HEENT exam,
+${var.concept.opd.cvs-construct.uuid},,ConvSet,N/A,Cardiovascular system construct,Construct for CVS exam,
+${var.concept.opd.resp-construct.uuid},,ConvSet,N/A,Respiratory system construct,Construct for respiratory exam,
+${var.concept.opd.gi-construct.uuid},,ConvSet,N/A,Gastrointestinal system construct,Construct for GI exam,
+${var.concept.opd.cns-construct.uuid},,ConvSet,N/A,Central nervous system construct,Construct for CNS exam,
+${var.concept.opd.msk-construct.uuid},,ConvSet,N/A,Musculoskeletal system construct,Construct for MSK exam,
+${var.concept.opd.followup-construct.uuid},,ConvSet,N/A,Follow-up construct,Construct for follow up details,
+${var.concept.opd.disposition-construct.uuid},,ConvSet,N/A,Disposition construct,Construct for disposition details,
