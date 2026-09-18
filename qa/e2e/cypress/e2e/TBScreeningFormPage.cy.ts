@@ -69,7 +69,7 @@ describe('TB Screening form page object', () => {
             coughing2WeeksOrMore: 'Yes',
             nightSweats: 'Yes',
             weightLoss: 'Yes',
-            fever: 'Yes',
+            fever: 'No',
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
@@ -79,7 +79,7 @@ describe('TB Screening form page object', () => {
         cy.get('#coughing_2_weeks_or_more_score').should('have.value', '2');
         cy.get('#night_sweats_score').should('have.value', '1');
         cy.get('#weight_loss_score').should('have.value', '1');
-        cy.get('#fever_score').should('have.value', '1');
+        cy.get('#fever_score').should('have.value', '0');
         cy.get('#swelling_in_any_part_of_the_body_score').should('have.value', '1');
     });
 
@@ -92,7 +92,7 @@ describe('TB Screening form page object', () => {
             coughing2WeeksOrMore: 'Yes',
             nightSweats: 'Yes',
             weightLoss: 'Yes',
-            fever: 'Yes',
+            fever: 'No',
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
@@ -102,7 +102,7 @@ describe('TB Screening form page object', () => {
         cy.get('#coughing_2_weeks_or_more-Yes').should('be.checked');
         cy.get('#night_sweats-Yes').should('be.checked');
         cy.get('#weight_loss-Yes').should('be.checked');
-        cy.get('#fever-Yes').should('be.checked');
+        cy.get('#fever-No').should('be.checked');
         cy.get('#swelling_in_any_part_of_the_body-Yes').should('be.checked');
     });
 });
