@@ -144,3 +144,4 @@ ${var.concept.national.route.uuid},,Route,Route,Route,Question,Coded,${var.conce
 ${var.concept.national.supplementary-immunization-activities.uuid},,Supplementary immunization activities,Supplementary immunization activities,Supplementary immunization activities,Question,Coded,${var.concept.national.vit-a-blue-100-000iu.uuid},,
 ${var.concept.national.episiotomy-answer.uuid},,Episiotomy Answer,Episiotomy Answer,Episiotomy,Misc,N/A,,,
 ${var.concept.national.small-less-than-250-cc.uuid},,Small (Less than 250 cc),Small (Less than 250 cc),Small (Less than 250 cc),Misc,N/A,,,
+${var.concept.national.exam-finding-group.uuid},,Exam Finding Construct,Exam Finding Construct,Exam Finding Construct,ConvSet,N/A,,,
