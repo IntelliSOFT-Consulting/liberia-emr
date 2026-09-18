@@ -34,53 +34,63 @@
               }
             },
             {
-              "label": "Previously Treated for TB",
-              "id": "previously_treated_for_tb",
-              "type": "obs",
-              "required": true,
+              "id": "previously_treated_for_tb_group",
+              "type": "obsGroup",
               "questionOptions": {
-                "rendering": "radio",
-                "concept": "${var.concept.national.previously-treated-for-tb.uuid}",
-                "answers": [
-                  {
-                    "concept": "${var.concept.ciel.yes.uuid}",
-                    "label": "Yes"
-                  },
-                  {
-                    "concept": "${var.concept.ciel.no.uuid}",
-                    "label": "No"
-                  }
-                ]
-              }
-            },
-            {
-              "label": "Date TB treatment was started for the person screened, if applicable",
-              "id": "date_tb_treatment_was_started",
-              "type": "obs",
-              "required": {
-                "type": "conditionalRequired",
-                "message": "Date TB treatment was started is required if previously treated for TB",
-                "referenceQuestionId": "previously_treated_for_tb",
-                "referenceQuestionAnswers": [
-                  "${var.concept.ciel.yes.uuid}"
-                ]
+                "rendering": "group",
+                "concept": "${var.concept.national.previous-tb-treatment-construct.uuid}"
               },
-              "hide": {
-                "hideWhenExpression": "previously_treated_for_tb !== '${var.concept.ciel.yes.uuid}'"
-              },
-              "questionOptions": {
-                "rendering": "date",
-                "concept": "${var.concept.ciel.date-tb-treatment-was-started.uuid}"
-              },
-              "validators": [
+              "questions": [
                 {
-                  "type": "date",
-                  "allowFutureDates": "false"
+                  "label": "Previously Treated for TB",
+                  "id": "previously_treated_for_tb",
+                  "type": "obs",
+                  "required": true,
+                  "questionOptions": {
+                    "rendering": "radio",
+                    "concept": "${var.concept.national.previously-treated-for-tb.uuid}",
+                    "answers": [
+                      {
+                        "concept": "${var.concept.ciel.yes.uuid}",
+                        "label": "Yes"
+                      },
+                      {
+                        "concept": "${var.concept.ciel.no.uuid}",
+                        "label": "No"
+                      }
+                    ]
+                  }
                 },
                 {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
-                  "message": "Date cannot be before the patient's date of birth."
+                  "label": "Date TB treatment was started for the person screened, if applicable",
+                  "id": "date_tb_treatment_was_started",
+                  "type": "obs",
+                  "required": {
+                    "type": "conditionalRequired",
+                    "message": "Date TB treatment was started is required if previously treated for TB",
+                    "referenceQuestionId": "previously_treated_for_tb",
+                    "referenceQuestionAnswers": [
+                      "${var.concept.ciel.yes.uuid}"
+                    ]
+                  },
+                  "hide": {
+                    "hideWhenExpression": "previously_treated_for_tb !== '${var.concept.ciel.yes.uuid}'"
+                  },
+                  "questionOptions": {
+                    "rendering": "date",
+                    "concept": "${var.concept.ciel.date-tb-treatment-was-started.uuid}"
+                  },
+                  "validators": [
+                    {
+                      "type": "date",
+                      "allowFutureDates": "false"
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(myValue) && calcAgeBasedOnDate(myValue) < 0",
+                      "message": "Date cannot be before the patient's date of birth."
+                    }
+                  ]
                 }
               ]
             },
