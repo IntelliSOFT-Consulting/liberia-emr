@@ -17,6 +17,8 @@ type TbScreeningFormData = {
 };
 
 class TbScreeningFormPage {
+    constructor(private readonly timeout = 20000) {}
+
     // The chart's dashboard slot must render before the forms icon/list can be interacted with reliably
     waitForChartToLoad() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
@@ -25,21 +27,21 @@ class TbScreeningFormPage {
 
     openClinicalForms() {
         this.waitForChartToLoad();
-        cy.get('button[aria-label="Clinical forms"]', { timeout: 20000 }).click();
+        cy.get('button[aria-label="Clinical forms"]', { timeout: this.timeout }).click();
     }
 
     selectForm(formName: string) {
-        cy.contains('a.cds--link', formName, { timeout: 20000 }).click();
+        cy.contains('a.cds--link', formName, { timeout: this.timeout }).click();
     }
 
     private fillDateField(fieldId: string, date: DateParts) {
-        cy.get(`#${fieldId} [data-type="day"]`, { timeout: 20000 }).click().type(date.day);
-        cy.get(`#${fieldId} [data-type="month"]`, { timeout: 20000 }).click().type(date.month);
-        cy.get(`#${fieldId} [data-type="year"]`, { timeout: 20000 }).click().type(date.year);
+        cy.get(`#${fieldId} [data-type="day"]`, { timeout: this.timeout }).click().type(date.day);
+        cy.get(`#${fieldId} [data-type="month"]`, { timeout: this.timeout }).click().type(date.month);
+        cy.get(`#${fieldId} [data-type="year"]`, { timeout: this.timeout }).click().type(date.year);
     }
 
     private selectYesNoField(fieldId: string, answer: YesNo) {
-        cy.get(`#${fieldId}-${answer}`, { timeout: 20000 }).check({ force: true });
+        cy.get(`#${fieldId}-${answer}`, { timeout: this.timeout }).check({ force: true });
     }
 
     private fillSymptomField(fieldId: string, answer: YesNo, positiveScore: number) {
@@ -47,7 +49,7 @@ class TbScreeningFormPage {
         const yesSelector = `#${fieldId}-Yes`;
         const score = answer === 'Yes' ? positiveScore : 0;
 
-        cy.get('body', { timeout: 20000 })
+        cy.get('body', { timeout: this.timeout })
             .should((body) => {
                 expect(
                     body.find(scoreSelector).length > 0 || body.find(yesSelector).length > 0,
@@ -56,7 +58,7 @@ class TbScreeningFormPage {
             })
             .then((body) => {
                 if (body.find(scoreSelector).length > 0) {
-                    cy.get(scoreSelector, { timeout: 20000 }).clear().type(String(score));
+                    cy.get(scoreSelector, { timeout: this.timeout }).clear().type(String(score));
                     return;
                 }
 
@@ -76,7 +78,7 @@ class TbScreeningFormPage {
 
         this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
 
-        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: 20000 })
+        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: this.timeout })
             .clear()
             .type(data.sputumTestResult);
 
@@ -85,12 +87,12 @@ class TbScreeningFormPage {
         }
 
         if (data.observation) {
-            cy.get('#observation', { timeout: 20000 }).clear().type(data.observation);
+            cy.get('#observation', { timeout: this.timeout }).clear().type(data.observation);
         }
     }
 
     submitForm() {
-        cy.contains('button', 'Save', { timeout: 20000 }).should('be.enabled').click();
+        cy.contains('button', 'Save', { timeout: this.timeout }).should('be.enabled').click();
     }
 }
 

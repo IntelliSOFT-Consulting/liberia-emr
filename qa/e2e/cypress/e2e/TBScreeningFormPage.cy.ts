@@ -48,6 +48,18 @@ const buildYesNoLayout = () => `
     </html>
 `;
 
+const buildLayoutMissingFeverControl = () => `
+    <html>
+        <body>
+            ${commonFields}
+            ${buildYesNoField('coughing_2_weeks_or_more')}
+            ${buildYesNoField('night_sweats')}
+            ${buildYesNoField('weight_loss')}
+            ${buildYesNoField('swelling_in_any_part_of_the_body')}
+        </body>
+    </html>
+`;
+
 const mountForm = (markup: string) => {
     cy.visit('about:blank');
     cy.document().then((doc) => {
@@ -72,6 +84,7 @@ describe('TB Screening form page object', () => {
             fever: 'No',
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            dateTbTreatmentStarted: { day: '02', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
             observation: 'Legacy layout'
         });
@@ -86,6 +99,9 @@ describe('TB Screening form page object', () => {
         cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
+        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '02');
+        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '01');
+        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '2025');
         cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
         cy.get('#observation').should('have.value', 'Legacy layout');
     });
@@ -102,6 +118,7 @@ describe('TB Screening form page object', () => {
             fever: 'No',
             swelling: 'Yes',
             dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            dateTbTreatmentStarted: { day: '02', month: '01', year: '2025' },
             sputumTestResult: 'Negative',
             observation: 'Yes/no layout'
         });
@@ -116,7 +133,33 @@ describe('TB Screening form page object', () => {
         cy.get('#date_the_screening_was_conducted [data-type="day"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="month"]').should('have.value', '01');
         cy.get('#date_the_screening_was_conducted [data-type="year"]').should('have.value', '2025');
+        cy.get('#date_tb_treatment_was_started [data-type="day"]').should('have.value', '02');
+        cy.get('#date_tb_treatment_was_started [data-type="month"]').should('have.value', '01');
+        cy.get('#date_tb_treatment_was_started [data-type="year"]').should('have.value', '2025');
         cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation').should('have.value', 'Negative');
         cy.get('#observation').should('have.value', 'Yes/no layout');
+    });
+
+    it('fails when neither symptom control variant is rendered', () => {
+        const fastPage = new TbScreeningFormPage(100);
+
+        mountForm(buildLayoutMissingFeverControl());
+
+        cy.on('fail', (error) => {
+            expect(error.message).to.contain('expected fever score or yes/no control');
+            return false;
+        });
+
+        fastPage.fillForm({
+            contactOfTbPatient: 'No',
+            previouslyTreatedForTb: 'No',
+            coughing2WeeksOrMore: 'Yes',
+            nightSweats: 'Yes',
+            weightLoss: 'Yes',
+            fever: 'No',
+            swelling: 'Yes',
+            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            sputumTestResult: 'Negative'
+        });
     });
 });
