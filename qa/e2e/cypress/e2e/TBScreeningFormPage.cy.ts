@@ -60,6 +60,20 @@ const buildLayoutMissingFeverControl = () => `
     </html>
 `;
 
+const buildAmbiguousCoughControlLayout = () => `
+    <html>
+        <body>
+            ${commonFields}
+            <input id="coughing_2_weeks_or_more_score" />
+            ${buildYesNoField('coughing_2_weeks_or_more')}
+            ${buildYesNoField('night_sweats')}
+            ${buildYesNoField('weight_loss')}
+            ${buildYesNoField('fever')}
+            ${buildYesNoField('swelling_in_any_part_of_the_body')}
+        </body>
+    </html>
+`;
+
 const mountForm = (markup: string) => {
     cy.visit('about:blank');
     cy.document().then((doc) => {
@@ -168,4 +182,33 @@ describe('TB Screening form page object', () => {
             expect(failureMessage).to.contain('expected fever score or yes/no control');
         });
     });
+    it('fails when both symptom control variants are rendered', () => {
+        const fastPage = new TbScreeningFormPage(100);
+        let failureMessage = '';
+
+        mountForm(buildAmbiguousCoughControlLayout());
+
+        Cypress.once('fail', (error) => {
+            failureMessage = error.message;
+            expect(error.message).to.contain('Ambiguous TB screening field controls rendered: coughing_2_weeks_or_more');
+            return false;
+        });
+
+        fastPage.fillForm({
+            contactOfTbPatient: 'No',
+            previouslyTreatedForTb: 'No',
+            coughing2WeeksOrMore: 'Yes',
+            nightSweats: 'Yes',
+            weightLoss: 'Yes',
+            fever: 'No',
+            swelling: 'Yes',
+            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
+            sputumTestResult: 'Negative'
+        });
+
+        cy.then(() => {
+            expect(failureMessage).to.contain('Ambiguous TB screening field controls rendered: coughing_2_weeks_or_more');
+        });
+    });
+
 });

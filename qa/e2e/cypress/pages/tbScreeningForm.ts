@@ -57,7 +57,14 @@ class TbScreeningFormPage {
                 ).to.equal(true);
             })
             .then((body) => {
-                if (body.find(scoreSelector).length > 0) {
+                const hasScoreControl = body.find(scoreSelector).length > 0;
+                const hasYesNoControl = body.find(yesSelector).length > 0;
+
+                if (hasScoreControl && hasYesNoControl) {
+                    throw new Error(`Ambiguous TB screening field controls rendered: ${fieldId}`);
+                }
+
+                if (hasScoreControl) {
                     cy.get(scoreSelector, { timeout: this.timeout }).clear().type(String(score));
                     return;
                 }
