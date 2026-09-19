@@ -293,7 +293,7 @@
                                 "concept": "${var.concept.ciel.weight.uuid}",
                                 "min": "0",
                                 "max": "250",
-                                "step": 0.1
+                                "step": 1
                             },
                             "validators": [
                                 {
@@ -362,137 +362,305 @@
                             }
                         },
                         {
-                            "id": "jaundice",
-                            "label": "Is there Jaundice?",
-                            "type": "obs",
+                            "id": "jaundice_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-jaundice.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "jaundice",
+                                    "label": "Is there Jaundice?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-jaundice.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "jaundiceClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "jaundice !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "pallor",
-                            "label": "Is there pallor?",
-                            "type": "obs",
+                            "id": "pallor_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-pallor.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "pallor",
+                                    "label": "Is there pallor?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-pallor.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "pallorClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "pallor !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "cyanosis",
-                            "label": "Is there cyanosis?",
-                            "type": "obs",
+                            "id": "cyanosis_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-cyanosis.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cyanosis",
+                                    "label": "Is there cyanosis?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-cyanosis.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "cyanosisClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "lymphadenopathy",
-                            "label": "Is there lymphadenopathy?",
-                            "type": "obs",
+                            "id": "lymphadenopathy_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-lymphadenopathy.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "lymphadenopathy",
+                                    "label": "Is there lymphadenopathy?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-lymphadenopathy.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "lymphadenopathyClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "dehydration",
-                            "label": "Is there dehydration?",
-                            "type": "obs",
+                            "id": "dehydration_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-dehydration.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "dehydration",
+                                    "label": "Is there dehydration?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-dehydration.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "dehydrationClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "dehydration !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "fingerClubbing",
-                            "label": "Is there finger clubbing?",
-                            "type": "obs",
+                            "id": "fingerClubbing_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-finger-clubbing.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "fingerClubbing",
+                                    "label": "Is there finger clubbing?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-finger-clubbing.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "fingerClubbingClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "edema",
-                            "label": "Is there edema?",
-                            "type": "obs",
+                            "id": "edema_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.exam-edema.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
+                                "rendering": "group",
+                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "edema",
+                                    "label": "Is there edema?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-edema.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "id": "edemaClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "edema !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }
