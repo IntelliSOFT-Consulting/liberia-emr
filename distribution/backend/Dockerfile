@@ -109,6 +109,12 @@ WORKDIR /build
 COPY modules/liberiaemr /build/liberiaemr
 # Tests run in CI's own backend-module job; repeating them here would add minutes to every
 # image build for a signal the pipeline already has.
+#
+# The last check is not belt-and-braces: a SNAPSHOT omod reaching the runtime stage means the
+# stamp silently did not apply, and the image would ship the very thing §6/§11 forbids.
+#
+# The comment stays OUT of the RUN below. Docker strips a `#` line inside a line
+# continuation, which leaves an empty continuation and a NoEmptyContinuation warning.
 RUN set -eu; \
     if [ -n "${LIBERIAEMR_VERSION}" ]; then \
       echo "stamping the module as ${LIBERIAEMR_VERSION}"; \
@@ -118,7 +124,6 @@ RUN set -eu; \
     fi; \
     mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package; \
     ls /build/liberiaemr/omod/target/*.omod; \
-    # A SNAPSHOT reaching the runtime stage means the stamp silently did not apply.
     if ls /build/liberiaemr/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
        && [ -n "${LIBERIAEMR_VERSION}" ]; then \
       echo "FAIL: module still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
