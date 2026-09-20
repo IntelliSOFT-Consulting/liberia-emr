@@ -162,5 +162,22 @@ jobs:
           # Short name, see the setup-java step above.
           REPSY_PW: ${{ secrets.REPSY_PASSWORD }}
         run: |
+          set -euo pipefail
           mvn -B -DskipTests deploy \
-            -DaltDeploymentRepository="repsy::${{ steps.repsy.outputs.url }}"
+            -DaltDeploymentRepository="repsy::${{ steps.repsy.outputs.url }}" \
+            | tee "$RUNNER_TEMP/deploy.log"
+
+      # The .omod reaches the repository only because omod/pom.xml attaches it with
+      # build-helper; nothing else in the build would fail if that attachment stopped working.
+      # A reordered plugin, a changed finalName or a build-helper upgrade would publish a jar
+      # and a green tick, and the gap would surface as an unresolvable coordinate in whichever
+      # distro pinned it. Assert the upload instead of assuming it.
+      - name: Check the .omod was published
+        run: |
+          set -euo pipefail
+          grep -qE 'Uploaded to repsy: .*/liberiaemr-omod-[^ ]+\.omod ' "$RUNNER_TEMP/deploy.log" || {
+            echo "::error::deploy uploaded no .omod -- check the build-helper attach-omod execution in modules/liberiaemr/omod/pom.xml"
+            grep -E 'Uploaded to repsy:' "$RUNNER_TEMP/deploy.log" >&2 || true
+            exit 1
+          }
+          grep -E 'Uploaded to repsy: .*\.omod ' "$RUNNER_TEMP/deploy.log"
