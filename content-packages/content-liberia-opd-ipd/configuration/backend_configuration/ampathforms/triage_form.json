@@ -313,9 +313,9 @@
                                 "rendering": "select",
                                 "concept": "${var.concept.triage-category.uuid}",
                                 "answers": [
-                                    { "label": "Green", "concept": "${var.concept.triage-green.uuid}" },
-                                    { "label": "Yellow", "concept": "${var.concept.triage-yellow.uuid}" },
-                                    { "label": "Red", "concept": "${var.concept.triage-red.uuid}" }
+                                    { "label": "Non-urgent Priority", "concept": "${var.concept.triage-green.uuid}" },
+                                    { "label": "Urgent Priority", "concept": "${var.concept.triage-yellow.uuid}" },
+                                    { "label": "Emergency Priority", "concept": "${var.concept.triage-red.uuid}" }
                                 ]
                             }
                         }
@@ -355,7 +355,7 @@
                             }
                         },
                         {
-                            "label": "Yellow priority signs",
+                            "label": "Urgent priority signs",
                             "type": "obs",
                             "id": "yellow_signs_child",
                             "hide": {

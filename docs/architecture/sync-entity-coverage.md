@@ -36,9 +36,9 @@ The list below comes from `TableToSyncEnum` in source, which is authoritative.
 | 18 | `PATIENT_STATE` | Programme | `program-push` |
 | 19 | `PATIENT_PROGRAM_ATTRIBUTE` | Programme | `program-push` |
 | 20 | `ORDERS` | Orders | `order-push` |
-| 21 | `DRUG_ORDER` | Orders | `order-push` ⚠ |
-| 22 | `TEST_ORDER` | Orders | `order-push` ⚠ |
-| 23 | `REFERRAL_ORDER` | Orders | `order-push` ⚠ |
+| 21 | `DRUG_ORDER` | Orders | `order-push` |
+| 22 | `TEST_ORDER` | Orders | `order-push` |
+| 23 | `REFERRAL_ORDER` | Orders | `order-push`, unverified (§4) |
 | 24 | `ORDER_GROUP` | Orders | `order-push` |
 | 25 | `ORDER_ATTRIBUTE` | Orders | `order-push` |
 | 26 | `ORDER_GROUP_ATTRIBUTE` | Orders | `order-push` |
@@ -46,15 +46,25 @@ The list below comes from `TableToSyncEnum` in source, which is authoritative.
 | 28 | `CONCEPT_ATTRIBUTE` | Metadata | reference |
 | 29 | `LOCATION` | Metadata | reference |
 | 30 | `LOCATION_ATTRIBUTE` | Metadata | reference |
-| 31 | `PROVIDER` | Metadata | reference |
-| 32 | `PROVIDER_ATTRIBUTE` | Metadata | reference |
-| 33 | `USERS` | Metadata | reference ⚠ see §4 |
+| 31 | `PROVIDER` | Facility data | synced, referenced by encounters |
+| 32 | `PROVIDER_ATTRIBUTE` | Metadata | not watched by dbsync |
+| 33 | `USERS` | Facility data | synced as references, see §4 |
 | 34 | `DATAFILTER_ENTITY_BASIS_MAP` | Access control | not used in v1 |
 
 **Every one of our five planned routes is covered by existing entity support.** This is the
 most important finding in this document: the route inventory in
 `integration/eip/routes/README.md` does not require custom entity development. It requires
 configuration and verification.
+
+### 1.1 The enabled set
+
+The sender watches exactly the tables named by `eip.watchedTables` in
+`distribution/sync/application.properties.template`, openmrs-eip's own property for the
+Debezium table list. dbsync bundles a default of 29 (everything above except 27 to 30 and 32,
+which it never watches); we declare 28, leaving out `DATAFILTER_ENTITY_BASIS_MAP`. Declaring
+the set in our template rather than inheriting it from the jar keeps it reviewed, the same at
+every facility, and asserted in CI. `qa/sync/verify-e2e-push.sh` checks the running sender
+watches that set and pushes one record from every route group to central.
 
 ---
 
@@ -90,8 +100,8 @@ The dependency chain that must hold:
                           ├─▶ patient_program ─▶ patient_state
                           └─▶ orders ─▶ {drug,test,referral}_order
 
-  Referenced metadata (concept, location, provider) must EXIST at central first,
-  but is delivered by the content-package image, not by sync. See §3.
+  Referenced metadata (concept, location) must EXIST at central first, and is
+  delivered by the content-package image, not by sync. Providers and users sync. See §3.
 ```
 
 ### 2.3 Out-of-order arrival
@@ -123,8 +133,9 @@ receiver's conflict logic. Two cases still need explicit verification in the spi
 
 ## 3. Metadata is *not* synchronised: and must not be
 
-Entities 27–32 are metadata. They are supported by dbsync, but in our architecture they are
-**delivered by the content-package build, not by sync.**
+Entities 27 to 30 and 32 are metadata. They are supported by dbsync, but in our architecture
+they are **delivered by the content-package build, not by sync.** Providers (31) are data:
+each facility creates its own, and they reach central by sync.
 
 Facility and central run the same `liberia-emr-backend` image, so they hold identical
 metadata with identical UUIDs, every UUID declared once in `variables.properties` and
@@ -143,9 +154,9 @@ the upgrade rehearsal in `qa/upgrade/`.
 
 | Entity | Issue | Recommendation |
 | --- | --- | --- |
-| `DRUG_ORDER`, `TEST_ORDER`, `REFERRAL_ORDER` | dbsync README states **sync of Order subclasses fails**. Models exist (`DrugOrderModel`, `TestOrderModel`, `ReferralOrderModel`): this is a **known defect, not missing support** | Verify against 4.0.0 during the spike. If it stands: **defer `order-push` out of the first release** and fix upstream. Do not build lab/pharmacy reporting on a known-defective path |
-| `USERS` | Supported, but user rows carry credential material | **Sync user references only**: never password hashes or secret answers. A central copy of every facility's credentials is a breach waiting for its incident report. Confirm what the `UserModel` carries before enabling |
-| `DATAFILTER_ENTITY_BASIS_MAP` | Belongs to the `datafilter` module, which we do not run | Leave disabled in v1. Relevant only if central ever becomes a point-of-care system (it must not; see [architecture](sync-eip.md) §1.8c) |
+| `DRUG_ORDER`, `TEST_ORDER`, `REFERRAL_ORDER` | dbsync README states **sync of Order subclasses fails** (EIP-142). Models exist (`DrugOrderModel`, `TestOrderModel`, `ReferralOrderModel`) | **Disproven on 4.0.0 for `DrugOrder` and `TestOrder`**: both arrive at central as their subclass rows, checked by `qa/sync/verify-e2e-push.sh` on every run. `ReferralOrder` stays unverified: the REST module on platform 2.8 cannot create one, and no form issues one. `order-push` stays enabled |
+| `USERS` | Supported; the concern was credential material | **Confirmed safe**: `UserModel` carries uuid, username, system id, person uuid and audit fields only, no password, salt or secret question. Kept, because every synced row references its creator by user uuid; the receiver skips the daemon user itself |
+| `DATAFILTER_ENTITY_BASIS_MAP` | Belongs to the `datafilter` module, which we do not run; the table does not exist on a facility database | **Left out** of `eip.watchedTables`. Relevant only if central ever becomes a point-of-care system (it must not; see [architecture](sync-eip.md) §1.8c) |
 | Complex obs (attachments) | `ComplexObsProcessor` / `ComplexObsHash` exist, so binary obs are handled | Confirm whether any MCH/OPD form captures complex obs. If so, size the queue and bandwidth for it: attachments dominate transfer volume on a poor link |
 
 ---
@@ -166,10 +177,10 @@ the upgrade rehearsal in `qa/upgrade/`.
 
 Before Sprint 3 closes, each of these is a test, not an assertion:
 
-- [ ] All 34 entities enumerated against our enabled route set; disabled ones explicitly listed
+- [x] All 34 entities enumerated against our enabled route set; disabled ones explicitly listed (§1.1, `eip.watchedTables`, asserted in CI)
 - [ ] Per-patient ordering proven under retry and partial drain
 - [ ] Out-of-order dependency parking observed and recovering
-- [ ] `Order` subclass defect reproduced or disproven on 4.0.0
-- [ ] `UserModel` payload inspected and confirmed to carry no credential material
-- [ ] Metadata UUID parity asserted between facility and central images
+- [x] `Order` subclass defect reproduced or disproven on 4.0.0 (disproven for `DrugOrder` and `TestOrder`, `qa/sync/verify-e2e-push.sh`; `ReferralOrder` not creatable, §4)
+- [x] `UserModel` payload inspected and confirmed to carry no credential material (§4)
+- [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses, but no check covers the whole set)
 - [ ] Complex obs behaviour confirmed, and sized if in use

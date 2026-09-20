@@ -79,10 +79,10 @@
             ]
         },
         {
-            "label": "Vitals",
+            "label": "Clinical History",
             "sections": [
                 {
-                    "label": "Vitals",
+                    "label": "Clinical History",
                     "isExpanded": "true",
                     "questions": [
                         {
@@ -118,7 +118,18 @@
                                 "rows": 3,
                                 "max": 100
                             }
-                        },
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "Vitals",
+            "sections": [
+                {
+                    "label": "Vitals",
+                    "isExpanded": "true",
+                    "questions": [
                         {
                             "id": "temperature",
                             "label": "Temperature (°C)",
@@ -355,7 +366,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.jaundice-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -398,7 +409,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.pallor-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -441,7 +452,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.cyanosis-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -484,7 +495,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.lymphadenopathy-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -527,7 +538,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.dehydration-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -570,7 +581,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.finger-clubbing-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -613,7 +624,7 @@
                             "type": "obsGroup",
                             "questionOptions": {
                                 "rendering": "group",
-                                "concept": "${var.concept.national.exam-finding-group.uuid}"
+                                "concept": "${var.concept.opd.edema-construct.uuid}"
                             },
                             "questions": [
                                 {
@@ -663,70 +674,262 @@
                     "isExpanded": "true",
                     "questions": [
                         {
-                            "id": "heentFindings",
-                            "label": "Head, eyes, ears, nose and throat findings",
-                            "type": "obs",
+                            "id": "heent_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.head-neck-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.heent-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "heent_status",
+                                    "label": "Head, Eyes, Ears, Nose and Throat",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.heent-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "heentFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "heent_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.head-neck-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "cvsFindings",
-                            "label": "Cardiovascular system findings",
-                            "type": "obs",
+                            "id": "cvs_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.cardiovascular-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.cvs-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cvs_status",
+                                    "label": "Cardiovascular System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.cvs-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "cvsFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "cvs_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.cardiovascular-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "respiratoryFindings",
-                            "label": "Respiratory system findings",
-                            "type": "obs",
+                            "id": "resp_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.respiratory-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.resp-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "resp_status",
+                                    "label": "Respiratory System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.resp-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "respiratoryFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "resp_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.respiratory-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "giFindings",
-                            "label": "Gastrointestinal system findings",
-                            "type": "obs",
+                            "id": "gi_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.abdominal-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.gi-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "gi_status",
+                                    "label": "Gastrointestinal System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.gi-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "giFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "gi_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.abdominal-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "cnsFindings",
-                            "label": "Central nervous system findings",
-                            "type": "obs",
+                            "id": "cns_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.neurological-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.cns-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cns_status",
+                                    "label": "Central Nervous System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.cns-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "cnsFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "cns_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.neurological-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "id": "musculoskeletalFindings",
-                            "label": "Musculoskeleta system findings",
-                            "type": "obs",
+                            "id": "msk_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.musculoskeletal-findings.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            }
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.msk-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "msk_status",
+                                    "label": "Musculoskeletal System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.msk-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "musculoskeletalFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "msk_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.musculoskeletal-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    }
+                                }
+                            ]
                         },
                         {
                             "id": "nonPharmAdvice",
@@ -740,95 +943,123 @@
                             }
                         },
                         {
-                            "id": "followupRequired",
-                            "label": "Follow-up Required?",
-                            "type": "obs",
+                            "id": "followup_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.followup-required.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.yes.uuid}",
-                                        "label": "Yes"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.no.uuid}",
-                                        "label": "No"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "id": "followupDate",
-                            "label": "Follow-up Date",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "date",
-                                "concept": "${var.concept.ciel.followup-date.uuid}"
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.followup-construct.uuid}"
                             },
-                            "hide": {
-                                "hideWhenExpression": "isEmpty(followupRequired) || followupRequired !== '${var.concept.ciel.yes.uuid}'"
-                            },
-                            "validators": [
+                            "questions": [
                                 {
-                                    "type": "date",
-                                    "allowFutureDates": "true"
+                                    "id": "followupRequired",
+                                    "label": "Follow-up Required?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.followup-required.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
                                 },
                                 {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
-                                    "message": "follow up date cannot be set to previous dates"
+                                    "id": "followupDate",
+                                    "label": "Follow-up Date",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "date",
+                                        "concept": "${var.concept.ciel.followup-date.uuid}"
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(followupRequired) || followupRequired !== '${var.concept.ciel.yes.uuid}'"
+                                    },
+                                    "validators": [
+                                        {
+                                            "type": "date",
+                                            "allowFutureDates": "true"
+                                        },
+                                        {
+                                            "type": "js_expression",
+                                            "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
+                                            "message": "follow up date cannot be set to previous dates"
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         {
-                            "id": "outcomeDisposition",
-                            "label": "Outcome/Disposition",
-                            "type": "obs",
+                            "id": "disposition_group",
+                            "type": "obsGroup",
                             "questionOptions": {
-                                "rendering": "select",
-                                "concept": "${var.concept.ciel.disposition.uuid}",
-                                "answers": [
-                                    {
-                                        "concept": "${var.concept.ciel.disposition-discharge.uuid}",
-                                        "label": "Discharged"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.disposition-admit.uuid}",
-                                        "label": "Admitted"
-                                    },
-                                    {
-                                        "concept": "${var.concept.ciel.disposition-refer.uuid}",
-                                        "label": "Referred"
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.disposition-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "outcomeDisposition",
+                                    "label": "Outcome/Disposition",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "select",
+                                        "concept": "${var.concept.ciel.disposition.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-discharge.uuid}",
+                                                "label": "Discharged"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-admit.uuid}",
+                                                "label": "Admitted"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-refer.uuid}",
+                                                "label": "Referred"
+                                            }
+                                        ]
                                     }
-                                ]
-                            }
-                        },
-                        {
-                            "id": "referralDestination",
-                            "label": "Referral Destination",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "text",
-                                "concept": "${var.concept.referral-destination.uuid}"
-                            },
-                            "hide": {
-                                "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
-                            }
-                        },
-                        {
-                            "id": "referralReason",
-                            "label": "Reason for the referral.",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "textarea",
-                                "concept": "${var.concept.referral-reason.uuid}",
-                                "rows": 3,
-                                "max": 100
-                            },
-                            "hide": {
-                                "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
-                            }
+                                },
+                                {
+                                    "id": "referralDestination",
+                                    "label": "Referral Destination",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "text",
+                                        "concept": "${var.concept.referral-destination.uuid}"
+                                    },
+                                    "required": {
+                                        "type": "conditionalRequired",
+                                        "message": "Please enter the Referral Destination",
+                                        "referenceQuestionId": "outcomeDisposition",
+                                        "referenceQuestionAnswers": [
+                                            "${var.concept.ciel.disposition-refer.uuid}"
+                                        ]
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
+                                    }
+                                },
+                                {
+                                    "id": "referralReason",
+                                    "label": "Reason for the referral.",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.referral-reason.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }

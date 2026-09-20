@@ -231,23 +231,23 @@
     "formUuid": "${var.form.tb-screening.uuid}",
     "data": [
       {
-        "concept": "${var.concept.national.coughing-2-weeks-or-more-score.uuid}",
+        "concept": "${var.concept.national.coughing-2-weeks-or-more.uuid}",
         "label": "Cough > 2 wks"
       },
       {
-        "concept": "${var.concept.national.night-sweats-score.uuid}",
+        "concept": "${var.concept.national.night-sweats.uuid}",
         "label": "Night Sweats"
       },
       {
-        "concept": "${var.concept.national.weight-loss-score.uuid}",
+        "concept": "${var.concept.national.weight-loss.uuid}",
         "label": "Weight Loss"
       },
       {
-        "concept": "${var.concept.national.fever-score.uuid}",
+        "concept": "${var.concept.national.fever.uuid}",
         "label": "Fever"
       },
       {
-        "concept": "${var.concept.national.swelling-in-any-part-of-the-body-score.uuid}",
+        "concept": "${var.concept.national.swelling-in-any-part-of-the-body.uuid}",
         "label": "Swelling"
       },
       {
