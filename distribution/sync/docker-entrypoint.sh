@@ -14,7 +14,7 @@
 #
 # Optional (defaulted here):
 #   SYNC_OUTPUT_ENDPOINT     activemq:topic:sync.facility.<DBSYNC_SENDER_ID>; file: is QA only
-#   SYNC_PAYLOAD_ENCRYPTION  true for the broker, false for file: (QA reads the payload)
+#   SYNC_PAYLOAD_ENCRYPTION  always true for the broker; false for file: (QA reads the payload)
 #   PGP_USER_ID              DBSYNC_SENDER_ID@sync.liberiaemr
 #   PGP_RECEIVER_USER_ID     sync-receiver@sync.liberiaemr
 #   COMPLEX_OBS_DIR          /opt/eip/complex-obs
@@ -54,7 +54,8 @@ TLS_ARGS=""
 case "$SYNC_OUTPUT_ENDPOINT" in
   "$OWN_ENDPOINT")
     [ -n "${ARTEMIS_URL:-}" ] || sync_refuse "unset variables: ARTEMIS_URL"
-    : "${SYNC_PAYLOAD_ENCRYPTION:=true}"
+    [ "${SYNC_PAYLOAD_ENCRYPTION:=true}" = true ] \
+      || sync_refuse "SYNC_PAYLOAD_ENCRYPTION must be true for the broker; central only reads signed, encrypted messages"
     sync_broker_url
     sync_tls_argfile
     TLS_ARGS="$SYNC_TLS_ARGS"

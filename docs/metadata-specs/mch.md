@@ -240,9 +240,11 @@ None (CIEL 1107), Cyanosis (CIEL 143050), Convulsions in the newborn (CIEL 14338
 
 The numeric temperature `<36.5 °C` hypothermia threshold is implemented as a Form Engine non-blocking warning rule, distinct from the stored DAK coded danger sign `Low body temperature (< 35.5 °C)`. `Any jaundice in the first 24 hrs of life` triggers an urgent visual markdown alert for pathological jaundice. Existing national concepts are retained for Received Kangaroo care (conditionally displayed when birth weight < 2.5 kg), Chlorhexidine administration (Before/After 24hrs), Nevirapine start date, and Complications Identified and Managed. Standard non-obs markdown components provide static PNC1 (BCG before discharge) and PNC4 (6-week vaccines) immunization reminders.
 
+For the pre-deployment runtime inventory requirement, see [Legacy national PNC form superseded](#legacy-national-pnc-form-superseded).
+
 ### Form Builder contract (Newborn PNC form)
 
-The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-packages/content-liberia-mch/` bound to `var.form.newborn-pnc.uuid` (`52724fa9-3ce8-47fc-bde8-9218916e28f2`) and encounter `Postnatal Visit`.
+The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-packages/content-liberia-mch/` bound to `var.form.newborn-pnc.uuid` (`e318b944-6faa-3828-acd6-6b0c98037070`) and encounter `Postnatal Visit`.
 
 | Field ID | Form Label | Rendering | Concept / Variable | Logic / Rules |
 | --- | --- | --- | --- | --- |
@@ -525,7 +527,8 @@ permanent — retire, never delete (IMPLEMENTATION.md §9).
 
 ## 5. Forms
 
-Five schemas; ANC Initial and `3. Family Planning` (v2.0) are written. See the
+The six-form status table includes the released Mother PNC and Newborn PNC schemas;
+Delivery Summary remains not written. See the
 [ampathforms README](../../content-packages/content-liberia-mch/configuration/backend_configuration/ampathforms/README.md)
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
@@ -560,6 +563,27 @@ point of the note:
 - Historical encounters stay associated with the legacy form and keep rendering against
   its preserved v1.0 schema.
 - This PR performs **no patient-data migration**. Existing FP observations are untouched.
+
+### Legacy national PNC form superseded
+
+The national `2. PNC` v1.0 schema
+(`content-liberia-national/.../ampathforms/pnc-national.json`) remains declared in
+metadata as `published=false` and `retired=false`: unpublished but not retired.
+It is superseded by the published MCH forms `Mother PNC` and `Newborn PNC`, both v1.0.
+
+- `published=false` withdraws the legacy form from new encounter entry while preserving
+  its schema and historical encounter associations.
+- `retired=false` is intentional, following the Family Planning source-state precedent:
+  Initializer 2.12.0 cannot create a brand-new already-retired form without a retire reason.
+- The replacement PNC forms have different names from `2. PNC`, so the Family Planning
+  same-name version replacement retirement behavior does not apply. Verify actual runtime
+  state before deployment.
+- Mother PNC is released from `pnc-visit.json`, with canonical runtime Form UUID
+  `7e8cc637-0961-3441-9e51-aef987d0313d` (`var.form.pnc-visit.uuid`).
+- Newborn PNC is released from `newborn-pnc.json`, with canonical runtime Form UUID
+  `e318b944-6faa-3828-acd6-6b0c98037070` (`var.form.newborn-pnc.uuid`).
+
+Before deployment, inventory the target OpenMRS runtime for forms named `Mother PNC` and `Newborn PNC`, including UUID, version, retired status, schemas, encounter counts, and how each form was originally loaded. This runtime inventory is a release prerequisite; the PNC restoration and UUID alignment do not include migration, retirement, or deployment.
 
 ### Mother PNC terminology and schema contract
 
@@ -816,6 +840,11 @@ Updated against the DAK read on 2026-08-06 — see
     sourced** and none has been imposed. Confirm with the clinical/DAK owner whether the
     date should be required for LAM clients, or whether explicit fallback guidance should
     be shown instead.
+
+28. **Pre-deployment PNC runtime inventory remains required.** Inventory `Mother PNC` and
+    `Newborn PNC` UUIDs, versions, retired status, schemas, encounter counts, and original
+    loading mechanism before deployment; see
+    [Legacy national PNC form superseded](#legacy-national-pnc-form-superseded).
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any

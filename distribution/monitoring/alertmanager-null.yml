@@ -1,8 +1,0 @@
-# Used when ALERT_WEBHOOK_URL is unset: alerts are visible in the Prometheus and
-# Alertmanager UIs but are delivered nowhere. Fine on a dev box; a deployed environment
-# must set the webhook, and the QA alerting check fails if it cannot see alerts fire.
-route:
-  receiver: none
-
-receivers:
-  - name: none

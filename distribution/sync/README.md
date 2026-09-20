@@ -49,6 +49,8 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   database. It holds the inbound queues, the conflict queue, retries, and the
   per-entity hashes.
 - The environment contract in `docker-entrypoint-receiver.sh`.
+- A sync account (`SYNC_REST_USER`) with the `Sync Receiver` role only, and for the sender
+  one with `Sync Sender` (docs/runbooks/sync-operations.md section 6).
 - Its subscription queue, `DB-SYNC-REC.DB-SYNC-RECEIVER`, is declared by the broker, so
   messages wait there from the broker's first start, whether or not the receiver has
   connected (risk E11). Never change the clientId or subscription name in the receiver
@@ -60,14 +62,25 @@ Both apps run as uid 999 and connect over mutual TLS with a client certificate a
 broker password; the mounted material must be readable by that uid. The entrypoints pass
 the keystore settings to Java through an argument file written with umask 077, so store
 passwords never reach the process arguments. Payloads are PGP-signed
-by the facility and encrypted to the receiver (`SYNC_PAYLOAD_ENCRYPTION`, on by default
-for the broker); the setting has to be the same at central and every facility, so it is
-switched in one coordinated change. Material shapes and a development issuer are in
+by the facility and encrypted to the receiver; neither side starts with encryption turned
+off for the broker. Material shapes and a development issuer are in
 `scripts/security/gen-sync-certs.sh`; production material comes from the MOH ICT Unit.
 
-Open gap (sync-eip.md 7.2): PGP binds each message to the facility key named in its sender
-header, but nothing yet checks that the facility code inside the payload matches that key.
-An enrolled facility could still attribute records to another site.
+Open gap (sync-eip.md 7.2): dbsync binds each message to the facility key named in its
+sender header, but it takes the facility code inside the payload as sent and has no setting to
+compare the two, so an enrolled facility could still attribute records to another site. It is
+recorded against control D2 in the security register.
+
+The receiver is configured, within what dbsync offers, to:
+
+- acknowledge each message on its own (`acknowledgementMode=4`, ActiveMQ's individual
+  acknowledge). With upstream's client acknowledge, a message the receiver failed on was
+  acknowledged along with the next one it applied while shutting down, so it was lost instead
+  of redelivered and dead-lettered;
+- never reply to a message (`disableReplyTo`), since `JMSReplyTo` is set by the sender;
+- log its retry route and complex obs processor at WARN, because at INFO they write clinical
+  payloads. dbsync still quotes part of a payload in a JSON mapping error, and at DEBUG it logs
+  every payload, so central never runs with `SYNC_LOG_LEVEL=DEBUG` outside a test stack.
 
 One consequence of the JVM-wide truststore: it replaces Java's default CA list inside the
 sync containers. That is fine while `OPENMRS_BASE_URL` is the internal http address; an
@@ -85,8 +98,10 @@ at rest (sync-eip.md section 7.4).
 
 - `qa/sync/verify-sender-capture.sh`: facility-only check, registration to captured
   payload, no PHI in logs.
-- `qa/sync/verify-e2e-push.sh`: the full chain, a patient registered at the facility
-  appears at central with the same UUID intact. Acceptance criterion 1 of LE-35.
+- `qa/sync/verify-e2e-push.sh`: the full chain. A patient registered at the facility, then
+  their visit, ANC encounter with an observation, programme enrolment, test order and drug
+  order, each appears at central with the same UUID and content, and the sender watches
+  exactly the tables the template declares. Acceptance criterion 1 of LE-35.
 - `qa/sync/outage-drill.sh`: acceptance criterion 2. Cuts the broker link, registers a
   counted batch through the outage including container restarts, restores the link, and
   asserts every record lands at central exactly once with empty retry queues. Also
@@ -96,9 +111,16 @@ at rest (sync-eip.md section 7.4).
   OpenWire (the apps' protocol): other facilities' addresses, the topic, subscriptions,
   missing, foreign and revoked certificates, wrong host names, removed enrolment, the
   admin certificate on the facility port, messages kept before the receiver connects, and
-  unacknowledged messages kept in the dead-letter queue. Also runs payloads through
-  dbsync's own PGP services, including a sender header naming another facility. Runs in
-  CI on every change to the sync security surface.
+  unacknowledged messages kept in the dead-letter queue, replayable and exportable by
+  facility. Also runs payloads through dbsync's own PGP services, including a sender header
+  naming another facility. Runs in CI on every change to the sync security surface.
+- `qa/sync/verify-receiver-failure.sh`: against a running central, a message the receiver
+  cannot apply is redelivered and dead-lettered rather than lost, while messages behind it
+  apply and their reply requests are ignored.
+- `qa/sync/verify-conflict-resolution.sh`: a real conflict resolved with dbsync's procedure;
+  the alert clears, the facility's next change applies, and no payload reaches the log.
+- `qa/sync/verify-alert-delivery.sh`: alerts arrive by email over STARTTLS and by webhook.
+  Runs in CI.
 - `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,
   asserts the SyncPushErrors alert fires and is admin visible, and that it resolves on
   recovery (resolution rides the sender's 30 minute retry cycle).
