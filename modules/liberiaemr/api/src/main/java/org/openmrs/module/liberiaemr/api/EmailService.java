@@ -9,6 +9,10 @@
  */
 package org.openmrs.module.liberiaemr.api;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -40,11 +44,11 @@ public class EmailService {
 	 * @throws MessagingException if the email cannot be sent
 	 */
 	public void sendPasswordResetEmail(String recipientEmail, String resetLink) throws MessagingException {
-		String host = getGlobalProperty("liberiaemr.email.host", "smtp.gmail.com");
-		String port = getGlobalProperty("liberiaemr.email.port", "587");
-		String username = getGlobalProperty("liberiaemr.email.username", "");
-		String smtpPass = getGlobalProperty("liberiaemr.email.password", "");
-		String fromAddress = getGlobalProperty("liberiaemr.email.from", "noreply@liberiaemr.org");
+		String host = resolve("LIBERIAEMR_SMTP_HOST", "liberiaemr.email.host", "localhost");
+		String port = resolve("LIBERIAEMR_SMTP_PORT", "liberiaemr.email.port", "25");
+		String username = resolve("LIBERIAEMR_SMTP_USER", "liberiaemr.email.username", "");
+		String smtpPass = resolveSecret();
+		String fromAddress = resolve("LIBERIAEMR_SMTP_FROM", "liberiaemr.email.from", "noreply@liberiaemr.org");
 		
 		Properties props = new Properties();
 		props.put("mail.smtp.host", host);
@@ -84,9 +88,9 @@ public class EmailService {
 		String htmlBody = buildEmailBody(resetLink);
 		message.setContent(htmlBody, "text/html; charset=utf-8");
 		
-		log.warn("Sending password reset email to {}", recipientEmail);
+		log.info("Sending password reset email to {}", recipientEmail);
 		Transport.send(message);
-		log.warn("Password reset email sent successfully to {}", recipientEmail);
+		log.info("Password reset email sent successfully to {}", recipientEmail);
 	}
 	
 	/**
@@ -107,8 +111,73 @@ public class EmailService {
 		        + "please ignore this email.</p>" + "</div></body></html>";
 	}
 	
-	private String getGlobalProperty(String property, String defaultValue) {
+	/**
+	 * Environment first, global property second, built-in default last.
+	 *
+	 * The environment wins because the relay is deployment state, not content: the same image
+	 * runs at every facility, and distribution/compose/facility/docker-compose.yml feeds these
+	 * from the gitignored .env. A global property still works for a developer poking at a
+	 * running instance.
+	 *
+	 * @param envVar the environment variable to prefer
+	 * @param property the global property to fall back to
+	 * @param defaultValue used when neither is set
+	 * @return the resolved value, trimmed
+	 */
+	private String resolve(String envVar, String property, String defaultValue) {
+		String fromEnv = System.getenv(envVar);
+		if (fromEnv != null && !fromEnv.trim().isEmpty()) {
+			return fromEnv.trim();
+		}
 		String value = Context.getAdministrationService().getGlobalProperty(property);
 		return (value != null && !value.trim().isEmpty()) ? value.trim() : defaultValue;
+	}
+	
+	/**
+	 * The SMTP password, which is a CREDENTIAL and so is never read from versioned content.
+	 *
+	 * Order: LIBERIAEMR_SMTP_PASSWORD_FILE (a path, read verbatim — the same shape as the
+	 * alert webhook's url_file, so no character in the secret is ever interpreted by a
+	 * substitution tool), then LIBERIAEMR_SMTP_PASSWORD, then the global property for local
+	 * development only.
+	 *
+	 * The global property is deliberately NOT seeded by any Initializer file. It was, with the
+	 * literal YOUR_APP_PASSWORD, which made a versioned file the obvious place to "fix" a
+	 * broken relay — leaking a live credential into git history the first time someone did.
+	 * Initializer also reapplies its files on EVERY boot, so that seed would have overwritten a
+	 * real password an administrator had set, at each restart.
+	 *
+	 * @return the password, or an empty string when the relay needs no authentication
+	 */
+	private String resolveSecret() {
+		String path = System.getenv("LIBERIAEMR_SMTP_PASSWORD_FILE");
+		if (path != null && !path.trim().isEmpty()) {
+			return readSecretFile(path.trim());
+		}
+		return resolve("LIBERIAEMR_SMTP_PASSWORD", "liberiaemr.email.password", "");
+	}
+	
+	/**
+	 * Reads a secret file verbatim. Package-private so it can be tested directly: the environment
+	 * variable that selects this path cannot be set from inside a JVM test.
+	 *
+	 * Only a trailing newline is stripped. A password may legitimately begin or end with a space,
+	 * and `echo secret > file` is how these files get written.
+	 *
+	 * @param path the file to read
+	 * @return the secret, or an empty string if the file cannot be read
+	 */
+	static String readSecretFile(String path) {
+		try {
+			byte[] raw = Files.readAllBytes(Paths.get(path));
+			return new String(raw, Charset.forName("UTF-8")).replaceAll("\\r?\\n$", "");
+		}
+		catch (IOException e) {
+			// Say so loudly rather than fall back to a weaker source silently — and never log
+			// anything that was read out of the file.
+			log.error("LIBERIAEMR_SMTP_PASSWORD_FILE is set to '{}' but could not be read; "
+			        + "sending unauthenticated. Reason: {}", path, e.getMessage());
+			return "";
+		}
 	}
 }

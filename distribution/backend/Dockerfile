@@ -70,7 +70,29 @@ RUN set -eu; \
     if [ -d /openmrs_config/demo ]; then echo "demo content leaked into the build" >&2; exit 1; fi
 
 # ---------------------------------------------------------------------------
-# Stage 2 — runtime
+# Stage 2 — build the in-tree liberiaemr OMOD
+# ---------------------------------------------------------------------------
+# This module is NOT pinned in distro.properties and NOT resolved by
+# scripts/build/resolve-modules.sh, on purpose. Every OMOD that script fetches is a
+# released artifact on mavenrepo.openmrs.org; liberiaemr lives in this repository and has
+# never been published there, so a pin would name a coordinate that cannot resolve and the
+# resolver's own count check would fail the build.
+#
+# Building it from the source in THIS commit is the stronger guarantee anyway: the omod in
+# the image is exactly the code the tag contains, with no coordinate to drift. It also
+# closes the gap the module README used to paper over — dropping a hand-built .omod into a
+# running container, which §8 forbids, since a mutable checkout never reaches production.
+FROM maven:3.9-eclipse-temurin-17 AS module
+
+WORKDIR /build
+COPY modules/liberiaemr /build/liberiaemr
+# Tests run in CI's own backend-module job; repeating them here would add minutes to every
+# image build for a signal the pipeline already has.
+RUN mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package \
+    && ls /build/liberiaemr/omod/target/*.omod
+
+# ---------------------------------------------------------------------------
+# Stage 3 — runtime
 # ---------------------------------------------------------------------------
 # Must match war.openmrs in distribution/distro.properties — this image IS the platform, so
 # a drift here silently ships a different OpenMRS than the one the pins were tested against.
@@ -106,6 +128,10 @@ USER 1001
 # root — it has to be, for the content stage to reach content-packages/ — so this path is
 # relative to the root and not to this Dockerfile.
 COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
+
+# The in-tree module, built in stage 2, lands beside them. Kept as a separate COPY so it is
+# obvious in the layer list that one OMOD here is ours and the rest are resolved pins.
+COPY --from=module /build/liberiaemr/omod/target/liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/

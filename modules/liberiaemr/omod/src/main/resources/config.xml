@@ -37,6 +37,8 @@
 		<defaultValue>localhost</defaultValue>
 		<description>
 			SMTP server hostname for sending password reset emails.
+			Normally set from LIBERIAEMR_SMTP_HOST in the deployment environment;
+			this property is the fallback for a developer changing it on a live box.
 			Use 'localhost' for a local relay, or an external provider
 			(e.g., smtp.sendgrid.net, email-smtp.us-east-1.amazonaws.com).
 		</description>
@@ -52,14 +54,18 @@
 		<property>liberiaemr.email.username</property>
 		<defaultValue></defaultValue>
 		<description>
-			SMTP username for authentication. Leave empty for local open relays.
+			SMTP username. Normally set from LIBERIAEMR_SMTP_USER.
+			Leave empty for local open relays.
 		</description>
 	</globalProperty>
 	<globalProperty>
 		<property>liberiaemr.email.password</property>
 		<defaultValue></defaultValue>
 		<description>
-			SMTP password for authentication. Leave empty for local open relays.
+			SMTP password. DEVELOPMENT FALLBACK ONLY, and never seeded from
+			versioned content: in a deployment this comes from
+			LIBERIAEMR_SMTP_PASSWORD_FILE (a path read verbatim) or
+			LIBERIAEMR_SMTP_PASSWORD. Leave empty for local open relays.
 		</description>
 	</globalProperty>
 	<globalProperty>
@@ -67,6 +73,7 @@
 		<defaultValue>noreply@liberiaemr.org</defaultValue>
 		<description>
 			The "From" email address used in password reset emails.
+			Normally set from LIBERIAEMR_SMTP_FROM.
 		</description>
 	</globalProperty>
 
@@ -76,7 +83,7 @@
 		<defaultValue>http://localhost:8080/openmrs/spa</defaultValue>
 		<description>
 			Base URL of the frontend SPA used to construct password reset links in emails.
-			Must NOT end with a trailing slash.
+			Normally set from LIBERIAEMR_FRONTEND_URL. A trailing slash is stripped.
 			Examples: http://localhost:8080/openmrs/spa, https://liberiaemr.org/openmrs/spa
 		</description>
 	</globalProperty>

@@ -67,8 +67,12 @@ jobs:
   # The path list is an ALLOW list and deliberately over-broad: content, the
   # whole distribution tree (Dockerfiles, compose, distro.properties), the
   # build scripts that fetch and sanitise the OCL exports, the QA script
-  # itself, the reactor pom, and this workflow. Anything that could plausibly
-  # change what Initializer loads, or how it is loaded, keeps the gate.
+  # itself, the reactor pom, and this workflow. modules/ is in the list too:
+  # the backend image builds the in-tree OMOD into itself, and that module
+  # carries a liquibase changeset and its own global properties, so a change
+  # there changes what a clean database ends up holding.
+  # Anything that could plausibly change what Initializer loads, or how it is
+  # loaded, keeps the gate.
   #
   # Every uncertain case FAILS OPEN — no base commit, an unknown SHA, a
   # branch's first push, workflow_dispatch — because a metadata gate that
@@ -114,7 +118,7 @@ jobs:
           echo "Changed files since ${BASE_SHA}:"
           sed 's/^/  /' <<<"$files"
 
-          if grep -qE '^(content-packages/|distribution/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "metadata=true" >> "$GITHUB_OUTPUT"
             echo "-> metadata could have changed; the clean-database gate will run."
           else
@@ -417,8 +421,11 @@ jobs:
   # Cost: the script runs its own `mvn package` and the backend Dockerfile
   # runs a THIRD content-packages build inside its own build stage — on
   # top of build-test's reactor build. Three Maven builds of the same
-  # module per pipeline run. Accepted for now in exchange for correctness;
-  # revisit if build time becomes a real problem.
+  # module per pipeline run. The backend image also builds the in-tree
+  # liberiaemr OMOD in a stage of its own, which the backend-module job
+  # below has already built and TESTED; the image stage skips tests, so
+  # that is a compile, not a second test run. Accepted for now in exchange
+  # for correctness; revisit if build time becomes a real problem.
   docker-build:
     name: Build Docker Images
     runs-on: ubuntu-latest

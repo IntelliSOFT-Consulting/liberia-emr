@@ -24,7 +24,6 @@ import org.openmrs.module.liberiaemr.api.dao.PasswordResetTokenDao;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 import java.util.Calendar;
 
@@ -35,6 +34,8 @@ import org.slf4j.LoggerFactory;
 public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements LiberiaEMRService {
 
 	private static final Logger log = LoggerFactory.getLogger(LiberiaEMRServiceImpl.class);
+	
+	private static final String DEFAULT_FRONTEND_URL = "http://localhost:8080/openmrs/spa";
 	
 	LiberiaEMRDao dao;
 	PasswordResetTokenDao tokenDao;
@@ -88,32 +89,16 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 	@Override
 	@Transactional
 	public void requestPasswordReset(String email) throws APIException {
-		// 1. Find user by email property
-		// Since email is a user property in OpenMRS
-		User user = null;
 		try {
 			addProxyPrivilege("Get Users");
 			addProxyPrivilege("Get Global Properties");
-			List<User> users = userService.getAllUsers();
-			for (User u : users) {
-				String userEmail = null;
-				org.openmrs.PersonAttribute emailAttr = u.getPerson().getAttribute("Email");
-				if (emailAttr == null) {
-					emailAttr = u.getPerson().getAttribute("email");
-				}
-				if (emailAttr != null) {
-					userEmail = emailAttr.getValue();
-				}
-				
-				if (userEmail != null && userEmail.equalsIgnoreCase(email)) {
-					user = u;
-					break;
-				}
-			}
 			
-			// To prevent email enumeration, we just log and return if user not found
+			User user = findUserByEmail(email);
+			
+			// To prevent email enumeration, we just log and return if user not found.
 			if (user == null) {
-				log.warn("AUDIT: Password reset requested for email '{}' but no matching user found. Failing silently.", email);
+				log.warn("AUDIT: Password reset requested for email '{}' but no matching user found. Failing silently.",
+				    email);
 				return;
 			}
 			
@@ -128,7 +113,8 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 			int expiryHours = 2;
 			try {
 				expiryHours = Integer.parseInt(expiryHoursStr);
-			} catch (NumberFormatException e) {
+			}
+			catch (NumberFormatException e) {
 				log.error("Invalid tokenExpiryHours global property. Defaulting to 2.");
 			}
 			
@@ -141,19 +127,77 @@ public class LiberiaEMRServiceImpl extends BaseOpenmrsService implements Liberia
 			tokenDao.savePasswordResetToken(token);
 			
 			// 5. Send Email
-			String frontendUrl = adminService.getGlobalProperty("liberiaemr.frontend.url", "http://localhost:8080/openmrs/spa");
+			String frontendUrl = resolveFrontendUrl();
 			String resetLink = frontendUrl + "/login/reset-password?token=" + tokenStr;
 			
 			try {
 				emailService.sendPasswordResetEmail(email, resetLink);
-			} catch (MessagingException e) {
+			}
+			catch (MessagingException e) {
 				log.error("Failed to send password reset email to " + email, e);
 				throw new APIException("Failed to send password reset email", e);
 			}
-		} finally {
+		}
+		finally {
 			removeProxyPrivilege("Get Users");
 			removeProxyPrivilege("Get Global Properties");
 		}
+	}
+	
+	/**
+	 * The base URL the emailed reset link is built from. LIBERIAEMR_FRONTEND_URL first, because
+	 * the public address of an instance is deployment state that the same image carries to
+	 * every facility; the global property remains for a developer changing it on a live box.
+	 *
+	 * A trailing slash would produce a double-slashed link, which some mail clients mangle.
+	 *
+	 * @return the frontend base URL, without a trailing slash
+	 */
+	private String resolveFrontendUrl() {
+		String url = System.getenv("LIBERIAEMR_FRONTEND_URL");
+		if (url == null || url.trim().isEmpty()) {
+			url = adminService.getGlobalProperty("liberiaemr.frontend.url", DEFAULT_FRONTEND_URL);
+		}
+		// getGlobalProperty(name, default) does not return null in production, but an
+		// AdministrationService that has no value for the property at all can, and a null here
+		// would take down the whole request on a line that is only building a link.
+		if (url == null || url.trim().isEmpty()) {
+			url = DEFAULT_FRONTEND_URL;
+		}
+		url = url.trim();
+		while (url.endsWith("/")) {
+			url = url.substring(0, url.length() - 1);
+		}
+		return url;
+	}
+	
+	/**
+	 * Resolves the account to reset from the CORE users.email column — the one place OpenMRS
+	 * itself stores a user's address, and what UserService.getUserByUsernameOrEmail queries with
+	 * an index.
+	 *
+	 * An earlier revision matched on an "Email" PersonAttribute instead. No such attribute type
+	 * exists anywhere in this distribution's content, so that lookup could never match a real
+	 * account: every user was "not found" and no reset mail was ever sent. Do not reintroduce it
+	 * without also shipping the attribute type — and prefer users.email, which needs no content
+	 * at all.
+	 *
+	 * getUserByUsernameOrEmail matches EITHER column, so the address is re-checked against
+	 * getEmail() here: a caller who posts a bare username must not be able to use this endpoint
+	 * to discover that the username exists, or to have mail sent anywhere.
+	 *
+	 * @param email the address the caller asked to reset
+	 * @return the matching active user, or null if there is none
+	 */
+	private User findUserByEmail(String email) {
+		User user = userService.getUserByUsernameOrEmail(email);
+		if (user == null || Boolean.TRUE.equals(user.isRetired())) {
+			return null;
+		}
+		if (user.getEmail() == null || !user.getEmail().trim().equalsIgnoreCase(email.trim())) {
+			return null;
+		}
+		return user;
 	}
 	
 	@Override

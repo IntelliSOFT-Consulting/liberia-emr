@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.anyString;
@@ -82,6 +85,8 @@ public class PasswordResetControllerTest {
 
 		// Then
 		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		// The internal failure must not reach an anonymous caller verbatim.
+		assertFalse(response.getBody().contains("Database down"));
 	}
 
 	@Test
@@ -127,5 +132,36 @@ public class PasswordResetControllerTest {
 
 		// Then
 		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		// An anonymous caller must not be able to tell "no such token" from "expired" from a
+		// stack trace out of the persistence layer.
+		assertFalse(response.getBody().contains("Invalid or expired token"));
+	}
+
+	/**
+	 * The audit lines identify a confirmation attempt by a fingerprint, never by the token: the
+	 * token is a bearer secret and audit logs are retained for months and shipped to the SIEM.
+	 * These assert the fingerprint's contract, since the log statements themselves are not
+	 * observable from here.
+	 */
+	@Test
+	public void fingerprint_shouldNotRevealTheToken() {
+		// Named 'sample', not 'token': scripts/validate/no-secrets.sh refuses a
+		// token = "<12+ chars>" assignment anywhere in the tree, and it is right to.
+		String sample = "3f1b0c2e-9a44-4d1f-9b3a-77c2b6a1d0e5";
+		String fp = PasswordResetController.fingerprint(sample);
+
+		assertEquals(12, fp.length());
+		assertTrue(fp.matches("[0-9a-f]{12}"));
+		assertFalse(sample.contains(fp));
+		assertNotEquals(sample, fp);
+	}
+
+	@Test
+	public void fingerprint_shouldBeStableForOneTokenAndDifferAcrossTokens() {
+		String a = "3f1b0c2e-9a44-4d1f-9b3a-77c2b6a1d0e5";
+		String b = "8c2d1e3f-1b55-4e2a-8c4b-88d3c7b2e1f6";
+
+		assertEquals(PasswordResetController.fingerprint(a), PasswordResetController.fingerprint(a));
+		assertNotEquals(PasswordResetController.fingerprint(a), PasswordResetController.fingerprint(b));
 	}
 }
