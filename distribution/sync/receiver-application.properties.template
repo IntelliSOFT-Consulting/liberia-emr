@@ -13,10 +13,11 @@ db-sync.excludedEntities=
 inbound.retry.interval=1800000
 inbound.retry.initial.delay=120000
 
-# true is a MAINTENANCE mode that halts all sync and batch-recomputes hashes; normal
-# per-message hash storage happens regardless of this flag.
-hashes.update=false
-hashes.update.tables=
+# true is a MAINTENANCE mode that halts all sync and batch-recomputes hashes, then exits;
+# run it as a one-off container (docs/runbooks/sync-operations.md). Normal per-message
+# hash storage happens regardless of this flag.
+hashes.update=${SYNC_HASHES_UPDATE}
+hashes.update.tables=${SYNC_HASHES_UPDATE_TABLES}
 
 # Log to the console; the container runtime owns log collection. NO PHI in logs
 # (integration/eip/routes/README.md).
@@ -27,7 +28,10 @@ logging.level.receiver=${LOG_LEVEL}
 logging.level.receiver-db-sync=${LOG_LEVEL}
 logging.level.receiver-complex-obs-sync=${LOG_LEVEL}
 logging.level.receiver-error-handler=${LOG_LEVEL}
-logging.level.receiver-retry=${LOG_LEVEL}
+# WARN, not LOG_LEVEL: at INFO these log clinical content, the retry route each retried
+# message's payload and ComplexObsProcessor a complex obs file whose hash changed.
+logging.level.receiver-retry=WARN
+logging.level.org.openmrs.eip.dbsync.receiver.ComplexObsProcessor=WARN
 logging.level.receiver-update-search-index=${LOG_LEVEL}
 logging.level.receiver-clear-db-cache=${LOG_LEVEL}
 logging.level.org.openmrs.eip=${LOG_LEVEL}
@@ -67,15 +71,19 @@ spring.artemis.brokerUrl=${ARTEMIS_URL}
 
 # The broker declares this subscription's queue (DB-SYNC-REC.DB-SYNC-RECEIVER), so a
 # change here must be matched in scripts/security/render-broker-config.sh.
-camel.input.endpoint=activemq:topic:openmrs.sync.topic?subscriptionDurable=true&durableSubscriptionName=DB-SYNC-RECEIVER&connectionFactory=activeMqConnFactory&acknowledgementModeName=CLIENT_ACKNOWLEDGE&messageListenerContainerFactory=customMessageListenerContainerFactory
+# acknowledgementMode=4 is ActiveMQ's INDIVIDUAL_ACKNOWLEDGE. Upstream's CLIENT_ACKNOWLEDGE
+# acknowledges every earlier message in the session, so a message that failed was dropped
+# when the next one succeeded during the receiver's shutdown, instead of being redelivered
+# and, after 10 attempts, dead-lettered. qa/sync/verify-receiver-failure.sh proves it.
+# disableReplyTo: dbsync never replies, and JMSReplyTo is set by the sender.
+camel.input.endpoint=activemq:topic:openmrs.sync.topic?subscriptionDurable=true&durableSubscriptionName=DB-SYNC-RECEIVER&connectionFactory=activeMqConnFactory&acknowledgementMode=4&disableReplyTo=true&messageListenerContainerFactory=customMessageListenerContainerFactory
 activemq.clientId=DB-SYNC-REC
 
 openmrs.complex.obs.data.directory=${COMPLEX_OBS_DIR}
 
 # PGP: every message is decrypted with the receiver's key and must carry a valid
-# signature from the facility key it names; pgp/ holds every enrolled facility's public
-# key. Must match every facility's setting, or nothing is readable.
-openmrs.eip.dbsync.encryption.enabled=${SYNC_PAYLOAD_ENCRYPTION}
+# signature from the facility key it names; pgp/ holds every enrolled facility's public key.
+openmrs.eip.dbsync.encryption.enabled=true
 # dbsync reads this relative to its working directory, /app.
 pgp.receiver.keysFolderPath=/sync-certs/pgp
 pgp.receiver.password=${PGP_PASSWORD}

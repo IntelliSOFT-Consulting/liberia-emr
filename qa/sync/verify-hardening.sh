@@ -240,6 +240,38 @@ else
   grep -m3 'DLQ\|artemis_message_count' <<<"$metrics" | sed 's/^/    /' >&2
   exit 1
 fi
+# The store passwords reach the container through the environment rather than the docker command
+# line, the same way scripts/sync/broker-admin.sh does it.
+admin_exec() { # shell body using $url and $CLI, then its arguments
+  docker exec -e LEMR_KS="$(cat "$WORK/pki/admin/client.pass")" -e LEMR_TS="$(cat "$WORK/pki/admin/truststore.pass")" \
+    "$BROKER" sh -c "CLI=$ADMIN_CLI
+url=\"tcp://127.0.0.1:61618?sslEnabled=true;verifyHost=false;keyStorePath=/admin/client.p12;keyStorePassword=\$LEMR_KS;trustStorePath=/admin/truststore.p12;trustStorePassword=\$LEMR_TS\"
+$1" sh "${@:2}"
+}
+admin_exec 'exec "$CLI" transfer --source-queue DLA::DLQ --target-topic "$1" --source-url "$url" --target-url "$url"' \
+  "$TOPIC" >/dev/null 2>&1 || true
+check "an operator can replay the dead letter to the receiver" 'RESULT RECEIVED' '' \
+  "$(probe receiver "$URL" subscribe "$TOPIC" "$REC_CLIENT" "$REC_SUB" 30)"
+
+# Before a compromised facility's key is removed, its queued messages are exported, leaving the rest.
+check "a message from one facility waits for the receiver" 'RESULT SENT' '' \
+  "$(probe facility-careysburg "$URL" send sync.facility.careysburg)"
+check "and one from another" 'RESULT SENT' '' "$(probe facility-careys "$URL" send sync.facility.careys)"
+admin_exec 'exec "$CLI" consumer --destination "$1" --filter "$2" --break-on-null --receive-timeout 3000 \
+  --data /tmp/export.xml --url "$url"' \
+  "queue://$TOPIC::$REC_CLIENT.$REC_SUB" "_AMQ_VALIDATED_USER='careys'" >/dev/null 2>&1 || true
+exported="$(docker exec "$BROKER" cat /tmp/export.xml 2>/dev/null || true)"
+if [[ "$(grep -c 'name="_AMQ_VALIDATED_USER" value="careys"' <<<"$exported")" == "1" ]] \
+   && ! grep -q 'value="careysburg"' <<<"$exported"; then
+  pass "an operator can export one facility's queued messages"
+else
+  echo "FAIL [operator exports one facility's queued messages]: ${exported:0:300}" >&2
+  exit 1
+fi
+check "the other facility's message is still delivered to the receiver" 'RESULT RECEIVED' '' \
+  "$(probe receiver "$URL" subscribe "$TOPIC" "$REC_CLIENT" "$REC_SUB" 30)"
+check "and nothing else is left for it" 'RESULT NO_MESSAGE' '' \
+  "$(probe receiver "$URL" subscribe "$TOPIC" "$REC_CLIENT" "$REC_SUB" 5)"
 
 # Revoking a live facility: replace crl.pem the way operators are told to, and the broker
 # must restart itself and refuse the certificate without anyone touching it.

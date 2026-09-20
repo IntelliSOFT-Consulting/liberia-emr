@@ -209,22 +209,21 @@ services:
       - prom-data:/prometheus
     networks: [liberiaemr]
 
-  # Delivers alerts to ALERT_WEBHOOK_URL; with it unset, alerts are UI-only (dev boxes).
-  # The image has no config templating, so the entrypoint picks and renders with sed.
+  # Delivers alerts by email and/or webhook (monitoring/alertmanager-entrypoint.sh); with
+  # neither configured, alerts are visible in the UIs only, which suits a dev box alone.
   alertmanager:
     image: prom/alertmanager:v0.27.0
     restart: unless-stopped
     profiles: ["sync"]
     environment:
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >-
-        if [ -n "$$ALERT_WEBHOOK_URL" ]; then
-        printf %s "$$ALERT_WEBHOOK_URL" > /tmp/webhook-url
-        && cp /etc/amtpl/alertmanager-webhook.yml /tmp/am.yml;
-        else cp /etc/amtpl/alertmanager-null.yml /tmp/am.yml; fi
-        && exec /bin/alertmanager --config.file=/tmp/am.yml --storage.path=/alertmanager
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
+      ALERT_SMTP_SMARTHOST: ${ALERT_SMTP_SMARTHOST:-}
+      ALERT_SMTP_USER: ${ALERT_SMTP_USER:-}
+      ALERT_SMTP_PASSWORD: ${ALERT_SMTP_PASSWORD:-}
+      ALERT_SMTP_REQUIRE_TLS: ${ALERT_SMTP_REQUIRE_TLS:-true}
+    entrypoint: ["/bin/sh", "/etc/amtpl/alertmanager-entrypoint.sh"]
     ports:
       - "${PROM_BIND_ADDR:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}:9093"
     volumes:

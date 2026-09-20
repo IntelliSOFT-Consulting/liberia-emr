@@ -7,14 +7,21 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — resolve content packages into a single Initializer configuration tree
 # ---------------------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-17 AS content
+# content-packages/*/target/*.zip are expected to already exist in the build context: every
+# caller (scripts/build/build-distribution.sh, docs/runbooks/local-development.md §2) runs
+# `mvn package` on the host immediately before `docker build`. This used to run that SAME
+# `mvn clean package` again in here, from a bare COPY of content-packages/ with no OCL/CIEL
+# exports and no host Maven cache — a second, redundant reactor build whose only effect was to
+# throw away the host's just-built zips and rebuild identical ones. Reusing them instead cuts a
+# full Maven build off both docker-build and e2e in CI, and off the local edit/rebuild loop.
+#
+# eclipse-temurin, not the maven image: nothing in this stage invokes mvn any more, only jar
+# (from the JDK) to unpack the zips below.
+FROM eclipse-temurin:17-jdk AS content
 
 WORKDIR /build
 
-# Dependency resolution first so the layer caches across content edits.
-COPY pom.xml /build/pom.xml
-COPY content-packages /build/content-packages
-RUN mvn -B -q -DskipTests clean package
+COPY content-packages/*/target/*.zip /build/zips/
 
 # Layer order is load order: later layers override earlier ones.
 # The site layer is chosen at build time; default is Careysburg.
@@ -36,7 +43,7 @@ ARG DEMO_PACKAGE=
 # frontend_configuration/ is not copied here on purpose. It belongs to the frontend image,
 # which collects it in the same layer order (scripts/build/collect-frontend-config.sh).
 #
-# `jar` stands in for unzip, which the Maven image does not carry — the JDK is already here.
+# `jar` stands in for unzip, which this image does not carry separately — the JDK already has it.
 RUN set -eu; \
     mkdir -p /openmrs_config; \
     for pkg in liberiaemr-common \
@@ -47,8 +54,11 @@ RUN set -eu; \
                liberiaemr-opd-ipd \
                "${SITE_PACKAGE}" \
                ${DEMO_PACKAGE}; do \
-      zip=$(find /build/content-packages -name "${pkg}-*.zip" -path '*/target/*' | head -n1); \
-      [ -n "$zip" ] || { echo "missing content package: ${pkg}" >&2; exit 1; }; \
+      set -- /build/zips/"${pkg}"-*.zip; \
+      [ -f "$1" ] && [ "$#" -eq 1 ] \
+        || { echo "expected exactly one content package: ${pkg}" >&2; exit 1; }; \
+      zip="$1"; \
+
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \

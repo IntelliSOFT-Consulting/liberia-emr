@@ -72,7 +72,7 @@ first, not the second.
 | --- | --- | --- | --- | --- |
 | C1 | Audit logging enabled | all clinical + admin actions | `gp-audit.csv` | Enforced |
 | C2 | Retention | ≥ 3 months | `gp-audit.csv` + backup policy | **Partial** — retention depends on the backup schedule in `docs/runbooks/backup-restore.md` |
-| C3 | No PHI in application logs | — | `integration/` ground rules | **Open** — needs a log review before go-live |
+| C3 | No PHI in application logs | — | `integration/` ground rules; the sync receiver's retry route and complex obs processor, which log payloads at INFO, run at WARN (`distribution/sync/receiver-application.properties.template`). Known residue: dbsync's JSON mapping errors quote part of the payload, and `SYNC_LOG_LEVEL=DEBUG` logs whole payloads | **Open** — needs a log review before go-live |
 
 ---
 

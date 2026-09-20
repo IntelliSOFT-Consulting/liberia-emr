@@ -21,9 +21,9 @@ The ActiveMQ Artemis broker at central that facilities push to. Design:
   no web console) and `SyncDeadLetters` fires when anything reaches `DLQ`.
 
 Each of these is proven by `qa/sync/verify-hardening.sh`, which CI runs on every change
-here. The broker also stamps the sending identity on each message while it is queued;
-that is visible to operators but is not a retained audit trail, and the receiver does not
-see it.
+here. The broker also stamps the sending identity on each message while it is queued
+(`_AMQ_VALIDATED_USER`); operators can filter on it, but it is not a retained audit trail,
+and the receiver does not see it.
 
 ## Mounted material
 
@@ -45,6 +45,10 @@ throwaway set for development and CI; production material comes from the MOH ICT
 
 ## Operating it
 
+Step-by-step procedures are in
+[docs/runbooks/sync-operations.md](../../docs/runbooks/sync-operations.md); operator CLI
+sessions go through `scripts/sync/broker-admin.sh`. In short:
+
 - **Enrol or remove a facility:** re-run `render-broker-config.sh` with the full list and
   restart. A removed facility is also refused on its next connection without a restart.
 - **Revoke a certificate:** check the new list first
@@ -57,11 +61,10 @@ throwaway set for development and CI; production material comes from the MOH ICT
   loaded list lapses Java refuses every client; `SyncCrlStale` fires with a quarter of its
   validity left.
 - **Certificate expiry:** `SyncCertExpiresIn90Days`, `60Days` and `30Days` at central.
-- **Dead letters:** inspect with the Artemis CLI inside the container, using the admin
-  certificate on the loopback acceptor, for example
-  `artemis queue stat --queueName DLQ --url 'tcp://127.0.0.1:61618?sslEnabled=true;verifyHost=false;...'`
-  (host name checks add nothing on the container's own loopback).
-  The admin keystore is not mounted by default; mount or copy it in only for the session.
+- **Dead letters:** `scripts/sync/broker-admin.sh` copies the admin keystore into the
+  container for one CLI command on the loopback acceptor and removes it afterwards. Export
+  messages as evidence with `consumer --data`, or replay a dead letter to
+  `openmrs.sync.topic` with `transfer` once its cause is fixed.
 
 ## Upgrading from the interim broker
 
