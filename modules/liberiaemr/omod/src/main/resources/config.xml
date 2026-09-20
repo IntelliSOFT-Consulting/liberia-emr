@@ -19,8 +19,13 @@
 	<require_version>2.6.9</require_version>
 
 	<!-- Required Modules -->
+	<!--
+		The MINIMUM webservices.rest, kept equal to webservicesRestVersion in the parent pom —
+		the version this module is COMPILED against. distro.properties pins what the
+		distribution runs (3.5.0), which clears this floor.
+	-->
 	<require_modules>
-		<require_module version="2.42.0">
+		<require_module version="3.0.0">
 			org.openmrs.module.webservices.rest
 		</require_module>
 	</require_modules>

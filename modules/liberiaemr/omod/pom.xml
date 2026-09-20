@@ -29,16 +29,30 @@
 			<scope>provided</scope>
 			<classifier>tests</classifier>
 		</dependency>
+		<!--
+			webservices.rest is compiled against the MINIMUM version this module supports, not
+			against the version the distribution happens to ship. distro.properties pins 3.5.0
+			today; building against that would make 3.5.0 the floor for no reason, and the pin
+			moves on its own schedule.
+
+			3.0.0 is the floor, and config.xml's require_module says the same number — the two
+			were previously both 2.42.0 while the distribution ran 3.x, which is the drift this
+			closes. Keep the two in step: they are one decision written twice.
+
+			Nothing in this module's source imports webservices.rest. The dependency and the
+			require_module entry are here because the password reset controllers sit on the REST
+			module's servlet path; if that stops being true, drop both rather than bump them.
+		-->
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>webservices.rest-omod</artifactId>
-			<version>2.42.0</version>
+			<version>${webservicesRestVersion}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>webservices.rest-omod-common</artifactId>
-			<version>2.42.0</version>
+			<version>${webservicesRestVersion}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
