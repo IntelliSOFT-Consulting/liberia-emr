@@ -90,7 +90,8 @@ Three stated limitations that bear directly on our scope:
 
 - **"Only Patient and clinical data is synced."**
 - **Order subclasses (`TestOrder`, `DrugOrder`, `ReferralOrder`) have known sync issues**,
-  and `order-push` is in our route inventory.
+  and `order-push` is in our route inventory. Since disproven on 4.0.0 for test and drug
+  orders (§1.6).
 - **The receiver is not intended to be a point-of-care system**, because of
   conflict-overwrite risk.
 
@@ -232,8 +233,8 @@ payloads are clinical, holds PHI at rest (§5.2).
 Per the route inventory in
 [`integration/eip/routes/README.md`](../../integration/eip/routes/README.md):
 `patient`/`person`/`patient_identifier`, `visit`, `encounter`/`obs`,
-`patient_program`/`patient_state`, `orders`. Plus the referenced metadata they depend on
-(`location`, `provider`, `users`: as references, never as credentials).
+`patient_program`/`patient_state`, `orders`. Plus what they reference: `location` from the
+shared image, `provider` and `users` by sync (as references, never as credentials).
 
 **All five routes are covered by existing entity support.** The inventory was written
 independently of DB-sync's coverage; checking it against `TableToSyncEnum` confirms 34
@@ -241,17 +242,26 @@ supported entities spanning every one of them. No custom entity development is r
 the work is configuration and verification. Full mapping, sync order and the dependency
 chain: [Entity coverage and sync order](sync-entity-coverage.md).
 
-Two entities need a decision rather than configuration:
+Two entities needed a decision rather than configuration, both now settled:
 
 - **`Order` subclasses** (`TestOrder`, `DrugOrder`, `ReferralOrder`): the models exist, but
-  DB-sync documents that syncing them **fails**. A known defect, not missing support. If it
-  reproduces on 4.0.0, defer `order-push` rather than build lab and pharmacy reporting on it.
-- **`USERS`**: supported, but user rows carry credential material. Sync references only;
-  never password hashes or secret answers.
+  DB-sync documents that syncing them **fails**. On 4.0.0 it does not, for `TestOrder` and
+  `DrugOrder`: both arrive at central as their subclass, and `qa/sync/verify-e2e-push.sh`
+  holds every run to that. `ReferralOrder` is unverified, because the REST module cannot
+  create one and no form issues one. `order-push` stays enabled.
+- **`USERS`**: supported, and its `UserModel` carries references only (uuid, username, system
+  id, person uuid, audit fields), never password hashes or secret answers. It is synced, since
+  every row names its creator by user uuid.
 
-**Metadata is not synced.** Concepts, locations and providers are delivered by the
-content-package image, which facility and central share, so they hold identical UUIDs by
-construction (ADR 0003). This satisfies DB-sync's stated assumption that metadata is centrally
+The set the sender watches is declared in
+`distribution/sync/application.properties.template` as `eip.watchedTables`, not inherited
+from the jar: 28 of dbsync's 34 entities, its own default minus
+`DATAFILTER_ENTITY_BASIS_MAP`, whose module this distribution does not run
+([entity coverage](sync-entity-coverage.md) §1.1).
+
+**Metadata is not synced.** Concepts and locations are delivered by the content-package
+image, which facility and central share, so they hold identical UUIDs by construction
+(ADR 0003); providers are facility data and sync like any other row. This satisfies DB-sync's stated assumption that metadata is centrally
 managed, by a stronger mechanism than metadata sharing. It also creates a rule: **facility and
 central must never run different content-package versions**, or the receiver will reject rows
 referencing UUIDs it does not have.
@@ -1086,7 +1096,7 @@ can invalidate the Sprint 3 plan.
 | --- | --- | --- | --- |
 | E1 | MariaDB 10.11 versus DB-sync's documented MySQL 5.7/8.0: Debezium now treats MariaDB as a separate connector | Experiment, before anything else is built (§1.8a) | **Highest**: may change the database platform of the whole deployment |
 | E2 | Platform 2.8.8 versus documented 2.5/2.6: the sender reads the physical schema | Establish DB-sync 2.8.x support; budget upstream work (§1.8b) | High |
-| E3 | `order-push` sits on DB-sync's known-defective `Order` subclasses | Reconcile the route inventory with DB-sync's coverage; consider deferring (§1.6) | High: sets lab/pharmacy scope |
+| E3 | ~~`order-push` sits on DB-sync's known-defective `Order` subclasses~~ RESOLVED: on 4.0.0 test and drug orders arrive as their subclass, checked by `qa/sync/verify-e2e-push.sh`; referral orders unverified (§1.6) | Reconcile the route inventory with DB-sync's coverage | Closed |
 | E4 | ~~Neither `openmrs-eip` nor DB-sync is version-pinned anywhere~~ RESOLVED: pinned as `sync.dbsync` / `sync.eip` in `distro.properties` | Pin both, as their own artefacts (§1.1) | Closed |
 | E5 | ~~Artemis broker and sender management database do not exist in the compose files~~ RESOLVED: `artemis` service in the central compose, management schemas created by each stack's `initdb/` | Add both (§1.2) | Closed |
 | E6 | Central is only safe if clinical data there is read-only, and nothing enforces that | Enforce with roles at central (§1.8c) | Medium |

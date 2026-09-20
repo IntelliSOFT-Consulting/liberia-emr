@@ -11,15 +11,17 @@ central side as `liberia-emr-sync-receiver`, both built in
 [`distribution/sync/`](../../../distribution/sync/) from the pinned dbsync tag. The
 sender sits in the facility compose behind `--profile sync`; the Artemis broker and the
 receiver are ordinary services in the central compose. Outstanding builds against this
-contract: the scripted outage drill, alerting, mTLS and payload encryption, and
-reconciliation. This directory remains the contract that deployment and configuration
-must satisfy.
+contract: reconciliation and the initial load. This directory remains the contract that
+deployment and configuration must satisfy.
 
 The design these routes implement (change capture, transport, wire format, retry and
 reconciliation) is in [`docs/architecture/sync-eip.md`](../../../docs/architecture/sync-eip.md).
 This file remains the route-level contract.
 
-## Route inventory (to build)
+## Route inventory
+
+All five are enabled, and `qa/sync/verify-e2e-push.sh` pushes one record through each from a
+facility to central and checks it arrives intact.
 
 | Route | Source | Trigger | Notes |
 | --- | --- | --- | --- |
@@ -27,13 +29,13 @@ This file remains the route-level contract.
 | `visit-push` | `visit` | event | Must arrive after its patient |
 | `encounter-push` | `encounter`, `obs` | event | Ordered within a visit |
 | `program-push` | `patient_program`, `patient_state` | event | MCH programme enrolments |
-| `order-push` | `orders` | event | Lab and drug orders. ⚠ DB-sync records known sync issues with the `Order` subclasses (`TestOrder`, `DrugOrder`, `ReferralOrder`); reconcile before committing to this route |
+| `order-push` | `orders` | event | Lab and drug orders. dbsync's README records `Order` subclass sync as failing (EIP-142); on 4.0.0 `TestOrder` and `DrugOrder` arrive as their subclass and the check holds them to it. `ReferralOrder` is unverified, since REST cannot create one |
 
 **All five routes are covered by existing entity support**: `TableToSyncEnum` in dbsync
-maps 34 OpenMRS entities spanning every one of them, so no custom entity development is
-required. The remaining work is configuration and verification, plus a decision on the
-`Order` subclass defect above. Full mapping and the dependency chain:
-[entity coverage](../../../docs/architecture/sync-entity-coverage.md).
+maps 34 OpenMRS entities spanning every one of them, so no custom entity development was
+required. The set the sender watches is declared in
+`distribution/sync/application.properties.template` (`eip.watchedTables`). Full mapping and
+the dependency chain: [entity coverage](../../../docs/architecture/sync-entity-coverage.md).
 
 Note also that these are **not** five independently scheduled routes: dbsync streams whatever
 changes the binlog emits, in commit order. The table describes coverage, not a pipeline we
