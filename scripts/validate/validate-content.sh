@@ -561,6 +561,62 @@ sys.exit(1 if problems else 0)
 PY
 ok "all form UUID variables match Initializer deterministic derivation"
 
+section "obsGroup group concepts"
+# An obsGroup's concept is the form engine's ONLY handle on a saved group: it maps a stored
+# obsGroup Obs back to a schema node by that concept UUID. Two sibling obsGroups sharing one
+# concept are therefore indistinguishable on reopen — a saved encounter populates at most one
+# of them and the rest render blank or cross-wired, silently, with the data still sitting in
+# the database. It costs nothing to write and is invisible until a clinician edits an encounter.
+#
+# That is how the seven General Examination findings in opd_consultation_form.json (jaundice,
+# pallor, cyanosis, lymphadenopathy, dehydration, finger clubbing, edema) were first written:
+# one shared "Exam Finding Construct" for all seven. Each needs its own construct concept, the
+# way the systemic-exam groups in the same form already do.
+#
+# Scoped per form, not globally: two DIFFERENT forms may legitimately reuse one construct,
+# because a saved group is only ever resolved against the schema of the form it belongs to.
+python3 - "$PKG_DIR" <<'PYGRP' || err "obsGroup concept collisions (see above)"
+import collections, glob, json, os, sys
+
+pkg_dir = sys.argv[1]
+problems = []
+
+def walk(questions, groups):
+    for q in questions or []:
+        if not isinstance(q, dict):
+            continue
+        if q.get("type") == "obsGroup":
+            concept = (q.get("questionOptions") or {}).get("concept")
+            if concept:
+                groups[concept].append(q.get("id") or "(no id)")
+        walk(q.get("questions"), groups)
+
+for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/ampathforms/*.json")):
+    if f"{os.sep}target{os.sep}" in jf:
+        continue
+    rel = jf[len(pkg_dir) - len("content-packages"):]
+    try:
+        schema = json.load(open(jf, encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"{rel}: could not be read ({e})")
+        continue
+    if not isinstance(schema, dict):
+        continue
+    groups = collections.defaultdict(list)
+    for page in schema.get("pages") or []:
+        for sec in (page or {}).get("sections") or []:
+            walk((sec or {}).get("questions"), groups)
+    for concept, ids in sorted(groups.items()):
+        if len(ids) > 1:
+            problems.append(f"{rel}: {len(ids)} obsGroups share the group concept {concept} "
+                            f"({', '.join(ids)}) — give each one its own construct")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PYGRP
+ok "every obsGroup in a form has its own group concept"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2

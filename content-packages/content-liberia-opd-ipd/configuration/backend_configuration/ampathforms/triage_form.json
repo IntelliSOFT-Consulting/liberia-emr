@@ -205,7 +205,7 @@
                                 "concept": "${var.concept.ciel.weight.uuid}",
                                 "min": "0",
                                 "max": "250",
-                                "step": 0.1
+                                "step": 1
                             },
                             "validators": [
                                 {
