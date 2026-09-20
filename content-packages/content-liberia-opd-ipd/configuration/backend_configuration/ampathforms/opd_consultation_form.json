@@ -865,6 +865,14 @@
                                         "rendering": "text",
                                         "concept": "${var.concept.referral-destination.uuid}"
                                     },
+                                    "required": {
+                                        "type": "conditionalRequired",
+                                        "message": "Please enter the Referral Destination",
+                                        "referenceQuestionId": "outcomeDisposition",
+                                        "referenceQuestionAnswers": [
+                                            "${var.concept.ciel.disposition-refer.uuid}"
+                                        ]
+                                    },
                                     "hide": {
                                         "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
                                     }
