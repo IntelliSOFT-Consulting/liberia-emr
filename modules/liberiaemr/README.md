@@ -81,7 +81,35 @@ The password reset implementation adheres strictly to security best practices:
 ## Building from source
 
 Java 8 target, Maven 3.x. `mvn clean package` in this directory produces
-`omod/target/liberiaemr-1.0.0.omod`. CI builds and tests it in its own `backend-module` job.
+`omod/target/liberiaemr-<version>.omod`. CI builds and tests it in its own `backend-module`
+job, and again in `.github/workflows/modules.yml`.
+
+## Versions and publishing
+
+The pom carries `1.0.0-SNAPSHOT` — the **development stream**. Three things consume it, and
+they take three different versions on purpose:
+
+| Where | Version | When |
+|---|---|---|
+| Repsy, snapshot | `1.0.0-SNAPSHOT` | every merge to `main` that touches `modules/**`, re-deployed over itself |
+| Repsy, release | the release tag, e.g. `1.2.0` | a published GitHub release; `versions:set` stamps it |
+| The backend image | the distribution version being built | every image build; `distribution/backend/Dockerfile` stamps it |
+
+The image stamp is what keeps a release image from shipping a `-SNAPSHOT` omod, which
+IMPLEMENTATION.md §6/§11 forbids — and it makes the omod traceable to the distribution
+release that carries it. `build-distribution.sh` refuses a SNAPSHOT or `latest` `--version`,
+so a release build always has a concrete one to stamp with. A bare `docker build` with no
+`--build-arg` keeps the pom's own version, which is right for a local experiment.
+
+Publishing goes to <https://repsy.io/intellisoftdev/liberiaemr> (Maven endpoint
+`https://repo.repsy.io/mvn/intellisoftdev/liberiaemr`). It needs `REPSY_USERNAME` and
+`REPSY_PASSWORD` in the `repsy-publish` GitHub environment. Publishing is deliberately kept
+out of `ci.yml`: that workflow carries the required **CI gate** status check, and a publish
+that fails on a credential or a registry outage must never be able to block a PR merge.
+
+**After a release, bump the pom to the next `-SNAPSHOT`.** The publish job refuses to deploy
+a non-SNAPSHOT version from `main`, precisely so a released version cannot be silently
+re-deployed over.
 
 ## How it reaches production
 

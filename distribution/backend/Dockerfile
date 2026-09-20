@@ -94,12 +94,35 @@ RUN set -eu; \
 # running container, which §8 forbids, since a mutable checkout never reaches production.
 FROM maven:3.9-eclipse-temurin-17 AS module
 
+# The module's own pom carries 1.0.0-SNAPSHOT: that is its DEVELOPMENT stream, which
+# .github/workflows/modules.yml re-deploys to Repsy on every merge to main. An image must
+# never ship a SNAPSHOT omod (IMPLEMENTATION.md section 6/11), so the version is stamped to
+# the distribution version this image IS, and the module is then traceable to the release
+# that carries it.
+#
+# scripts/build/build-distribution.sh refuses a SNAPSHOT or `latest` --version, so for any
+# release build this is a concrete version. A bare `docker build` with no --build-arg falls
+# back to the pom's own version, which is the right behaviour for a local experiment.
+ARG LIBERIAEMR_VERSION=
+
 WORKDIR /build
 COPY modules/liberiaemr /build/liberiaemr
 # Tests run in CI's own backend-module job; repeating them here would add minutes to every
 # image build for a signal the pipeline already has.
-RUN mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package \
-    && ls /build/liberiaemr/omod/target/*.omod
+RUN set -eu; \
+    if [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "stamping the module as ${LIBERIAEMR_VERSION}"; \
+      mvn -B -q -f /build/liberiaemr/pom.xml \
+        org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+        -DnewVersion="${LIBERIAEMR_VERSION}" -DgenerateBackupPoms=false; \
+    fi; \
+    mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package; \
+    ls /build/liberiaemr/omod/target/*.omod; \
+    # A SNAPSHOT reaching the runtime stage means the stamp silently did not apply.
+    if ls /build/liberiaemr/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
+       && [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "FAIL: module still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
+    fi
 
 # ---------------------------------------------------------------------------
 # Stage 3 — runtime

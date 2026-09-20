@@ -10,7 +10,7 @@
 
 	<groupId>org.openmrs.module</groupId>
 	<artifactId>liberiaemr</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>LiberiaEMR</name>
 	<description>Custom OpenMRS module for LiberiaEMR handling unique requirements such as password reset via email, SMS-based MFA provisions, custom webservices, and event listeners.</description>
