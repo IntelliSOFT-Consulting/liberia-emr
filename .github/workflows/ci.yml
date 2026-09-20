@@ -67,8 +67,12 @@ jobs:
   # The path list is an ALLOW list and deliberately over-broad: content, the
   # whole distribution tree (Dockerfiles, compose, distro.properties), the
   # build scripts that fetch and sanitise the OCL exports, the QA script
-  # itself, the reactor pom, and this workflow. Anything that could plausibly
-  # change what Initializer loads, or how it is loaded, keeps the gate.
+  # itself, the reactor pom, and this workflow. modules/ is in the list too:
+  # the backend image builds the in-tree OMOD into itself, and that module
+  # carries a liquibase changeset and its own global properties, so a change
+  # there changes what a clean database ends up holding.
+  # Anything that could plausibly change what Initializer loads, or how it is
+  # loaded, keeps the gate.
   #
   # Every uncertain case FAILS OPEN — no base commit, an unknown SHA, a
   # branch's first push, workflow_dispatch — because a metadata gate that
@@ -114,7 +118,7 @@ jobs:
           echo "Changed files since ${BASE_SHA}:"
           sed 's/^/  /' <<<"$files"
 
-          if grep -qE '^(content-packages/|distribution/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "metadata=true" >> "$GITHUB_OUTPUT"
             echo "-> metadata could have changed; the clean-database gate will run."
           else
@@ -422,6 +426,10 @@ jobs:
   # from scratch, inside its own build stage; it now just unpacks the zips this script already
   # built on the host moments earlier (see distribution/backend/Dockerfile), so this is down
   # to two Maven builds per pipeline run, not three.
+  #
+  # The backend image also builds the in-tree liberiaemr OMOD in a stage of its own. The
+  # backend-module job below has already built and TESTED that module; the image stage skips
+  # tests, so it is a compile, not a second test run.
   docker-build:
     name: Build Docker Images
     runs-on: ubuntu-latest
@@ -790,6 +798,21 @@ jobs:
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
 
+  backend-module:
+    name: Build LiberiaEMR Module
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build and Package
+        working-directory: modules/liberiaemr
+        run: mvn -B clean package
+
   # ---------------------------------------------------------------------
   # Soft gate — the single required status check for branch protection.
   #
@@ -835,6 +858,7 @@ jobs:
       - sync-hardening
       - e2e
       - frontend
+      - backend-module
     steps:
       - name: Require all jobs to have succeeded
         env:

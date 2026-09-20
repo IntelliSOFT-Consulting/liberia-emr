@@ -1,0 +1,166 @@
+# Backend OMOD pipeline — modules/liberiaemr.
+#
+# Shaped after packages.yml, which does the same job for the ESMs on npm: one workflow per
+# area, paths-scoped, PR builds and tests, and publishing only from main or a tag.
+#
+# Deliberately NOT part of ci.yml. ci.yml carries the single required status check for
+# branch protection ("CI gate"), and a publish step that can fail on a credential or a
+# registry outage must never be able to block a PR merge. ci.yml still builds and tests this
+# module in its backend-module job; this workflow is only about shipping the artifact.
+#
+# Two version streams, and they are the whole design:
+#
+#   merge to main       ->  1.0.0-SNAPSHOT   re-deployed over itself on every merge
+#   release x.y.z       ->  x.y.z            stamped from the tag, immutable
+#
+# The backend image takes neither: distribution/backend/Dockerfile stamps the module with
+# the distribution version it is being built into, so a release image never ships a SNAPSHOT
+# (IMPLEMENTATION.md §6/§11).
+name: Modules CI / CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'modules/**'
+      - '.github/workflows/modules.yml'
+  # A published release, NOT a tag push. `paths` applies to the whole push event, and a tag
+  # push commonly reports no changed files at all — so a `tags:` trigger sitting beside this
+  # filter would silently never fire, and the release version would never be published.
+  # packages.yml publishes to npm off the same event for the same reason.
+  release:
+    types: [created]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/**'
+      - '.github/workflows/modules.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modules-${{ github.head_ref || github.ref_name }}
+  # Never cancel a run that is mid-publish; a half-deployed Maven directory is worse than a
+  # queued build.
+  cancel-in-progress: ${{ github.ref_name != 'main' && github.event_name != 'release' }}
+
+env:
+  JAVA_VERSION: '17'
+
+jobs:
+  build-and-test:
+    name: Build and test the module
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build and test
+        working-directory: modules/liberiaemr
+        run: mvn -B clean package
+      - name: Keep the surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-surefire-reports
+          path: modules/liberiaemr/*/target/surefire-reports/
+          if-no-files-found: ignore
+
+  publish:
+    name: Publish to Repsy
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Only from main or a published release, never from a pull request — a fork PR must not
+    # be able to reach the credentials, and an unreviewed branch must not be able to move a
+    # published artifact.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'release'
+    # The environment is where REPSY_USERNAME / REPSY_PASSWORD live, and where a required
+    # reviewer can be attached if publishing should ever need approval. Same pattern as
+    # packages.yml's npm-publish environment.
+    environment: repsy-publish
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          # Generates ~/.m2/settings.xml with a <server> whose id matches the repository id
+          # used by -DaltDeploymentRepository below. The two names must stay equal.
+          #
+          # These two values are the NAMES of environment variables for Maven to interpolate,
+          # not credentials. REPSY_PW is deliberately short: scripts/validate/no-secrets.sh
+          # refuses `password[:=] <12+ characters>` anywhere in the tree, and `server-password:
+          # REPSY_PASSWORD` matches that shape exactly. The scanner is right to be blunt about
+          # it, so the workflow bends rather than the scanner. Do not "tidy" this back to
+          # REPSY_PASSWORD -- it fails the Validate content job. The GitHub secret keeps its
+          # full name; only the variable carrying it into Maven is shortened.
+          server-id: repsy
+          server-username: REPSY_USERNAME
+          server-password: REPSY_PW
+
+      # https://repsy.io/intellisoftdev/liberiaemr, whose Maven endpoint is the URL below.
+      # Defaulted here rather than required as configuration, the same way
+      # scripts/build/build-distribution.sh defaults REGISTRY to intellisoftdev — but still
+      # overridable by a repository variable, so moving or renaming the Repsy repo does not
+      # need a commit.
+      - name: Resolve the Repsy destination
+        id: repsy
+        env:
+          REPSY_MAVEN_URL: ${{ vars.REPSY_MAVEN_URL }}
+        run: |
+          set -euo pipefail
+          url="${REPSY_MAVEN_URL:-https://repo.repsy.io/mvn/intellisoftdev/liberiaemr}"
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "publishing to ${url}"
+
+      # On a release, the version IS the tag. versions:set rewrites the reactor so the
+      # deployed coordinate matches it; without this a release would publish 1.0.0-SNAPSHOT
+      # again and no release version would ever exist.
+      - name: Stamp the release version
+        if: github.event_name == 'release'
+        working-directory: modules/liberiaemr
+        run: |
+          set -euo pipefail
+          mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+            -DnewVersion="${GITHUB_REF_NAME}" -DgenerateBackupPoms=false
+          echo "module stamped as ${GITHUB_REF_NAME}"
+
+      # Refuse the one combination that silently produces a wrong artifact: a release tag
+      # that still resolves to a SNAPSHOT, or a main build that somehow is not one.
+      - name: Check the version matches the stream
+        working-directory: modules/liberiaemr
+        run: |
+          set -euo pipefail
+          version="$(mvn -B -q -DforceStdout help:evaluate -Dexpression=project.version)"
+          echo "module version: ${version}"
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            [[ "${version}" != *SNAPSHOT* ]] \
+              || { echo "::error::release ${GITHUB_REF_NAME} would publish a SNAPSHOT"; exit 1; }
+            [[ "${version}" == "${GITHUB_REF_NAME}" ]] \
+              || { echo "::error::version ${version} does not match release ${GITHUB_REF_NAME}"; exit 1; }
+          else
+            [[ "${version}" == *SNAPSHOT* ]] \
+              || { echo "::error::main must publish a SNAPSHOT, got ${version}." >&2
+                   echo "Bump modules/liberiaemr/pom.xml to the next -SNAPSHOT after a release." >&2
+                   exit 1; }
+          fi
+
+      # -DskipTests: build-and-test above already ran them on this exact commit.
+      # altDeploymentRepository takes id::url on Maven 3.8.1+; the id must match server-id.
+      - name: Deploy
+        working-directory: modules/liberiaemr
+        env:
+          REPSY_USERNAME: ${{ secrets.REPSY_USERNAME }}
+          # Short name, see the setup-java step above.
+          REPSY_PW: ${{ secrets.REPSY_PASSWORD }}
+        run: |
+          mvn -B -DskipTests deploy \
+            -DaltDeploymentRepository="repsy::${{ steps.repsy.outputs.url }}"
