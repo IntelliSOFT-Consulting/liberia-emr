@@ -107,6 +107,22 @@ Publishing goes to <https://repsy.io/intellisoftdev/liberiaemr> (Maven endpoint
 out of `ci.yml`: that workflow carries the required **CI gate** status check, and a publish
 that fails on a credential or a registry outage must never be able to block a PR merge.
 
+Each publish uploads the module under `org.openmrs.module:liberiaemr-omod` **twice**, as a
+`.jar` and as a `.omod`. They are the same archive; which one a consumer wants depends on how
+it pins:
+
+| Pinned as | Resolves | Example |
+|---|---|---|
+| `omod.liberiaemr=<version>` | the `.jar`, which the OpenMRS SDK renames to `.omod` | the ecosystem default — what most of `distro.properties` uses |
+| `omod.liberiaemr.type=omod` | the `.omod` directly | the `serialization.xstream` pin in `distro.properties` |
+
+Only the `.jar` is a normal Maven artifact. `maven-openmrs-plugin` writes the `.omod` as a
+side file in `target/` and never attaches it, so `deploy` would ship the jar alone;
+`omod/pom.xml` attaches it explicitly with `build-helper-maven-plugin`. Nothing else in the
+build depends on that attachment, so a reordered plugin or a changed `finalName` would
+quietly go back to publishing one artifact — hence the `Check the .omod was published` step
+in `modules.yml`, which fails the publish if no `.omod` was uploaded.
+
 **After a release, bump the pom to the next `-SNAPSHOT`.** The publish job refuses to deploy
 a non-SNAPSHOT version from `main`, precisely so a released version cannot be silently
 re-deployed over.
