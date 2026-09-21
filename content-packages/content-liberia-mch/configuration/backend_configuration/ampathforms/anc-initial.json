@@ -31,6 +31,42 @@
             {
               "type": "obs",
               "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.parity.uuid}",
+                "min": 0,
+                "step": 1,
+                "disallowDecimals": true,
+                "calculate": {
+                  "calculateExpression": "gravida === 1 ? 0 : myValue"
+                }
+              },
+              "id": "parity",
+              "label": "Parity",
+              "required": true,
+              "disabled": {
+                "disableWhenExpression": "gravida === 1"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue < 0",
+                  "message": "Parity cannot be less than 0."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(gravida) && myValue > gravida - 1",
+                  "message": "Parity cannot be greater than Gravida minus 1. Gravida includes the current pregnancy, which has not yet been delivered. Please review Parity and Gravida."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && myValue !== fullTermBirths + pretermBirths",
+                  "message": "Parity must equal Full-term births plus Preterm births. Please review Parity, Full-term births and Preterm births."
+                }
+              ]
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
                 "rendering": "date",
                 "concept": "${var.concept.ciel.lmp.uuid}"
               },
@@ -127,6 +163,16 @@
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && myValue > 0 && fullTermBirths + pretermBirths === 0",
                   "message": "Living children cannot be recorded without a previous pregnancy resulting in a birth. Please review the obstetric history."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(parity) && myValue > parity",
+                  "message": "Living children cannot be greater than Parity. Please review Living children and Parity."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && isEmpty(parity) && !isEmpty(fullTermBirths) && !isEmpty(pretermBirths) && myValue > fullTermBirths + pretermBirths",
+                  "message": "Living children cannot be greater than Full-term births plus Preterm births. Please review Living children, Full-term births and Preterm births."
                 }
               ]
             }
@@ -768,7 +814,7 @@
     }
   ],
   "uuid": "${var.form.anc-initial.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "encounter": "ANC Initial Visit",
