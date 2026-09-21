@@ -9,6 +9,17 @@
           "isExpanded": true,
           "questions": [
             {
+              "id": "encounterDate",
+              "label": "Encounter Date",
+              "type": "encounterDatetime",
+              "questionOptions": {
+                "rendering": "date"
+              },
+              "hide": {
+                "hideWhenExpression": "true"
+              }
+            },
+            {
               "type": "obs",
               "questionOptions": {
                 "rendering": "number",
@@ -738,6 +749,28 @@
               },
               "id": "treatmentRemarks",
               "label": "Treatment remarks"
+            },
+            {
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "date",
+                "concept": "${var.concept.ciel.return-visit-date.uuid}"
+              },
+              "id": "returnDate",
+              "label": "Return date",
+              "required": true,
+              "datePickerFormat": "calendar",
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": true
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(encounterDate) && isDateBefore(myValue, formatDate(encounterDate, 'YYYY-MM-DD'))",
+                  "message": "Return date cannot be before the current visit date."
+                }
+              ]
             }
           ]
         },
@@ -768,7 +801,7 @@
     }
   ],
   "uuid": "${var.form.anc-initial.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "encounter": "ANC Initial Visit",
