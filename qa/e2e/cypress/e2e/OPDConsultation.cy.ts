@@ -33,4 +33,8 @@ describe('OPD Consultation form', () => {
     it('shows validation errors for invalid vitals', () => {
         opdConsultationForm.verifyVitalsValidationErrors();
     });
+
+    it('toggles general examination clinical findings from Yes and No answers', () => {
+        opdConsultationForm.verifyGeneralExaminationRadioGroups();
+    });
 });

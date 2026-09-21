@@ -12,6 +12,16 @@ class OpdConsultationFormPage {
         { id: 'height', min: '10', max: '272', step: '0.1', value: '170' }
     ];
 
+    private readonly generalExaminationGroups = [
+        { id: 'jaundice', findingsId: 'jaundiceClinicalFindings' },
+        { id: 'pallor', findingsId: 'pallorClinicalFindings' },
+        { id: 'cyanosis', findingsId: 'cyanosisClinicalFindings' },
+        { id: 'lymphadenopathy', findingsId: 'lymphadenopathyClinicalFindings' },
+        { id: 'dehydration', findingsId: 'dehydrationClinicalFindings' },
+        { id: 'fingerClubbing', findingsId: 'fingerClubbingClinicalFindings' },
+        { id: 'edema', findingsId: 'edemaClinicalFindings' }
+    ];
+
     waitForChartToLoad() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
@@ -170,6 +180,45 @@ class OpdConsultationFormPage {
         })
             .scrollIntoView()
             .should('be.visible');
+    }
+
+    verifyGeneralExaminationRadioGroups() {
+        cy.contains('p', 'General examination', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+
+        this.generalExaminationGroups.forEach(({ id, findingsId }) => {
+            cy.get(`#${id}-Yes`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('exist');
+            cy.get(`#${id}-No`, { timeout: this.timeout }).should('exist');
+
+            cy.get(`#${id}-Yes`, { timeout: this.timeout })
+                .check({ force: true })
+            cy.get(`#${id}-Yes`, { timeout: this.timeout }).should('be.checked');
+
+            cy.get(`#${findingsId}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('be.visible')
+                .clear()
+                .type('Automated clinical findings');
+
+            cy.get(`#${id}-No`, { timeout: this.timeout })
+                .scrollIntoView()
+                .check({ force: true });
+            cy.get(`#${id}-No`, { timeout: this.timeout }).should('be.checked');
+
+            cy.get('body').then(($body) => {
+                const $findingsField = $body.find(`#${findingsId}`);
+
+                if ($findingsField.length) {
+                    cy.wrap($findingsField, { log: false }).should('not.be.visible');
+                    return;
+                }
+
+                expect($findingsField, `${findingsId} hidden after No`).to.have.length(0);
+            });
+        });
     }
 }
 
