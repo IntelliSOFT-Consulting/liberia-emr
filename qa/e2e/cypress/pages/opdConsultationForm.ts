@@ -31,6 +31,51 @@ class OpdConsultationFormPage {
         { id: 'msk_status', findingsId: 'musculoskeletalFindings' }
     ];
 
+    private assertFieldHidden(fieldId: string) {
+        cy.get('body').then(($body) => {
+            const $field = $body.find(`#${fieldId}`);
+
+            if ($field.length) {
+                cy.wrap($field, { log: false }).should('not.be.visible');
+                return;
+            }
+
+            expect($field, `${fieldId} hidden`).to.have.length(0);
+        });
+    }
+
+    private selectDropdownOption(fieldId: string, option: string) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                cy.get('button[role="combobox"]', { timeout: this.timeout }).click();
+            });
+
+        cy.contains('[role="option"], .cds--list-box__menu-item', option, { timeout: this.timeout })
+            .scrollIntoView()
+            .click({ force: true });
+
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+    }
+
+    private enterDate(fieldId: string, date: Date) {
+        const dateParts: Record<string, string> = {
+            day: String(date.getDate()).padStart(2, '0'),
+            month: String(date.getMonth() + 1).padStart(2, '0'),
+            year: String(date.getFullYear())
+        };
+
+        cy.get(`#${fieldId}`, { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                Object.entries(dateParts).forEach(([type, value]) => {
+                    cy.get(`[data-type="${type}"]`, { timeout: this.timeout })
+                        .click()
+                        .type(value);
+                });
+            });
+    }
+
     waitForChartToLoad() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
@@ -266,6 +311,53 @@ class OpdConsultationFormPage {
                 expect($findingsField, `${findingsId} hidden after Normal`).to.have.length(0);
             });
         });
+    }
+
+    verifyFollowupConditionalDate() {
+        this.assertFieldHidden('followupDate');
+
+        cy.get('#followupRequired-Yes', { timeout: this.timeout })
+            .scrollIntoView()
+            .check({ force: true });
+        cy.get('#followupRequired-Yes', { timeout: this.timeout }).should('be.checked');
+
+        cy.get('#followupDate', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        this.enterDate('followupDate', tomorrow);
+
+        cy.get('#followupDate input[type="text"][hidden]', { timeout: this.timeout })
+            .should('have.value', tomorrow.toISOString().slice(0, 10));
+    }
+
+    verifyOutcomeDispositionReferralFields() {
+        this.selectDropdownOption('outcomeDisposition', 'Discharged');
+        this.assertFieldHidden('referralDestination');
+        this.assertFieldHidden('referralReason');
+
+        this.selectDropdownOption('outcomeDisposition', 'Admitted');
+        this.assertFieldHidden('referralDestination');
+        this.assertFieldHidden('referralReason');
+
+        this.selectDropdownOption('outcomeDisposition', 'Referred');
+        cy.get('#referralDestination', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+        cy.get('#referralReason', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+
+        cy.get('#presentingComplaint', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated OPD consultation');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.contains('Please enter the Referral Destination', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
     }
 }
 

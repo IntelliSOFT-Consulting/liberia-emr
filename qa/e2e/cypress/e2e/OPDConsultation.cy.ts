@@ -41,4 +41,12 @@ describe('OPD Consultation form', () => {
     it('toggles systemic examination findings from abnormal and normal answers', () => {
         opdConsultationForm.verifySystemicExaminationRadioGroups();
     });
+
+    it('shows follow-up date only when follow-up is required', () => {
+        opdConsultationForm.verifyFollowupConditionalDate();
+    });
+
+    it('shows referral fields only for referred disposition and validates destination', () => {
+        opdConsultationForm.verifyOutcomeDispositionReferralFields();
+    });
 });
