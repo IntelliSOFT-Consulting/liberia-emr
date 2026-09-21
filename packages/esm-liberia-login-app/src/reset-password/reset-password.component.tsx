@@ -14,10 +14,41 @@ const ResetPassword = () => {
   const location = useLocation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [token, setToken] = useState<string | null>(null);
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
+
+  const passwordSchema = z.string()
+    .min(13, { message: t('passwordTooShort', 'Password must be at least 13 characters long.') })
+    .regex(/[A-Z]/, { message: t('passwordRequiresUpper', 'Password must contain at least one uppercase letter.') })
+    .regex(/[a-z]/, { message: t('passwordRequiresLower', 'Password must contain at least one lowercase letter.') })
+    .regex(/[0-9]/, { message: t('passwordRequiresDigit', 'Password must contain at least one number.') });
+
+  useEffect(() => {
+    if (password) {
+      const validationResult = passwordSchema.safeParse(password);
+      if (!validationResult.success) {
+        setPasswordError(validationResult.error.errors[0].message);
+      } else {
+        setPasswordError('');
+      }
+    } else {
+      setPasswordError('');
+    }
+
+    if (confirmPassword) {
+      if (password !== confirmPassword) {
+        setConfirmPasswordError(t('passwordsDoNotMatch', 'Passwords do not match.'));
+      } else {
+        setConfirmPasswordError('');
+      }
+    } else {
+      setConfirmPasswordError('');
+    }
+  }, [password, confirmPassword, t]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -34,20 +65,12 @@ const ResetPassword = () => {
     evt.preventDefault();
     setErrorMessage('');
     
-    if (password !== confirmPassword) {
-      setErrorMessage(t('passwordsDoNotMatch', 'Passwords do not match.'));
+    if (passwordError || confirmPasswordError) {
       return;
     }
     
-    const passwordSchema = z.string()
-      .min(13, { message: t('passwordTooShort', 'Password must be at least 13 characters long.') })
-      .regex(/[A-Z]/, { message: t('passwordRequiresUpper', 'Password must contain at least one uppercase letter.') })
-      .regex(/[a-z]/, { message: t('passwordRequiresLower', 'Password must contain at least one lowercase letter.') })
-      .regex(/[0-9]/, { message: t('passwordRequiresDigit', 'Password must contain at least one number.') });
-
     const validationResult = passwordSchema.safeParse(password);
-    if (!validationResult.success) {
-      setErrorMessage(validationResult.error.errors[0].message);
+    if (!validationResult.success || password !== confirmPassword) {
       return;
     }
 
@@ -160,6 +183,8 @@ const ResetPassword = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               showPasswordLabel={t('showPassword', 'Show password')}
+              invalid={!!passwordError}
+              invalidText={passwordError}
               required
             />
           </div>
@@ -172,6 +197,8 @@ const ResetPassword = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               showPasswordLabel={t('showPassword', 'Show password')}
+              invalid={!!confirmPasswordError}
+              invalidText={confirmPasswordError}
               required
             />
           </div>
@@ -179,7 +206,7 @@ const ResetPassword = () => {
           <Button
             type="submit"
             className={styles.continueButton}
-            disabled={isSubmitting || !password || !confirmPassword || !token}
+            disabled={isSubmitting || !password || !confirmPassword || !!passwordError || !!confirmPasswordError || !token}
             style={{ width: '100%', marginBottom: '1rem' }}
           >
             {isSubmitting ? t('saving', 'Saving...') : t('resetPassword', 'Reset password')}
