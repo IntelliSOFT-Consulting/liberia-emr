@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button, TextInput, Tile, InlineNotification } from '@carbon/react';
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { z } from 'zod';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
 import styles from '../login/login.scss';
@@ -16,9 +17,17 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
+    
+    const emailSchema = z.string().email({ message: t('invalidEmail', 'Please enter a valid email address.') });
+    const validationResult = emailSchema.safeParse(email);
+    if (!validationResult.success) {
+      setErrorMessage(validationResult.error.errors[0].message);
+      return;
+    }
+
+    setIsSubmitting(true);
     
     try {
       const response = await openmrsFetch('/ws/liberiaemr/passwordReset/request', {

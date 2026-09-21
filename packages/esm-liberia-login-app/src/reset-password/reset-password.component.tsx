@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button, PasswordInput, Tile, InlineNotification } from '@carbon/react';
 import { openmrsFetch } from '@openmrs/esm-framework';
+import { z } from 'zod';
 import Logo from '../logo.component';
 import Footer from '../footer.component';
 import styles from '../login/login.scss';
@@ -38,8 +39,15 @@ const ResetPassword = () => {
       return;
     }
     
-    if (password.length < 13) {
-      setErrorMessage(t('passwordTooShort', 'Password must be at least 13 characters long.'));
+    const passwordSchema = z.string()
+      .min(13, { message: t('passwordTooShort', 'Password must be at least 13 characters long.') })
+      .regex(/[A-Z]/, { message: t('passwordRequiresUpper', 'Password must contain at least one uppercase letter.') })
+      .regex(/[a-z]/, { message: t('passwordRequiresLower', 'Password must contain at least one lowercase letter.') })
+      .regex(/[0-9]/, { message: t('passwordRequiresDigit', 'Password must contain at least one number.') });
+
+    const validationResult = passwordSchema.safeParse(password);
+    if (!validationResult.success) {
+      setErrorMessage(validationResult.error.errors[0].message);
       return;
     }
 
