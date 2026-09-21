@@ -51,6 +51,27 @@ class OpdConsultationFormPage {
                 .should('exist');
         });
     }
+
+    verifyRequiredFieldValidation() {
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+
+        cy.get('[data-testid="presentingComplaint-label"]', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible')
+            .closest('.cds--form-item')
+            .within(() => {
+                cy.contains('Field is mandatory', { timeout: this.timeout }).should('be.visible');
+            });
+
+        cy.get('#presentingComplaint', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated OPD consultation');
+
+        cy.get('[data-testid="presentingComplaint-label"]', { timeout: this.timeout })
+            .closest('.cds--form-item')
+            .should('not.contain', 'Field is mandatory');
+    }
 }
 
 export default OpdConsultationFormPage;
