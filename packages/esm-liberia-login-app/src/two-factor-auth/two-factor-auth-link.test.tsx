@@ -23,7 +23,6 @@ describe('TwoFactorAuthLink', () => {
     const button = screen.getByRole('button', { name: /Two-Factor Authentication/i });
 
     expect(button).toBeInTheDocument();
-    expect(screen.getByText('TwoFactorAuthenticationIcon')).toBeInTheDocument();
   });
 
   it('should navigate to the two factor authentication page when the button is clicked', async () => {

@@ -23,10 +23,16 @@ export default defineConfig({
     mockReset: true,
     globals: true,
     setupFiles: ['./setup-tests.ts'],
+    server: {
+      deps: {
+        inline: [/@openmrs\//, /workbox-window/],
+      },
+    },
     alias: {
       '@openmrs/esm-framework/src/internal': '@openmrs/esm-framework/mock',
       '@openmrs/esm-framework': '@openmrs/esm-framework/mock',
-      '@openmrs/esm-styleguide/src/internal': path.resolve(__dirname, '../../framework/esm-styleguide/src/internal.ts'),
+      '@openmrs/esm-styleguide/src/internal': path.resolve(__dirname, 'node_modules/@openmrs/esm-styleguide/src/internal.ts'),
+      'workbox-window': path.resolve(__dirname, '__mocks__/workbox-window.ts'),
     },
   },
 });

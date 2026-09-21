@@ -4,6 +4,24 @@ import { vi, describe, beforeEach, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { showSnackbar, refetchCurrentUser, OpenmrsFetchError } from '@openmrs/esm-framework';
+
+vi.mock('@openmrs/esm-framework', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  
+  class MockOpenmrsFetchError extends Error {
+    responseBody: any;
+    constructor(url: string, response: Response, responseBody: any, error: Error) {
+      super();
+      this.name = 'OpenmrsFetchError';
+      this.responseBody = responseBody;
+    }
+  }
+
+  return {
+    ...actual,
+    OpenmrsFetchError: MockOpenmrsFetchError,
+  };
+});
 import { initiateTotpEnrollment, verifyTotpEnrollment } from './two-factor-auth.resource';
 import TotpEnrollment from './totp-enrollment.modal';
 
