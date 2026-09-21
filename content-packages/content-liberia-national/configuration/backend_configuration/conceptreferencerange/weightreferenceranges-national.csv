@@ -1,0 +1,2 @@
+Uuid,Concept Numeric uuid,Label,Absolute low,Critical low,Normal low,Normal high,Critical high,Absolute high,Criteria
+${var.conceptreferencerange.weight.weight-kg.uuid},${var.concept.ciel.weight-kg.uuid},Weight (kg),0,,,,,300,true

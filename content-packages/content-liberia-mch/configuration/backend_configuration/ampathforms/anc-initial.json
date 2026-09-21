@@ -470,7 +470,7 @@
                 "rendering": "number",
                 "concept": "${var.concept.ciel.weight-kg.uuid}",
                 "min": "20",
-                "max": "250"
+                "max": "300"
               },
               "id": "weight",
               "label": "Weight",
