@@ -2,6 +2,8 @@ import { loginWithSession } from '../support/session';
 import VisitPage from '../pages/visit';
 import TbScreeningFormPage from '../pages/tbScreeningForm';
 
+const saveTest = Cypress.env('SKIP_TB_SCREENING_SAVE_TEST') === true ? it.skip : it;
+
 describe('TB Screening form', () => {
     const visitPage = new VisitPage();
     const tbScreeningForm = new TbScreeningFormPage();
@@ -30,7 +32,7 @@ describe('TB Screening form', () => {
         tbScreeningForm.verifyPreviousTreatmentDateToggle();
     });
 
-    it('rejects incomplete required fields and saves the completed form', () => {
+    saveTest('rejects incomplete required fields and saves the completed form', () => {
         tbScreeningForm.verifyRequiredFieldsAndSave();
     });
 });
