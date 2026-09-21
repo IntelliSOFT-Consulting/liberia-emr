@@ -39,8 +39,7 @@ public class LiberiaEMRFormsController {
     @RequestMapping(value = "/forms", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getForms(
-            @RequestParam("patientUuid") String patientUuid,
-            @RequestParam(value = "visitUuid", required = false) String visitUuid) {
+            @RequestParam("patientUuid") String patientUuid) {
 
         if (StringUtils.isBlank(patientUuid)) {
             Map<String, Object> error = new HashMap<>();
@@ -55,11 +54,6 @@ public class LiberiaEMRFormsController {
             return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
         }
 
-        Visit visit = null;
-        if (StringUtils.isNotBlank(visitUuid)) {
-            visit = Context.getVisitService().getVisitByUuid(visitUuid);
-        }
-
         List<Form> allForms = Context.getFormService().getAllForms(false);
         List<Map<String, Object>> results = new ArrayList<>();
 
@@ -71,7 +65,7 @@ public class LiberiaEMRFormsController {
                 boolean shouldShow = true;
                 if (formVisibilityRules != null) {
                     for (FormVisibilityRule rule : formVisibilityRules) {
-                        if (!rule.shouldShowForm(form, patient, visit)) {
+                        if (!rule.shouldShowForm(form, patient)) {
                             shouldShow = false;
                             break;
                         }

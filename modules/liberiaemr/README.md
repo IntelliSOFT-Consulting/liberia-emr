@@ -15,7 +15,6 @@ The module introduces a generic rules-based architecture for conditionally displ
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `patientUuid` | String | Yes | The UUID of the patient to evaluate form visibility against. |
-| `visitUuid` | String | No | The UUID of the active visit context (if applicable). |
 
 #### Rules Framework
 The endpoint fetches all published forms and evaluates them against an extensible list of `FormVisibilityRule` components. For example, the `FormsGenderRule` checks the patient's registered sex/gender and completely hides all female-only forms (such as ANC, PNC, and Labor & Delivery forms) if the patient is male.

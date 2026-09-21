@@ -44,7 +44,7 @@ public class FormsGenderRule implements FormVisibilityRule {
     );
 
     @Override
-    public boolean shouldShowForm(Form form, Patient patient, Visit visit) {
+    public boolean shouldShowForm(Form form, Patient patient) {
         if (patient != null && patient.getGender() != null) {
             String formUuid = form.getUuid();
             if (formUuid != null) {

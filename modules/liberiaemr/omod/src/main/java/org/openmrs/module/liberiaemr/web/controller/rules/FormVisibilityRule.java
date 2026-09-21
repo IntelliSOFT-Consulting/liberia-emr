@@ -16,12 +16,11 @@ import org.openmrs.Visit;
 public interface FormVisibilityRule {
 	
 	/**
-	 * Evaluates whether a given form should be visible for the patient during the given visit.
+	 * Evaluates whether a given form should be visible for the patient.
 	 * 
 	 * @param form the form to evaluate
 	 * @param patient the patient
-	 * @param visit the visit context (can be null if not in an active visit)
 	 * @return true if the form should be displayed, false if it should be hidden
 	 */
-	boolean shouldShowForm(Form form, Patient patient, Visit visit);
+	boolean shouldShowForm(Form form, Patient patient);
 }

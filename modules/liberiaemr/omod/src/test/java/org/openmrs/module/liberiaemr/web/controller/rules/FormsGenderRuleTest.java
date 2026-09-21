@@ -29,7 +29,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
         
-        boolean result = rule.shouldShowForm(form, null, null);
+        boolean result = rule.shouldShowForm(form, null);
         Assert.assertTrue("Should show form if patient is null", result);
     }
     
@@ -41,7 +41,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid(null);
         
-        boolean result = rule.shouldShowForm(form, malePatient, null);
+        boolean result = rule.shouldShowForm(form, malePatient);
         Assert.assertTrue("Should show form if form UUID is null", result);
     }
 
@@ -53,7 +53,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
 
-        boolean result = rule.shouldShowForm(form, malePatient, null);
+        boolean result = rule.shouldShowForm(form, malePatient);
         Assert.assertFalse("Should hide female-only form for male patient", result);
     }
     
@@ -65,7 +65,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid("some-other-uuid");
 
-        boolean result = rule.shouldShowForm(form, malePatient, null);
+        boolean result = rule.shouldShowForm(form, malePatient);
         Assert.assertTrue("Should show non-female-only form for male patient", result);
     }
 
@@ -77,7 +77,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
 
-        boolean result = rule.shouldShowForm(form, femalePatient, null);
+        boolean result = rule.shouldShowForm(form, femalePatient);
         Assert.assertTrue("Should show female-only form for female patient", result);
     }
     
@@ -89,7 +89,7 @@ public class FormsGenderRuleTest {
         Form form = new Form();
         form.setUuid("some-other-uuid");
 
-        boolean result = rule.shouldShowForm(form, femalePatient, null);
+        boolean result = rule.shouldShowForm(form, femalePatient);
         Assert.assertTrue("Should show non-female-only form for female patient", result);
     }
 }
