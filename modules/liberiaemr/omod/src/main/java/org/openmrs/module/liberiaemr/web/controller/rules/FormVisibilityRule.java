@@ -1,0 +1,27 @@
+/**
+ * This Source Code Form is subject to the terms of the Mozilla Public License,
+ * v. 2.0. If a copy of the MPL was not distributed with this file, You can
+ * obtain one at http://mozilla.org/MPL/2.0/. OpenMRS is also distributed under
+ * the terms of the Healthcare Disclaimer located at http://openmrs.org/license.
+ *
+ * Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
+ * graphic logo is a trademark of OpenMRS Inc.
+ */
+package org.openmrs.module.liberiaemr.web.controller.rules;
+
+import org.openmrs.Form;
+import org.openmrs.Patient;
+import org.openmrs.Visit;
+
+public interface FormVisibilityRule {
+	
+	/**
+	 * Evaluates whether a given form should be visible for the patient during the given visit.
+	 * 
+	 * @param form the form to evaluate
+	 * @param patient the patient
+	 * @param visit the visit context (can be null if not in an active visit)
+	 * @return true if the form should be displayed, false if it should be hidden
+	 */
+	boolean shouldShowForm(Form form, Patient patient, Visit visit);
+}
