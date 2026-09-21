@@ -821,6 +821,13 @@ jobs:
       - name: Verify e-partograph
         working-directory: packages/esm-liberia-epartograph-app
         run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
+      - name: Verify sync status page
+        working-directory: packages/esm-liberia-sync-status-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn typescript
+          yarn test
+          yarn build
 
   backend-module:
     name: Build LiberiaEMR Module

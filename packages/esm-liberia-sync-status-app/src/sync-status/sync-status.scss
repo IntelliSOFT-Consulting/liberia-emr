@@ -1,0 +1,39 @@
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.container {
+  margin: spacing.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-04');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.explainer {
+  @include type.type-style('body-01');
+  margin-bottom: spacing.$spacing-05;
+}
+
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-05;
+  margin-bottom: spacing.$spacing-06;
+}
+
+.tile {
+  min-width: 10rem;
+}
+
+.tileValue {
+  @include type.type-style('heading-04');
+}
+
+.tileLabel {
+  @include type.type-style('label-01');
+}
+
+.notice {
+  margin-bottom: spacing.$spacing-05;
+}
