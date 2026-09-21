@@ -24,13 +24,6 @@ const ResetPassword = () => {
     
     if (urlToken) {
       setToken(urlToken);
-      // For demonstration: If the token is exactly 'expired', we mock an invalid state
-      if (urlToken === 'expired') {
-        setIsTokenInvalid(true);
-      } else {
-        // Placeholder for API pre-validation check
-        // e.g., openmrsFetch(`/ws/rest/v1/liberiaemr/password-reset/validate?token=${urlToken}`)
-      }
     } else {
       setIsTokenInvalid(true);
     }
