@@ -330,7 +330,12 @@ class OpdConsultationFormPage {
         this.enterDate('followupDate', tomorrow);
 
         cy.get('#followupDate input[type="text"][hidden]', { timeout: this.timeout })
-            .should('have.value', tomorrow.toISOString().slice(0, 10));
+            .should(
+                'have.value',
+                `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(
+                    tomorrow.getDate()
+                ).padStart(2, '0')}`
+            );
     }
 
     verifyOutcomeDispositionReferralFields() {

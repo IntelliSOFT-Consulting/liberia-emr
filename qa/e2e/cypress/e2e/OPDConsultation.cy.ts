@@ -1,6 +1,7 @@
 import { loginWithSession } from '../support/session';
 import VisitPage from '../pages/visit';
 import OpdConsultationFormPage from '../pages/opdConsultationForm';
+import { randomAdultBirthdateParts } from '../support/faker';
 
 describe('OPD Consultation form', () => {
     const visitPage = new VisitPage();
@@ -8,7 +9,7 @@ describe('OPD Consultation form', () => {
 
     beforeEach(() => {
         loginWithSession();
-        visitPage.registerPatient();
+        visitPage.registerPatient({ birthdate: randomAdultBirthdateParts(16) });
         visitPage.startVisit();
         opdConsultationForm.openClinicalForms();
         opdConsultationForm.selectForm();
