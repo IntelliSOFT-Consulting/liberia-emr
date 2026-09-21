@@ -102,6 +102,30 @@ class OpdConsultationFormPage {
                 .should('have.value', value);
         });
     }
+
+    verifyBmiCalculation() {
+        cy.get('#bmi', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible')
+            .and('be.disabled');
+
+        cy.get('#weight', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('70')
+            .should('have.value', '70');
+
+        cy.get('#height', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('170')
+            .should('have.value', '170');
+
+        cy.get('#bmi', { timeout: this.timeout }).should(($bmi) => {
+            const bmiValue = Number.parseFloat($bmi.val() as string);
+            expect(bmiValue).to.be.closeTo(24.2, 0.1);
+        });
+    }
 }
 
 export default OpdConsultationFormPage;

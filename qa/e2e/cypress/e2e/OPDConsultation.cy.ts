@@ -25,4 +25,8 @@ describe('OPD Consultation form', () => {
     it('validates the vitals input contract', () => {
         opdConsultationForm.verifyVitalsInputContract();
     });
+
+    it('calculates BMI from weight and height for adult patients', () => {
+        opdConsultationForm.verifyBmiCalculation();
+    });
 });
