@@ -6,14 +6,6 @@ describe('TB Screening form', () => {
     const visitPage = new VisitPage();
     const tbScreeningForm = new TbScreeningFormPage();
 
-    const openFormForNewPatient = () => {
-        visitPage.registerPatient();
-        visitPage.startVisit();
-
-        tbScreeningForm.openClinicalForms();
-        tbScreeningForm.selectForm('TB Screening');
-    };
-
     beforeEach(() => {
         loginWithSession();
         visitPage.registerPatient();
@@ -40,9 +32,5 @@ describe('TB Screening form', () => {
 
     it('rejects incomplete required fields and saves the completed form', () => {
         tbScreeningForm.verifyRequiredFieldsAndSave();
-    });
-});
-
-        tbScreeningForm.submitForm();
     });
 });
