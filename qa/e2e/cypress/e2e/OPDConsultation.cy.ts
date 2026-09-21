@@ -37,4 +37,8 @@ describe('OPD Consultation form', () => {
     it('toggles general examination clinical findings from Yes and No answers', () => {
         opdConsultationForm.verifyGeneralExaminationRadioGroups();
     });
+
+    it('toggles systemic examination findings from abnormal and normal answers', () => {
+        opdConsultationForm.verifySystemicExaminationRadioGroups();
+    });
 });

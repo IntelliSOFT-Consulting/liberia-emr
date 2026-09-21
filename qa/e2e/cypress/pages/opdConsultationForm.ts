@@ -22,6 +22,15 @@ class OpdConsultationFormPage {
         { id: 'edema', findingsId: 'edemaClinicalFindings' }
     ];
 
+    private readonly systemicExaminationGroups = [
+        { id: 'heent_status', findingsId: 'heentFindings' },
+        { id: 'cvs_status', findingsId: 'cvsFindings' },
+        { id: 'resp_status', findingsId: 'respiratoryFindings' },
+        { id: 'gi_status', findingsId: 'giFindings' },
+        { id: 'cns_status', findingsId: 'cnsFindings' },
+        { id: 'msk_status', findingsId: 'musculoskeletalFindings' }
+    ];
+
     waitForChartToLoad() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
@@ -194,7 +203,7 @@ class OpdConsultationFormPage {
             cy.get(`#${id}-No`, { timeout: this.timeout }).should('exist');
 
             cy.get(`#${id}-Yes`, { timeout: this.timeout })
-                .check({ force: true })
+                .check({ force: true });
             cy.get(`#${id}-Yes`, { timeout: this.timeout }).should('be.checked');
 
             cy.get(`#${findingsId}`, { timeout: this.timeout })
@@ -217,6 +226,44 @@ class OpdConsultationFormPage {
                 }
 
                 expect($findingsField, `${findingsId} hidden after No`).to.have.length(0);
+            });
+        });
+    }
+
+    verifySystemicExaminationRadioGroups() {
+        cy.contains('p', 'Systemic Examination', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+
+        this.systemicExaminationGroups.forEach(({ id, findingsId }) => {
+            cy.get(`#${id}-Normal`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('exist');
+            cy.get(`#${id}-Abnormal`, { timeout: this.timeout }).should('exist');
+
+            cy.get(`#${id}-Abnormal`, { timeout: this.timeout }).check({ force: true });
+            cy.get(`#${id}-Abnormal`, { timeout: this.timeout }).should('be.checked');
+
+            cy.get(`#${findingsId}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('be.visible')
+                .clear()
+                .type('Automated systemic findings');
+
+            cy.get(`#${id}-Normal`, { timeout: this.timeout })
+                .scrollIntoView()
+                .check({ force: true });
+            cy.get(`#${id}-Normal`, { timeout: this.timeout }).should('be.checked');
+
+            cy.get('body').then(($body) => {
+                const $findingsField = $body.find(`#${findingsId}`);
+
+                if ($findingsField.length) {
+                    cy.wrap($findingsField, { log: false }).should('not.be.visible');
+                    return;
+                }
+
+                expect($findingsField, `${findingsId} hidden after Normal`).to.have.length(0);
             });
         });
     }
