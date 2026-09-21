@@ -62,7 +62,7 @@
                   }
                 },
                 {
-                  "label": "Date TB treatment was started for the person screened, if applicable",
+                  "label": "Date TB treatment was started for the person screened",
                   "id": "date_tb_treatment_was_started",
                   "type": "obs",
                   "required": {
