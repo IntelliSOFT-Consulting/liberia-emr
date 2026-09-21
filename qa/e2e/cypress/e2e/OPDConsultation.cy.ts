@@ -49,4 +49,8 @@ describe('OPD Consultation form', () => {
     it('shows referral fields only for referred disposition and validates destination', () => {
         opdConsultationForm.verifyOutcomeDispositionReferralFields();
     });
+
+    it('saves a complete valid consultation form', () => {
+        opdConsultationForm.fillCompleteValidFormAndSave();
+    });
 });

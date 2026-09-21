@@ -359,6 +359,70 @@ class OpdConsultationFormPage {
             .scrollIntoView()
             .should('be.visible');
     }
+
+    fillCompleteValidFormAndSave() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveOpdConsultation');
+
+        this.selectDropdownOption('patientCategory', 'First Visit');
+
+        cy.get('#presentingComplaint', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated OPD consultation');
+        cy.get('#hpc', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Symptoms started today');
+        cy.get('#pmh', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('No significant history');
+
+        this.vitalFields.forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .clear()
+                .type(value)
+                .should('have.value', value);
+        });
+
+        cy.get('#general_exam', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('General exam normal');
+
+        this.generalExaminationGroups.forEach(({ id }) => {
+            cy.get(`#${id}-No`, { timeout: this.timeout })
+                .scrollIntoView()
+                .check({ force: true });
+            cy.get(`#${id}-No`, { timeout: this.timeout }).should('be.checked');
+        });
+
+        this.systemicExaminationGroups.forEach(({ id }) => {
+            cy.get(`#${id}-Normal`, { timeout: this.timeout })
+                .scrollIntoView()
+                .check({ force: true });
+            cy.get(`#${id}-Normal`, { timeout: this.timeout }).should('be.checked');
+        });
+
+        cy.get('#nonPharmAdvice', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Hydration and rest advised');
+        cy.get('#followupRequired-No', { timeout: this.timeout })
+            .scrollIntoView()
+            .check({ force: true });
+        cy.get('#followupRequired-No', { timeout: this.timeout }).should('be.checked');
+        this.selectDropdownOption('outcomeDisposition', 'Discharged');
+
+        cy.contains('button', 'Save', { timeout: this.timeout })
+            .scrollIntoView()
+            .click();
+
+        cy.wait('@saveOpdConsultation', { timeout: this.timeout }).then(({ response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+        });
+    }
 }
 
 export default OpdConsultationFormPage;
