@@ -11,7 +11,7 @@ central side as `liberia-emr-sync-receiver`, both built in
 [`distribution/sync/`](../../../distribution/sync/) from the pinned dbsync tag. The
 sender sits in the facility compose behind `--profile sync`; the Artemis broker and the
 receiver are ordinary services in the central compose. Outstanding builds against this
-contract: reconciliation and the initial load. This directory remains the contract that
+contract: reconciliation. This directory remains the contract that
 deployment and configuration must satisfy.
 
 The design these routes implement (change capture, transport, wire format, retry and

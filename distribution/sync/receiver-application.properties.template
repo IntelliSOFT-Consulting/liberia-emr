@@ -6,9 +6,13 @@
 eip.home=/opt/eip
 spring.jpa.open-in-view=false
 
-# Empty on purpose: the entity set is decided at the sender (sync-entity-coverage.md);
-# excluding here silently drops data the facility believes it delivered.
-db-sync.excludedEntities=
+# Records every install creates with the same uuid, which central holds without a sync hash:
+# the admin user, its person and name (OpenMRS core), the Unknown provider (core) and the admin
+# provider (content-liberia-national liquibase/admin-provider.xml). dbsync refuses such a
+# record from a facility and retries it forever, so they are skipped; the daemon user already
+# is. Table names are dbsync's own (users, not user). Anything else excluded here would be
+# dropped silently, so the entity set is decided at the sender (sync-entity-coverage.md).
+db-sync.excludedEntities=users:82f18b44-6814-11e8-923f-e9a88dcb533f,person:5f87c042-6814-11e8-923f-e9a88dcb533f,person_name:5f897a68-6814-11e8-923f-e9a88dcb533f,provider:f9badd80-ab76-11e2-9e96-0800200c9a66,provider:55bc2590-ceb2-4832-8148-d163fbdebee3
 
 inbound.retry.interval=1800000
 inbound.retry.initial.delay=120000

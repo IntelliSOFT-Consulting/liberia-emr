@@ -18,6 +18,7 @@
 #   PGP_USER_ID              DBSYNC_SENDER_ID@sync.liberiaemr
 #   PGP_RECEIVER_USER_ID     sync-receiver@sync.liberiaemr
 #   COMPLEX_OBS_DIR          /opt/eip/complex-obs
+#   SYNC_SNAPSHOT_MODE       initial (send existing records on first start) or schema_only
 #   LOG_LEVEL                INFO
 #   JAVA_OPTS                JVM flags, e.g. -Xmx1g
 set -eu
@@ -49,6 +50,11 @@ OWN_ENDPOINT="activemq:topic:sync.facility.$DBSYNC_SENDER_ID"
 : "${PGP_RECEIVER_USER_ID:=sync-receiver@sync.liberiaemr}"
 : "${COMPLEX_OBS_DIR:=/opt/eip/complex-obs}"
 : "${LOG_LEVEL:=INFO}"
+: "${SYNC_SNAPSHOT_MODE:=initial}"
+case "$SYNC_SNAPSHOT_MODE" in
+  initial|schema_only) ;;
+  *) sync_refuse "SYNC_SNAPSHOT_MODE must be initial or schema_only, got '$SYNC_SNAPSHOT_MODE'" ;;
+esac
 
 TLS_ARGS=""
 case "$SYNC_OUTPUT_ENDPOINT" in
@@ -73,7 +79,7 @@ case "$SYNC_OUTPUT_ENDPOINT" in
 esac
 sync_pgp
 export SYNC_OUTPUT_ENDPOINT SYNC_PAYLOAD_ENCRYPTION PGP_USER_ID PGP_RECEIVER_USER_ID \
-       COMPLEX_OBS_DIR LOG_LEVEL ARTEMIS_URL
+       COMPLEX_OBS_DIR LOG_LEVEL ARTEMIS_URL SYNC_SNAPSHOT_MODE
 
 mkdir -p /opt/eip/.debezium "$COMPLEX_OBS_DIR"
 
@@ -85,7 +91,7 @@ ${OPENMRS_DB_USER} ${OPENMRS_DB_PASSWORD} ${MGMT_DB_NAME} ${MGMT_DB_USER}
 ${MGMT_DB_PASSWORD} ${DEBEZIUM_SERVER_ID} ${DEBEZIUM_DB_USER} ${DEBEZIUM_DB_PASSWORD}
 ${ARTEMIS_URL} ${OPENMRS_BASE_URL} ${OPENMRS_REST_USER} ${OPENMRS_REST_PASSWORD}
 ${SYNC_OUTPUT_ENDPOINT} ${SYNC_PAYLOAD_ENCRYPTION} ${PGP_USER_ID} ${PGP_RECEIVER_USER_ID}
-${PGP_PASSWORD} ${COMPLEX_OBS_DIR} ${LOG_LEVEL}'
+${PGP_PASSWORD} ${COMPLEX_OBS_DIR} ${LOG_LEVEL} ${SYNC_SNAPSHOT_MODE}'
 umask 077
 PGP_PASSWORD="$PGP_PASSWORD" envsubst "$vars" \
   < /app/application.properties.template > /app/config/application.properties

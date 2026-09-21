@@ -48,6 +48,21 @@ groups:
           summary: "Sync messages are in the broker's dead-letter queue"
           description: "The receiver failed on these 10 times. They are not in the national record; inspect DLQ with the admin certificate (distribution/broker/README.md)."
 
+      # A clinic closed for a long weekend is quiet for about two and a half days, so three
+      # days of nothing is the first point at which silence says more than the calendar. The
+      # offset term leaves out a facility enrolled less than three days ago.
+      - alert: SyncFacilitySilent
+        expr: >-
+          label_replace(increase(artemis_routed_message_count{address=~"sync\\.facility\\..+"}[3d]),
+            "facility", "$1", "address", "sync\\.facility\\.(.+)") == 0
+          and on(address) present_over_time(artemis_routed_message_count[1h] offset 3d)
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Facility {{ $labels.facility }} has sent nothing to central for three days"
+          description: "Either nothing was recorded there, or its sync is stopped, cut off or refused at the broker. Ask the facility; its own SyncSenderDown alert names the cause when its monitoring is reachable."
+
       - alert: SyncBrokerDown
         expr: up{job="broker"} == 0
         for: 5m

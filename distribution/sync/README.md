@@ -80,7 +80,10 @@ The receiver is configured, within what dbsync offers, to:
 - never reply to a message (`disableReplyTo`), since `JMSReplyTo` is set by the sender;
 - log its retry route and complex obs processor at WARN, because at INFO they write clinical
   payloads. dbsync still quotes part of a payload in a JSON mapping error, and at DEBUG it logs
-  every payload, so central never runs with `SYNC_LOG_LEVEL=DEBUG` outside a test stack.
+  every payload, so central never runs with `SYNC_LOG_LEVEL=DEBUG` outside a test stack;
+- skip the records every install creates with the same uuids (the admin account, its person and
+  name, the Unknown and admin providers), which dbsync would otherwise refuse and retry forever
+  (docs/runbooks/sync-operations.md section 12).
 
 One consequence of the JVM-wide truststore: it replaces Java's default CA list inside the
 sync containers. That is fine while `OPENMRS_BASE_URL` is the internal http address; an
@@ -89,10 +92,10 @@ https address signed by a public CA would stop verifying.
 ## Durable state
 
 `/opt/eip` must be a named volume on both sides. For the sender it is the Debezium
-offset and schema history (losing it means re-snapshotting); for the receiver,
-complex-obs staging. The queues live in each side's management schema, and the broker
-journal holds in-flight messages; all of these are enumerated copies of clinical data
-at rest (sync-eip.md section 7.4).
+offset and schema history (losing it makes the sender send every record again on its next
+start); for the receiver, complex-obs staging. The queues live in each side's management
+schema, and the broker journal holds in-flight messages; all of these are enumerated copies
+of clinical data at rest (sync-eip.md section 7.4).
 
 ## Verifying (QA)
 
@@ -102,6 +105,9 @@ at rest (sync-eip.md section 7.4).
   their visit, ANC encounter with an observation, programme enrolment, test order and drug
   order, each appears at central with the same UUID and content, and the sender watches
   exactly the tables the template declares. Acceptance criterion 1 of LE-35.
+- `qa/sync/verify-initial-load.sh`: a facility's first load. Starts the sender with no saved
+  position and checks every record in a synced table reaches central, the database stays
+  unlocked, shared install records are skipped, and a restart does not send everything again.
 - `qa/sync/outage-drill.sh`: acceptance criterion 2. Cuts the broker link, registers a
   counted batch through the outage including container restarts, restores the link, and
   asserts every record lands at central exactly once with empty retry queues. Also

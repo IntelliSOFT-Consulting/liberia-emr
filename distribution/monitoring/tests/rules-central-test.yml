@@ -156,3 +156,55 @@ tests:
             exp_annotations:
               summary: "The revocation list in place does not verify against the CA"
               description: "The broker keeps the list it loaded and will not load this one. Replace crl.pem with one issued by the CA in public/certs/ca.pem."
+
+  - name: a facility silent for three days is flagged; a busy facility and the topic are not
+    interval: 10m
+    input_series:
+      - series: 'artemis_routed_message_count{address="sync.facility.careysburg",broker="liberiaemr-sync"}'
+        values: '42x600'
+      - series: 'artemis_routed_message_count{address="sync.facility.barnersville",broker="liberiaemr-sync"}'
+        values: '0+3x600'
+      - series: 'artemis_routed_message_count{address="openmrs.sync.topic",broker="liberiaemr-sync"}'
+        values: '7x600'
+    alert_rule_test:
+      - eval_time: 4d
+        alertname: SyncFacilitySilent
+        exp_alerts:
+          - exp_labels: {severity: warning, address: sync.facility.careysburg, broker: liberiaemr-sync, facility: careysburg}
+            exp_annotations:
+              summary: "Facility careysburg has sent nothing to central for three days"
+              description: "Either nothing was recorded there, or its sync is stopped, cut off or refused at the broker. Ask the facility; its own SyncSenderDown alert names the cause when its monitoring is reachable."
+
+  - name: a facility that went quiet a day in is flagged only once three days have passed
+    interval: 10m
+    input_series:
+      - series: 'artemis_routed_message_count{address="sync.facility.careysburg",broker="liberiaemr-sync"}'
+        values: '0+1x144 144x600'
+    alert_rule_test:
+      - eval_time: 3d2h
+        alertname: SyncFacilitySilent
+        exp_alerts: []
+      - eval_time: 4d2h
+        alertname: SyncFacilitySilent
+        exp_alerts:
+          - exp_labels: {severity: warning, address: sync.facility.careysburg, broker: liberiaemr-sync, facility: careysburg}
+            exp_annotations:
+              summary: "Facility careysburg has sent nothing to central for three days"
+              description: "Either nothing was recorded there, or its sync is stopped, cut off or refused at the broker. Ask the facility; its own SyncSenderDown alert names the cause when its monitoring is reachable."
+
+  - name: a newly enrolled facility is not flagged until it has been enrolled for three days
+    interval: 10m
+    input_series:
+      - series: 'artemis_routed_message_count{address="sync.facility.bong",broker="liberiaemr-sync"}'
+        values: '0x600'
+    alert_rule_test:
+      - eval_time: 2d
+        alertname: SyncFacilitySilent
+        exp_alerts: []
+      - eval_time: 3d2h
+        alertname: SyncFacilitySilent
+        exp_alerts:
+          - exp_labels: {severity: warning, address: sync.facility.bong, broker: liberiaemr-sync, facility: bong}
+            exp_annotations:
+              summary: "Facility bong has sent nothing to central for three days"
+              description: "Either nothing was recorded there, or its sync is stopped, cut off or refused at the broker. Ask the facility; its own SyncSenderDown alert names the cause when its monitoring is reachable."
