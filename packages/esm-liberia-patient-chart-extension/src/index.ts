@@ -7,10 +7,15 @@
  * config — the package itself contains no programme-specific defaults.
  *
  * First consumer: TB Screening (content-liberia-national).
+ * Also hosts globally loaded form-engine expression helpers (current-pregnancy
+ * ANC numeric lookup for L&D Gravida/Parity prefill).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import { currentPregnancyAncConfigSchema } from './forms/current-pregnancy-anc-config-schema';
+import { getCurrentPregnancyAncNumeric } from './forms/current-pregnancy-anc-obstetric-history';
+import { registerFormEngineExpressionHelper } from './forms/register-form-engine-helpers';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -23,6 +28,8 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
+  defineConfigSchema(moduleName, currentPregnancyAncConfigSchema);
+  registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
 }
 
 /**

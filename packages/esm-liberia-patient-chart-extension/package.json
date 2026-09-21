@@ -14,8 +14,8 @@
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "eslint src --ext ts,tsx",
     "typescript": "tsc",
-    "test": "echo 'No tests specified'",
-    "verify": "turbo lint typescript",
+    "test": "node --experimental-strip-types --experimental-default-type=module --test src/forms/current-pregnancy-anc-obstetric-history.test.ts",
+    "verify": "turbo lint typescript test",
     "extract-translations": "i18next 'src/**/*.component.tsx'"
   },
   "browserslist": [

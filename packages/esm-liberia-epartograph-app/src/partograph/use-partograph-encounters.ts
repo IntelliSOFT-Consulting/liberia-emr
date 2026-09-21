@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import { getGlobalStore, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { usePatientChartStore, type PatientChartStore } from '@openmrs/esm-patient-common-lib';
 import type { EPartographConfig } from '../config-schema';
+import { isDeliveryEncounter } from '../forms/labour-episode';
 
 /** Shape of a single obs from the REST custom representation. */
 export interface ObsRep {
@@ -196,26 +197,7 @@ export function usePartographEncounters(patientUuid: string | null): UsePartogra
   // 2. Identify all Delivery encounters (Stage 3 / Delivery Summary) sorted chronologically
   const deliveryEncounters = useMemo(() => {
     return rawEncounters
-      .filter((enc) => {
-        // Check Delivery encounter type via configuration
-        if (
-          config.deliveryEncounterTypeUuid &&
-          enc.encounterType?.uuid === config.deliveryEncounterTypeUuid
-        ) {
-          return true;
-        }
-
-        // Check configured Third Stage form UUID
-        if (config.thirdStageFormUuid && enc.form?.uuid === config.thirdStageFormUuid) {
-          return true;
-        }
-
-        // Check form name for Stage 3 or Delivery Summary (anchored to avoid matching Stage 1 / Stage 2)
-        const formName = enc.form?.name || enc.form?.display || '';
-        if (/^3\.|third stage|delivery summary/i.test(formName)) return true;
-
-        return false;
-      })
+      .filter((enc) => isDeliveryEncounter(enc, config))
       .sort((a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime());
   }, [rawEncounters, config]);
 

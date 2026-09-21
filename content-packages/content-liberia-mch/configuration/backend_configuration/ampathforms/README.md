@@ -60,7 +60,8 @@ derived from namespace + name + version:
 **Same name + same version** derives the same UUID. The existing Form is found by
 that UUID and the existing Form/FormResource is updated in place. That path is
 appropriate only for **non-semantic corrections** (validators, min/max bounds,
-whole-number enforcement, validation messages) that keep the same concepts, question
+whole-number enforcement, validation messages, **same-concept default/prefill
+behaviour that does not change stored meaning**) that keep the same concepts, question
 meaning, encounter semantics, and workflow, and where retaining the same form
 identity/version is intentional.
 
