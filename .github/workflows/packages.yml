@@ -54,7 +54,7 @@ jobs:
               echo "== Building $pkg_name =="
               (
                 cd "$pkg_dir"
-                yarn install --frozen-lockfile
+                yarn install --no-frozen-lockfile
                 yarn typescript
                 yarn build
               )
@@ -125,7 +125,7 @@ jobs:
                 exit 0
               fi
 
-              yarn install --frozen-lockfile
+              yarn install --no-frozen-lockfile
               yarn typescript
               yarn build
 
@@ -204,7 +204,7 @@ jobs:
                 exit 0
               fi
 
-              yarn install --frozen-lockfile
+              yarn install --no-frozen-lockfile
               yarn typescript
               yarn build
 
