@@ -5,6 +5,21 @@ This module provides backend APIs and services to support custom functionality f
 
 ## Key Features
 
+### Conditional Forms Visibility
+The module introduces a generic rules-based architecture for conditionally displaying or hiding forms in the OpenMRS 3 frontend dashboard. It acts as the backend for the O3 `customFormsUrl` configuration property.
+
+#### API Endpoint
+**GET** `/ws/rest/v1/liberiaemr/forms`
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `patientUuid` | String | Yes | The UUID of the patient to evaluate form visibility against. |
+| `visitUuid` | String | No | The UUID of the active visit context (if applicable). |
+
+#### Rules Framework
+The endpoint fetches all published forms and evaluates them against an extensible list of `FormVisibilityRule` components. For example, the `FormsGenderRule` checks the patient's registered sex/gender and completely hides all female-only forms (such as ANC, PNC, and Labor & Delivery forms) if the patient is male.
+
 ### Password Reset Flow
 The module introduces a secure, automated password reset flow for users. It integrates with an external SMTP server (e.g., Gmail) to send time-limited password reset tokens to registered users.
 
