@@ -29,4 +29,8 @@ describe('OPD Consultation form', () => {
     it('calculates BMI from weight and height for adult patients', () => {
         opdConsultationForm.verifyBmiCalculation();
     });
+
+    it('shows validation errors for invalid vitals', () => {
+        opdConsultationForm.verifyVitalsValidationErrors();
+    });
 });

@@ -126,6 +126,51 @@ class OpdConsultationFormPage {
             expect(bmiValue).to.be.closeTo(24.2, 0.1);
         });
     }
+
+    verifyVitalsValidationErrors() {
+        cy.get('#presentingComplaint', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated OPD consultation');
+
+        cy.get('#temperature', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('44')
+            .should('have.value', '44');
+
+        cy.get('#spo2', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('101')
+            .should('have.value', '101');
+
+        cy.get('#systolic', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('120')
+            .should('have.value', '120');
+
+        cy.get('#diastolic', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('120')
+            .should('have.value', '120');
+
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+
+        cy.contains('Value must be lower than 43', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+        cy.contains('Value must be lower than 100', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+        cy.contains('Diastolic pressure cannot be greater than or equal to systolic pressure', {
+            timeout: this.timeout
+        })
+            .scrollIntoView()
+            .should('be.visible');
+    }
 }
 
 export default OpdConsultationFormPage;
