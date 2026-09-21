@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<module configVersion="1.2">
+	
+	<!-- Base Module Properties -->
+	<id>${project.parent.artifactId}</id>
+	<name>${project.parent.name}</name>
+	<version>${project.parent.version}</version>
+	<package>org.openmrs.module.liberiaemr</package>
+	<author>mutajonathan</author>
+	<description>
+			${project.parent.description}
+	</description>
+
+	<activator>org.openmrs.module.liberiaemr.LiberiaEMRActivator</activator>
+	
+	<!-- /Base Module Properties -->
+	
+	<require_version>2.6.9</require_version>
+
+	<!-- Required Modules -->
+	<!--
+		The MINIMUM webservices.rest, kept equal to webservicesRestVersion in the parent pom —
+		the version this module is COMPILED against. distro.properties pins what the
+		distribution runs (3.5.0), which clears this floor.
+	-->
+	<require_modules>
+		<require_module version="3.0.0">
+			org.openmrs.module.webservices.rest
+		</require_module>
+	</require_modules>
+	
+	<aware_of_modules>
+		<aware_of_module>org.openmrs.module.legacyui</aware_of_module>
+	</aware_of_modules>
+
+	<!-- Required Global Properties -->
+
+	<!-- Email / SMTP Configuration -->
+	<globalProperty>
+		<property>liberiaemr.email.host</property>
+		<defaultValue>localhost</defaultValue>
+		<description>
+			SMTP server hostname for sending password reset emails.
+			Normally set from LIBERIAEMR_SMTP_HOST in the deployment environment;
+			this property is the fallback for a developer changing it on a live box.
+			Use 'localhost' for a local relay, or an external provider
+			(e.g., smtp.sendgrid.net, email-smtp.us-east-1.amazonaws.com).
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.email.port</property>
+		<defaultValue>25</defaultValue>
+		<description>
+			SMTP server port. Common values: 25 (local), 465 (SSL), 587 (TLS/STARTTLS).
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.email.username</property>
+		<defaultValue></defaultValue>
+		<description>
+			SMTP username. Normally set from LIBERIAEMR_SMTP_USER.
+			Leave empty for local open relays.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.email.password</property>
+		<defaultValue></defaultValue>
+		<description>
+			SMTP password. DEVELOPMENT FALLBACK ONLY, and never seeded from
+			versioned content: in a deployment this comes from
+			LIBERIAEMR_SMTP_PASSWORD_FILE (a path read verbatim) or
+			LIBERIAEMR_SMTP_PASSWORD. Leave empty for local open relays.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.email.from</property>
+		<defaultValue>noreply@liberiaemr.org</defaultValue>
+		<description>
+			The "From" email address used in password reset emails.
+			Normally set from LIBERIAEMR_SMTP_FROM.
+		</description>
+	</globalProperty>
+
+	<!-- Frontend URL -->
+	<globalProperty>
+		<property>liberiaemr.frontend.url</property>
+		<defaultValue>http://localhost:8080/openmrs/spa</defaultValue>
+		<description>
+			Base URL of the frontend SPA used to construct password reset links in emails.
+			Normally set from LIBERIAEMR_FRONTEND_URL. A trailing slash is stripped.
+			Examples: http://localhost:8080/openmrs/spa, https://liberiaemr.org/openmrs/spa
+		</description>
+	</globalProperty>
+
+	<!-- Password Reset Token Expiry -->
+	<globalProperty>
+		<property>liberiaemr.passwordReset.tokenExpiryHours</property>
+		<defaultValue>2</defaultValue>
+		<description>
+			Number of hours a password reset token remains valid before expiring.
+		</description>
+	</globalProperty>
+
+	<!-- Future SMS MFA Provisions (not yet implemented) -->
+	<globalProperty>
+		<property>liberiaemr.sms.provider.url</property>
+		<defaultValue></defaultValue>
+		<description>
+			[Future] Base URL for the SMS gateway API used for MFA OTP delivery.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.sms.provider.apiKey</property>
+		<defaultValue></defaultValue>
+		<description>
+			[Future] API key for the configured SMS gateway provider.
+		</description>
+	</globalProperty>
+
+	<!-- Internationalization -->
+	<!-- All message codes should start with @MODULE_ID@.* -->
+	<messages>
+		<lang>en</lang>
+		<file>messages.properties</file>
+	</messages>
+	<messages>
+		<lang>fr</lang>
+		<file>messages_fr.properties</file>
+	</messages>
+	<messages>
+		<lang>es</lang>
+		<file>messages_es.properties</file>
+	</messages>
+	<!-- /Internationalization -->
+	
+</module>

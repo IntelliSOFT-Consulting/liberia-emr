@@ -122,7 +122,7 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.gravida.uuid}",
                 "rendering": "number",
-                "min": 0,
+                "min": 1,
                 "step": 1,
                 "disallowDecimals": true
               }
@@ -137,7 +137,14 @@
                 "min": 0,
                 "step": 1,
                 "disallowDecimals": true
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isEmpty(gravida) && myValue > gravida",
+                  "message": "Parity cannot be greater than Gravida."
+                }
+              ]
             },
             {
               "label": "Adequate tetanus-diphtheria (TD2+) immunization",

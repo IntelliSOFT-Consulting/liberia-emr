@@ -1,0 +1,109 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.openmrs.module</groupId>
+		<artifactId>liberiaemr</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>liberiaemr-omod</artifactId>
+	<packaging>jar</packaging>
+	<name>LiberiaEMR OMOD</name>
+	<description>Omod submodule for LiberiaEMR</description>
+
+	<dependencies>
+        <dependency>
+            <groupId>org.openmrs.module</groupId>
+            <artifactId>liberiaemr-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+		<dependency>
+			<groupId>org.openmrs.web</groupId>
+			<artifactId>openmrs-web</artifactId>
+            <scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.web</groupId>
+			<artifactId>openmrs-web</artifactId>
+			<scope>provided</scope>
+			<classifier>tests</classifier>
+		</dependency>
+		<!--
+			webservices.rest is compiled against the MINIMUM version this module supports, not
+			against the version the distribution happens to ship. distro.properties pins 3.5.0
+			today; building against that would make 3.5.0 the floor for no reason, and the pin
+			moves on its own schedule.
+
+			3.0.0 is the floor, and config.xml's require_module says the same number — the two
+			were previously both 2.42.0 while the distribution ran 3.x, which is the drift this
+			closes. Keep the two in step: they are one decision written twice.
+
+			Nothing in this module's source imports webservices.rest. The dependency and the
+			require_module entry are here because the password reset controllers sit on the REST
+			module's servlet path; if that stops being true, drop both rather than bump them.
+		-->
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>webservices.rest-omod</artifactId>
+			<version>${webservicesRestVersion}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>webservices.rest-omod-common</artifactId>
+			<version>${webservicesRestVersion}</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
+
+		<plugins>
+			<plugin>
+				<groupId>org.openmrs.maven.plugins</groupId>
+				<artifactId>maven-openmrs-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+			</plugin>
+			<!--
+				maven-openmrs-plugin writes target/${project.build.finalName}.omod as a side
+				file; it never attaches it, so `deploy` would publish only the jar. Most of the
+				OpenMRS ecosystem lives with that — the SDK resolves a module as a jar and
+				renames it — but a consumer that pins omod.liberiaemr.type=omod, the way
+				distro.properties already does for serialization.xstream, needs a real .omod at
+				the coordinate. Attaching it publishes both, so either style of pin resolves.
+
+				Declared after maven-openmrs-plugin on purpose: both bind to `package`, and
+				plugins in one phase run in declaration order, so the file must be created
+				before this reads it.
+			-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>attach-omod</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<file>${project.build.directory}/${project.build.finalName}.omod</file>
+									<type>omod</type>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

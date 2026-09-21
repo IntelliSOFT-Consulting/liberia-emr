@@ -10,6 +10,15 @@ spring.jpa.open-in-view=false
 # decided at the broker, by the client certificate.
 db-sync.senderId=${DBSYNC_SENDER_ID}
 
+# What syncs: the tables openmrs-eip watches on the binlog. Declared here rather than
+# inherited from the jar so the set is explicit, reviewed and the same at every facility
+# (docs/architecture/sync-entity-coverage.md). It is dbsync's bundled default (29 of its 34
+# entities; it never watches concepts, locations or their attributes, which come from the
+# shared image, nor provider attributes) minus DATAFILTER_ENTITY_BASIS_MAP, whose module this
+# distribution does not run. USERS carries references only (uuid, username, system id), never
+# credentials.
+eip.watchedTables=PERSON,PERSON_NAME,PERSON_ADDRESS,PERSON_ATTRIBUTE,PATIENT,PATIENT_IDENTIFIER,RELATIONSHIP,VISIT,VISIT_ATTRIBUTE,ENCOUNTER,ENCOUNTER_PROVIDER,ENCOUNTER_DIAGNOSIS,OBS,CONDITIONS,ALLERGY,DIAGNOSIS_ATTRIBUTE,PATIENT_PROGRAM,PATIENT_STATE,PATIENT_PROGRAM_ATTRIBUTE,ORDERS,DRUG_ORDER,TEST_ORDER,REFERRAL_ORDER,ORDER_GROUP,ORDER_ATTRIBUTE,ORDER_GROUP_ATTRIBUTE,USERS,PROVIDER
+
 db-event.destinations=direct:sender-db-sync
 debezium-event-reader.initial.delay=5000
 debezium-event-reader.repeat.interval=5000

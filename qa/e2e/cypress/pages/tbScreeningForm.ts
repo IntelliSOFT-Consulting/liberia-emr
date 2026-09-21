@@ -1,5 +1,23 @@
 type Answer = 'Yes' | 'No';
 
+type YesNo = 'Yes' | 'No';
+
+// Mirrors tb_screening-national.json: every symptom is a Yes/No coded question,
+// and Total Score is derived from them rather than typed in.
+type TbScreeningFormData = {
+    contactOfTbPatient: YesNo;
+    previouslyTreatedForTb: YesNo;
+    coughing2WeeksOrMore: YesNo;
+    nightSweats: YesNo;
+    weightLoss: YesNo;
+    fever: YesNo;
+    swelling: YesNo;
+    dateScreeningConducted: DateParts;
+    sputumTestResult: string;
+    observation: string;
+    dateTbTreatmentStarted?: DateParts;
+};
+
 class TbScreeningFormPage {
     constructor(private readonly timeout = 20000) {}
 

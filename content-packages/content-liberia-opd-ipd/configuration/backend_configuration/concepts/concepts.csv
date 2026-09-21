@@ -80,3 +80,24 @@ ${var.concept.yellow-priority-signs.uuid},true,Question,Text,Yellow Priority Sig
 ${var.concept.red-emergency-signs.uuid},true,Question,Text,Red Emergency Signs (retired),One or more red (emergency) clinical signs observed at triage. RETIRED — replaced by Coded version below.,
 ${var.concept.yellow-priority-signs-coded.uuid},,Question,Coded,Yellow Priority Signs,One or more yellow (urgent) clinical signs observed at triage.,${var.concept.sign.tiny-baby.uuid};${var.concept.sign.abnormal-temp.uuid};${var.concept.sign.urgent-trauma-surgical.uuid};${var.concept.sign.toxic-ingestion.uuid};${var.concept.sign.severe-pain.uuid};${var.concept.sign.pallor-severe-anaemia.uuid};${var.concept.sign.resp-distress-sao2.uuid};${var.concept.sign.restless-irritable-lethargic.uuid};${var.concept.sign.external-referral.uuid};${var.concept.sign.malnutrition-oedema.uuid};${var.concept.sign.major-burns.uuid};${var.concept.ciel.sexual-abuse.uuid};${var.concept.sign.hematuria-oliguria.uuid};${var.concept.ciel.moderate-dehydration.uuid};${var.concept.sign.nurse-concern.uuid}
 ${var.concept.red-emergency-signs-coded.uuid},,Question,Coded,Red Emergency Signs,One or more red (emergency) clinical signs observed at triage.,${var.concept.sign.apnoea.uuid};${var.concept.ciel.143050.uuid};${var.concept.sign.severe-resp-distress.uuid};${var.concept.sign.circulatory-failure.uuid};${var.concept.sign.shock-dehydration.uuid};${var.concept.ciel.147241.uuid};${var.concept.ciel.148888.uuid};${var.concept.ciel.144576.uuid};${var.concept.ciel.113054.uuid};${var.concept.sign.severe-trauma.uuid};${var.concept.sign.severe-burns.uuid};${var.concept.sign.contagious-disease.uuid}
+${var.concept.opd.heent-status.uuid},,Question,Coded,Head eyes ears nose and throat status,Status of head eyes ears nose and throat exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.cvs-status.uuid},,Question,Coded,Cardiovascular system status,Status of cardiovascular system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.resp-status.uuid},,Question,Coded,Respiratory system status,Status of respiratory system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.gi-status.uuid},,Question,Coded,Gastrointestinal system status,Status of gastrointestinal system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.cns-status.uuid},,Question,Coded,Central nervous system status,Status of central nervous system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.msk-status.uuid},,Question,Coded,Musculoskeletal system status,Status of musculoskeletal system exam,${var.concept.ciel.normal.uuid};${var.concept.ciel.abnormal.uuid}
+${var.concept.opd.heent-construct.uuid},,ConvSet,N/A,Head eyes ears nose and throat construct,Construct for HEENT exam,
+${var.concept.opd.cvs-construct.uuid},,ConvSet,N/A,Cardiovascular system construct,Construct for CVS exam,
+${var.concept.opd.resp-construct.uuid},,ConvSet,N/A,Respiratory system construct,Construct for respiratory exam,
+${var.concept.opd.gi-construct.uuid},,ConvSet,N/A,Gastrointestinal system construct,Construct for GI exam,
+${var.concept.opd.cns-construct.uuid},,ConvSet,N/A,Central nervous system construct,Construct for CNS exam,
+${var.concept.opd.msk-construct.uuid},,ConvSet,N/A,Musculoskeletal system construct,Construct for MSK exam,
+${var.concept.opd.followup-construct.uuid},,ConvSet,N/A,Follow-up construct,Construct for follow up details,
+${var.concept.opd.disposition-construct.uuid},,ConvSet,N/A,Disposition construct,Construct for disposition details,
+${var.concept.opd.jaundice-construct.uuid},,ConvSet,N/A,Jaundice exam construct,Construct grouping the jaundice finding with its clinical findings note,
+${var.concept.opd.pallor-construct.uuid},,ConvSet,N/A,Pallor exam construct,Construct grouping the pallor finding with its clinical findings note,
+${var.concept.opd.cyanosis-construct.uuid},,ConvSet,N/A,Cyanosis exam construct,Construct grouping the cyanosis finding with its clinical findings note,
+${var.concept.opd.lymphadenopathy-construct.uuid},,ConvSet,N/A,Lymphadenopathy exam construct,Construct grouping the lymphadenopathy finding with its clinical findings note,
+${var.concept.opd.dehydration-construct.uuid},,ConvSet,N/A,Dehydration exam construct,Construct grouping the dehydration finding with its clinical findings note,
+${var.concept.opd.finger-clubbing-construct.uuid},,ConvSet,N/A,Finger clubbing exam construct,Construct grouping the finger clubbing finding with its clinical findings note,
+${var.concept.opd.edema-construct.uuid},,ConvSet,N/A,Edema exam construct,Construct grouping the edema finding with its clinical findings note,

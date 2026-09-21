@@ -296,7 +296,7 @@ rehearsal.
 | 2 | Pin dbsync 4.0.0 + eip 4.2.0; build `sync` / `sync-receiver` images | Images exist and are versioned (today they are named but never built |) |
 | 3 | Add Artemis broker + sender management DB to compose | Stack starts; receiver subscribes **before** any sender publishes |: |
 | 4 | mTLS + PGP keys, end to end | Facility authenticates; payloads encrypted at rest in transit | Certificate lifecycle is MOH ICT's: escalate early |
-| 5 | Entity/route reconciliation | Confirmed list of covered vs custom routes | Defer `order-push` if the subclass defect stands |
+| 5 | Entity/route reconciliation | Confirmed list of covered vs custom routes | Done: the set is declared as `eip.watchedTables`, and the subclass defect did not reproduce for test and drug orders on 4.0.0 |
 | 6 | Identity layer (CPI + link + review queue) at central | Duplicates surfaced, never auto-merged | Blocked on ADR 0005 sign-off |
 | 7 | **Offline acceptance test** ([architecture](sync-eip.md) §5.9) | Full drain and zero divergence after a long outage | The guarantee is unproven until this passes |
 | 8 | Cross-facility query (Sprint 4) | Read path over FHIR, scoped per ADR 0007 | Blocked on ADR 0007 sign-off |
@@ -318,7 +318,7 @@ rehearsal.
 | R3 | Broker permissions let one facility read another's data | **Highest** | Send-only per facility, proven by negative test |
 | R4 | **Receiver not subscribed before a sender publishes → messages lost** | High | Durable topic subscription; enforce receiver-first start order |
 | R5 | Platform 2.8.8 schema drift | High | Step 1 schema diff |
-| R6 | `Order` subclass sync defect | High | Reconcile; consider deferring `order-push` |
+| R6 | `Order` subclass sync defect | Closed | Did not reproduce for `TestOrder` and `DrugOrder` on 4.0.0; `qa/sync/verify-e2e-push.sh` checks both on every run. `ReferralOrder` unverified, not used by any form |
 | R7 | Unstaffed conflict / duplicate review queues | High | Named MOH owner with an SLA: ADR 0005 |
 | R8 | Content-package drift between facility and central | Medium | Same image; enforce in upgrade rehearsal |
 | R9 | PGP key management burden falls on nobody | Medium | Assign to MOH ICT with the certificate lifecycle |
