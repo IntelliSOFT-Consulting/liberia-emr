@@ -45,8 +45,8 @@ const ResetPassword = () => {
       return;
     }
     
-    if (password.length < 8) {
-      setErrorMessage(t('passwordTooShort', 'Password must be at least 8 characters long.'));
+    if (password.length < 13) {
+      setErrorMessage(t('passwordTooShort', 'Password must be at least 13 characters long.'));
       return;
     }
 
@@ -62,13 +62,28 @@ const ResetPassword = () => {
       });
       
       if (!response.ok) {
+        let serverMessage = '';
+        try {
+          const errorData = await response.json();
+          serverMessage = errorData?.error?.message || errorData?.message || '';
+        } catch (e) {
+          // Ignore JSON parse error
+        }
+
+        if (serverMessage) {
+          throw new Error(serverMessage);
+        }
         throw new Error(t('resetFailed', 'Invalid or expired token. Please request a new link.'));
       }
       
       navigate('/login/reset-success');
     } catch (err: any) {
-      setIsTokenInvalid(true);
-      setErrorMessage(err.message || 'An error occurred');
+      const msg = err.message || 'An error occurred';
+      setErrorMessage(msg);
+      
+      if (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('expire')) {
+        setIsTokenInvalid(true);
+      }
     } finally {
       setIsSubmitting(false);
     }
