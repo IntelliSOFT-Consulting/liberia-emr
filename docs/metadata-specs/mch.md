@@ -69,14 +69,14 @@ contract. Capture Gravida, LMP, FT, P, A, and LN only.
 | --- | --- | --- | --- |
 | `LBR.EMR.DE.7` Colour | Existing national Color (Coded Normal/Abnormal) | `var.concept.national.color.uuid` | Runtime confirmed |
 
-Distinct from `LBR.EMR.DE.26` Colour (HGT) (`var.concept.national.colour-hgt.uuid`, Text).
+Distinct from `LBR.EMR.DE.25` Colour (HGT) (`var.concept.national.colour-hgt.uuid`, Text).
 Do not substitute Colour (HGT) for physical-exam Colour.
 
 ### ANC prenatal presentation
 
 | DAK element | Implemented | Variable | Status |
 | --- | --- | --- | --- |
-| `LBR.EMR.DE.25` Presentation | Local MCH coded (traced to CIEL 160090) | `var.concept.mch.fetal-presentation.uuid` | Runtime fallback |
+| `LBR.EMR.DE.24` Presentation | Local MCH coded (traced to CIEL 160090) | `var.concept.mch.fetal-presentation.uuid` | Runtime fallback |
 
 Required clinical answers: Vertex, Breech, Transverse, Oblique, Other.
 
@@ -168,7 +168,7 @@ CIEL on 2026-08-18: 160428 is `Long-lasting insecticidal net` (**Misc / N/A**) �
 itself, not a question about whether one was received. Mapping our Yes/No question `Same as
 CIEL:160428` would assert that the question *is* a bednet. It was deliberately **not** added to
 the collection. No `Same as mappings` is owed here; raise the mismapping with whoever maintains
-the DAK sheet, alongside the DE.22 Weight error (`165379` is *total weight gain during current
+the DAK sheet, alongside the DE.21 Weight error (`165379` is *total weight gain during current
 pregnancy*, not body weight). Both are the same class of defect as `LBR.LD.DE.81` and
 `EMR.FP.DE10`.
 
@@ -272,9 +272,9 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 | Physical exam Colour (`DE.7`) | National `Color` + CIEL Normal (1115) / Abnormal (1116) — not Colour (HGT) |
 | Physical exam abnormality descriptions (ANC Initial) | One local MCH Text question per finding (`var.concept.mch.<finding>-abnormality-description.uuid`), placed directly under that finding, shown and required only while it is Abnormal, `maxLength` 2000. No DAK source: the DAK has only the generic `DE.17` Explain abnormalities, which ANC Initial no longer captures. The generic national concept is unchanged and still used by ANC Follow-up. |
 | Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions + CIEL Normal / Abnormal. Abdomen uses the Liberia coded Question, not CIEL 1808 (an Anatomy concept with N/A datatype); its fully specified name is `Abdomen examination`, since CIEL 1808 already holds `Abdomen` in locale `en` and a duplicate fully specified name is rejected. |
-| Colour (HGT) (`DE.26`) | National Text — prenatal/HGT only; do not use for physical-exam Colour |
+| Colour (HGT) (`DE.25`) | National Text — prenatal/HGT only; do not use for physical-exam Colour |
 | SBP / DBP | National Blood Pressure (Systolic / Diastolic), bounded 50–260 and 30–180 |
-| Weight | CIEL 5089 Weight (kg), ANC form `min` **20** / `max` **300** (live dictionary LBR.EMR.DE.22: Value between 20 and 300 kg; endpoints inclusive in the form engine). ConceptNumeric `hi_absolute` stays **250**. Liberia's backend persistence ceiling is the always-matching ConceptReferenceRange on 5089 (`criteria` `true`, absolute 0–300) in `weightreferenceranges-national.csv`; ObsValidator uses that CRR instead of the ConceptNumeric fallback. That 300 ceiling is the shared technical persistence limit, not a requirement that every Weight workflow expose 300. If a second matching Weight CRR is added later, OpenMRS 2.8.8 takes the strictest intersection of bounds. |
+| Weight | CIEL 5089 Weight (kg), ANC Initial form range **20–300** kg. CIEL 5089 `ConceptNumeric.hi_absolute` remains **250**. Liberia adds an always-matching Weight ConceptReferenceRange (`criteria` `true`, absolute 0–300) in `weightreferenceranges-national.csv`; ObsValidator therefore uses the CRR as the effective backend persistence range. Narrower form-level limits in other workflows remain unchanged. |
 | Gestational age / Fundal height / Fetal heart tone | CIEL 1438 / 1439 / 1440. Both ANC forms use these; the national local equivalents are superseded (see *Converged ANC concepts* below) |
 | Other findings / Routine drugs / Treatment remarks | Existing national text (drugs/remarks supplemental only) |
 | Trimester | CIEL 5272 Pregnancy status with the existing national trimester answers |
@@ -300,8 +300,8 @@ Both forms now write the same series for every element where a verified CIEL ter
 | `DE.4` Preterm births | CIEL 160078 | `var.concept.national.preterm-births-p.uuid` |
 | `DE.5` Abortions | CIEL 1823 | `var.concept.national.abortions-a.uuid` |
 | `DE.6` Living children | CIEL 1825 | `var.concept.national.living-children-l-n.uuid` |
-| `DE.23` Gestational age | CIEL 1438 | `var.concept.national.gestational-age-weeks.uuid` |
-| `DE.24` Fundal height | CIEL 1439 | `var.concept.national.fundal-height-cm.uuid` |
+| `DE.22` Gestational age | CIEL 1438 | `var.concept.national.gestational-age-weeks.uuid` |
+| `DE.23` Fundal height | CIEL 1439 | `var.concept.national.fundal-height-cm.uuid` |
 | `DE.26` Fetal heart tone | CIEL 1440 | `var.concept.national.fetal-heart-tone-fht.uuid` |
 | `DE.53` Woman receiving IPT | national coded Yes/No (CIEL 1065/1066) | *(MCH form used a local Boolean)* |
 | `DE.54` LLIN received at ANC | national coded Yes/No (CIEL 1065/1066) | *(MCH form used a local Boolean)* |
@@ -320,8 +320,8 @@ superseded national concepts:
 
 | DAK element | "ANC Form" + "ANC Initial Visit" | **"ANC Follow-up Visit"** |
 | --- | --- | --- |
-| `DE.23` Gestational age | `var.concept.ciel.gestational-age.uuid` | `var.concept.national.gestational-age-weeks.uuid` |
-| `DE.24` Fundal height | `var.concept.ciel.fundal-height.uuid` | `var.concept.national.fundal-height-cm.uuid` |
+| `DE.22` Gestational age | `var.concept.ciel.gestational-age.uuid` | `var.concept.national.gestational-age-weeks.uuid` |
+| `DE.23` Fundal height | `var.concept.ciel.fundal-height.uuid` | `var.concept.national.fundal-height-cm.uuid` |
 | `DE.26` Fetal heart tone | `var.concept.ciel.fetal-heart-rate.uuid` | `var.concept.national.fetal-heart-tone-fht.uuid` |
 
 Consequence: gestational age, fundal height and fetal heart tone **do not currently form a
@@ -344,7 +344,7 @@ semantics under [IMPLEMENTATION.md §9](../../IMPLEMENTATION.md). Tracked as ope
 
 ⚠ **Still divergent — needs a clinical value-set decision, not a code change.**
 
-- `DE.25` **Presentation.** "ANC Form" uses national `Presentation` (Vertex-only); "ANC
+- `DE.24` **Presentation.** "ANC Form" uses national `Presentation` (Vertex-only); "ANC
   Initial Visit" uses the MCH value set (Vertex / Breech / Transverse / Oblique / Other).
   Converging means adding the four missing answers to the *national* question — additive and
   permitted under §9 — but it is a national value-set change that needs clinical sign-off,
@@ -740,7 +740,7 @@ Updated against the DAK read on 2026-08-06 — see
     presentation answers are in the released version, and `fetch-ciel.sh --version 1.0.2`
     produces `lib-mch-ciel-1.0.2.zip` carrying them. The build is reproducible again — it is
     no longer fetching HEAD.
-18. **Decide DE.25 Presentation:** migrate onto CIEL 160090 and lose the Transverse/Oblique
+18. **Decide DE.24 Presentation:** migrate onto CIEL 160090 and lose the Transverse/Oblique
     distinction and "Other", or keep the local value set and carry a `Same as` mapping. See
     *ANC prenatal presentation*. DE.16 Pelvic examination has the same migrate-or-keep
     decision now that 165372 is available.
@@ -764,12 +764,12 @@ Updated against the DAK read on 2026-08-06 — see
     run, then `--apply`, then cut `1.0.3` and bump the pin. Doing `Q-AND-A` first is the smaller,
     higher-value half.
 20. **Two DAK CIEL codes are wrong at source and must not be implemented as mapped:**
-    `LBR.EMR.DE.22` Weight → `165379` is *total weight gain during current pregnancy*, not body
+    `LBR.EMR.DE.21` Weight → `165379` is *total weight gain during current pregnancy*, not body
     weight (correct term is `5089`); `LBR.EMR.DE.54` LLIN received at ANC → `160428` is the
     *bednet commodity* (Misc/N/A), not a question. Raise both with the sheet maintainer with
     items in 10.
 21. **Clinical decision on the two ANC elements the two forms still record differently** —
-    DE.25 Presentation (national is Vertex-only) and DE.48 IPT dose (national `3rd IPT dose+`
+    DE.24 Presentation (national is Vertex-only) and DE.48 IPT dose (national `3rd IPT dose+`
     versus exact 3rd/4th). See *Converged ANC concepts*. Until they land, any indicator on
     those two elements must read both concepts.
 22. **Retirement and migration analysis for the national ANC concepts superseded by the CIEL
@@ -780,7 +780,7 @@ Updated against the DAK read on 2026-08-06 — see
 23. **"ANC Follow-up Visit" is not converged onto the CIEL ANC terms — UNRESOLVED.**
     `anc-followup.json` still writes `national.gestational-age-weeks`,
     `national.fundal-height-cm` and `national.fetal-heart-tone-fht` where "ANC Form" and "ANC
-    Initial Visit" write CIEL 1438 / 1439 / 1440, so DE.23, DE.24 and DE.26 do not form one
+    Initial Visit" write CIEL 1438 / 1439 / 1440, so DE.22, DE.23 and DE.26 do not form one
     concept series across Initial + Follow-up. Danger-sign FHT is unaffected — its flag reads
     both concepts. Deferred deliberately: closing it needs the canonical CIEL mappings for
     Follow-up decided, existing obs under the national concepts assessed, migration/reporting
