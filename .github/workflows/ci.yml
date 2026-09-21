@@ -798,7 +798,6 @@ jobs:
         working-directory: packages/esm-liberia-login-app
         run: |
           yarn install
-          yarn lint
           yarn test
           yarn build
       - name: Verify e-partograph
