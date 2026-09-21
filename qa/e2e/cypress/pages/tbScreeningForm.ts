@@ -1,25 +1,152 @@
-type DateParts = { day: string; month: string; year: string };
-
-type YesNo = 'Yes' | 'No';
-
-type TbScreeningFormData = {
-    contactOfTbPatient: YesNo;
-    previouslyTreatedForTb: YesNo;
-    coughing2WeeksOrMore: YesNo;
-    nightSweats: YesNo;
-    weightLoss: YesNo;
-    fever: YesNo;
-    swelling: YesNo;
-    dateScreeningConducted: DateParts;
-    sputumTestResult: string;
-    dateTbTreatmentStarted?: DateParts;
-    observation?: string;
-};
+type Answer = 'Yes' | 'No';
 
 class TbScreeningFormPage {
     constructor(private readonly timeout = 20000) {}
 
-    // The chart's dashboard slot must render before the forms icon/list can be interacted with reliably
+    private readonly requiredRadioGroupSelector = 'fieldset > legend [title="Required"]';
+
+    private readonly symptomScoreWeights: Record<string, number> = {
+        coughing_2_weeks_or_more: 2,
+        night_sweats: 1,
+        weight_loss: 1,
+        fever: 1,
+        swelling_in_any_part_of_the_body: 1
+    };
+
+    private requiredRadioGroups() {
+        return cy.get(this.requiredRadioGroupSelector, { timeout: this.timeout });
+    }
+
+    private selectAnswer($fieldset: JQuery<HTMLElement>, answer: Answer) {
+        const label = [...$fieldset[0].querySelectorAll('label')]
+            .find((candidate) => candidate.textContent?.trim() === answer);
+
+        expect(label?.control, `${$fieldset.find('legend').first().text().trim()} ${answer} option`).to.exist;
+        cy.wrap(label!.control, { log: false }).check({ force: true });
+    }
+
+    private selectQuestionAnswer(question: string, answer: Answer) {
+        return cy.contains('legend', question, { timeout: this.timeout })
+            .closest('fieldset')
+            .then(($fieldset) => this.selectAnswer($fieldset, answer));
+    }
+
+    verifyFormContract() {
+        this.requiredRadioGroups()
+            .should('have.length.greaterThan', 0)
+            .each(($requiredMarker) => {
+                const $fieldset = $requiredMarker.closest('fieldset');
+                const fieldLabel = $requiredMarker.closest('legend').text().trim();
+
+                cy.wrap($fieldset, { log: false })
+                    .find('input[type="radio"]')
+                    .should('have.length', 2)
+                    .then(($options) => {
+                        const optionLabels = [...$options].map((option) => {
+                            return option.ownerDocument
+                                .querySelector(`label[for="${option.id}"]`)
+                                ?.textContent?.trim();
+                        });
+
+                        expect(optionLabels, `${fieldLabel} options`).to.have.members(['Yes', 'No']);
+                    });
+            });
+
+        cy.get('input[name="total_score"]', { timeout: this.timeout }).should(($score) => {
+            expect($score).to.have.attr('readonly');
+            expect($score).to.have.attr('type', 'number');
+            expect($score).to.have.attr('min', '0');
+            expect($score).to.have.attr('max', '6');
+        });
+    }
+
+    completeNegativeScreening() {
+        this.requiredRadioGroups()
+            .should('have.length.greaterThan', 0)
+            .each(($requiredMarker) => {
+                this.selectAnswer($requiredMarker.closest('fieldset'), 'No');
+            });
+
+        cy.get('#date_tb_treatment_was_started').should('not.exist');
+        cy.get('input[name="total_score"]', { timeout: this.timeout }).should('have.value', '0');
+    }
+
+    completeMixedScreening() {
+        let expectedScore = 0;
+        let symptomIndex = 0;
+
+        this.requiredRadioGroups()
+            .should('have.length.greaterThan', 0)
+            .each(($requiredMarker) => {
+                const fieldset = $requiredMarker.closest('fieldset')[0];
+                const fieldName = fieldset.querySelector('input[type="radio"]')?.getAttribute('name') ?? '';
+                const weight = this.symptomScoreWeights[fieldName];
+                const answer = weight && symptomIndex++ % 2 === 0 ? 'Yes' : 'No';
+
+                this.selectAnswer($requiredMarker.closest('fieldset'), answer);
+                expectedScore += answer === 'Yes' ? weight : 0;
+            })
+            .then(() => {
+                cy.get('input[name="total_score"]', { timeout: this.timeout })
+                    .should('have.value', String(expectedScore));
+            });
+    }
+
+    verifyPreviousTreatmentDateToggle() {
+        this.selectQuestionAnswer('Previously Treated for TB', 'Yes');
+        cy.get('#date_tb_treatment_was_started', { timeout: this.timeout })
+            .should('be.visible');
+        cy.get('[data-testid="date_tb_treatment_was_started-label"] [title="Required"]', {
+            timeout: this.timeout
+        }).should('exist');
+
+        this.selectQuestionAnswer('Previously Treated for TB', 'No');
+        cy.get('#date_tb_treatment_was_started').should('not.exist');
+    }
+
+    verifyRequiredFieldsAndSave() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTbScreening');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.contains('Field is mandatory', { timeout: this.timeout }).should('exist');
+
+        this.completeNegativeScreening();
+
+        const today = new Date();
+        const dateParts: Record<string, string> = {
+            day: String(today.getDate()).padStart(2, '0'),
+            month: String(today.getMonth() + 1).padStart(2, '0'),
+            year: String(today.getFullYear())
+        };
+
+        cy.get('[title="Required"]', { timeout: this.timeout }).each(($requiredMarker) => {
+            if ($requiredMarker.closest('legend').length) {
+                return;
+            }
+
+            const $container = $requiredMarker.closest('.cds--date-picker, .cds--form-item');
+            const $dateParts = $container.find('[data-type="day"], [data-type="month"], [data-type="year"]');
+
+            if ($dateParts.length) {
+                cy.wrap($dateParts, { log: false }).each(($part) => {
+                    const type = $part.attr('data-type') ?? '';
+                    cy.wrap($part, { log: false }).click().type(dateParts[type]);
+                });
+                return;
+            }
+
+            cy.wrap($container, { log: false })
+                .find('input:not([type="hidden"]):not([readonly]), textarea')
+                .first()
+                .clear()
+                .type('Automated TB screening');
+        });
+
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveTbScreening', { timeout: this.timeout }).then(({ response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+        });
+    }
+
     waitForChartToLoad() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
@@ -32,76 +159,6 @@ class TbScreeningFormPage {
 
     selectForm(formName: string) {
         cy.contains('a.cds--link', formName, { timeout: this.timeout }).click();
-    }
-
-    private fillDateField(fieldId: string, date: DateParts) {
-        cy.get(`#${fieldId} [data-type="day"]`, { timeout: this.timeout }).click().type(date.day);
-        cy.get(`#${fieldId} [data-type="month"]`, { timeout: this.timeout }).click().type(date.month);
-        cy.get(`#${fieldId} [data-type="year"]`, { timeout: this.timeout }).click().type(date.year);
-    }
-
-    private selectYesNoField(fieldId: string, answer: YesNo) {
-        cy.get(`#${fieldId}-${answer}`, { timeout: this.timeout }).check({ force: true });
-    }
-
-    private fillSymptomField(fieldId: string, answer: YesNo) {
-        const yesSelector = `#${fieldId}-Yes`;
-        const noSelector = `#${fieldId}-No`;
-
-        const selector = `${yesSelector}, ${noSelector}`;
-
-        cy.wrap(null, { timeout: this.timeout })
-            .should(() => {
-                expect(Cypress.$(selector).length, `Missing TB screening field controls: ${fieldId}`).to.be.greaterThan(0);
-            })
-            .then(() => {
-                const controls = Cypress.$(selector);
-                const hasYesControl = controls.filter(yesSelector).length > 0;
-                const hasNoControl = controls.filter(noSelector).length > 0;
-                const hasCompleteYesNoControl = hasYesControl && hasNoControl;
-                const hasPartialYesNoControl = hasYesControl !== hasNoControl;
-
-                if (hasPartialYesNoControl) {
-                    throw new Error(`Incomplete TB screening field controls rendered: ${fieldId}`);
-                }
-
-                if (hasCompleteYesNoControl) {
-                    this.selectYesNoField(fieldId, answer);
-                    return;
-                }
-
-                throw new Error(`Missing TB screening field controls: ${fieldId}`);
-            });
-    }
-
-    fillForm(data: TbScreeningFormData) {
-        this.selectYesNoField('contact_of_tb_patient', data.contactOfTbPatient);
-        this.selectYesNoField('previously_treated_for_tb', data.previouslyTreatedForTb);
-
-        this.fillSymptomField('coughing_2_weeks_or_more', data.coughing2WeeksOrMore);
-        this.fillSymptomField('night_sweats', data.nightSweats);
-        this.fillSymptomField('weight_loss', data.weightLoss);
-        this.fillSymptomField('fever', data.fever);
-        this.fillSymptomField('swelling_in_any_part_of_the_body', data.swelling);
-
-        this.fillDateField('date_the_screening_was_conducted', data.dateScreeningConducted);
-
-        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: this.timeout })
-            .clear()
-            .type(data.sputumTestResult);
-
-        // date_tb_treatment_was_started is hidden unless previously treated for TB is Yes
-        if (data.dateTbTreatmentStarted && data.previouslyTreatedForTb === 'Yes') {
-            this.fillDateField('date_tb_treatment_was_started', data.dateTbTreatmentStarted);
-        }
-
-        if (data.observation) {
-            cy.get('#observation', { timeout: this.timeout }).clear().type(data.observation);
-        }
-    }
-
-    submitForm() {
-        cy.contains('button', 'Save', { timeout: this.timeout }).should('be.enabled').click();
     }
 }
 

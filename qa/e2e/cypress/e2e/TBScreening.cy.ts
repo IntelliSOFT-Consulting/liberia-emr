@@ -8,27 +8,30 @@ describe('TB Screening form', () => {
 
     beforeEach(() => {
         loginWithSession();
-    });
-
-    it('should complete a TB Screening form for a patient with an active visit', () => {
         visitPage.registerPatient();
         visitPage.startVisit();
-
         tbScreeningForm.openClinicalForms();
         tbScreeningForm.selectForm('TB Screening');
-        tbScreeningForm.fillForm({
-            contactOfTbPatient: 'No',
-            previouslyTreatedForTb: 'No',
-            coughing2WeeksOrMore: 'Yes',
-            nightSweats: 'Yes',
-            weightLoss: 'Yes',
-            fever: 'Yes',
-            swelling: 'Yes',
-            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            sputumTestResult: 'Negative',
-            observation: 'Automated test entry'
-        });
-        tbScreeningForm.submitForm();
-    })
-})
+    });
+
+    it('validates required radio groups and the score contract', () => {
+        tbScreeningForm.verifyFormContract();
+    });
+
+    it('completes a negative screening with no treatment date and a zero score', () => {
+        tbScreeningForm.completeNegativeScreening();
+    });
+
+    it('calculates the score for mixed symptom answers', () => {
+        tbScreeningForm.completeMixedScreening();
+    });
+
+    it('shows the required treatment date only for previous TB treatment', () => {
+        tbScreeningForm.verifyPreviousTreatmentDateToggle();
+    });
+
+    it('rejects incomplete required fields and saves the completed form', () => {
+        tbScreeningForm.verifyRequiredFieldsAndSave();
+    });
+});
 
