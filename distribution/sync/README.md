@@ -98,8 +98,10 @@ at rest (sync-eip.md section 7.4).
 
 - `qa/sync/verify-sender-capture.sh`: facility-only check, registration to captured
   payload, no PHI in logs.
-- `qa/sync/verify-e2e-push.sh`: the full chain, a patient registered at the facility
-  appears at central with the same UUID intact. Acceptance criterion 1 of LE-35.
+- `qa/sync/verify-e2e-push.sh`: the full chain. A patient registered at the facility, then
+  their visit, ANC encounter with an observation, programme enrolment, test order and drug
+  order, each appears at central with the same UUID and content, and the sender watches
+  exactly the tables the template declares. Acceptance criterion 1 of LE-35.
 - `qa/sync/outage-drill.sh`: acceptance criterion 2. Cuts the broker link, registers a
   counted batch through the outage including container restarts, restores the link, and
   asserts every record lands at central exactly once with empty retry queues. Also

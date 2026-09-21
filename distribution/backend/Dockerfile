@@ -7,14 +7,21 @@
 # ---------------------------------------------------------------------------
 # Stage 1 — resolve content packages into a single Initializer configuration tree
 # ---------------------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-17 AS content
+# content-packages/*/target/*.zip are expected to already exist in the build context: every
+# caller (scripts/build/build-distribution.sh, docs/runbooks/local-development.md §2) runs
+# `mvn package` on the host immediately before `docker build`. This used to run that SAME
+# `mvn clean package` again in here, from a bare COPY of content-packages/ with no OCL/CIEL
+# exports and no host Maven cache — a second, redundant reactor build whose only effect was to
+# throw away the host's just-built zips and rebuild identical ones. Reusing them instead cuts a
+# full Maven build off both docker-build and e2e in CI, and off the local edit/rebuild loop.
+#
+# eclipse-temurin, not the maven image: nothing in this stage invokes mvn any more, only jar
+# (from the JDK) to unpack the zips below.
+FROM eclipse-temurin:17-jdk AS content
 
 WORKDIR /build
 
-# Dependency resolution first so the layer caches across content edits.
-COPY pom.xml /build/pom.xml
-COPY content-packages /build/content-packages
-RUN mvn -B -q -DskipTests clean package
+COPY content-packages/*/target/*.zip /build/zips/
 
 # Layer order is load order: later layers override earlier ones.
 # The site layer is chosen at build time; default is Careysburg.
@@ -36,7 +43,7 @@ ARG DEMO_PACKAGE=
 # frontend_configuration/ is not copied here on purpose. It belongs to the frontend image,
 # which collects it in the same layer order (scripts/build/collect-frontend-config.sh).
 #
-# `jar` stands in for unzip, which the Maven image does not carry — the JDK is already here.
+# `jar` stands in for unzip, which this image does not carry separately — the JDK already has it.
 RUN set -eu; \
     mkdir -p /openmrs_config; \
     for pkg in liberiaemr-common \
@@ -47,8 +54,11 @@ RUN set -eu; \
                liberiaemr-opd-ipd \
                "${SITE_PACKAGE}" \
                ${DEMO_PACKAGE}; do \
-      zip=$(find /build/content-packages -name "${pkg}-*.zip" -path '*/target/*' | head -n1); \
-      [ -n "$zip" ] || { echo "missing content package: ${pkg}" >&2; exit 1; }; \
+      set -- /build/zips/"${pkg}"-*.zip; \
+      [ -f "$1" ] && [ "$#" -eq 1 ] \
+        || { echo "expected exactly one content package: ${pkg}" >&2; exit 1; }; \
+      zip="$1"; \
+
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \
@@ -70,7 +80,57 @@ RUN set -eu; \
     if [ -d /openmrs_config/demo ]; then echo "demo content leaked into the build" >&2; exit 1; fi
 
 # ---------------------------------------------------------------------------
-# Stage 2 — runtime
+# Stage 2 — build the in-tree liberiaemr OMOD
+# ---------------------------------------------------------------------------
+# This module is NOT pinned in distro.properties and NOT resolved by
+# scripts/build/resolve-modules.sh, on purpose. Every OMOD that script fetches is a
+# released artifact on mavenrepo.openmrs.org; liberiaemr lives in this repository and has
+# never been published there, so a pin would name a coordinate that cannot resolve and the
+# resolver's own count check would fail the build.
+#
+# Building it from the source in THIS commit is the stronger guarantee anyway: the omod in
+# the image is exactly the code the tag contains, with no coordinate to drift. It also
+# closes the gap the module README used to paper over — dropping a hand-built .omod into a
+# running container, which §8 forbids, since a mutable checkout never reaches production.
+FROM maven:3.9-eclipse-temurin-17 AS module
+
+# The module's own pom carries 1.0.0-SNAPSHOT: that is its DEVELOPMENT stream, which
+# .github/workflows/modules.yml re-deploys to Repsy on every merge to main. An image must
+# never ship a SNAPSHOT omod (IMPLEMENTATION.md section 6/11), so the version is stamped to
+# the distribution version this image IS, and the module is then traceable to the release
+# that carries it.
+#
+# scripts/build/build-distribution.sh refuses a SNAPSHOT or `latest` --version, so for any
+# release build this is a concrete version. A bare `docker build` with no --build-arg falls
+# back to the pom's own version, which is the right behaviour for a local experiment.
+ARG LIBERIAEMR_VERSION=
+
+WORKDIR /build
+COPY modules/liberiaemr /build/liberiaemr
+# Tests run in CI's own backend-module job; repeating them here would add minutes to every
+# image build for a signal the pipeline already has.
+#
+# The last check is not belt-and-braces: a SNAPSHOT omod reaching the runtime stage means the
+# stamp silently did not apply, and the image would ship the very thing §6/§11 forbids.
+#
+# The comment stays OUT of the RUN below. Docker strips a `#` line inside a line
+# continuation, which leaves an empty continuation and a NoEmptyContinuation warning.
+RUN set -eu; \
+    if [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "stamping the module as ${LIBERIAEMR_VERSION}"; \
+      mvn -B -q -f /build/liberiaemr/pom.xml \
+        org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+        -DnewVersion="${LIBERIAEMR_VERSION}" -DgenerateBackupPoms=false; \
+    fi; \
+    mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package; \
+    ls /build/liberiaemr/omod/target/*.omod; \
+    if ls /build/liberiaemr/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
+       && [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "FAIL: module still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
+    fi
+
+# ---------------------------------------------------------------------------
+# Stage 3 — runtime
 # ---------------------------------------------------------------------------
 # Must match war.openmrs in distribution/distro.properties — this image IS the platform, so
 # a drift here silently ships a different OpenMRS than the one the pins were tested against.
@@ -106,6 +166,10 @@ USER 1001
 # root — it has to be, for the content stage to reach content-packages/ — so this path is
 # relative to the root and not to this Dockerfile.
 COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
+
+# The in-tree module, built in stage 2, lands beside them. Kept as a separate COPY so it is
+# obvious in the layer list that one OMOD here is ours and the rest are resolved pins.
+COPY --from=module /build/liberiaemr/omod/target/liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/

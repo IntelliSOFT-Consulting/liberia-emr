@@ -26,7 +26,8 @@ prefer it if the two ever disagree.
    an unresolved `${var.*}`, a UUID collision, or a loosened privilege is only visible in
    context.
 2. **Don't duplicate the deterministic validators.** `scripts/validate/validate-content.sh`,
-   `no-secrets.sh`, `no-demo-in-release.sh`, and `lift-demo-content.sh --check` already catch
+   `scripts/validate/no-secrets.sh`, `scripts/validate/no-demo-in-release.sh`, and
+   `scripts/build/lift-demo-content.sh --check` already catch
    the mechanical violations (malformed JSON/CSV, `#` comments in Initializer CSVs, obvious
    secrets, edited demo content, version-discipline breaches). **Run them first** and treat a
    pass as settled. Spend your effort on the *judgment* calls they cannot make: is this the

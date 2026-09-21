@@ -58,6 +58,18 @@ services:
       # this is the same behaviour spelled validly. See distribution/backend/Dockerfile for
       # why fail_on_error is not the safer-sounding choice it appears to be.
       OMRS_CONFIG_INITIALIZER_STARTUP_LOAD: continue_on_error
+      # Password reset email (liberiaemr module). The relay is deployment state, not content:
+      # the same image runs at every facility, so these come from the gitignored .env rather
+      # than from an Initializer global property. LIBERIAEMR_SMTP_PASSWORD_FILE names a path
+      # read verbatim inside the container — mount the secret there and leave the plain
+      # variable empty. Unset means no reset mail is delivered, which the module logs.
+      LIBERIAEMR_SMTP_HOST: ${LIBERIAEMR_SMTP_HOST:-}
+      LIBERIAEMR_SMTP_PORT: ${LIBERIAEMR_SMTP_PORT:-587}
+      LIBERIAEMR_SMTP_USER: ${LIBERIAEMR_SMTP_USER:-}
+      LIBERIAEMR_SMTP_PASSWORD: ${LIBERIAEMR_SMTP_PASSWORD:-}
+      LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
+      LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
+      LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
