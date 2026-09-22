@@ -9,6 +9,9 @@
  */
 package org.openmrs.module.liberiaemr.web.controller.rules;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,17 +20,24 @@ import org.openmrs.Patient;
 
 public class FormsGenderRuleTest {
 
+    private static final String ANC_INITIAL_VISIT_UUID = "55fde540-4334-3896-a51f-63e98bb5317e";
+    
     private FormsGenderRule rule;
 
     @Before
     public void setup() {
-        rule = new FormsGenderRule();
+        rule = new FormsGenderRule() {
+            @Override
+            protected List<String> getFemaleOnlyFormsUuids() {
+                return Arrays.asList(ANC_INITIAL_VISIT_UUID);
+            }
+        };
     }
 
     @Test
     public void shouldShowForm_whenPatientIsNull_shouldReturnTrue() {
         Form form = new Form();
-        form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
+        form.setUuid(ANC_INITIAL_VISIT_UUID);
         
         boolean result = rule.shouldShowForm(form, null);
         Assert.assertTrue("Should show form if patient is null", result);
@@ -51,7 +61,7 @@ public class FormsGenderRuleTest {
         malePatient.setGender("M");
 
         Form form = new Form();
-        form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
+        form.setUuid(ANC_INITIAL_VISIT_UUID);
 
         boolean result = rule.shouldShowForm(form, malePatient);
         Assert.assertFalse("Should hide female-only form for male patient", result);
@@ -75,7 +85,7 @@ public class FormsGenderRuleTest {
         femalePatient.setGender("F");
 
         Form form = new Form();
-        form.setUuid(FormsGenderRule.ANC_INITIAL_VISIT_UUID);
+        form.setUuid(ANC_INITIAL_VISIT_UUID);
 
         boolean result = rule.shouldShowForm(form, femalePatient);
         Assert.assertTrue("Should show female-only form for female patient", result);

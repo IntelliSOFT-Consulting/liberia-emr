@@ -1,0 +1,9 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>liberiaemr.forms.femaleOnlyUuids</property>
+      <value>${var.form.first-and-second-stage-of-labor-and-delivery.uuid},${var.form.partograph.uuid},${var.form.third-stage-of-labor-and-delivery.uuid},${var.form.fourth-stage-monitoring-for-woman-and-baby.uuid},${var.form.anc-initial.uuid},${var.form.anc-followup.uuid},${var.form.pnc-visit.uuid},${var.form.newborn-pnc.uuid},${var.form.family-planning.uuid}</value>
+      <description>UUIDs of female-only forms hidden for male patients</description>
+    </globalProperty>
+  </globalProperties>
+</config>

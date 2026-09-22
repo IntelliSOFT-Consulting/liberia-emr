@@ -33,9 +33,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping("/rest/v1/liberiaemr")
 public class LiberiaEMRFormsController {
 
-    @Autowired(required = false)
-    private List<FormVisibilityRule> formVisibilityRules = new ArrayList<>();
-
     @RequestMapping(value = "/forms", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getForms(
@@ -56,6 +53,9 @@ public class LiberiaEMRFormsController {
 
         List<Form> allForms = Context.getFormService().getAllForms(false);
         List<Map<String, Object>> results = new ArrayList<>();
+        
+        // Use OpenMRS context to get all registered rules, avoiding Spring context boundary issues
+        List<FormVisibilityRule> rules = Context.getRegisteredComponents(FormVisibilityRule.class);
 
         for (Form form : allForms) {
             // Only include published forms and exclude component forms (standard O3 behavior)
@@ -63,8 +63,8 @@ public class LiberiaEMRFormsController {
                 
                 // Evaluate all rules
                 boolean shouldShow = true;
-                if (formVisibilityRules != null) {
-                    for (FormVisibilityRule rule : formVisibilityRules) {
+                if (rules != null) {
+                    for (FormVisibilityRule rule : rules) {
                         if (!rule.shouldShowForm(form, patient)) {
                             shouldShow = false;
                             break;
