@@ -70,9 +70,7 @@ services:
       LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
       LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
-      # Where the sync status page reads its numbers. This stack's own Prometheus already
-      # scrapes the broker, the receiver and the certificate exporter; empty turns the page
-      # off, which is what a facility gets, since it never sets this.
+      # Empty turns the sync status page off, which is what a facility gets.
       LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
