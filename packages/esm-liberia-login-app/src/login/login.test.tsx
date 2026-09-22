@@ -56,7 +56,7 @@ describe('Login', () => {
     expect(screen.getAllByRole('img', { name: /OpenMRS logo/i })).toHaveLength(2);
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
-    screen.getByRole('button', { name: /Log in/i });
+    screen.getByRole('button', { name: /Continue/i });
   });
 
   it('renders a configurable logo', () => {
@@ -78,7 +78,27 @@ describe('Login', () => {
     expect(logo).toHaveAttribute('alt', customLogoConfig.alt);
   });
 
+  it('should return user focus to username input when input is invalid', async () => {
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+    const user = userEvent.setup();
 
+    expect(screen.getByRole('textbox', { name: /username/i })).toBeInTheDocument();
+    // no input to username
+    const continueButton = screen.getByRole('button', { name: /Continue/i });
+    await user.click(continueButton);
+    expect(screen.getByRole('textbox', { name: /username/i })).toHaveFocus();
+    await user.type(screen.getByRole('textbox', { name: /username/i }), 'yoshi');
+    await user.click(continueButton);
+    await screen.findByLabelText(/^password$/i);
+    await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
+    expect(screen.getByLabelText(/^password$/i)).toHaveFocus();
+  });
 
   it('makes an API request when you submit the form', async () => {
     mockLogin.mockResolvedValue({ some: 'data' } as unknown as SessionStore);
@@ -94,7 +114,7 @@ describe('Login', () => {
 
     mockLogin.mockClear();
     await user.type(screen.getByRole('textbox', { name: /Username/i }), 'yoshi');
-    await user.click(screen.getByRole('button', { name: /Log in/i }));
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
 
     const loginButton = screen.getByRole('button', { name: /log in/i });
     await screen.findByLabelText(/^password$/i);
@@ -129,13 +149,13 @@ describe('Login', () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByRole('textbox', { name: /Username/i }), 'yoshi');
-    await user.click(screen.getByRole('button', { name: /Log in/i }));
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
     await screen.findByLabelText(/^password$/i);
     await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
     await user.click(screen.getByRole('button', { name: /log in/i }));
   });
 
-  it('should render both the username and password fields (single screen flow)', async () => {
+  it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {
     mockUseConfig.mockReturnValue({
       ...mockConfig,
       showPasswordOnSeparateScreen: false,
@@ -150,15 +170,41 @@ describe('Login', () => {
     );
 
     const usernameInput = screen.queryByRole('textbox', { name: /username/i });
+    const continueButton = screen.queryByRole('button', { name: /Continue/i });
     const passwordInput = screen.queryByLabelText(/^password$/i);
     const loginButton = screen.queryByRole('button', { name: /log in/i });
 
     expect(usernameInput).toBeInTheDocument();
+    expect(continueButton).not.toBeInTheDocument();
     expect(passwordInput).toBeInTheDocument();
     expect(loginButton).toBeInTheDocument();
   });
 
+  it('should render password field hidden but present for autofill when showPasswordOnSeparateScreen config is true (default)', async () => {
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+    });
 
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    const usernameInput = screen.queryByRole('textbox', { name: /username/i });
+    const continueButton = screen.queryByRole('button', { name: /Continue/i });
+    const passwordInput = screen.queryByLabelText(/^password$/i);
+    const loginButton = screen.queryByRole('button', { name: /log in/i });
+
+    expect(usernameInput).toBeInTheDocument();
+    expect(continueButton).toBeInTheDocument();
+    expect(passwordInput).toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute('aria-hidden', 'true');
+    expect(passwordInput).toHaveAttribute('tabIndex', '-1');
+    expect(loginButton).not.toBeInTheDocument();
+  });
 
   it('should be able to login when the showPasswordOnSeparateScreen config is false', async () => {
     mockLogin.mockResolvedValue({ some: 'data' } as unknown as SessionStore);
@@ -205,7 +251,29 @@ describe('Login', () => {
     expect(usernameInput).toHaveFocus();
   });
 
+  it('should focus the password input in the password screen', async () => {
+    const user = userEvent.setup();
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+    });
 
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    const usernameInput = screen.getByRole('textbox', { name: /username/i });
+    const continueButton = screen.getByRole('button', { name: /Continue/i });
+
+    await user.type(usernameInput, 'yoshi');
+    await user.click(continueButton);
+
+    const passwordInput = screen.getByLabelText(/^password$/i);
+    expect(passwordInput).toHaveFocus();
+  });
 
   it('should focus the username input when the showPasswordOnSeparateScreen config is false', async () => {
     mockUseConfig.mockReturnValue({

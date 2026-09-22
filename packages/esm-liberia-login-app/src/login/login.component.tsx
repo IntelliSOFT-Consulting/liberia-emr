@@ -28,8 +28,8 @@ const Login: React.FC = () => {
     background = { image: '', color: '' },
     provider: loginProvider,
     links: loginLinks,
+    showPasswordOnSeparateScreen = true,
   } = useConfig<ConfigSchema>();
-  const showPasswordOnSeparateScreen = false;
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
   const { user } = useSession();

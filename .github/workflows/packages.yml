@@ -54,7 +54,12 @@ jobs:
               echo "== Building $pkg_name =="
               (
                 cd "$pkg_dir"
-                yarn install --no-frozen-lockfile
+                yarn install --frozen-lockfile
+                if grep -q '"eslint"' package.json; then
+                  yarn lint
+                else
+                  echo "Skipping lint: eslint not configured in package.json"
+                fi
                 yarn typescript
                 yarn build
               )
@@ -125,7 +130,12 @@ jobs:
                 exit 0
               fi
 
-              yarn install --no-frozen-lockfile
+              yarn install --frozen-lockfile
+              if grep -q '"eslint"' package.json; then
+                yarn lint
+              else
+                echo "Skipping lint: eslint not configured in package.json"
+              fi
               yarn typescript
               yarn build
 
@@ -204,7 +214,12 @@ jobs:
                 exit 0
               fi
 
-              yarn install --no-frozen-lockfile
+              yarn install --frozen-lockfile
+              if grep -q '"eslint"' package.json; then
+                yarn lint
+              else
+                echo "Skipping lint: eslint not configured in package.json"
+              fi
               yarn typescript
               yarn build
 
