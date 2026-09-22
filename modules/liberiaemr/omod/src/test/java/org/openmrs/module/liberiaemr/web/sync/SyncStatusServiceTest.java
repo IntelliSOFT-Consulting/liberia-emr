@@ -83,13 +83,13 @@ public class SyncStatusServiceTest {
 		assertEquals("barnersville", facilities.get(0).get("code"));
 		assertEquals("bong", facilities.get(1).get("code"));
 		assertEquals("careysburg", facilities.get(2).get("code"));
-		assertEquals(Long.valueOf(12L), Long.valueOf(String.valueOf(facilities.get(2).get("recordsReceived"))));
-		assertEquals(Long.valueOf(5L), Long.valueOf(String.valueOf(facilities.get(2).get("receivedLastDay"))));
+		assertEquals(12L, ((Number) facilities.get(2).get("recordsReceived")).longValue());
+		assertEquals(5L, ((Number) facilities.get(2).get("receivedLastDay")).longValue());
 		// barnersville matches the silent alert. bong has sent nothing today either, but it was
 		// enrolled this week, so neither the alert nor the page calls it silent.
 		assertEquals(Boolean.TRUE, facilities.get(0).get("silent"));
 		assertEquals(Boolean.FALSE, facilities.get(1).get("silent"));
-		assertEquals(Long.valueOf(0L), Long.valueOf(String.valueOf(facilities.get(1).get("receivedLastDay"))));
+		assertEquals(0L, ((Number) facilities.get(1).get("receivedLastDay")).longValue());
 		assertEquals(Boolean.FALSE, facilities.get(2).get("silent"));
 		assertEquals(Long.valueOf(1790000000L), facilities.get(2).get("certificateExpires"));
 		
@@ -164,6 +164,9 @@ public class SyncStatusServiceTest {
 	
 	/** A Prometheus answer built from label value and sample value pairs. */
 	private static String samples(String label, String... pairs) {
+		if (pairs.length % 2 != 0) {
+			throw new IllegalArgumentException("samples() takes a label value and a sample value per series");
+		}
 		StringBuilder json = new StringBuilder("{\"data\":{\"result\":[");
 		for (int i = 0; i < pairs.length; i += 2) {
 			if (i > 0) {
