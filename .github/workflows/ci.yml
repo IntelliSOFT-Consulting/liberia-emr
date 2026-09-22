@@ -821,7 +821,7 @@ jobs:
       - name: Verify login app
         working-directory: packages/esm-liberia-login-app
         run: |
-          yarn install --no-frozen-lockfile
+          yarn install --frozen-lockfile
           yarn test
           yarn build
       - name: Verify e-partograph
