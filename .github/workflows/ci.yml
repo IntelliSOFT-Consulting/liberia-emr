@@ -154,6 +154,23 @@ jobs:
       # it re-fetches the pinned tag and verifies the commit it resolves to.
       - name: Refuse hand edits to the lifted demo content
         run: ./scripts/build/lift-demo-content.sh --check
+      # Runs here rather than with the sync checks because a content change alone can break it.
+      - name: Sync receiver skips the records every install shares
+        run: |
+          # sync-operations.md section 12. The admin provider and the person it hangs on are the
+          # content package's, so the receiver's list has to follow them. The other three uuids
+          # are OpenMRS core's own, fixed in its liquibase.
+          content=content-packages/content-liberia-national/configuration
+          provider="$(sed -n "s/.*'ADMIN-PROV'.*'\([0-9a-f-]\{36\}\)'.*/\1/p" \
+            "$content/backend_configuration/liquibase/admin-provider.xml")"
+          person="$(sed -n 's/^var\.person\.admin\.uuid=//p' "$content/variables.properties")"
+          [ -n "$provider" ] && [ -n "$person" ] \
+            && grep -qx "var.provider.admin.uuid=$provider" "$content/variables.properties" \
+            && grep -q "uuid = '$person'" "$content/backend_configuration/liquibase/admin-provider.xml" \
+            || { echo "the admin provider and person uuids in variables.properties and admin-provider.xml disagree"; exit 1; }
+          expected="users:82f18b44-6814-11e8-923f-e9a88dcb533f,person:$person,person_name:5f897a68-6814-11e8-923f-e9a88dcb533f,provider:f9badd80-ab76-11e2-9e96-0800200c9a66,provider:$provider"
+          grep -qx "db-sync.excludedEntities=$expected" distribution/sync/receiver-application.properties.template \
+            || { echo "receiver template must exclude exactly: $expected"; exit 1; }
 
   # ---------------------------------------------------------------------
   # Stage 2 — build, test, content packages, coverage, static analysis
@@ -578,15 +595,22 @@ jobs:
           refuses "this facility's own address" -e ARTEMIS_URL=ssl://central:61617 \
             -e SYNC_OUTPUT_ENDPOINT=activemq:topic:openmrs.sync.topic
           refuses 'must be true for the broker' -e ARTEMIS_URL=ssl://central:61617 -e SYNC_PAYLOAD_ENCRYPTION=false
-      - name: Sender template declares the table set
+          refuses 'SYNC_SNAPSHOT_MODE must be initial or schema_only' -e ARTEMIS_URL=ssl://central:61617 \
+            -e SYNC_SNAPSHOT_MODE=never
+      - name: Sender template declares what syncs and how it first loads
         run: |
+          template=distribution/sync/application.properties.template
+          # A facility's first start sends its existing records without locking out the clinic.
+          grep -qx 'debezium.snapshotMode=${SYNC_SNAPSHOT_MODE}' "$template" \
+            && grep -qx 'debezium.snapshotLockingMode=minimal' "$template" \
+            || { echo "sender template lost its initial load settings"; exit 1; }
           # The set is declared in the template, not inherited from the jar, and must stay
           # exactly this (sync-entity-coverage.md §1.1). Order is free.
           expected="ALLERGY CONDITIONS DIAGNOSIS_ATTRIBUTE DRUG_ORDER ENCOUNTER ENCOUNTER_DIAGNOSIS ENCOUNTER_PROVIDER OBS
             ORDERS ORDER_ATTRIBUTE ORDER_GROUP ORDER_GROUP_ATTRIBUTE PATIENT PATIENT_IDENTIFIER PATIENT_PROGRAM
             PATIENT_PROGRAM_ATTRIBUTE PATIENT_STATE PERSON PERSON_ADDRESS PERSON_ATTRIBUTE PERSON_NAME PROVIDER
             REFERRAL_ORDER RELATIONSHIP TEST_ORDER USERS VISIT VISIT_ATTRIBUTE"
-          declared="$(sed -n 's/^eip\.watchedTables=//p' distribution/sync/application.properties.template | tr ',' '\n' | sort | paste -sd' ' -)"
+          declared="$(sed -n 's/^eip\.watchedTables=//p' "$template" | tr ',' '\n' | sort | paste -sd' ' -)"
           [ "$declared" = "$(tr -s ' \n' '\n\n' <<<"$expected" | sed '/^$/d' | sort | paste -sd' ' -)" ] \
             || { echo "sender template watches: ${declared:-nothing}"; echo "expected: $expected" | tr -s ' \n' ' '; echo; exit 1; }
       - name: Receiver refuses a weaker configuration
@@ -620,7 +644,7 @@ jobs:
           done
       - name: Alerts are delivered by email and webhook
         run: qa/sync/verify-alert-delivery.sh
-      - name: Certificate alert rules behave (promtool unit tests)
+      - name: Central alert rules behave (promtool unit tests)
         run: |
           docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
             prom/prometheus:v2.53.4 test rules /m/tests/rules-central-test.yml

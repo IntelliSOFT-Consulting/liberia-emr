@@ -47,44 +47,8 @@ fi
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TEMPLATE="$HERE/../../distribution/sync/application.properties.template"
-PASSES=0
-pass() { echo "PASS [$1]"; PASSES=$((PASSES + 1)); }
-fail() { echo "FAIL [$1]" >&2; shift; [[ $# -eq 0 ]] || printf '    %s\n' "$@" >&2; exit 1; }
-
-facility() { curl -sk -u "$USER:$PASSWORD" -H 'Content-Type: application/json' "$@"; }
-central() { curl -sk -u "$CENTRAL_USER:$CENTRAL_PASSWORD" -H 'Content-Type: application/json' "$@"; }
-field() { # dotted path, e.g. results.0.uuid
-  python3 -c 'import json,sys; d=json.load(sys.stdin)
-for k in sys.argv[1].split("."): d = d[int(k)] if k.isdigit() else d[k]
-print(d)' "$1"; }
-uuid_or_error() { python3 -c 'import json,sys
-d = json.load(sys.stdin)
-if "uuid" not in d: sys.exit(sys.argv[1] + " rejected: " + json.dumps(d.get("error", d))[:300])
-print(d["uuid"])' "$1"; }
-until_true() { # seconds command...
-  local deadline=$((SECONDS + $1))
-  shift
-  until "$@"; do
-    (( SECONDS < deadline )) || return 1
-    sleep 10
-  done
-}
-# The UUID of the facility's metadata item with exactly this display name.
-named() { # resource name
-  facility "$FACILITY_URL/openmrs/ws/rest/v1/$1?q=${2// /%20}&v=custom:(uuid,display)" \
-    | python3 -c 'import json,sys
-r = [x["uuid"] for x in json.load(sys.stdin)["results"] if x["display"] == sys.argv[1]]
-r or sys.exit(sys.argv[2] + " named " + repr(sys.argv[1]) + " not found at the facility")
-print(r[0])' "$2" "$1"
-}
-at_central() { [[ "$(central -o /dev/null -w '%{http_code}' "$CENTRAL_URL/openmrs/ws/rest/v1/$1")" == "200" ]]; }
-# The UUID of the first result of a facility query, or a plain failure when there is none.
-first_uuid() { # what query
-  facility "$FACILITY_URL/openmrs/ws/rest/v1/$2" | python3 -c 'import json,sys
-r = json.load(sys.stdin).get("results", [])
-r or sys.exit("no " + sys.argv[1] + " found at the facility")
-print(r[0]["uuid"])' "$1"
-}
+# shellcheck source=qa/sync/facility-records.sh
+. "$HERE/facility-records.sh"
 
 echo "== registering a patient at the facility (via verify-sender-capture.sh) =="
 CAPTURE_OUT="$("$HERE/verify-sender-capture.sh" --base-url "$FACILITY_URL" \
@@ -106,50 +70,10 @@ central_birthdate="$(central "$CENTRAL_URL/openmrs/ws/rest/v1/patient/$PATIENT?v
 pass "patient $PATIENT pushed facility -> central intact"
 
 echo "== recording a clinical day for them at the facility =="
-LOCATION="$(first_uuid "login location" "location?tag=Login%20Location&v=custom:(uuid)")"
-PROVIDER="$(first_uuid "provider record for $USER" \
-  "provider?user=$(facility "$FACILITY_URL/openmrs/ws/rest/v1/session" | field user.uuid)&v=custom:(uuid)")"
-VISIT_TYPE="$(named visittype "Antenatal Care")"
-ENCOUNTER_TYPE="$(named encountertype "ANC Encounter")"
-ROLE="$(named encounterrole "Clinician")"
-PROGRAM="$(named program "Family Planning")"
-CARE_SETTING="$(named caresetting "Outpatient")"
-WEIGHT="$(named concept "Weight (kg)")"
-TABLET="$(named concept "Tablet")"
-HAEMOGLOBIN="$(named concept "Haemoglobin")"
-DRUG="$(first_uuid "drug" "drug?v=custom:(uuid)&limit=1")"
-DRUG_CONCEPT="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/drug/$DRUG?v=custom:(concept:(uuid))" | field concept.uuid)"
-NOW="$(date -u +%Y-%m-%dT%H:%M:%S.000+0000)"
-WEIGHT_KG=62 # any plausible value; compared end to end, never printed
-
-VISIT="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/visit" -d '{"patient":"'"$PATIENT"'","visitType":"'"$VISIT_TYPE"'",
-  "startDatetime":"'"$NOW"'","location":"'"$LOCATION"'"}' | uuid_or_error visit)"
-ENCOUNTER="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/encounter" -d '{"patient":"'"$PATIENT"'","visit":"'"$VISIT"'",
-  "encounterType":"'"$ENCOUNTER_TYPE"'","encounterDatetime":"'"$NOW"'","location":"'"$LOCATION"'",
-  "encounterProviders":[{"provider":"'"$PROVIDER"'","encounterRole":"'"$ROLE"'"}],
-  "obs":[{"concept":"'"$WEIGHT"'","value":'"$WEIGHT_KG"',"obsDatetime":"'"$NOW"'"}]}' | uuid_or_error encounter)"
-OBS="$(first_uuid "weight obs" "obs?patient=$PATIENT&concept=$WEIGHT&v=custom:(uuid)")"
-ENROLMENT="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/programenrollment" -d '{"patient":"'"$PATIENT"'",
-  "program":"'"$PROGRAM"'","dateEnrolled":"'"$NOW"'","location":"'"$LOCATION"'"}' | uuid_or_error "programme enrolment")"
-TEST_ORDER="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/order" -d '{"type":"testorder","patient":"'"$PATIENT"'",
-  "encounter":"'"$ENCOUNTER"'","orderer":"'"$PROVIDER"'","careSetting":"'"$CARE_SETTING"'",
-  "concept":"'"$HAEMOGLOBIN"'"}' | uuid_or_error "test order")"
-DRUG_ORDER="$(facility "$FACILITY_URL/openmrs/ws/rest/v1/order" -d '{"type":"drugorder","patient":"'"$PATIENT"'",
-  "encounter":"'"$ENCOUNTER"'","orderer":"'"$PROVIDER"'","careSetting":"'"$CARE_SETTING"'",
-  "drug":"'"$DRUG"'","concept":"'"$DRUG_CONCEPT"'","dosingType":"org.openmrs.FreeTextDosingInstructions",
-  "dosingInstructions":"one tablet daily","quantity":10,"quantityUnits":"'"$TABLET"'","numRefills":0}' \
-  | uuid_or_error "drug order")"
-echo "   visit $VISIT, encounter $ENCOUNTER, obs $OBS, enrolment $ENROLMENT, orders $TEST_ORDER $DRUG_ORDER"
+record_clinical_day "$PATIENT"
 
 echo "== waiting for the clinical records at central (timeout ${TIMEOUT}s) =="
-all_at_central() {
-  local r
-  for r in "visit/$VISIT" "encounter/$ENCOUNTER" "obs/$OBS" "programenrollment/$ENROLMENT" \
-           "order/$TEST_ORDER" "order/$DRUG_ORDER"; do
-    at_central "$r" || return 1
-  done
-}
-until_true "$TIMEOUT" all_at_central \
+until_true "$TIMEOUT" clinical_day_at_central \
   || fail "the visit, encounter, obs, enrolment and orders all reach central within ${TIMEOUT}s" \
           "check the receiver logs and the retry and conflict queues in the central management schema"
 pass "the visit, encounter, obs, programme enrolment and both orders reach central"

@@ -43,25 +43,62 @@ CIEL concept fragments reporting and breaks the FHIR and DHIS2 mappings downstre
 
 ### ANC obstetric history (PARA)
 
-Obstetric history elements from the ANC tab. Aliases reuse CIEL; no local concepts.
+Obstetric history elements from the ANC tab, identifiers read from the live sheet on
+2026-09-18. Aliases reuse CIEL; no local concepts. All seven carry Optionality `R` and are
+required on ANC Initial v1.2.
 
 | DAK element | Implemented CIEL | Variable |
 | --- | --- | --- |
-| `LBR.EMR.DE.1` Gravida | 5624 | `var.concept.ciel.gravida.uuid` |
-| `LBR.EMR.DE.2` Last menstrual period (LMP) | 1427 | `var.concept.ciel.lmp.uuid` |
-| `LBR.EMR.DE.3` Full-term births (FT) | **160080** | `var.concept.ciel.full-term-births.uuid` |
-| `LBR.EMR.DE.4` Preterm births (P) | 160078 | `var.concept.ciel.preterm-births.uuid` |
-| `LBR.EMR.DE.5` Abortions (A) | 1823 | `var.concept.ciel.abortions.uuid` |
-| `LBR.EMR.DE.6` Living children (LN) | 1825 | `var.concept.ciel.living-children.uuid` |
+| `LBR.EMR.DE.1` Parity | 1053 | `var.concept.ciel.parity.uuid` |
+| `LBR.EMR.DE.2` Gravida | 5624 | `var.concept.ciel.gravida.uuid` |
+| `LBR.EMR.DE.3` Last menstrual period (LMP) | 1427 | `var.concept.ciel.lmp.uuid` |
+| `LBR.EMR.DE.4` Full-term births (FT) | **160080** | `var.concept.ciel.full-term-births.uuid` |
+| `LBR.EMR.DE.5` Preterm births (P) | 160078 | `var.concept.ciel.preterm-births.uuid` |
+| `LBR.EMR.DE.6` Abortions (A) | 1823 | `var.concept.ciel.abortions.uuid` |
+| `LBR.EMR.DE.7` Living children (LN) | 1825 | `var.concept.ciel.living-children.uuid` |
 
 ⚠ The DAK currently states CIEL `162557` for Full-term births. Implementation intentionally
 uses CIEL `160080` (“Number of full term pregnancies”) following OCL terminology review and
 clinical approval: OCL shows `162557` as total delivered births across outcomes, not
 full-term count. Traceability keeps `dak_ciel=162557` and records `concept_uuid_source=CIEL 160080`.
 
-Parity (`var.concept.ciel.parity.uuid` / national Parity) exists in repository metadata for
-other programmes (L&D, PNC, FP) but is **not** part of the ANC Initial Form Builder
-contract. Capture Gravida, LMP, FT, P, A, and LN only.
+Parity (`var.concept.ciel.parity.uuid`, CIEL 1053) is **`LBR.EMR.DE.1` on the ANC sheet** of
+the live Liberia EMR data dictionary, read 2026-09-18, carrying **Optionality `R`** and the
+validation `Value >= 0 and <= Gravida`. It is captured in ANC Initial v1.2 as **required**,
+alongside Gravida, LMP, FT, P, A and LN, which the same sheet also marks `R`. It reuses the
+CIEL concept already used by L&D (`LBR.LD.DE.9`), PNC (`EMR.PND.DE4`) and FP
+(`EMR.FP.DE12`) — no new concept and no local duplicate.
+
+Requiredness is expressed as plain `"required": true`; no conditional-required construct is
+needed. The engine's save gate (`validateForm`) filters on
+`!isHidden && !isParentHidden && !isDisabled` *before* it walks a field's validators, and the
+`required` check is itself a validator (`form_field`, appended to every non-group field by the
+schema processor). So while Gravida is 1 and Parity is disabled, the mandatory check is never
+evaluated and no spurious "Field is mandatory" appears — yet the obs is still submitted,
+because obs collection filters only on `isHidden`. From Gravida 2 the field is enabled and a
+blank Parity blocks Save with the error attributed to Parity.
+
+The form holds Parity to `Parity >= 0`, `Parity = FT + P` and `Parity <= Gravida - 1`. The
+lower bound is an explicit `js_expression` validator *in addition to* `questionOptions.min`,
+which the engine does enforce for `number` rendering (`form_field` → "Value must be greater
+than 0"). Both fire for a negative value; the explicit validator is listed first in the schema
+and the appended `form_field` validator last, so the clinical message
+"Parity cannot be less than 0." is the one shown.
+
+Living children is held to `Living children <= Parity` by two mutually exclusive validators.
+When Parity has a value the comparison is against **the entered Parity**, so a provider who
+types a Parity lower than FT + P sees the conflict flagged on Living children as well as on
+Parity, rather than only on Parity. When Parity is blank the rule falls back to
+`Living children <= FT + P`, the effective parity, so an incomplete record cannot bypass the
+constraint while the provider is still filling the section. The fallback names Full-term births and Preterm births in its message
+rather than Parity, because there is no Parity value on screen to reconcile against. Gating
+the rule on Parity alone, with no fallback, was rejected: it made the clinical constraint
+opt-in. When `Gravida = 1` the field is pinned to 0 by
+`questionOptions.calculate.calculateExpression` (`gravida === 1 ? 0 : myValue`) and made
+read-only by `disabled.disableWhenExpression` (`gravida === 1`), which both records the
+clinically correct 0 for a primigravida and overwrites any Parity typed before Gravida was
+corrected. Hiding it instead was rejected: a hidden obs is dropped (or voided on edit) by the
+form engine, so Parity would be absent rather than 0.
 
 ### ANC physical examination Colour (`LBR.EMR.DE.7`)
 
@@ -268,7 +305,7 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 
 | Area | Use |
 | --- | --- |
-| Obstetric history | CIEL Gravida (5624), LMP (1427), Full-term births (160080), Preterm births (160078), Abortions (1823), Living children (1825) — **no Parity row** |
+| Obstetric history | CIEL Gravida (5624), LMP (1427), Full-term births (160080), Preterm births (160078), Abortions (1823), Living children (1825), Parity (1053). Parity is required (DAK `LBR.EMR.DE.1`, Optionality `R`) and held to `>= 0`, `= FT + P`, `<= Gravida - 1`; Living children is held to `<= Parity` when Parity is entered and to `<= FT + P` when it is blank; Parity is pinned to 0 and disabled while Gravida is 1 |
 | Physical exam Colour (`DE.7`) | National `Color` + CIEL Normal (1115) / Abnormal (1116) — not Colour (HGT) |
 | Physical exam abnormality descriptions (ANC Initial) | One local MCH Text question per finding (`var.concept.mch.<finding>-abnormality-description.uuid`), placed directly under that finding, shown and required only while it is Abnormal, `maxLength` 2000. No DAK source: the DAK has only the generic `DE.17` Explain abnormalities, which ANC Initial no longer captures. The generic national concept is unchanged and still used by ANC Follow-up. |
 | Heart / Lungs / Breasts / Nipples / Abdomen / Extremities / Pelvic examination / Explain abnormalities | Existing national questions + CIEL Normal / Abnormal. Abdomen uses the Liberia coded Question, not CIEL 1808 (an Anatomy concept with N/A datatype); its fully specified name is `Abdomen examination`, since CIEL 1808 already holds `Abdomen` in locale `en` and a duplicate fully specified name is rejected. |
@@ -713,9 +750,11 @@ Updated against the DAK read on 2026-08-06 — see
     elements are duplicated (`LBR.LD.DE.12`/`.95`, `LBR.LD.DE.45`/`.99`). Raise with whoever
     maintains the sheet. The ANC Full-term births DAK claim (`162557` vs implemented
     `160080`) is a related source discrepancy already resolved in metadata.
-11. ~~Parity on the ANC Initial form.~~ Closed for Form Builder: ANC captures Gravida / LMP /
-    FT / P / A / LN only. Repository Parity concepts remain for L&D / PNC / FP; they are not
-    selected on the ANC observation forms.
+11. ~~Parity on the ANC Initial form.~~ Closed against the live data dictionary. The ANC
+    sheet read 2026-09-18 defines Parity as `LBR.EMR.DE.1` with Optionality `R`, so ANC
+    Initial v1.2 captures it as **required**; ANC Follow-up is unchanged. This supersedes the
+    earlier reading, taken from the 2026-08-06 extract in
+    [`traceability-mch.csv`](../dak/traceability-mch.csv), that ANC had no Parity element.
 12. **Decision on whether EDD is derived from LMP or separately recorded.** EDD is declared
     here; the DAK has no EDD data element.
 13. **Review of `LBR.LD.DE.21 Intact` as a coded answer under Perineum**
@@ -845,6 +884,23 @@ Updated against the DAK read on 2026-08-06 — see
     `Newborn PNC` UUIDs, versions, retired status, schemas, encounter counts, and original
     loading mechanism before deployment; see
     [Legacy national PNC form superseded](#legacy-national-pnc-form-superseded).
+
+29. **The rest of the ANC tab has not been re-read, and optionality is still not carried.**
+    The Obstetric History block is current: `LBR.EMR.DE.1`-`.7` (Parity, Gravida, LMP, FT, P,
+    A, LN) were read from the live sheet on 2026-09-18 and
+    [`traceability-mch.csv`](../dak/traceability-mch.csv) is synchronised to them. **Nothing
+    else on the ANC tab was re-read**, and the rest of the file is not claimed to be current.
+    Two consequences:
+    (a) **One residual identifier collision.** Inserting Parity at DE.1 shifted the block down
+    by one, so Living children now holds `LBR.EMR.DE.7` while Physical Examination *Colour*
+    still holds it from the 2026-08-11 read. Colour has presumably shifted to `DE.8`, and the
+    elements after it likewise, but those values were not read and have **not** been guessed.
+    Re-extract the remainder of the ANC tab and resynchronise it as its own piece of work.
+    (b) **Optionality is not represented.** `traceability-mch.csv` has no optionality column,
+    although [docs/dak/README.md](../dak/README.md) records that the ANC tab carries it under
+    *Validation Condition*, read by position. Parity's `R` came from reading the live sheet
+    directly, not from this repository. Add the column when the tab is re-extracted, so
+    requiredness stops depending on an out-of-band read.
 
 Items 1–3 block the forms. Item 8 blocks the e-partograph implementation. Item 9 blocks any
 claim that MCH is specified. Item 17 gates whether the 2026-08-18 OCL import reaches any

@@ -862,6 +862,22 @@ Rules for the first load:
   Debezium engine whose MariaDB compatibility is unproven, so the spike must exercise both
   streaming and snapshot modes.
 
+**As built.** The sender takes a snapshot whenever it starts with no saved position: on its
+first start, or after its `/opt/eip` volume was lost, which also closes the gap that loss would
+otherwise leave (`SYNC_SNAPSHOT_MODE=initial`, overridable to `schema_only`, which skips what is
+already there but still sends any of it that is edited later, so records that must never reach
+central are removed before enrolment). A sender whose first load has completed is
+untouched by the setting. Locking is `minimal`: the global read lock is held only while the
+schema is read, so the clinic keeps saving during the load. Every install creates a few records
+with the same uuids (the admin account, its person and name, the Unknown and admin providers)
+that central holds without a sync hash; dbsync refuses those and retries them forever, so the
+receiver skips them through `db-sync.excludedEntities`. Snapshot on MariaDB 10.11 is proven by
+`qa/sync/verify-initial-load.sh`, which checks every record in a synced table arrives. With
+reconciliation (§5.5) not yet built, a live load is judged finished when the snapshot has
+completed, the sender's event queue and the receiver's are empty, and no errors, conflicts or
+dead letters were raised; the rule above still stands once it is. The procedure is section 1 of
+the [sync runbook](../runbooks/sync-operations.md).
+
 ---
 
 ## 6. Cross-facility query flow (Sprint 4)
@@ -1107,7 +1123,7 @@ can invalidate the Sprint 3 plan.
 | E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4) | **Highest**: defeats every other durability control |
 | E12 | Facility and central drift onto different content-package versions | Same image both sides; assert UUID parity in the upgrade rehearsal (§1.6) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |
-| E14 | No plan for the initial load of a facility's existing data | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | High |
+| E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; verification by reconciliation still waits on §5.5 | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
 | E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
 
 ## 10. Before route one
@@ -1137,7 +1153,8 @@ Superseding the checklist in
 12. Receiver-first start order enforced and tested: a sender started first must not lose
     messages (E11).
 13. PGP payload encryption enabled, with key custody and rotation owned by MOH ICT (§7.7).
-14. Initial-load procedure defined and rehearsed on the pilot data (§5.10, E14).
+14. Initial-load procedure defined and rehearsed on the pilot data (§5.10, E14). Defined and
+    rehearsed on a local pair of stacks; the pilot data itself is still to do.
 15. The §5.9 acceptance test written and passing. Until it passes, the offline guarantee is
     a claim rather than a property.
 
