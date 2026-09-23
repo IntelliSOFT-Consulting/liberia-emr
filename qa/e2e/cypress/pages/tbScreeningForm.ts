@@ -124,6 +124,7 @@ class TbScreeningFormPage {
                 expectedScore += answer === 'Yes' ? weight : 0;
             })
             .then(() => {
+                expect(expectedScore, 'mixed screening must score above zero').to.be.greaterThan(0);
                 cy.get('input[name="total_score"]', { timeout: this.timeout })
                     .should('have.value', String(expectedScore));
             });
@@ -168,6 +169,7 @@ class TbScreeningFormPage {
     savePreviouslyTreatedScreening() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTreatedTbScreening');
         const treatmentDate = new Date();
+        treatmentDate.setDate(treatmentDate.getDate() - 2);
         this.selectQuestionAnswer('Contact of TB Patient', 'No');
         this.selectQuestionAnswer('Previously Treated for TB', 'Yes');
         this.enterDate('date_tb_treatment_was_started', treatmentDate);
