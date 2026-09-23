@@ -158,6 +158,7 @@
     "Brand color #3": "#002A86"
   },
   "@openmrs/esm-patient-forms-app": {
+    "customFormsUrl": "/ws/rest/v1/liberiaemr/forms?patientUuid=${patientUuid}",
     "orderBy": "name",
     "formSections": [
       {
