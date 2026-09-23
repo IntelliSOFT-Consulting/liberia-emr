@@ -32,16 +32,7 @@ class OpdConsultationFormPage {
     ];
 
     private assertFieldHidden(fieldId: string) {
-        cy.get('body').then(($body) => {
-            const $field = $body.find(`#${fieldId}`);
-
-            if ($field.length) {
-                cy.wrap($field, { log: false }).should('not.be.visible');
-                return;
-            }
-
-            expect($field, `${fieldId} hidden`).to.have.length(0);
-        });
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).should('not.exist');
     }
 
     private selectDropdownOption(fieldId: string, option: string) {

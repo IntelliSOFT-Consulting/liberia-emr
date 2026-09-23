@@ -9,7 +9,7 @@ describe('OPD Consultation form', () => {
 
     beforeEach(() => {
         loginWithSession();
-        visitPage.registerPatient({ birthdate: randomAdultBirthdateParts(16) });
+        visitPage.registerPatient({ birthdate: randomAdultBirthdateParts(25, 35) });
         visitPage.startVisit();
         opdConsultationForm.openClinicalForms();
         opdConsultationForm.selectForm();
