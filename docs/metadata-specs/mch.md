@@ -314,6 +314,7 @@ The source-controlled Newborn PNC form (`newborn-pnc.json`) lives in `content-pa
 | Weight | CIEL 5089 Weight (kg), form `max` **250** — CIEL 5089 carries `hi_absolute = 250` and `ObsValidator` rejects anything above it server-side, failing the whole encounter POST |
 | Gestational age / Fundal height / Fetal heart tone | CIEL 1438 / 1439 / 1440. Both ANC forms use these; the national local equivalents are superseded (see *Converged ANC concepts* below) |
 | Other findings / Routine drugs / Treatment remarks | Existing national text (drugs/remarks supplemental only) |
+| Return date (`DE.30`) | CIEL 5096 Return visit date (`var.concept.ciel.return-visit-date.uuid`). ANC Initial required date after Treatment remarks; must be on or after the form's encounter date (hidden `encounterDatetime` field `encounterDate`, not `today()`); same-day valid. Not on ANC Follow-up. National ANC Form still uses the local scheduled-date concept. |
 | Trimester | CIEL 5272 Pregnancy status with the existing national trimester answers |
 | Woman receiving IPT / LLIN received at ANC | Existing **national coded Yes/No** questions, answered by CIEL 1065 / 1066 — **never** a local Boolean |
 | Presentation | Local MCH value set — do **not** use national Vertex-only Presentation |
