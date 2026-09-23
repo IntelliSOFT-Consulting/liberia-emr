@@ -47,7 +47,13 @@ default maven-release-plugin flow.
    GitHub environment. `modules.yml` says in as many words that a fork PR must not be able to
    reach them. Any design that runs `deploy` on a laptop regresses this.
 
-6. **`mvn verify` is documented as broken on Apple Silicon.**
+6. **A `tags:` filter cannot coexist with the `paths:` filter on `push`.** `paths` applies
+   to the whole push event, and a tag push commonly reports no changed files, so the two
+   together match nothing. `modules.yml:41-44` already documents this — it is why the
+   existing workflow publishes off a `release` event rather than a tag push. Adding `tags:`
+   beside `paths:` yields a workflow that looks right and never fires.
+
+7. **`mvn verify` is documented as broken on Apple Silicon.**
    `docs/runbooks/local-development.md` §5: the packager plugin's `validate-configurations`
    goal starts a testcontainer with an x86-only JNA. `release:prepare`'s default
    `preparationGoals` is exactly `clean verify`. The module itself does not use the packager
@@ -125,19 +131,30 @@ frozen into the pom, and `deploy` never runs locally anyway.
 
 ### Workflow changes (`modules.yml`)
 
-A new trigger:
+A new trigger, and the removal of an old filter:
 
 ```yaml
 push:
+  branches: [main]
   tags: ['liberiaemr-[0-9]+.[0-9]+.[0-9]+']
+  # no paths -- see constraint 6
 ```
+
+Constraint 6 forces the `paths` filter off the `push` trigger. Path filtering of `main`
+pushes therefore moves into the decision script, which is the right home for it anyway: the
+question "does this event publish" then has exactly one answer in exactly one place. The
+`pull_request` trigger is a separate key and keeps its own `paths` filter.
+
+The `release:` trigger is deleted outright. A GitHub release no longer publishes the module,
+so running on one would only produce a job that refuses.
 
 The `decide` job introduced in PR #112 gains a case for module tags, and its `release` case
 changes meaning — from "publish if the pom base matches the tag" to a flat refusal:
 
 | Event | Decision |
 |---|---|
-| push to `main` | publish the SNAPSHOT stream (unchanged) |
+| push to `main` touching `modules/` | publish the SNAPSHOT stream |
+| push to `main` touching nothing under `modules/` | do not publish (this is the filtering the trigger can no longer do) |
 | push of a `liberiaemr-x.y.z` tag | publish, after asserting the pom version equals the tag suffix, is not a SNAPSHOT, and the tag is reachable from `main` |
 | `release` (a GitHub release) | never publish — the module's release stream is its own tags now |
 | anything else | never publish |
