@@ -407,6 +407,6 @@ queued or failed record, so central cannot say which facility one came from; use
 be reached, sync itself may be perfectly healthy: check the central `prometheus` service first.
 `qa/sync/verify-sync-status.sh` exercises the endpoint the page reads.
 
-The page itself is the `packages/esm-liberia-sync-status-app` frontend module, which is not yet
-pinned in `distribution/distro.properties`. Until it is, a central frontend image built from this
-repository does not carry the page or its menu entry, although the backend endpoint is there.
+The page itself is the `packages/esm-liberia-sync-status-app` frontend module, pinned in
+`distribution/distro.properties`. The same frontend image runs at facilities; there the endpoint
+reports the feature off and the page stays hidden.
