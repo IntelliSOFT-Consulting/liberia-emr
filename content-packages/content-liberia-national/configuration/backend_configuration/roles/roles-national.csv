@@ -1,6 +1,7 @@
 Uuid,Void/Retire,Role name,Description,Privileges,Inherited roles
 ${var.role.ict-auditor.uuid},,ICT Auditor,ICT Unit read-only access to audit logs,View Audit Log;View Administration Functions,
 ${var.role.national-reporting-officer.uuid},,National Reporting Officer,Generates MOH national indicator reports,Export National Report;View Reports;Run Reports,
-${var.role.sync-administrator.uuid},,Sync Administrator,Operates the facility-to-central sync queue,Manage Facility Sync;View Sync Status;Resolve Sync Conflicts;View Administration Functions,
+${var.role.sync-administrator.uuid},,Sync Administrator,Operates the facility-to-central sync queue,Manage Facility Sync;View Sync Status;View Administration Functions,
 ${var.role.sync-sender.uuid},,Sync Sender,Service account the facility sync sender signs in with,View Administration Functions,
 ${var.role.sync-receiver.uuid},,Sync Receiver,Service account the central sync receiver signs in with,View Administration Functions;Get People;Get Patients;Get Patient Identifiers;Get Users,
+${var.role.sync-conflict-reviewer.uuid},,Sync Conflict Reviewer,Reviews sync conflicts at central; can read the patient record a conflict holds,Resolve Sync Conflicts;View Sync Status,

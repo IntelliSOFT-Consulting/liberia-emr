@@ -76,6 +76,17 @@ cd_in_window() {
   fi
 }
 
+# Seconds until the window closes; four hours for an all-day window.
+cd_seconds_left() {
+  from="$(printf '%s' "$SYNC_CONFLICT_WINDOW" | cut -d- -f1)"
+  to="$(printf '%s' "$SYNC_CONFLICT_WINDOW" | cut -d- -f2)"
+  [ "$from" != "$to" ] || { echo 14400; return; }
+  now=$(( $(date -u +%s) % 86400 ))
+  # 1HH - 100, because shell arithmetic reads 08 and 09 as bad octal.
+  end=$(( (1${to%%:*} - 100) * 3600 + (1${to#*:} - 100) * 60 ))
+  echo $(( (end - now + 86400) % 86400 ))
+}
+
 cd_table_of_model() {
   expr="CASE SUBSTRING_INDEX(model_class_name, '.', -1)"
   for pair in $CD_TABLES; do expr="$expr WHEN '${pair%%:*}' THEN '${pair#*:}'"; done
@@ -138,8 +149,15 @@ cd_apply() {
   started="$(date +%s)"
   "$1" --hashes.update=true "--hashes.update.tables=$tables" > "$CD_LOG" 2>&1 &
   CD_CHILD=$!
+  # A hash update that would run into clinic hours is stopped at the end of the window.
+  rm -f "$CD_LOG.timeout"
+  ( left="$(cd_seconds_left)"; child="$CD_CHILD"
+    while [ "$left" -gt 0 ] && kill -0 "$child" 2>/dev/null; do sleep 30; left=$((left - 30)); done
+    kill -0 "$child" 2>/dev/null && touch "$CD_LOG.timeout" && kill -TERM "$child" ) &
+  watchdog=$!
   cd_wait "$CD_CHILD"
   CD_CHILD=""
+  kill "$watchdog" 2>/dev/null || true
   cat "$CD_LOG"
 
   if grep -q "Successfully updated entity hashes" "$CD_LOG"; then
@@ -156,9 +174,11 @@ cd_apply() {
     return 0
   fi
 
-  cd_log "the hash update did not succeed; conflicts $CD_IDS are open again and will be tried in the next window"
+  error="The hash update failed; it is tried again in the next window"
+  [ ! -e "$CD_LOG.timeout" ] || error="The hash update did not finish inside the window; it is tried again in the next one"
+  cd_log "$error. Conflicts $CD_IDS are open again"
   cd_reopen "$CD_IDS" || cd_log "WARNING: could not reopen conflicts $CD_IDS; they are reopened when the receiver next starts"
-  cd_openmrs "UPDATE liberiaemr_sync_conflict_decision SET date_apply_failed = NOW(), apply_error = 'The hash update failed; it is tried again in the next window' WHERE date_applied IS NULL AND ($match)" || true
+  cd_openmrs "UPDATE liberiaemr_sync_conflict_decision SET date_apply_failed = NOW(), apply_error = '$error' WHERE date_applied IS NULL AND ($match)" || true
   CD_IDS=""
   return 1
 }

@@ -269,8 +269,8 @@ Hashes"). The receiver runs it by itself for decisions recorded on the Sync conf
 ### On the Sync conflicts page
 
 1. At central, choose **Review** on the conflicts tile of `Sync status`, or open
-   `/openmrs/spa/sync-conflicts`. The page needs `Resolve Sync Conflicts`, which
-   `Sync Administrator` carries.
+   `/openmrs/spa/sync-conflicts`. The page needs the `Sync Conflict Reviewer` role, which
+   reads patient records: give it only to named reviewers, not to every `Sync Administrator`.
 2. **Review** shows the facility's version next to central's. Central's `changedByUuid` names
    the account that changed it. The facility shown is the one the sender claims (sync-eip.md
    7.2).
