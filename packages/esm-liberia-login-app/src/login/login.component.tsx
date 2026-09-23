@@ -29,6 +29,7 @@ const Login: React.FC = () => {
     provider: loginProvider,
     links: loginLinks,
     showPasswordOnSeparateScreen = true,
+    showPasswordReset = true,
   } = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
@@ -239,19 +240,26 @@ const Login: React.FC = () => {
                     />
                   </div>
                   {showPasswordField ? (
-                    <Button
-                      type="submit"
-                      className={styles.continueButton}
-                      renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
-                      iconDescription={t('loginButtonIconDescription', 'Log in button')}
-                      disabled={!isLoginEnabled || isLoggingIn}
-                    >
-                      {isLoggingIn ? (
-                        <InlineLoading className={styles.loader} description={t('loggingIn', 'Logging in') + '...'} />
-                      ) : (
-                        t('login', 'Log in')
+                    <>
+                      <Button
+                        type="submit"
+                        className={styles.continueButton}
+                        renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                        iconDescription={t('loginButtonIconDescription', 'Log in button')}
+                        disabled={!isLoginEnabled || isLoggingIn}
+                      >
+                        {isLoggingIn ? (
+                          <InlineLoading className={styles.loader} description={t('loggingIn', 'Logging in') + '...'} />
+                        ) : (
+                          t('login', 'Log in')
+                        )}
+                      </Button>
+                      {showPasswordReset && (
+                        <div className={styles.forgotPasswordLink}>
+                          <Link to="/login/forgot-password">{t('forgotPassword', 'Forgot password?')}</Link>
+                        </div>
                       )}
-                    </Button>
+                    </>
                   ) : (
                     <Button
                       type="submit"
@@ -295,9 +303,11 @@ const Login: React.FC = () => {
                       t('login', 'Log in')
                     )}
                   </Button>
-                  <div className={styles.forgotPasswordLink}>
-                    <Link to="/login/forgot-password">{t('forgotPassword', 'Forgot password?')}</Link>
-                  </div>
+                  {showPasswordReset && (
+                    <div className={styles.forgotPasswordLink}>
+                      <Link to="/login/forgot-password">{t('forgotPassword', 'Forgot password?')}</Link>
+                    </div>
+                  )}
                 </>
               )}
             </div>
