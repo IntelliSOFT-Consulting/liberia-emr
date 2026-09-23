@@ -93,6 +93,9 @@ run "pom is a SNAPSHOT behind a tag"        "<none>" 1 \
 run "tag orphaned by a squash merge"        "<none>" 1 \
   GITHUB_EVENT_NAME=push GITHUB_REF=refs/tags/liberiaemr-1.1.0 \
   GITHUB_REF_NAME=liberiaemr-1.1.0 GITHUB_SHA="$orphan_sha" POM="$(make_pom 1.1.0)"
+run "workflow_dispatch against a release tag" false    0 \
+  GITHUB_EVENT_NAME=workflow_dispatch GITHUB_REF=refs/tags/liberiaemr-1.1.0 \
+  GITHUB_REF_NAME=liberiaemr-1.1.0 GITHUB_SHA="$doc_sha" POM="$(make_pom 1.1.0)"
 
 echo "== other tags must not publish =="
 run "bare distribution tag"                 false    0 \

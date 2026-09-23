@@ -42,7 +42,12 @@ PY
 }
 
 # --- the module release stream -------------------------------------------------
-if [[ "$GITHUB_REF" == refs/tags/liberiaemr-* ]]; then
+# GITHUB_EVENT_NAME == push as well as the ref match: workflow_dispatch can be run
+# against any ref, including an existing liberiaemr-x.y.z tag, from the GitHub UI. A
+# tag push must be the ONLY way a release version reaches Repsy -- a dispatch against
+# one falls through to the catch-all below and publishes nothing, honestly, rather
+# than re-publishing an already-released, immutable version.
+if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == refs/tags/liberiaemr-* ]]; then
   want="${GITHUB_REF_NAME#liberiaemr-}"
   version="$(pom_version)"
   echo "module tag: ${GITHUB_REF_NAME} (wants ${want}); pom: ${version}"

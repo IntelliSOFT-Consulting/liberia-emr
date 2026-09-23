@@ -1,7 +1,7 @@
 # Backend OMOD pipeline — modules/liberiaemr.
 #
 # Shaped after packages.yml, which does the same job for the ESMs on npm: one workflow per
-# area, paths-scoped, PR builds and tests, and publishing only from main or a tag.
+# area, PR builds paths-scoped, and publishing only from main or a tag.
 #
 # Deliberately NOT part of ci.yml. ci.yml carries the single required status check for
 # branch protection ("CI gate"), and a publish step that can fail on a credential or a
@@ -85,11 +85,11 @@ jobs:
   #
   # A separate job rather than an `if:` on a step inside publish, for one reason: GitHub
   # enters a job's `environment:` when the job starts, so a step-level skip would still put
-  # a release that ships nothing in front of repsy-publish's reviewer, if one is ever
+  # an event that ships nothing in front of repsy-publish's reviewer, if one is ever
   # attached. Skipping the whole job never touches the environment.
   #
-  # Deliberately does NOT need build-and-test — it reads one field out of a pom and has no
-  # reason to queue behind a Maven build. publish needs both.
+  # Deliberately does NOT need build-and-test — deciding is a clone, a fetch and a diff, none
+  # of which have any reason to queue behind a Maven build. publish needs both.
   decide:
     name: Decide whether to publish
     runs-on: ubuntu-latest
@@ -98,7 +98,11 @@ jobs:
     steps:
       # fetch-depth: 0 and the explicit main fetch are for the reachability check in the
       # script: a tag push checks out a detached commit with no branches, so there would
-      # otherwise be no origin/main to compare against.
+      # otherwise be no origin/main to compare against. This is also load-bearing for the
+      # main stream: at the default depth of 1, `git cat-file -e "$BEFORE_SHA"` would always
+      # miss, the script would fail open on "no usable base", and EVERY main push would
+      # publish. A future "optimisation" back to a shallow clone would change that silently
+      # rather than break visibly.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
