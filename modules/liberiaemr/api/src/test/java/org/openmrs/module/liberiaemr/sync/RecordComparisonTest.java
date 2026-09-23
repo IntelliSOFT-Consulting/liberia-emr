@@ -24,10 +24,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-/**
- * Checks the comparison against the shapes dbsync and MariaDB actually produce: a model as dbsync
- * marshals it, and a row as the JDBC driver returns it.
- */
+/** Inputs shaped as dbsync marshals a model and as the JDBC driver returns a row. */
 public class RecordComparisonTest {
 
 	private static final String CREATOR = "1c3db49d-440a-11e6-a65c-00e04c680037";
@@ -112,7 +109,6 @@ public class RecordComparisonTest {
 		assertEquals(CREATOR, field(fields, "creatorUuid").get("facility"));
 		assertEquals(CREATOR, field(fields, "creatorUuid").get("central"));
 		assertFalse((Boolean) field(fields, "creatorUuid").get("differs"));
-		// Who changed central's copy is the lead the runbook asks the reviewer to follow up.
 		assertEquals(EDITOR, field(fields, "changedByUuid").get("central"));
 		assertTrue((Boolean) field(fields, "changedByUuid").get("differs"));
 	}

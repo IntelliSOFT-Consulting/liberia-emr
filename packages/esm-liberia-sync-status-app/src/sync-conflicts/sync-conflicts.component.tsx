@@ -35,7 +35,7 @@ function when(millis: number | null) {
   return millis ? formatDate(new Date(millis)) : '';
 }
 
-/** HH:MM-HH:MM with the same time at both ends means the receiver applies at any time of day. */
+/** The same time at both ends means all day. */
 function appliesAnyTime(window: string | null | undefined) {
   if (!window) {
     return false;
@@ -44,19 +44,13 @@ function appliesAnyTime(window: string | null | undefined) {
   return from === to;
 }
 
-/**
- * Sync conflicts at central: a facility's update held back because central's copy of the record
- * was changed outside sync. A reviewer compares the two versions and records which one is right;
- * the receiver applies decided conflicts in its window, with dbsync's own procedure.
- */
 const SyncConflicts: React.FC = () => {
   const { t } = useTranslation();
   const { conflicts, error, isLoading, mutate } = useSyncConflicts();
   const [selected, setSelected] = useState<Conflict | null>(null);
   const [applied, setApplied] = useState<Conflict | null>(null);
 
-  // The receiver removes a conflict once it has applied the decision. When the one under review
-  // goes, say so and close it, rather than leave a panel about a conflict that no longer exists.
+  // Once the receiver applies the conflict under review, it leaves the list: close it and say so.
   const list = conflicts?.conflicts;
   useEffect(() => {
     if (selected && list && !list.some((conflict) => conflict.id === selected.id)) {
@@ -254,7 +248,7 @@ const DecisionLabel: React.FC<{ decision: DecisionChoice }> = ({ decision }) => 
   );
 };
 
-// Only the state that asks for action is a tag; Carbon truncates a tag's longer text.
+// Carbon truncates long tag text, so only the short state is a tag.
 const ConflictState: React.FC<{ conflict: Conflict; anyTime: boolean }> = ({ conflict, anyTime }) => {
   const { t } = useTranslation();
   if (!conflict.decision) {
@@ -315,7 +309,7 @@ const ConflictReview: React.FC<ConflictReviewProps> = ({ conflict, applyWindow, 
     );
   }
 
-  // Decisions arrive newest first. One not yet applied is the decision that stands.
+  // Newest first; the unapplied one stands.
   const pending = detail.decisions.find((decision) => !decision.dateApplied) ?? null;
   const earlier = detail.decisions.filter((decision) => decision !== pending);
   const fields = showAll ? detail.fields : detail.fields.filter((field) => field.differs);
@@ -439,7 +433,6 @@ interface DecisionSummaryProps {
   onChange: () => void;
 }
 
-/** The decision that stands, once recorded: what was decided, and what happens next. */
 const DecisionSummary: React.FC<DecisionSummaryProps> = ({ decision, waitingOnOthers, table, applyWindow, onChange }) => {
   const { t } = useTranslation();
 

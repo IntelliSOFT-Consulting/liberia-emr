@@ -269,35 +269,23 @@ Hashes"). The receiver runs it by itself for decisions recorded on the Sync conf
 ### On the Sync conflicts page
 
 1. At central, choose **Review** on the conflicts tile of `Sync status`, or open
-   `/openmrs/spa/sync-conflicts`. Each conflict is listed with its table, record, when it was
-   raised and how many updates are waiting behind it. The page needs the `Resolve Sync
-   Conflicts` privilege, which `Sync Administrator` carries, because a conflict holds a patient
-   record.
-2. **Review** puts the facility's version next to central's, showing the fields that differ.
-   Central's `changedByUuid` is the account that changed it, which is where finding out what
-   wrote to central starts. The facility named is the one the sending server claims
-   (sync-eip.md 7.2): ask it, but do not treat it as proof.
-3. Agree which version is right with the clinical owner at the facility, and record it with a
-   reason that says who you agreed it with. Never put a patient's name or identifier in the
-   reason. "Central's change is right" means the facility makes the same change; until it does,
-   central holds the facility's version.
+   `/openmrs/spa/sync-conflicts`. The page needs `Resolve Sync Conflicts`, which
+   `Sync Administrator` carries.
+2. **Review** shows the facility's version next to central's. Central's `changedByUuid` names
+   the account that changed it. The facility shown is the one the sender claims (sync-eip.md
+   7.2).
+3. Agree the right version with the clinical owner at the facility and record it with a reason
+   naming who you agreed it with, never the patient. "Central's change is right" means the
+   facility makes the same change; until then central holds the facility's version.
 4. The receiver applies decisions inside `SYNC_CONFLICT_WINDOW` (01:00 to 05:00 UTC by default),
-   looking every `SYNC_CONFLICT_CHECK_SECONDS` (600). A table is applied only once every
-   conflict queued in it is decided, because dbsync's hash updater refuses a table with any
-   open, and the page says when a decision is waiting on others. The receiver stops, marks the
-   conflicts resolved, runs the hash updater for those tables, removes the rows (which clears
-   the alert and the stored payloads), stamps the decisions applied and starts again. Updates
-   waiting behind a conflict apply on its first retry run, about two minutes later; if none
-   was waiting, have the facility save the record again. If the hash update fails, the
-   conflicts are reopened, the page shows the failure, and the receiver leaves them until the
-   next night's window rather than stopping again at every check.
+   once every conflict in the table is decided. It stops, runs dbsync's hash updater, removes
+   the rows (clearing the alert) and starts again; held updates apply about two minutes later.
+   If none was held, have the facility save the record again. A failed run reopens the
+   conflicts, shows the failure on the page and waits for the next night.
 
-Decisions stay in the `liberiaemr_sync_conflict_decision` table for good: who decided, when,
-why, and when the receiver applied it. The receiver is down while the hash updater scans a
-table: seconds for a small one, much longer for `obs` on a large central, so keep the window
-at a quiet time. On a central database created before this page existed, the EMR's database
-account cannot read the receiver's schema until the grant in `initdb/10-sync-mgmt-db.sh` is run
-by hand once; the page says so until then.
+Decisions are kept in `liberiaemr_sync_conflict_decision`. A large table such as `obs` can keep
+the receiver down for a while, so keep the window at a quiet time. On a central database created
+before this page, run the grant in `initdb/10-sync-mgmt-db.sh` by hand once.
 
 ### By hand
 

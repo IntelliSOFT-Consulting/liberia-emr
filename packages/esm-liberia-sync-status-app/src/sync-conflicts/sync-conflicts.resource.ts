@@ -18,10 +18,9 @@ export interface Conflict {
   table: string | null;
   identifier: string;
   raised: number | null;
-  /** Later updates to the same record, held back behind this one. */
   waiting: number;
   decision: Decision | null;
-  /** Other conflicts in the same table still to decide; the table is applied only once there are none. */
+  /** A table is applied only once every conflict in it is decided. */
   undecidedInTable: number;
 }
 
@@ -32,11 +31,9 @@ export interface AppliedDecision extends Decision {
 }
 
 export interface SyncConflicts {
-  /** False on a facility server, which has no receiver. */
   enabled: boolean;
-  /** False when the EMR cannot read the receiver's queue. */
   available?: boolean;
-  /** HH:MM-HH:MM in UTC; null when decisions are not applied automatically. */
+  /** HH:MM-HH:MM UTC; null when not applied automatically. */
   applyWindow?: string | null;
   conflicts?: Array<Conflict>;
   recent?: Array<AppliedDecision>;
@@ -46,7 +43,6 @@ export interface ConflictField {
   field: string;
   facility: string | null;
   central: string | null;
-  /** False for a field with no matching column at central; shown, not compared. */
   compared: boolean;
   differs: boolean;
 }
@@ -56,19 +52,17 @@ export interface ConflictDetail {
   table: string | null;
   identifier: string;
   raised: number | null;
-  /** The code the sending server wrote; who to ask, not proof of who sent it. */
+  /** Claimed by the sender, not verified. */
   facility: string | null;
   centralMissing: boolean;
   fields: Array<ConflictField>;
   decisions: Array<Decision>;
 }
 
-/** What openmrsFetch throws: an Error carrying the response, so the page can read its status. */
 export type SyncConflictsError = Error & { response?: { status?: number } };
 
 const baseUrl = `${restBaseUrl}/liberiaemr/syncconflicts`;
 
-/** Often enough that a decision shows as applied soon after the receiver applies it. */
 const refreshInterval = 30_000;
 
 export function useSyncConflicts() {

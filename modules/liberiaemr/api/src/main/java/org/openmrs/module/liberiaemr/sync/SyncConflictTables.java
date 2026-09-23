@@ -13,11 +13,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * The tables dbsync keeps a hash for, keyed by the model class a conflict names. This is dbsync's
- * own TableToSyncEnum, the list its hash updater accepts; scripts/sync/conflicts.sh carries the
- * same one.
- */
+/** dbsync's TableToSyncEnum: the tables it keeps hashes for, by model class. */
 public final class SyncConflictTables {
 
 	private static final Map<String, String> TABLE_BY_MODEL;
@@ -56,10 +52,7 @@ public final class SyncConflictTables {
 		TABLE_BY_MODEL = Collections.unmodifiableMap(tables);
 	}
 
-	/**
-	 * Tables that extend another and have no uuid of their own: a patient is a person, a drug
-	 * order is an order. Each maps to its parent table, the parent's key and its own key.
-	 */
+	/** Tables whose uuid is in a parent table: {parent, parent key, own key}. */
 	private static final Map<String, String[]> PARENT_BY_TABLE;
 	
 	static {
@@ -74,17 +67,10 @@ public final class SyncConflictTables {
 	private SyncConflictTables() {
 	}
 	
-	/**
-	 * @return {parent table, parent key, own key} for a table that extends another, else null
-	 */
 	public static String[] parentOf(String table) {
 		return table == null ? null : PARENT_BY_TABLE.get(table);
 	}
 	
-	/**
-	 * @param modelClassName the fully qualified model class dbsync stored with the conflict
-	 * @return the table it belongs to, or null for a class dbsync keeps no hash for
-	 */
 	public static String tableOf(String modelClassName) {
 		if (modelClassName == null) {
 			return null;

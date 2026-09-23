@@ -27,7 +27,6 @@ SYNC_ROLE="sync receiver"
 [ "${SYNC_PAYLOAD_ENCRYPTION:=true}" = true ] \
   || sync_refuse "SYNC_PAYLOAD_ENCRYPTION cannot be turned off at central"
 : "${SYNC_HASHES_UPDATE:=false}"
-# Unset takes the default; set but empty turns automatic application off.
 : "${SYNC_CONFLICT_WINDOW=01:00-05:00}"
 : "${SYNC_CONFLICT_CHECK_SECONDS:=600}"
 : "${SYNC_HASHES_UPDATE_TABLES:=}"
@@ -77,26 +76,22 @@ PGP_PASSWORD="$PGP_PASSWORD" envsubst "$vars" \
   < /app/receiver-application.properties.template > /app/config/application.properties
 unset PGP_PASSWORD
 
-# Only ever started with &: exec makes the background job the JVM itself, so its pid is the one
-# a TERM has to reach.
+# Only ever run with &: exec makes the background pid the JVM's.
 receiver_jvm() {
   # shellcheck disable=SC2086 # JAVA_OPTS and TLS_ARGS are deliberately word-split
   exec java ${JAVA_OPTS:--Xmx2g} $TLS_ARGS -jar /app/receiver.jar \
     --spring.config.location=file:/app/config/application.properties "$@"
 }
 
-# Conflict decisions recorded in the EMR are applied in SYNC_CONFLICT_WINDOW (conflict-decisions.sh).
-# That needs the receiver stopped for a moment, so this shell stays as the parent of the JVM
-# instead of replacing itself with it. Empty turns it off: conflicts are then resolved with
-# scripts/sync/conflicts.sh.
+# Applying conflict decisions needs the receiver stopped for a while, so this shell stays as the
+# JVM's parent. An empty SYNC_CONFLICT_WINDOW turns it off.
 if [ "$SYNC_HASHES_UPDATE" = false ] && [ -n "$SYNC_CONFLICT_WINDOW" ]; then
   . /app/conflict-decisions.sh
   cd_setup
   CD_CHILD=""
   CD_IDS=""
   tick=0
-  # After a failed apply, leave decisions alone until the next night's window, so a failure that
-  # repeats does not stop and start the receiver at every check.
+  # After a failure, wait for the next night rather than restart the receiver at every check.
   held_until=0
   stop_child() {
     if [ -n "$CD_CHILD" ]; then
@@ -123,8 +118,7 @@ if [ "$SYNC_HASHES_UPDATE" = false ] && [ -n "$SYNC_CONFLICT_WINDOW" ]; then
     wait "$CD_CHILD" || rc=$?
     if [ "$tick" = 1 ]; then
       tick=0
-      # A tick interrupts the wait with the receiver still running; outside the window, or with
-      # nothing decided, it carries on untouched.
+      # A tick interrupts the wait; the receiver is still running.
       if [ "$(date +%s)" -ge "$held_until" ] && cd_in_window && [ -n "$(cd_ready 2>/dev/null)" ]; then
         cd_log "stopping the receiver to apply decided conflicts"
         stop_child
@@ -136,7 +130,7 @@ if [ "$SYNC_HASHES_UPDATE" = false ] && [ -n "$SYNC_CONFLICT_WINDOW" ]; then
       fi
       continue
     fi
-    # The receiver ended by itself: end with it, so the restart policy brings it back.
+    # The receiver exited by itself; exit too so the restart policy applies.
     kill "$ticker" 2>/dev/null || true
     exit "$rc"
   done

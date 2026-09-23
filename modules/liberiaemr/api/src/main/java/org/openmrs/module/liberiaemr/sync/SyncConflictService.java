@@ -38,17 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * The sync conflicts waiting at central, and the decisions reviewers record on them.
- *
- * A conflict is a facility's update that dbsync held back because central's copy of the record
- * was changed outside sync. The conflict itself lives in the receiver's management schema,
- * which the EMR's database account can only read. The decision is written here, in the EMR's own
- * table, and the receiver applies decided conflicts in its nightly window with dbsync's hash
- * updater (distribution/sync/conflict-decisions.sh). The two sides never write to each other's
- * tables, except the receiver stamping a decision as applied.
- *
- * Off unless the management schema is named, which is how a facility behaves: it runs the same
- * module and has no receiver.
+ * Sync conflicts waiting at central, read from the receiver's management schema, and the
+ * decisions reviewers record on them. The receiver applies decisions itself
+ * (distribution/sync/conflict-decisions.sh). Off where no schema is named, as at a facility.
  */
 @Component("liberiaemr.SyncConflictService")
 public class SyncConflictService {
@@ -59,10 +51,8 @@ public class SyncConflictService {
 
 	public static final String ENV_APPLY_WINDOW = "LIBERIAEMR_SYNC_CONFLICT_WINDOW";
 
-	/** The facility's version is right; central's change is overwritten. */
 	public static final String FACILITY_STANDS = "FACILITY_STANDS";
 
-	/** Central's change is right and the facility will make it too; until then the facility's version applies. */
 	public static final String CENTRAL_REDONE_AT_FACILITY = "CENTRAL_REDONE_AT_FACILITY";
 
 	public static final List<String> DECISIONS = Collections
@@ -70,14 +60,12 @@ public class SyncConflictService {
 
 	public static final int REASON_MAX_LENGTH = 500;
 
-	/** How long an applied decision stays in the page's recent list; the table keeps it for good. */
 	private static final int RECENT_DAYS = 30;
 
 	private static final Pattern SCHEMA_NAME = Pattern.compile("^[A-Za-z0-9_]+$");
 
 	private static final Pattern IDENTIFIER = Pattern.compile("^[a-z0-9_]+$");
 
-	/** The conflict does not exist, or no longer does: it was applied and removed. */
 	public static class NotFoundException extends RuntimeException {
 
 		public NotFoundException(String message) {
@@ -85,7 +73,6 @@ public class SyncConflictService {
 		}
 	}
 
-	/** The conflict under that id is not the record the reviewer looked at. */
 	public static class StaleException extends RuntimeException {
 
 		public StaleException(String message) {
@@ -98,16 +85,10 @@ public class SyncConflictService {
 
 	private final ObjectMapper mapper = new ObjectMapper();
 
-	/**
-	 * @return true where there is a receiver to review conflicts for
-	 */
 	public boolean isEnabled() {
 		return schema() != null;
 	}
 
-	/**
-	 * @return the queued conflicts with the latest decision on each, and decisions applied lately
-	 */
 	@Transactional(readOnly = true)
 	public Map<String, Object> list() {
 		final String schema = schema();
@@ -123,8 +104,7 @@ public class SyncConflictService {
 			result.put("available", true);
 		}
 		catch (HibernateException e) {
-			// Typically a central database older than the grant that lets the EMR read the
-			// receiver's schema (distribution/compose/central/initdb). Say so; do not fail.
+			// Usually a central database created before the initdb grant.
 			log.warn("Cannot read the sync receiver's conflict queue: {}", e.getMessage());
 			result.put("available", false);
 		}
@@ -161,8 +141,7 @@ public class SyncConflictService {
 				conflict.put("decision", decision == null ? null : describe(decision));
 				conflicts.add(conflict);
 			}
-			// A table is rebuilt only once every conflict in it is decided (dbsync's hash updater
-			// refuses otherwise), so a decided conflict can be waiting on someone else's.
+			// dbsync rebuilds a table only once every conflict in it is decided.
 			for (Map<String, Object> conflict : conflicts) {
 				Integer others = undecided.get(String.valueOf(conflict.get("table")));
 				int count = others == null ? 0 : others;
@@ -185,12 +164,6 @@ public class SyncConflictService {
 		});
 	}
 
-	/**
-	 * @param id the conflict's id in the management schema
-	 * @return the conflict with the facility's version and central's lined up field by field, and
-	 *         every decision recorded on it
-	 * @throws NotFoundException when there is no such conflict
-	 */
 	@Transactional(readOnly = true)
 	public Map<String, Object> get(final long id) {
 		final String schema = requireSchema();
@@ -218,8 +191,7 @@ public class SyncConflictService {
 				conflict.put("table", table);
 				conflict.put("identifier", identifier);
 				conflict.put("raised", millis(row.get("date_created")));
-				// Written by the sending server: dbsync checks the signature, not that the code
-				// matches the key that signed it (sync-eip.md 7.2). Who to ask, not proof.
+				// Claimed by the sender, not verified (sync-eip.md 7.2).
 				conflict.put("facility", meta.get("sourceIdentifier"));
 				conflict.put("centralMissing", central == null);
 				conflict.put("fields", RecordComparison.compare(facility, central, references(connection, table)));
@@ -239,16 +211,8 @@ public class SyncConflictService {
 	}
 
 	/**
-	 * Records a reviewer's decision. Nothing is applied here: the receiver applies decided
-	 * conflicts in its window. A later decision on the same conflict replaces an earlier one that
-	 * was not applied yet; both stay in the table.
-	 *
-	 * @param id the conflict's id
-	 * @param identifier the record the reviewer looked at, so a decision cannot land on another
-	 * @param decision one of {@link #DECISIONS}
-	 * @param reason why, in words that name no patient
-	 * @param decidedBy the reviewer
-	 * @return the decision as recorded
+	 * Records a decision; the receiver applies it later. A newer decision supersedes an unapplied
+	 * one. {@code identifier} must match the conflict, so a decision cannot land on another record.
 	 */
 	@Transactional
 	public Map<String, Object> decide(final long id, final String identifier, final String decision, String reason,
@@ -298,7 +262,6 @@ public class SyncConflictService {
 		});
 	}
 
-	/** Null when unset or not a plain schema name; either way the feature is off. */
 	String schema() {
 		String value = System.getenv(ENV_MGMT_SCHEMA);
 		value = value == null ? "" : value.trim();
@@ -328,10 +291,9 @@ public class SyncConflictService {
 	}
 
 	/**
-	 * Central's copy of the record, in the shape dbsync's model has. A table with no uuid of its
-	 * own (patient, drug_order) is read through its parent, whose columns keep their names, and
-	 * its own columns are added under the table's name as well: dbsync's PatientModel has the
-	 * person's creator as creatorUuid and the patient row's as patientCreatorUuid.
+	 * Central's copy of the record. A table without its own uuid (patient) is read through its
+	 * parent; its own columns are also added prefixed with the table name, matching dbsync's
+	 * patientCreatorUuid and similar fields.
 	 */
 	static Map<String, Object> centralRow(Connection connection, String table, String uuid) throws SQLException {
 		String[] parent = SyncConflictTables.parentOf(table);
@@ -357,7 +319,6 @@ public class SyncConflictService {
 		return row;
 	}
 	
-	/** The latest decision recorded on each conflict that is not applied yet, by conflict id. */
 	private Map<Long, Map<String, Object>> latestDecisions(Connection connection) throws SQLException {
 		Map<Long, Map<String, Object>> latest = new HashMap<Long, Map<String, Object>>();
 		for (Map<String, Object> row : query(connection, "SELECT d.*, u.username FROM liberiaemr_sync_conflict_decision d "
@@ -379,17 +340,13 @@ public class SyncConflictService {
 		return decision;
 	}
 
-	/**
-	 * Resolves reference columns through the schema's own foreign keys, so each synced table does
-	 * not need its own map of what its columns point at.
-	 */
+	/** Resolves reference columns to uuids through the schema's foreign keys. */
 	private RecordComparison.References references(final Connection connection, final String table) {
 		return new RecordComparison.References() {
 
 			@Override
 			public String uuidOf(String column, Object id) {
 				try {
-					// A column of a joined record may be the parent's (a patient's gender is the person's).
 					String[] parent = SyncConflictTables.parentOf(table);
 					String parentTable = parent == null ? table : parent[0];
 					if (parent != null && column.startsWith(table + "_")) {
@@ -426,7 +383,7 @@ public class SyncConflictService {
 			return cast(mapper.readValue(payload, LinkedHashMap.class));
 		}
 		catch (Exception e) {
-			// The payload is a patient record: never put it, or the parser's view of it, in a log.
+			// Never log the payload: it is a patient record.
 			return new LinkedHashMap<String, Object>();
 		}
 	}
@@ -438,7 +395,6 @@ public class SyncConflictService {
 
 	private static Long millis(Object value) {
 		if (value instanceof java.time.LocalDateTime) {
-			// What the MySQL driver returns for a DATETIME column; it holds the server's local time.
 			return ((java.time.LocalDateTime) value).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
 		}
 		return value instanceof java.util.Date ? ((java.util.Date) value).getTime() : null;

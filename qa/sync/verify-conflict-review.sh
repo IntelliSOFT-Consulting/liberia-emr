@@ -1,23 +1,16 @@
 #!/usr/bin/env bash
-# QA check for reviewing sync conflicts in the EMR (Sync conflicts page, at central) and the
-# receiver applying the decision by itself. Registers a patient at the facility, waits for it at
-# central, edits it at central outside sync and then twice at the facility, so the receiver
-# raises a real conflict with an update waiting behind it. Then, through the page's endpoint
-# only: the conflict is listed, its two versions differ in the field that was edited, a
-# decision on the wrong record or without a reason is refused, and a user without Resolve Sync
-# Conflicts is refused. The decision is recorded, and the receiver applies it inside its window
-# with no one touching the server: the conflict leaves the queue, the decision is stamped
-# applied, the waiting update reaches central, a later change applies without a new conflict,
-# and ReceiverConflicts clears.
+# QA check for the Sync conflicts page and the receiver applying decisions by itself. Raises a
+# real conflict, reviews and decides it through the page's endpoint, checks the refusals, and
+# asserts the receiver applies it: the conflict leaves the queue, the held update lands, and
+# ReceiverConflicts clears.
 #
 #   qa/sync/verify-conflict-review.sh [--facility-url https://localhost] \
 #     [--central-url https://localhost:8443] [--user admin] [--password ...] \
 #     [--central-user ...] [--central-password ...] [--prom-url http://127.0.0.1:9190] \
 #     [--timeout 900]
 #
-# Both stacks must be up with a healthy baseline (verify-e2e-push.sh), and central started with
-# SYNC_CONFLICT_WINDOW=00:00-00:00 (all day) and SYNC_CONFLICT_CHECK_SECONDS=30 in its env file,
-# so the decision applies now rather than tonight.
+# Both stacks must be up (verify-e2e-push.sh), with central started with
+# SYNC_CONFLICT_WINDOW=00:00-00:00 and SYNC_CONFLICT_CHECK_SECONDS=30 so decisions apply now.
 set -euo pipefail
 
 FACILITY_URL="https://localhost"
@@ -186,8 +179,7 @@ pass "the receiver logs what it applied"
 
 until_true 300 alert_is ReceiverConflicts none || fail "ReceiverConflicts clears"
 pass "ReceiverConflicts clears"
-# The hash updater serves the same metrics while it scans, so the receiver only looks down for
-# the two JVM starts: ReceiverDown may go pending, never past its five minutes to firing.
+# Only the two JVM starts leave the receiver unscraped, so ReceiverDown may go pending, not fire.
 ! alert_is ReceiverDown firing || fail "ReceiverDown did not fire while the hashes were rebuilt"
 pass "ReceiverDown did not fire while the hashes were rebuilt"
 

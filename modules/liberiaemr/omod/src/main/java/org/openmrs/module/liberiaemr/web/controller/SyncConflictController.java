@@ -26,11 +26,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * Serves the sync conflicts page: the conflicts waiting at central, each one's facility and
- * central versions side by side, and the reviewer's decision.
- *
- * Every call needs Resolve Sync Conflicts, reading included: a conflict carries a patient record.
- * Mapped under /ws/rest so the REST authentication filter requires a session.
+ * The sync conflicts page's endpoint. Every call, reads included, needs Resolve Sync Conflicts
+ * because a conflict carries a patient record.
  */
 @Controller
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/liberiaemr/syncconflicts")

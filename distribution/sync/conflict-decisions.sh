@@ -1,24 +1,14 @@
 #!/bin/sh
-# Applies the sync conflict decisions reviewers record in the EMR (Sync conflicts page, at
-# central), with dbsync's own procedure: its README, "Conflict Resolution In The Receiver" and
-# "Updating Entity Hashes". Sourced by docker-entrypoint-receiver.sh, which calls cd_apply with
-# the receiver stopped, inside SYNC_CONFLICT_WINDOW.
-#
-# For each table whose queued conflicts are ALL decided (dbsync's hash updater refuses a table
-# with any unresolved), it marks them resolved, runs the hash updater for those tables, removes
-# the rows (they hold the payloads, and dbsync's conflict metric counts every row) and stamps the
-# decisions applied. A failed or interrupted run reopens the conflicts and records the failure
-# on the decisions, so the next window tries again and the page says why it has not happened.
-#
-# The receiver's own two accounts are used: the management one for dbsync's tables and the
-# OpenMRS one for the decisions table. Neither password reaches a process argument.
+# Applies conflict decisions recorded in the EMR with dbsync's documented procedure ("Updating
+# Entity Hashes" in its README). Sourced by docker-entrypoint-receiver.sh, which calls cd_apply
+# with the receiver stopped. A table is applied only when all its queued conflicts are decided,
+# since dbsync's hash updater refuses otherwise. A failed run reopens the conflicts.
 
 CD_MGMT_CNF=/app/config/mgmt.cnf
 CD_OPENMRS_CNF=/app/config/openmrs.cnf
 CD_LOG=/opt/eip/hash-update.log
 
-# dbsync's table names (TableToSyncEnum) for the model classes it keeps hashes for; the
-# module's SyncConflictTables and scripts/sync/conflicts.sh carry the same list.
+# dbsync's TableToSyncEnum, as in SyncConflictTables and scripts/sync/conflicts.sh.
 CD_TABLES="PersonModel:person PatientModel:patient VisitModel:visit EncounterModel:encounter
 ObservationModel:obs PersonAttributeModel:person_attribute PatientProgramModel:patient_program
 PatientStateModel:patient_state VisitAttributeModel:visit_attribute
@@ -35,12 +25,11 @@ cd_log() {
   echo "conflict decisions: $*"
 }
 
-# A value for a MariaDB option file: quoted, with backslashes and quotes escaped.
 cd_cnf_value() {
   printf '"%s"' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')"
 }
 
-# Writes the two client option files (mode 600 under the entrypoint's umask 077).
+# Client option files, so no password reaches a process argument.
 cd_setup() {
   for which in mgmt openmrs; do
     if [ "$which" = mgmt ]; then user="$MGMT_DB_USER" pw="$MGMT_DB_PASSWORD" file="$CD_MGMT_CNF"
@@ -51,8 +40,7 @@ cd_setup() {
       echo "port=$OPENMRS_DB_PORT"
       echo "user=$(cd_cnf_value "$user")"
       echo "password=$(cd_cnf_value "$pw")"
-      # The same plain connection the receiver's own JDBC datasources make to this database,
-      # on the stack's internal network; a MariaDB 11 client otherwise demands TLS.
+      # As plain as the receiver's own JDBC connections; a MariaDB 11 client demands TLS otherwise.
       echo "skip-ssl"
     } > "$file"
   done
@@ -67,16 +55,14 @@ cd_openmrs() {
   mariadb --defaults-extra-file="$CD_OPENMRS_CNF" --batch --skip-column-names "$OPENMRS_DB_NAME" -e "$1"
 }
 
-# Waits for a process to end. A signal the shell traps (the entrypoint's check tick) ends a wait
-# early with the process still running, so wait again until it is really gone.
+# A trapped signal ends a wait early, so wait until the process is really gone.
 cd_wait() {
   while kill -0 "$1" 2>/dev/null; do
     wait "$1" 2>/dev/null || true
   done
 }
 
-# SYNC_CONFLICT_WINDOW is HH:MM-HH:MM in UTC, and may wrap past midnight (22:00-04:00). The same
-# time at both ends means all day, which QA uses to apply without waiting for the night.
+# HH:MM-HH:MM in UTC, may wrap midnight; the same time at both ends means all day.
 cd_in_window() {
   from="$(printf '%s' "$SYNC_CONFLICT_WINDOW" | cut -d- -f1 | tr -d :)"
   to="$(printf '%s' "$SYNC_CONFLICT_WINDOW" | cut -d- -f2 | tr -d :)"
@@ -96,8 +82,8 @@ cd_table_of_model() {
   echo "$expr ELSE '' END"
 }
 
-# Prints "table<TAB>id,id,..." for each table whose queued conflicts all carry a decision that
-# is not applied yet. A conflict matches its decision by id and record, never by id alone.
+# Prints "table<TAB>id,id,..." for each table whose queued conflicts all have an unapplied
+# decision, matched by id and record.
 cd_ready() {
   queued="$(cd_mgmt "SELECT id, identifier, $(cd_table_of_model) FROM receiver_conflict_queue ORDER BY id")" || return 1
   [ -n "$queued" ] || return 0
@@ -127,9 +113,7 @@ cd_decision_match() {
     END { if (sep == "") printf "FALSE" }'
 }
 
-# Puts conflicts back to open. Also run before the receiver starts, which undoes a run that was
-# killed before it could reopen them: with the receiver running, a resolved conflict no longer
-# holds its record's updates back, and the next one would raise a new, undecided conflict.
+# Reopens conflicts. Run at start too, to undo a run killed before it could reopen them.
 cd_reopen() { # [ids]
   if [ -n "${1:-}" ]; then
     cd_mgmt "UPDATE receiver_conflict_queue SET is_resolved = 0 WHERE id IN ($1)"
@@ -138,9 +122,7 @@ cd_reopen() { # [ids]
   fi
 }
 
-# Called with the receiver stopped. $1 is the command that runs the receiver JVM with extra
-# arguments; it is started in the background as CD_CHILD so the entrypoint's TERM trap can stop
-# it. Returns 0 when there was nothing to do or everything applied.
+# $1 runs the receiver JVM with extra arguments; it runs as CD_CHILD so a TERM can stop it.
 cd_apply() {
   ready="$(cd_ready)" || { cd_log "could not read the queues; trying again at the next check"; return 1; }
   [ -n "$ready" ] || return 0
@@ -161,9 +143,7 @@ cd_apply() {
   cat "$CD_LOG"
 
   if grep -q "Successfully updated entity hashes" "$CD_LOG"; then
-    # Stamped only once the rows are gone: a conflict still queued with its decision stamped
-    # would read as undecided and need deciding again. Left unstamped, the next window rebuilds
-    # the hashes again (harmless) and removes it.
+    # Stamp only once the rows are gone, or a queued conflict would read as undecided.
     if ! cd_mgmt "DELETE FROM receiver_conflict_queue WHERE id IN ($CD_IDS)"; then
       cd_log "the hashes are rebuilt but conflicts $CD_IDS could not be removed; the next window finishes them"
       CD_IDS=""

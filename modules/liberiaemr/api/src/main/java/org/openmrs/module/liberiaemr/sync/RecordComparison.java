@@ -23,22 +23,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lines a facility's version of a record, as dbsync carried it, up against central's row, field
- * by field, so a reviewer sees what the conflict is about.
- *
- * dbsync names fields after the model (birthdateEstimated) and refers to other records by uuid
- * (creatorUuid, as "UserLight(uuid)"), while the row has columns (birthdate_estimated) and ids
- * (creator). Both sides are brought to the same text before they are compared; a field with no
- * matching column is shown but not compared.
+ * Compares the facility's version of a record, as dbsync carried it, with central's row field by
+ * field. dbsync uses camelCase fields and uuid references; the row uses snake_case columns and ids.
  */
 public final class RecordComparison {
 
-	/** Turns the id in a reference column into the uuid of the record it points at. */
 	public interface References {
 
-		/**
-		 * @return the referenced record's uuid, or null when it cannot be found
-		 */
 		String uuidOf(String column, Object id);
 	}
 
@@ -47,12 +38,7 @@ public final class RecordComparison {
 	private RecordComparison() {
 	}
 
-	/**
-	 * @param facility the model from the conflict's payload
-	 * @param central central's row by column name, or null when central has no such record
-	 * @param references resolves reference columns to uuids
-	 * @return one entry per field: field, facility, central, compared, differs
-	 */
+	/** One entry per field: field, facility, central, compared, differs. {@code central} may be null. */
 	public static List<Map<String, Object>> compare(Map<String, Object> facility, Map<String, Object> central,
 	        References references) {
 		List<Map<String, Object>> fields = new ArrayList<Map<String, Object>>();
@@ -106,7 +92,7 @@ public final class RecordComparison {
 		return out.toString();
 	}
 
-	/** "UserLight(1c3db49d-...)" is how dbsync writes a reference; the uuid is what matters. */
+	/** "UserLight(uuid)" to uuid. */
 	static String uuidIn(Object value) {
 		if (value == null) {
 			return null;
@@ -117,7 +103,6 @@ public final class RecordComparison {
 		return open >= 0 && close > open ? text.substring(open + 1, close) : text;
 	}
 
-	/** dbsync writes datetimes with an offset; the row holds them in the server's own zone. */
 	static String facilityText(Object value) {
 		if (value == null) {
 			return null;
