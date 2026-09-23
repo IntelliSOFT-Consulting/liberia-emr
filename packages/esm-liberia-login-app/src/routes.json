@@ -12,30 +12,6 @@
     },
     {
       "component": "root",
-      "route": "login/forgot-password",
-      "online": true,
-      "offline": true
-    },
-    {
-      "component": "root",
-      "route": "login/reset-password",
-      "online": true,
-      "offline": true
-    },
-    {
-      "component": "root",
-      "route": "login/reset-success",
-      "online": true,
-      "offline": true
-    },
-    {
-      "component": "root",
-      "route": "login/mfa",
-      "online": true,
-      "offline": true
-    },
-    {
-      "component": "root",
       "route": "logout",
       "online": true,
       "offline": true
