@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.47.0",
+    "liberiaemr": ">=1.0.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "sync-status"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "sync-status-app-menu-item",
+      "component": "syncStatusAppMenuItem",
+      "slot": "app-menu-slot",
+      "online": true,
+      "offline": false
+    }
+  ]
+}

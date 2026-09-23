@@ -6,7 +6,7 @@ rotating certificates and keys, and handling what the alerts raise. The design i
 [distribution/broker/README.md](../../distribution/broker/README.md) and
 [distribution/sync/README.md](../../distribution/sync/README.md).
 
-**Rehearsal status:** sections 7 to 9 and 11 are exercised by the `qa/sync/` checks named in
+**Rehearsal status:** sections 7 to 9, 11 and 13 are exercised by the `qa/sync/` checks named in
 them. Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
 before go-live.
 
@@ -379,3 +379,29 @@ DELETE FROM receiver_retry_queue WHERE
   OR (model_class_name = 'org.openmrs.eip.dbsync.model.ProviderModel'
       AND identifier IN ('f9badd80-ab76-11e2-9e96-0800200c9a66', '55bc2590-ceb2-4832-8148-d163fbdebee3'));
 ```
+
+## 13. The sync status page
+
+`Sync status` in the app menu at central shows, per facility, whether it is still sending, how
+much arrived in the last day, the total received, and when its certificate expires. Above that
+it shows what is waiting at central: records still to apply, records retrying, conflicts to
+resolve, records set aside, whether the receiver and broker are running, and any sync alert
+currently firing. It reads central's own monitoring
+(`LIBERIAEMR_SYNC_MONITORING_URL`, the central stack's Prometheus by default) and refreshes
+every minute.
+
+A facility is marked silent by the same rule as the `SyncFacilitySilent` alert: nothing for
+three days, and only once it has been enrolled long enough for three days of silence to mean
+something. A facility enrolled this week, or one whose counters were reset when the broker
+restarted, reads as quiet rather than silent until then.
+
+The page needs the `View Sync Status` privilege, which `Sync Administrator` carries along with
+`Application: Administers System`, and so anyone with `Organizational: System Administrator`
+(section 6). A facility server shows neither the page nor its menu entry: it has no national
+monitoring to read and reports the feature off.
+
+Retries and conflicts are national totals, not per facility. dbsync records no sender on a
+queued or failed record, so central cannot say which facility one came from; use
+`scripts/sync/conflicts.sh list` for the records themselves. If the page says monitoring cannot
+be reached, sync itself may be perfectly healthy: check the central `prometheus` service first.
+`qa/sync/verify-sync-status.sh` exercises this section.
