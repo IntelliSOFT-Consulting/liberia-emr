@@ -51,15 +51,21 @@ env file — deployment state, never content. Set, in `facility.env` (or `centra
 | Variable | Value |
 | --- | --- |
 | `LIBERIAEMR_SMTP_HOST`, `LIBERIAEMR_SMTP_PORT` | the relay; `587` is STARTTLS, `465` SSL |
-| `LIBERIAEMR_SMTP_USER` | empty for an unauthenticated local relay |
+| `LIBERIAEMR_SMTP_USER` | the relay account; see the TLS note below before leaving it empty |
 | `LIBERIAEMR_SMTP_PASSWORD_FILE` | preferred: a path **inside the container**, read verbatim |
 | `LIBERIAEMR_SMTP_PASSWORD` | fallback when no file is mounted |
 | `LIBERIAEMR_SMTP_FROM` | the sender address users see |
 | `LIBERIAEMR_FRONTEND_URL` | the SPA address users' browsers reach, no trailing slash — the reset link is built from it |
 
+**TLS depends on credentials.** The module switches on STARTTLS (587) or SSL (465) only when
+both a user and a password are set. With an empty user it speaks plain SMTP on any port, so
+the reset link crosses the network unencrypted — acceptable only for a relay on the same
+host or a trusted network, and a relay that demands TLS on 587 will refuse it.
+
 Neither compose file mounts a password file for the backend, so `_FILE` needs a read-only
-bind or `secrets:` entry added for it. Unset, no reset mail reaches anyone: acceptable on a
-dev box, never at a facility. A user can reset only if their account carries an email
+bind or `secrets:` entry added for it. With no host set in the env file or in the
+`liberiaemr.email.host` global property, no reset mail reaches anyone: acceptable on a dev
+box, never at a facility. A user can reset only if their account carries an email
 address. Details: [modules/liberiaemr/README.md](../../modules/liberiaemr/README.md).
 
 ### Sync to central

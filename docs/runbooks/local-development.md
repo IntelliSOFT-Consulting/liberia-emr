@@ -142,7 +142,7 @@ sync-status) are:
 ```bash
 cd packages/<package>
 yarn install --frozen-lockfile
-yarn lint          # login-app only — the others do not declare eslint
+yarn lint          # login-app only — the others have a lint script but no eslint dependency, so CI skips it
 yarn typescript
 yarn test          # login-app (vitest), sync-status-app (jest)
 yarn build
@@ -162,9 +162,18 @@ yarn install
 yarn start --backend https://localhost --no-open      # self-signed cert
 ```
 
-The packages' own `start:local` scripts point at `http://localhost:8085` and at config files
-under `distribution/frontend/config/`, which exist only after a build (§3, §7) — the compose
-stack answers on `https://localhost`, not 8085.
+The packages' own `start:local` scripts assume a backend the compose stack does not
+provide — it answers on `https://localhost`:
+
+| Package | `start:local` backend | `--config-file` |
+| --- | --- | --- |
+| e-partograph | `http://localhost:8085` | `config-national.json`, `config-mch.json` |
+| patient-chart-extension | `http://localhost:8085` | `config-national.json` |
+| login | `http://localhost:8080` | `config-national.json`, `config-mch.json` |
+| sync-status | `http://localhost:8085` | none |
+
+The config files are read from `distribution/frontend/config/`, which exists only after a
+build (§3, §7).
 
 On a machine with no Node, run it in a container on the compose network, which resolves the
 gateway by service name and needs no host toolchain:
@@ -203,8 +212,11 @@ loses it, and it is the habit IMPLEMENTATION.md §8 forbids anywhere near a faci
 OpenMRS SDK server (`mvn openmrs-sdk:run`) is the faster loop the module README describes
 for development boxes only.
 
-**Password reset mail** goes nowhere until `LIBERIAEMR_SMTP_HOST` is set: unset, the module
-falls back to `localhost`, and the backend container runs no relay. To exercise the flow locally, set the
+**Password reset mail** needs a relay. Each setting is read from its `LIBERIAEMR_SMTP_*`
+variable first, then from the matching global property (`liberiaemr.email.host`, …), then
+a built-in default — for the host, `localhost`, where the backend container runs no relay.
+With neither the variable nor the property set, no mail is delivered. To exercise the flow
+locally, set the
 `LIBERIAEMR_SMTP_*` and `LIBERIAEMR_FRONTEND_URL` variables in your local env file (see
 `facility.env.example` and [deploy.md](deploy.md)), recreate the backend with `up -d
 backend`, and give the test user an email address — the flow matches on the core user
