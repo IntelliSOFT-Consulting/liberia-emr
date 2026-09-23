@@ -123,6 +123,10 @@ of clinical data at rest (sync-eip.md section 7.4).
   unacknowledged messages kept in the dead-letter queue, replayable and exportable by
   facility. Also runs payloads through dbsync's own PGP services, including a sender header
   naming another facility. Runs in CI on every change to the sync security surface.
+- `qa/sync/verify-compose-wiring.sh`: renders both stacks from the env examples and checks
+  what the refusal suite assumes but never exercises: read-only certificate mounts that must
+  already exist on the host, the broker publishing only 61617 on `ARTEMIS_BIND_ADDR`, and no
+  stack defaulting payload encryption off. Runs in CI beside `verify-hardening.sh`.
 - `qa/sync/verify-receiver-failure.sh`: against a running central, a message the receiver
   cannot apply is redelivered and dead-lettered rather than lost, while messages behind it
   apply and their reply requests are ignored.
