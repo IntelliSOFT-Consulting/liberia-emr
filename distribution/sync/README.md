@@ -49,6 +49,10 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   database. It holds the inbound queues, the conflict queue, retries, and the
   per-entity hashes.
 - The environment contract in `docker-entrypoint-receiver.sh`.
+- `conflict-decisions.sh`, which applies the conflict decisions recorded on the EMR's Sync
+  conflicts page inside `SYNC_CONFLICT_WINDOW`: the entrypoint keeps the receiver as its
+  child so it can stop it, run dbsync's hash updater for the decided tables and start it
+  again (docs/runbooks/sync-operations.md section 8).
 - A sync account (`SYNC_REST_USER`) with the `Sync Receiver` role only, and for the sender
   one with `Sync Sender` (docs/runbooks/sync-operations.md section 6).
 - Its subscription queue, `DB-SYNC-REC.DB-SYNC-RECEIVER`, is declared by the broker, so
@@ -128,6 +132,10 @@ of clinical data at rest (sync-eip.md section 7.4).
   apply and their reply requests are ignored.
 - `qa/sync/verify-conflict-resolution.sh`: a real conflict resolved with dbsync's procedure;
   the alert clears, the facility's next change applies, and no payload reaches the log.
+- `qa/sync/verify-conflict-review.sh`: a real conflict reviewed and decided through the
+  EMR's endpoint, then applied by the receiver in its window with no one on the server; the
+  decision is stamped applied, the waiting update lands, the alert clears, and refused
+  decisions (another record, no reason, no privilege) change nothing.
 - `qa/sync/verify-alert-delivery.sh`: alerts arrive by email over STARTTLS and by webhook.
   Runs in CI.
 - `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,

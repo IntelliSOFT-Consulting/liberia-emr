@@ -1,0 +1,66 @@
+@use '@carbon/react/scss/colors';
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.container {
+  margin: spacing.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-04');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.subheading {
+  @include type.type-style('heading-03');
+}
+
+.label {
+  @include type.type-style('label-02');
+  margin-bottom: spacing.$spacing-02;
+}
+
+.explainer {
+  @include type.type-style('body-01');
+  margin-bottom: spacing.$spacing-05;
+}
+
+.notice {
+  margin-bottom: spacing.$spacing-05;
+}
+
+.section {
+  margin-top: spacing.$spacing-07;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: spacing.$spacing-03;
+}
+
+.identifier {
+  @include type.type-style('code-01');
+  color: colors.$gray-70;
+}
+
+.comparison {
+  margin: spacing.$spacing-05 0;
+}
+
+.differs td {
+  background-color: colors.$yellow-10;
+}
+
+.history {
+  margin-bottom: spacing.$spacing-05;
+}
+
+.reason {
+  margin: spacing.$spacing-05 0;
+}
+
+.stateText {
+  @include type.type-style('body-compact-01');
+}

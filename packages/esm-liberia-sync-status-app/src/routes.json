@@ -8,6 +8,10 @@
     {
       "component": "root",
       "route": "sync-status"
+    },
+    {
+      "component": "syncConflicts",
+      "route": "sync-conflicts"
     }
   ],
   "extensions": [
