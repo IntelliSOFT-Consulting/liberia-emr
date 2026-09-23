@@ -106,7 +106,7 @@ they take three different versions on purpose:
 | Where | Version | When |
 |---|---|---|
 | Repsy, snapshot | `1.0.0-SNAPSHOT` | every merge to `main` that touches `modules/**`, re-deployed over itself |
-| Repsy, release | the release tag, e.g. `1.2.0` | a published GitHub release; `versions:set` stamps it |
+| Repsy, release | the release tag, e.g. `1.2.0` | a published GitHub release **whose tag matches the pom's base version**; `versions:set` stamps it |
 | The backend image | the distribution version being built | every image build; `distribution/backend/Dockerfile` stamps it |
 
 The image stamp is what keeps a release image from shipping a `-SNAPSHOT` omod, which
@@ -137,9 +137,36 @@ build depends on that attachment, so a reordered plugin or a changed `finalName`
 quietly go back to publishing one artifact — hence the `Check the .omod was published` step
 in `modules.yml`, which fails the publish if no `.omod` was uploaded.
 
-**After a release, bump the pom to the next `-SNAPSHOT`.** The publish job refuses to deploy
-a non-SNAPSHOT version from `main`, precisely so a released version cannot be silently
-re-deployed over.
+### Releasing the module is opt-in
+
+A distribution release is cut far more often than this module changes, so a release does
+**not** publish it by default. The opt-in signal is the pom's own version:
+
+> **Before cutting release `x.y.z`, set the pom to `x.y.z-SNAPSHOT` on `main` if the module
+> should ship with it.**
+
+The `decide` job in `modules.yml` compares the pom's base version — the `<version>` minus
+`-SNAPSHOT` — against the tag. They match, it publishes; they do not, the `publish` job is
+skipped and release `x.y.z` simply carries whichever module version was published before it.
+Either way the run summary says which way it went and why, so a skipped publish is never
+silent.
+
+**The bump has to be in the commit the tag points at.** A release build checks out the tag,
+not `main`, so bumping the pom after the tag exists does nothing for that release — you
+would have to move the tag onto the bumped commit and publish the release again. Unless the
+module genuinely has to ship under that exact number, it is usually cleaner to leave the tag
+alone and let the module go out with the next release.
+
+This is a **pre-release** act. It used to be a post-release one — "after a release, bump to
+the next `-SNAPSHOT`" — and the difference matters, because bumping afterwards now means the
+release you just cut published nothing.
+
+Nothing in this repository is blocked by a skipped publish: the backend image builds the
+module from source (`distribution/backend/Dockerfile` copies `modules/liberiaemr` in), so
+Repsy only serves consumers outside this repository.
+
+The publish job also refuses to deploy a non-SNAPSHOT version from `main`, so a released
+version cannot be silently re-deployed over by a later merge.
 
 ## How it reaches production
 
