@@ -62,6 +62,11 @@ default maven-release-plugin flow.
 | Where does the deploy happen? | CI, triggered by the pushed tag |
 | Is `release:perform` used? | No |
 | What happens to PR #112? | Kept, with its `release`-event branch reduced to an explicit refusal |
+| How do maintainers authenticate? | SSH, so `developerConnection` uses `git@github.com:` |
+| Squash-merged release PR? | Enforced in CI, not left to convention |
+
+PR #112 merged on 2026-09-23 as commit `22045e8`, so the `decide` job this design modifies
+is already on `main`.
 
 Running `prepare` locally with `pushChanges=false` is what lets constraint 2 stand
 untouched: the plugin never pushes, so nothing needs a ruleset bypass and no new privileged
@@ -133,7 +138,7 @@ changes meaning — from "publish if the pom base matches the tag" to a flat ref
 | Event | Decision |
 |---|---|
 | push to `main` | publish the SNAPSHOT stream (unchanged) |
-| push of a `liberiaemr-x.y.z` tag | publish, after asserting the pom version equals the tag suffix and is not a SNAPSHOT |
+| push of a `liberiaemr-x.y.z` tag | publish, after asserting the pom version equals the tag suffix, is not a SNAPSHOT, and the tag is reachable from `main` |
 | `release` (a GitHub release) | never publish — the module's release stream is its own tags now |
 | anything else | never publish |
 
@@ -159,6 +164,17 @@ that review might still reject.
 **Do not squash the release PR.** `prepare` tags the release commit. A squash merge rewrites
 that commit, so the tag would point at an object that never reaches `main` — the artifact
 would publish, but from a commit not in the branch history.
+
+This second rule is **enforced, not merely documented**. `decide` checks out with
+`fetch-depth: 0`, and on a module tag runs `git merge-base --is-ancestor "$GITHUB_SHA"
+origin/main`. An unreachable tag fails the job, which blocks `publish` through `needs` and
+turns the run red — the same fail-loudly shape already used for an unreadable pom. A quiet
+mistake that would otherwise only surface later, as a published version whose commit is not
+in the branch history, becomes a red run before anything reaches Repsy.
+
+Note the ordering consequence: because the check compares against `main`, the tag genuinely
+must be pushed *after* the release PR merges. Pushing it first now fails the run rather than
+publishing early, so the two ordering rules reinforce each other.
 
 ### Tooling
 
@@ -190,7 +206,8 @@ encoding it rather than documenting it twice.
    in `ci.yml`; the changed file must stay clean.
 2. The `decide` script extracted back out of the parsed YAML, exercised over the existing ten
    cases plus new module-tag cases: tag matching the pom, tag not matching, tag suffix that
-   is a SNAPSHOT, and a malformed tag.
+   is a SNAPSHOT, a malformed tag, a tag reachable from `main`, and a tag that is not
+   (the squash case, which must fail rather than skip).
 3. `mvn release:prepare -DdryRun=true` locally in `modules/liberiaemr`, followed by
    `mvn release:clean`, to prove the pom configuration before anything is committed. This
    also settles constraint 6 for the module empirically.
