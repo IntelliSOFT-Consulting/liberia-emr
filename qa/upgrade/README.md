@@ -28,22 +28,36 @@ place they get caught before a facility does.
 
 | Script | |
 | --- | --- |
-| `run-clean-install.sh` | Empty DB → up → assert Initializer completed with no error and no unresolved `${var.*}`, then start O3 |
-| `run-upgrade.sh` | Restore previous-release DB → up at the new release → assert data integrity |
+| `run-clean-install.sh [--version x.y.z] [--no-frontend] [--project-name name]` | Empty DB → up → assert Initializer finished and applied its metadata with no error and no unresolved `${var.*}` → start the frontend and gateway and assert they serve |
+| `run-upgrade.sh [--from x.y.z] [--to x.y.z]` | Restore previous-release DB → up at the new release → assert data integrity. `--from` defaults to the newest `x.y.z` tag, `--to` to `LIBERIAEMR_VERSION` |
 | `fixtures/` | Anonymised or synthetic previous-release database dumps |
 
 Both scripts start images; neither builds one. Build first with
 [`scripts/build/build-distribution.sh`](../../scripts/build/build-distribution.sh) at the
 same `--version`, or the stack tries to pull a tag that may not be published.
 
-`run-clean-install.sh --no-frontend` skips the last step. Every assertion it makes is about
-the backend — the frontend is only brought up, never waited on — so CI pairs it with
+`run-clean-install.sh` asserts, in order:
+
+- the backend reports started within `CLEAN_INSTALL_TIMEOUT` seconds (default 5400), and
+  Initializer does not log a failure to apply the configuration while it waits
+- Initializer finishes within 60 minutes: no OCL import still running, order frequencies loaded
+- order frequencies, location tag maps, programmes and the Program/Workflow/State concept
+  classes are all non-empty
+- `initializer.log` contains no `ERROR`; on failure the whole log is saved to
+  `qa/upgrade/initializer-failure.log`
+- no `${var.` placeholder in the backend or Initializer logs
+- unless `--no-frontend`: the gateway serves `/openmrs/spa/` over TLS within 2 minutes, and
+  answers plain HTTP with a 301
+
+The stack is always fresh and is destroyed with `down -v` on exit. `--no-frontend` skips
+the last step; everything before it is about the backend, so CI pairs it with
 `build-distribution.sh --no-frontend` and avoids assembling the SPA to prove a CSV loads.
 
 CI runs this script in the `initializer-clean-db` job, but **not on every commit**: it costs
 around 18 minutes, so it is skipped when nothing in the commit can affect what Initializer
-loads. Anything under `content-packages/`, `distribution/`, `qa/upgrade/` or
-`scripts/build/` keeps it, and an undetermined case runs it. See
+loads. Anything under `content-packages/`, `distribution/`, `modules/`, `qa/upgrade/` or
+`scripts/build/`, the root `pom.xml` or `ci.yml` itself keeps it, and an undetermined case
+runs it. See
 [`distribution/ci/README.md`](../../distribution/ci/README.md). A change that could alter
 metadata from somewhere outside those paths needs the path list widened, not the job
 weakened.
@@ -73,5 +87,10 @@ The fixture is regenerated at each release and tagged with the release it repres
 
 ## Status
 
-⚠ Scripts not yet written. This harness is a definition-of-done item for the base scaffold
-and a go-live gate.
+`run-clean-install.sh` is implemented and runs in CI as above.
+
+⚠ `run-upgrade.sh` is a stub. It exits 0 when no `x.y.z` tag exists (the first release
+only), fails if `fixtures/<from>.sql.gz` is missing, and otherwise prints the assertions
+above and exits 1 — none of them is implemented. `release.yml` runs it in the
+`upgrade-test` job, with no `--from`, `--to` or `LIBERIAEMR_VERSION`. This harness is a
+definition-of-done item for the base scaffold and a go-live gate.
