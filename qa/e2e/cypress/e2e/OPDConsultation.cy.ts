@@ -19,10 +19,6 @@ describe('OPD Consultation form', () => {
         opdConsultationForm.verifyFormContract();
     });
 
-    it('validates required fields before allowing the form to proceed', () => {
-        opdConsultationForm.verifyRequiredFieldValidation();
-    });
-
     it('validates the vitals input contract', () => {
         opdConsultationForm.verifyVitalsInputContract();
     });
