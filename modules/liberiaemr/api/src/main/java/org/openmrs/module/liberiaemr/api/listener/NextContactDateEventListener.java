@@ -106,9 +106,7 @@ public class NextContactDateEventListener implements EventListener {
 			appointment.setStatus(AppointmentStatus.Scheduled);
 			appointment.setAppointmentKind(AppointmentKind.Scheduled);
 			
-			if (serviceDefinition != null) {
-				appointment.setService(serviceDefinition);
-			}
+			appointment.setService(serviceDefinition);
 
 			// Inherit location from encounter if available
 			if (obs.getEncounter() != null && obs.getEncounter().getLocation() != null) {
