@@ -13,9 +13,10 @@ have to be true:
 ### 1. Everything is reproducible from configuration
 
 Any release can be rebuilt from a git tag: `distribution/distro.properties` pins every
-platform, module and content version, and `content-packages/` holds all clinical content and
-configuration. There is no build step that depends on a machine, a person, or an
-undocumented artefact.
+platform, community module and frontend module version; `content-packages/` holds all
+clinical content and configuration; and the backend image builds the content packages and
+`modules/liberiaemr` from the tag's own source. There is no build step that depends on a
+machine, a person, or an undocumented artefact.
 
 This is why configuration is deliberately **not** included in backups — it is reproducible
 from the tag. It is also why `latest` and `-SNAPSHOT` are forbidden: a release that cannot be
@@ -28,8 +29,9 @@ a system only its authors can upgrade.
 
 Where a community component genuinely needs changing, the change is upstreamed
 (`packages/modify-pr/`), and every patch carries a required upstream PR link. Where no
-community component exists, we build a normal O3 module (`packages/esm-*`) — greenfield, not
-a fork.
+community component exists, we build a normal module — an O3 frontend module
+(`packages/esm-*`) or an OpenMRS backend module (`modules/liberiaemr`) — greenfield, not a
+fork.
 
 ### 3. The reasoning is transferable, not just the code
 
@@ -50,10 +52,29 @@ The security mapping and the go-live checklist name the open items explicitly.
 | | |
 | --- | --- |
 | Source | This repository, complete history |
-| Content packages | Versioned Maven artefacts |
+| Content packages | Versioned Maven ZIPs, built from the tag into the backend image; not published to a registry |
+| Backend module | `modules/liberiaemr` — built from the tag into the backend image; also published to Repsy |
+| Frontend modules | Four `@liberiaemr/esm-liberia-*` ESMs, published to npm |
 | Images | Immutable, versioned, published to the registry |
 | Documentation | Architecture, ADRs, runbooks, metadata specs, security mapping |
 | Test suites | API, E2E, manual scripts, UAT records, upgrade harness |
+
+## Registries and accounts to transfer
+
+Published artefacts sit in accounts the delivery team created. Each must move to an
+MOH-controlled owner, and the matching GitHub secrets be re-issued, before handover is
+complete:
+
+| Registry | Namespace | Holds | Published by | GitHub secrets / environment |
+| --- | --- | --- | --- | --- |
+| npm | `@liberiaemr` | The four ESMs | `packages.yml` | `NPM_AUTH_TOKEN` in `npm-publish` |
+| Repsy | `intellisoftdev/liberiaemr` | `liberiaemr-omod` | `modules.yml` | `REPSY_USERNAME`, `REPSY_PASSWORD` in `repsy-publish` |
+| Docker Hub | `intellisoftdev` | `:latest` and `:<sha>` images from `main` (dev) | `ci.yml` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
+| GHCR | `ghcr.io/intellisoft-consulting` | Release images (the push step is still a stub) | `release.yml` | `GITHUB_TOKEN` |
+
+The same applies to the GitHub repository itself and to the other secrets its workflows
+read (`OCL_API_TOKEN`, `SONAR_TOKEN`, `SONAR_HOST_URL`, `NVD_API_KEY`, `ANTHROPIC_API_KEY`,
+and the dev deploy's `DEV_*`).
 
 ## What the MOH must hold, and we must not
 
@@ -68,8 +89,8 @@ The security mapping and the go-live checklist name the open items explicitly.
 ## Licence
 
 Mozilla Public License 2.0 with Healthcare Disclaimer, consistent with OpenMRS. Custom
-components in `packages/` carry the same licence so the MOH inherits a single, coherent
-position rather than a mix requiring legal review.
+components in `packages/` and `modules/` carry the same licence so the MOH inherits a
+single, coherent position rather than a mix requiring legal review.
 
 ## Handover readiness
 

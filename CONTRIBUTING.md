@@ -15,6 +15,10 @@ this wrong is the most common way this kind of project decays.
 | **Custom Build** | Greenfield component with no community equivalent | `packages/esm-*`, pinned in `distro.properties` |
 | **External** | Integration with a system outside O3 | `integration/**` |
 
+The backend Custom Build, [`modules/liberiaemr/`](modules/liberiaemr/), is the one component
+not pinned in `distro.properties`: the backend image builds it from source (IMPLEMENTATION.md
+§3 and Appendix item 3).
+
 Ask in order: can this be **configuration**? If not, can it be a **new extension** in a
 Custom Build ESM? Only then reach for a patch — and open the upstream PR the same week.
 
@@ -30,7 +34,12 @@ chore/<summary>             build, CI, docs
 `<scope>` names the layer or component: `mch`, `national`, `site-careysburg`, `epartograph`,
 `eip`, `distro`.
 
-Every change goes through a pull request. `main` is protected; CI must pass.
+Every change goes through a pull request. `main` is protected; CI must pass. The required
+check is the **CI gate** job in `.github/workflows/ci.yml`, which fails unless every job it
+depends on succeeded (only the clean-database and sync-hardening jobs may be skipped).
+`ci.yml` runs on the pull request, not on a branch push, so a branch gets no CI until a PR
+exists — open a draft PR, or run the workflow by hand. The review posted by
+`claude-review.yml` is advisory and never blocks a merge.
 
 ## Running it locally
 
@@ -45,6 +54,15 @@ work locally yet (the frontend module dev server, `mvn verify` on Apple Silicon,
 ./scripts/validate/no-secrets.sh
 ./scripts/build/lift-demo-content.sh --check   # content-demo unchanged from upstream
 mvn -B clean verify                      # Initializer schema validation
+```
+
+The root reactor builds the content packages only. If you touched the backend module or an
+ESM, build it too — CI does:
+
+```bash
+(cd modules/liberiaemr && mvn -B clean package)            # backend module
+(cd packages/esm-liberia-<name> && yarn install --frozen-lockfile \
+   && yarn lint && yarn typescript && yarn build)          # each ESM you changed
 ```
 
 ## Review
