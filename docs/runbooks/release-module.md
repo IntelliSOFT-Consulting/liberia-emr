@@ -67,13 +67,28 @@ is the single place these come from, and `qa/ci/verify-module-publish-decision.s
 
 ## Abandoning a prepare
 
-Before anything is pushed:
+`mvn release:rollback` does **not** give you back the tree you started with. It restores the
+pom's contents, but by adding a **third, compensating commit** on top — the two
+`[maven-release-plugin]` commits stay in history. `HEAD` ends up three commits ahead of where
+you started, not back at it. This is documented upstream `maven-release-plugin` behaviour, not
+a bug.
 
 ```bash
 cd modules/liberiaemr
-mvn release:rollback     # restores the pom and reverts the two commits
-mvn release:clean        # removes release.properties and the pom backups
+mvn release:rollback     # restores the pom's contents via a third, compensating commit --
+                          # the two release commits are still there
+mvn release:clean        # removes release.properties and the *.releaseBackup files
 git tag -d liberiaemr-1.1.0
+```
+
+None of that touches history. Because nothing has been pushed yet, the honest way to get
+history back to where you started is to reset past all three commits:
+
+```bash
+git log --oneline
+# find the commit BEFORE the first "[maven-release-plugin] prepare release" commit,
+# then:
+git reset --hard <that commit>
 ```
 
 After the tag is pushed, the version is published and immutable. Do not delete and re-push

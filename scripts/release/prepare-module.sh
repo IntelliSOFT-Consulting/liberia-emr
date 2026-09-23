@@ -68,4 +68,7 @@ Next, in order -- the order matters:
 To abandon this instead:
        cd modules/liberiaemr && mvn release:rollback && mvn release:clean
        git tag -d ${tag}
+     release:rollback adds a THIRD commit rather than removing the two above; to get
+     history back, find the commit before this run (git log --oneline) and:
+       git reset --hard <that commit>
 EOF
