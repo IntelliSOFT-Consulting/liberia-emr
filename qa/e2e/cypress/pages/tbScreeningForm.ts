@@ -5,6 +5,16 @@ class TbScreeningFormPage {
 
     private readonly requiredRadioGroupSelector = 'fieldset > legend [title="Required"]';
 
+    private readonly requiredRadioGroupNames = [
+        'contact_of_tb_patient',
+        'previously_treated_for_tb',
+        'coughing_2_weeks_or_more',
+        'night_sweats',
+        'weight_loss',
+        'fever',
+        'swelling_in_any_part_of_the_body'
+    ];
+
     private readonly symptomScoreWeights: Record<string, number> = {
         coughing_2_weeks_or_more: 2,
         night_sweats: 1,
@@ -14,7 +24,25 @@ class TbScreeningFormPage {
     };
 
     private requiredRadioGroups() {
-        return cy.get(this.requiredRadioGroupSelector, { timeout: this.timeout });
+        return cy.get('form', { timeout: this.timeout }).first().find(this.requiredRadioGroupSelector);
+    }
+
+    private enterDate(fieldId: string, date: Date) {
+        const dateParts: Record<string, string> = {
+            day: String(date.getDate()).padStart(2, '0'),
+            month: String(date.getMonth() + 1).padStart(2, '0'),
+            year: String(date.getFullYear())
+        };
+
+        cy.get(`#${fieldId}`, { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                Object.entries(dateParts).forEach(([type, value]) => {
+                    cy.get(`[data-type="${type}"]`, { timeout: this.timeout })
+                        .click()
+                        .type(value);
+                });
+            });
     }
 
     private selectAnswer($fieldset: JQuery<HTMLElement>, answer: Answer) {
@@ -26,14 +54,16 @@ class TbScreeningFormPage {
     }
 
     private selectQuestionAnswer(question: string, answer: Answer) {
-        return cy.contains('legend', question, { timeout: this.timeout })
+        return cy.get('form', { timeout: this.timeout })
+            .first()
+            .contains('legend', question, { timeout: this.timeout })
             .closest('fieldset')
             .then(($fieldset) => this.selectAnswer($fieldset, answer));
     }
 
     verifyFormContract() {
         this.requiredRadioGroups()
-            .should('have.length.greaterThan', 0)
+            .should('have.length', this.requiredRadioGroupNames.length)
             .each(($requiredMarker) => {
                 const $fieldset = $requiredMarker.closest('fieldset');
                 const fieldLabel = $requiredMarker.closest('legend').text().trim();
@@ -50,6 +80,14 @@ class TbScreeningFormPage {
 
                         expect(optionLabels, `${fieldLabel} options`).to.have.members(['Yes', 'No']);
                     });
+            })
+            .then(($requiredMarkers) => {
+                const fieldNames = [...$requiredMarkers].map(($marker) => {
+                    const fieldset = $marker.closest('fieldset');
+                    return fieldset?.querySelector('input[type="radio"]')?.getAttribute('name');
+                });
+
+                expect(fieldNames, 'required TB radio groups').to.have.members(this.requiredRadioGroupNames);
             });
 
         cy.get('input[name="total_score"]', { timeout: this.timeout }).should(($score) => {
@@ -62,7 +100,7 @@ class TbScreeningFormPage {
 
     completeNegativeScreening() {
         this.requiredRadioGroups()
-            .should('have.length.greaterThan', 0)
+            .should('have.length', this.requiredRadioGroupNames.length)
             .each(($requiredMarker) => {
                 this.selectAnswer($requiredMarker.closest('fieldset'), 'No');
             });
@@ -73,15 +111,14 @@ class TbScreeningFormPage {
 
     completeMixedScreening() {
         let expectedScore = 0;
-        let symptomIndex = 0;
 
         this.requiredRadioGroups()
-            .should('have.length.greaterThan', 0)
+            .should('have.length', this.requiredRadioGroupNames.length)
             .each(($requiredMarker) => {
                 const fieldset = $requiredMarker.closest('fieldset')[0];
                 const fieldName = fieldset.querySelector('input[type="radio"]')?.getAttribute('name') ?? '';
-                const weight = this.symptomScoreWeights[fieldName];
-                const answer = weight && symptomIndex++ % 2 === 0 ? 'Yes' : 'No';
+                const weight = this.symptomScoreWeights[fieldName] ?? 0;
+                const answer: Answer = fieldName === 'coughing_2_weeks_or_more' ? 'Yes' : 'No';
 
                 this.selectAnswer($requiredMarker.closest('fieldset'), answer);
                 expectedScore += answer === 'Yes' ? weight : 0;
@@ -108,22 +145,7 @@ class TbScreeningFormPage {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTbScreening');
         this.completeNegativeScreening();
 
-        const today = new Date();
-        const dateParts: Record<string, string> = {
-            day: String(today.getDate()).padStart(2, '0'),
-            month: String(today.getMonth() + 1).padStart(2, '0'),
-            year: String(today.getFullYear())
-        };
-
-        cy.get('#date_the_screening_was_conducted', { timeout: this.timeout })
-            .scrollIntoView()
-            .within(() => {
-                Object.entries(dateParts).forEach(([type, value]) => {
-                    cy.get(`[data-type="${type}"]`, { timeout: this.timeout })
-                        .click()
-                        .type(value);
-                });
-            });
+        this.enterDate('date_the_screening_was_conducted', new Date());
         cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: this.timeout })
             .scrollIntoView()
             .clear()
@@ -134,8 +156,51 @@ class TbScreeningFormPage {
             .type('Automated negative TB screening');
 
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
-        cy.wait('@saveTbScreening', { timeout: this.timeout }).then(({ response }) => {
+        cy.wait('@saveTbScreening', { timeout: this.timeout }).then(({ request, response }) => {
             expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(request.body.obs, 'submitted TB observations').to.be.an('array').and.not.be.empty;
+            expect(request.body.obs.some((observation: { value?: unknown }) => observation.value === 0)).to.equal(true);
+            expect(JSON.stringify(request.body)).to.contain('No diagnostic abnormality');
+            expect(JSON.stringify(request.body)).to.contain('Automated negative TB screening');
+        });
+    }
+
+    savePreviouslyTreatedScreening() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTreatedTbScreening');
+        const treatmentDate = new Date();
+        this.selectQuestionAnswer('Contact of TB Patient', 'No');
+        this.selectQuestionAnswer('Previously Treated for TB', 'Yes');
+        this.enterDate('date_tb_treatment_was_started', treatmentDate);
+        this.requiredRadioGroupNames
+            .filter((fieldName) => !['contact_of_tb_patient', 'previously_treated_for_tb'].includes(fieldName))
+            .forEach((fieldName) => {
+                cy.get(`input[name="${fieldName}"][id$="-No"]`, { timeout: this.timeout })
+                    .scrollIntoView()
+                    .check({ force: true });
+                cy.get(`input[name="${fieldName}"][id$="-No"]`, { timeout: this.timeout })
+                    .should('be.checked');
+            });
+        cy.get('input[name="total_score"]', { timeout: this.timeout }).should('have.value', '0');
+        this.enterDate('date_the_screening_was_conducted', new Date());
+
+        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('No diagnostic abnormality');
+        cy.get('#observation', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated treated TB screening');
+
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveTreatedTbScreening', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(request.body.obs, 'submitted treated TB observations').to.be.an('array').and.not.be.empty;
+            expect(JSON.stringify(request.body)).to.contain(
+                `${treatmentDate.getFullYear()}-${String(treatmentDate.getMonth() + 1).padStart(2, '0')}-${String(
+                    treatmentDate.getDate()
+                ).padStart(2, '0')}`
+            );
         });
     }
 

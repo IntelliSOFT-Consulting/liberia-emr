@@ -33,4 +33,8 @@ describe('TB Screening form', () => {
     it('saves a complete negative screening', () => {
         tbScreeningForm.saveCompleteNegativeScreening();
     });
+
+    it('saves a screening with previous TB treatment and its treatment date', () => {
+        tbScreeningForm.savePreviouslyTreatedScreening();
+    });
 });
