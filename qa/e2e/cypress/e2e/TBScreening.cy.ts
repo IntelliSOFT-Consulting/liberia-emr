@@ -6,60 +6,35 @@ describe('TB Screening form', () => {
     const visitPage = new VisitPage();
     const tbScreeningForm = new TbScreeningFormPage();
 
-    const openFormForNewPatient = () => {
-        visitPage.registerPatient();
-        visitPage.startVisit();
-
-        tbScreeningForm.openClinicalForms();
-        tbScreeningForm.selectForm('TB Screening');
-    };
-
     beforeEach(() => {
         loginWithSession();
+        visitPage.registerPatient();
+        visitPage.startVisit();
+        tbScreeningForm.openClinicalForms();
+        tbScreeningForm.selectForm('TB Screening');
     });
 
-    it('should complete a TB Screening form for a patient with an active visit', () => {
-        openFormForNewPatient();
-
-        tbScreeningForm.fillForm({
-            contactOfTbPatient: 'No',
-            previouslyTreatedForTb: 'No',
-            coughing2WeeksOrMore: 'Yes',
-            nightSweats: 'Yes',
-            weightLoss: 'No',
-            fever: 'Yes',
-            swelling: 'No',
-            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            sputumTestResult: 'Negative',
-            observation: 'Automated test entry'
-        });
-
-        // Coughing scores 2, night sweats and fever score 1 each; the two No answers score 0.
-        tbScreeningForm.expectTotalScore(4);
-        tbScreeningForm.expectTreatmentStartDateHidden();
-
-        tbScreeningForm.submitForm();
+    it('validates required radio groups and the score contract', () => {
+        tbScreeningForm.verifyFormContract();
     });
 
-    it('should capture the treatment start date when the patient was previously treated for TB', () => {
-        openFormForNewPatient();
+    it('completes a negative screening with no treatment date and a zero score', () => {
+        tbScreeningForm.completeNegativeScreening();
+    });
 
-        tbScreeningForm.fillForm({
-            contactOfTbPatient: 'Yes',
-            previouslyTreatedForTb: 'Yes',
-            dateTbTreatmentStarted: { day: '02', month: '01', year: '2025' },
-            coughing2WeeksOrMore: 'Yes',
-            nightSweats: 'Yes',
-            weightLoss: 'Yes',
-            fever: 'Yes',
-            swelling: 'Yes',
-            dateScreeningConducted: { day: '01', month: '01', year: '2025' },
-            sputumTestResult: 'Positive',
-            observation: 'Automated test entry - previously treated'
-        });
+    it('calculates the score for mixed symptom answers', () => {
+        tbScreeningForm.completeMixedScreening();
+    });
 
-        tbScreeningForm.expectTotalScore(6);
+    it('shows the required treatment date only for previous TB treatment', () => {
+        tbScreeningForm.verifyPreviousTreatmentDateToggle();
+    });
 
-        tbScreeningForm.submitForm();
+    it('saves a complete negative screening', () => {
+        tbScreeningForm.saveCompleteNegativeScreening();
+    });
+
+    it('saves a screening with previous TB treatment and its treatment date', () => {
+        tbScreeningForm.savePreviouslyTreatedScreening();
     });
 });
