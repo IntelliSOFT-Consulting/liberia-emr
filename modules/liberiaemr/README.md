@@ -31,8 +31,10 @@ endpoints, it is under `/ws/rest` so the REST authentication filter applies.
 
 It does not read central's sync database — dbsync records no sender on a queued or failed
 record. It asks central's Prometheus instead, reusing what monitoring already scrapes from
-the broker, the receiver and the certificate exporter (the silent-facility query is the
-`SyncFacilitySilent` expression from `distribution/monitoring/rules-central.yml`).
+the broker, the receiver and the certificate exporter. A facility is `silent` on the same
+condition as the `SyncFacilitySilent` alert in `distribution/monitoring/rules-central.yml`
+(nothing routed for three days, once there were three days to be quiet in), minus the
+alert's `label_replace` and its one-hour `for:` hold.
 
 | Variable | Meaning |
 |---|---|
