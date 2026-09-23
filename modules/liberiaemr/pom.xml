@@ -17,10 +17,14 @@
 
 	<url>https://wiki.openmrs.org/x/FQ4z</url>
 
+	<!-- This module lives in the liberia-emr monorepo, not in its own repository. The
+	     OpenMRS module scaffold this was generated from left openmrs/openmrs-module-liberiaemr
+	     here, which would make release:prepare tag an unrelated upstream repo. -->
 	<scm>
-		<connection>scm:git:git@github.com:openmrs/openmrs-module-liberiaemr.git</connection>
-		<developerConnection>scm:git:git@github.com:openmrs/openmrs-module-liberiaemr.git</developerConnection>
-		<url>https://github.com/openmrs/openmrs-module-liberiaemr/</url>
+		<connection>scm:git:https://github.com/IntelliSOFT-Consulting/liberia-emr.git</connection>
+		<developerConnection>scm:git:git@github.com:IntelliSOFT-Consulting/liberia-emr.git</developerConnection>
+		<url>https://github.com/IntelliSOFT-Consulting/liberia-emr/tree/main/modules/liberiaemr</url>
+		<tag>HEAD</tag>
 	</scm>
 
 	<modules>
@@ -102,6 +106,34 @@
 					<configuration>
 						<source>1.8</source>
 						<target>1.8</target>
+					</configuration>
+				</plugin>
+				<!-- Releases are cut LOCALLY: `mvn release:prepare` in this directory, then the
+				     version commits go up as a normal PR and the tag is pushed after it merges.
+				     CI publishes from that tag. See docs/runbooks/release-module.md.
+
+				     pushChanges=false is load-bearing. Repository ruleset "Prevent direct push to
+				     Main" blocks pushes to main that arrive without a passing CI gate, which is
+				     exactly what release:prepare's two commits would do. Leaving the push to a PR
+				     means no ruleset bypass and no new privileged credential.
+
+				     tagNameFormat is pinned even though it matches the plugin default: a bare
+				     x.y.z tag is the DISTRIBUTION release namespace and is wired to release.yml,
+				     so a default drifting that way would fire a full distribution release.
+
+				     preparationGoals drops `verify` to `package` — local-development.md §5,
+				     `mvn verify` is fragile on Apple Silicon. CI re-runs the full build on the
+				     tag before publishing, so this local run is a sanity check, not the gate. -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>3.3.1</version>
+					<configuration>
+						<tagNameFormat>@{project.artifactId}-@{project.version}</tagNameFormat>
+						<autoVersionSubmodules>true</autoVersionSubmodules>
+						<pushChanges>false</pushChanges>
+						<localCheckout>true</localCheckout>
+						<preparationGoals>clean package</preparationGoals>
 					</configuration>
 				</plugin>
 			</plugins>
