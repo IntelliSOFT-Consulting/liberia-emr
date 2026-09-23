@@ -21,4 +21,6 @@
   		    http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
 	<context:component-scan base-package="org.openmrs.module.liberiaemr.web.controller" />
+	<!-- The reader behind the sync status controller; it talks to monitoring, not the database. -->
+	<context:component-scan base-package="org.openmrs.module.liberiaemr.web.sync" />
 </beans>

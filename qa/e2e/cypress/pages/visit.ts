@@ -1,5 +1,9 @@
 import RegistrationPage from './Registration';
-import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
+import { DateParts, faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
+
+type PatientRegistrationOverrides = {
+    birthdate?: DateParts;
+};
 
 class VisitPage {
     private registrationPage = new RegistrationPage();
@@ -9,13 +13,13 @@ class VisitPage {
         cy.contains(itemText, { timeout: 10000 }).click();
     }
 
-    registerPatient() {
+    registerPatient(overrides: PatientRegistrationOverrides = {}) {
         this.registrationPage.visitPage();
         this.registrationPage.fillRequiredFields({
             firstName: faker.person.firstName(),
             familyName: faker.person.lastName(),
             sex: faker.helpers.arrayElement(['male', 'female'] as const),
-            birthdate: randomAdultBirthdateParts(),
+            birthdate: overrides.birthdate ?? randomAdultBirthdateParts(),
             phoneNumber: liberiaPhoneNumber()
         });
         this.registrationPage.clickRegisterPatient();

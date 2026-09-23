@@ -105,6 +105,9 @@ of clinical data at rest (sync-eip.md section 7.4).
   their visit, ANC encounter with an observation, programme enrolment, test order and drug
   order, each appears at central with the same UUID and content, and the sender watches
   exactly the tables the template declares. Acceptance criterion 1 of LE-35.
+- `qa/sync/verify-sync-status.sh`: the national sync status endpoint the status page reads:
+  it answers at central, its numbers match the broker and the receiver, a user without the
+  View Sync Status privilege is refused, and a facility reports the page off.
 - `qa/sync/verify-initial-load.sh`: a facility's first load. Starts the sender with no saved
   position and checks every record in a synced table reaches central, the database stays
   unlocked, shared install records are skipped, and a restart does not send everything again.
