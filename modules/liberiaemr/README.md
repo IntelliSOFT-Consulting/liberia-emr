@@ -19,6 +19,31 @@ The module introduces a generic rules-based architecture for conditionally displ
 #### Rules Framework
 The endpoint fetches all published forms and evaluates them against an extensible list of `FormVisibilityRule` components. For example, the `FormsGenderRule` checks the patient's registered sex/gender and completely hides all female-only forms (such as ANC, PNC, and Labor & Delivery forms) if the patient is male.
 
+### National Sync Status
+Backs the national sync status page (`packages/esm-liberia-sync-status-app`): which
+facilities are sending, and what is waiting at central.
+
+**GET** `/ws/rest/v1/liberiaemr/syncstatus`
+
+Needs an authenticated session **and** the `View Sync Status` privilege (declared in
+`content-common` `privileges-common.csv`); otherwise `403`. Unlike the password-reset
+endpoints, it is under `/ws/rest` so the REST authentication filter applies.
+
+It does not read central's sync database — dbsync records no sender on a queued or failed
+record. It asks central's Prometheus instead, reusing what monitoring already scrapes from
+the broker, the receiver and the certificate exporter (the silent-facility query is the
+`SyncFacilitySilent` expression from `distribution/monitoring/rules-central.yml`).
+
+| Variable | Meaning |
+|---|---|
+| `LIBERIAEMR_SYNC_MONITORING_URL` | Prometheus base URL. Central's compose defaults it to `http://prometheus:9090`; facility stacks leave it unset, which turns the feature off in the same image. Falls back to the `liberiaemr.sync.monitoringUrl` global property. |
+
+The response is never an error for a monitoring failure: `enabled: false` when no address is
+set, `available: false` when monitoring cannot be reached (4-second timeout), otherwise
+`facilities[]` (`code`, `recordsReceived`, `receivedLastDay`, `silent`, `certificateExpires`),
+`central` (`recordsWaiting`, `recordsRetrying`, `conflicts`, `deadLetters`, `receiverUp`,
+`brokerUp`) and the firing `alerts`.
+
 ### Password Reset Flow
 The module introduces a secure, automated password reset flow for users. It integrates with an external SMTP server (e.g., Gmail) to send time-limited password reset tokens to registered users.
 
