@@ -89,6 +89,9 @@ Expected: `scm:git:git@github.com:IntelliSOFT-Consulting/liberia-emr.git`
 
 Insert this `<plugin>` as the last child of `<pluginManagement><plugins>`, immediately before the `</plugins>` at `modules/liberiaemr/pom.xml:107`:
 
+**XML comments cannot contain `--`.** Use an em dash in the prose below, never a double
+hyphen — both `xmllint` and Maven's POM parser hard-reject it.
+
 ```xml
 				<!-- Releases are cut LOCALLY: `mvn release:prepare` in this directory, then the
 				     version commits go up as a normal PR and the tag is pushed after it merges.
@@ -103,7 +106,7 @@ Insert this `<plugin>` as the last child of `<pluginManagement><plugins>`, immed
 				     x.y.z tag is the DISTRIBUTION release namespace and is wired to release.yml,
 				     so a default drifting that way would fire a full distribution release.
 				
-				     preparationGoals drops `verify` to `package` -- local-development.md §5,
+				     preparationGoals drops `verify` to `package` — local-development.md §5,
 				     `mvn verify` is fragile on Apple Silicon. CI re-runs the full build on the
 				     tag before publishing, so this local run is a sanity check, not the gate. -->
 				<plugin>
