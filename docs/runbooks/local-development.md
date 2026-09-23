@@ -11,8 +11,8 @@ says so and names what is missing — an instruction that has never been run is 
 | | |
 | --- | --- |
 | Docker + Compose v2 | Everything runs in containers. ~8 GB available to the VM. |
-| Java 17 + Maven | Content packages build on the host as well as in the image. |
-| Node | **Only** for frontend module work — and see §4, which does not work yet. |
+| Java 17 + Maven | Content packages and the backend module (§4.2) build on the host as well as in the image. |
+| Node 22 + Yarn 1 | **Only** for frontend module work (§4.1). CI uses Node 22; every package's `yarn.lock` is a Yarn 1 lockfile. |
 
 Ports 80 and 443 must be free. Colima only mounts paths under `$HOME`, so anything you
 bind-mount (certificates, a module checkout) has to live there, not in `/tmp`.
@@ -75,8 +75,8 @@ only when you change something append-only (a UUID, a concept datatype) or want 
 clean install.
 
 **Read the log, do not trust the health check.** `OMRS_CONFIG_INITIALIZER_STARTUP_LOAD` is
-currently set to a value Initializer does not recognise, so metadata errors do not fail the
-boot:
+`continue_on_error` in both compose files — deliberately, see
+[demo-stack.md](demo-stack.md) "Known gaps" — so metadata errors do not fail the boot:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.demo.yml \
@@ -117,28 +117,44 @@ docker compose ... up -d frontend
 
 Or just re-run `build-distribution.sh`, which does all of it in the right order.
 
-## 4. Frontend module (`packages/esm-liberia-epartograph-app`)
+## 4. Custom modules — `packages/` and `modules/`
 
-**This does not run yet.** `yarn start` (`openmrs develop`) cannot start the module in its
-current state. Verified by installing the toolchain and working through the failures one at
-a time; each of these is a separate missing piece:
+`modules/` is outside the root Maven reactor and `packages/` is not Maven at all, so
+`mvn package` at the root builds neither.
 
-| Blocker | Status |
-| --- | --- |
-| `routes.json` at the package root | **fixed** — `@openmrs/rspack-config` requires `src/routes.json` |
-| no `tsconfig.json` | **fixed** — the type checker aborts without one |
-| no `translations/` directory | outstanding — `src/index.ts` does `require.context('../translations', …)` |
-| no `src/partograph/*.component.tsx` | outstanding — `index.ts` and `src/routes.json` both reference them; this is the implementation work the README defers |
-| no build config | outstanding — the CLI needs `webpack.config.js` (`module.exports = require('@openmrs/webpack-config').default`) or `rspack.config.js` plus `--use-rspack` |
-| no `yarn.lock`, no workspace root | outstanding — installing the `next`-tagged toolchain with yarn 1 resolves duplicate `webpack` copies under `openmrs` and `@openmrs/webpack-config`, and the build dies on `The 'compilation' argument must be an instance of Compilation` |
+### 4.1 Frontend modules (`packages/esm-liberia-*`)
 
-The last one is the real work: the package needs a proper JS workspace (root
-`package.json`, yarn 4, and `resolutions` pinning a single webpack), not another
-one-off file. Until then, treat `packages/` as a scaffold, and note that CI's
-`yarn verify` step is still a `TODO` echo — nothing is checking this.
+| Package | What | In the frontend image |
+| --- | --- | --- |
+| `esm-liberia-epartograph-app` | WHO-aligned electronic partograph | pinned in `distro.properties` |
+| `esm-liberia-login-app` | login, loading and location-picker pages | pinned in `distro.properties` |
+| `esm-liberia-patient-chart-extension` | configurable obs-by-encounter widget | pinned in `distro.properties` |
+| `esm-liberia-sync-status-app` | national sync status page (central) | **not pinned yet**, so no image carries it |
 
-When it is fixed, the loop is the standard O3 one — the dev server proxies to the stack you
-already have running:
+The frontend image installs these from npm at the versions pinned in `distro.properties`,
+not from this checkout. A change here reaches a stack only once `packages.yml` has published
+it and the pin is bumped — never `next` (IMPLEMENTATION.md §6).
+
+Each package is standalone: its own `package.json` and Yarn 1 `yarn.lock`, no workspace
+root. The checks CI runs (`packages.yml` on every package; `ci.yml` adds tests for login and
+sync-status) are:
+
+```bash
+cd packages/<package>
+yarn install --frozen-lockfile
+yarn lint          # login-app only — the others do not declare eslint
+yarn typescript
+yarn test          # login-app (vitest), sync-status-app (jest)
+yarn build
+```
+
+All four build this way in `packages.yml` on `main`. The blockers this section used to list
+for the e-partograph (no `translations/`, no components, no build config, no lockfile) are
+closed: the package now has all four, and CI builds it on every merge. `ci.yml`'s
+e-partograph step is still a `TODO` echo, so only `packages.yml` checks it.
+
+For the dev server, the standard O3 loop proxies to the stack you already have running.
+Not re-verified since the blockers closed:
 
 ```bash
 cd packages/esm-liberia-epartograph-app
@@ -146,19 +162,53 @@ yarn install
 yarn start --backend https://localhost --no-open      # self-signed cert
 ```
 
-On a machine with no Node (this one), run it in a container on the compose network, which
-resolves the gateway by service name and needs no host toolchain:
+The packages' own `start:local` scripts point at `http://localhost:8085` and at config files
+under `distribution/frontend/config/`, which exist only after a build (§3, §7) — the compose
+stack answers on `https://localhost`, not 8085.
+
+On a machine with no Node, run it in a container on the compose network, which resolves the
+gateway by service name and needs no host toolchain:
 
 ```bash
 docker run --rm -it --network liberiaemr-facility_liberiaemr -p 8080:8080 \
   -v "$HOME/path/to/esm-liberia-epartograph-app":/app -w /app \
-  -e NODE_TLS_REJECT_UNAUTHORIZED=0 node:20-alpine \
+  -e NODE_TLS_REJECT_UNAUTHORIZED=0 node:22-alpine \
   sh -c 'corepack enable && yarn install && \
          ./node_modules/.bin/openmrs develop --host 0.0.0.0 --port 8080 \
            --backend https://gateway --no-open'
 ```
 
 The checkout must be under `$HOME` for Colima to mount it.
+
+### 4.2 Backend module (`modules/liberiaemr`)
+
+The `liberiaemr` OpenMRS module: rules-based form visibility and the password reset flow.
+Its README ([modules/liberiaemr/README.md](../../modules/liberiaemr/README.md)) has the
+endpoints, configuration and release rules.
+
+```bash
+cd modules/liberiaemr
+mvn clean package          # -> omod/target/liberiaemr-<version>.omod; Java 8 target
+```
+
+That is what CI's `backend-module` job runs. To try a change on the local stack, rebuild the
+backend image exactly as in §2: `distribution/backend/Dockerfile` builds the module from the
+source in your checkout and ships the `.omod` beside the pinned ones, so a module change and
+a content change are the same loop. Without `--build-arg LIBERIAEMR_VERSION` the module keeps
+the pom's `-SNAPSHOT` version, which is fine locally; `build-distribution.sh` always stamps it.
+The module is **not** in `distro.properties` — do not add it.
+
+Do not copy a hand-built `.omod` into the running backend container: the next recreate
+loses it, and it is the habit IMPLEMENTATION.md §8 forbids anywhere near a facility. An
+OpenMRS SDK server (`mvn openmrs-sdk:run`) is the faster loop the module README describes
+for development boxes only.
+
+**Password reset mail** goes nowhere until `LIBERIAEMR_SMTP_HOST` is set: unset, the module
+falls back to `localhost`, and the backend container runs no relay. To exercise the flow locally, set the
+`LIBERIAEMR_SMTP_*` and `LIBERIAEMR_FRONTEND_URL` variables in your local env file (see
+`facility.env.example` and [deploy.md](deploy.md)), recreate the backend with `up -d
+backend`, and give the test user an email address — the flow matches on the core user
+email, not a person attribute.
 
 ## 5. What does not work locally, and is not your fault
 
@@ -276,6 +326,9 @@ Git-ignored, and absent from a fresh clone — expect to recreate them:
 ./scripts/build/lift-demo-content.sh --check    # content-demo still matches upstream 1.9.2
 mvn -B clean verify                             # see §5 if you are on Apple Silicon
 ```
+
+If you touched `modules/liberiaemr`, also run `mvn clean package` there; for a
+`packages/` change, the commands in §4.1 for that package.
 
 And the conventions that decide *where* a change goes are in
 [CONTRIBUTING.md](../../CONTRIBUTING.md) — classify the change before writing it.

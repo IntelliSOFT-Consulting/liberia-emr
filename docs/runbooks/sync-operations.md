@@ -206,8 +206,9 @@ the `artemis-data` volume; this broker uses a new `broker-data` volume.
 ## 6. The sync service accounts
 
 The sender and the receiver sign in to their OpenMRS instance with dedicated accounts, never
-`admin`. The national content package defines the roles; until content packages are assembled
-into the distribution, create them by hand with exactly these privileges:
+`admin`. The national content package defines both roles
+(`content-liberia-national/.../roles/roles-national.csv`) and the backend image loads it, so they
+exist after the first boot; check they carry exactly these privileges:
 
 | Role | Privileges | Used by |
 | --- | --- | --- |
@@ -404,4 +405,8 @@ Retries and conflicts are national totals, not per facility. dbsync records no s
 queued or failed record, so central cannot say which facility one came from; use
 `scripts/sync/conflicts.sh list` for the records themselves. If the page says monitoring cannot
 be reached, sync itself may be perfectly healthy: check the central `prometheus` service first.
-`qa/sync/verify-sync-status.sh` exercises this section.
+`qa/sync/verify-sync-status.sh` exercises the endpoint the page reads.
+
+The page itself is the `packages/esm-liberia-sync-status-app` frontend module, which is not yet
+pinned in `distribution/distro.properties`. Until it is, a central frontend image built from this
+repository does not carry the page or its menu entry, although the backend endpoint is there.
