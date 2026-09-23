@@ -41,8 +41,9 @@ same `--version`, or the stack tries to pull a tag that may not be published.
 - the backend reports started within `CLEAN_INSTALL_TIMEOUT` seconds (default 5400), and
   Initializer does not log a failure to apply the configuration while it waits
 - Initializer finishes within 60 minutes: no OCL import still running, order frequencies loaded
-- order frequencies, location tag maps, programmes and the Program/Workflow/State concept
-  classes are all non-empty
+- order frequencies, location tag maps and programmes are each non-empty, and at least one
+  of the Program/Workflow/State concept classes exists (one count across the three, not
+  each separately)
 - `initializer.log` contains no `ERROR`; on failure the whole log is saved to
   `qa/upgrade/initializer-failure.log`
 - no `${var.` placeholder in the backend or Initializer logs
@@ -92,5 +93,9 @@ The fixture is regenerated at each release and tagged with the release it repres
 ⚠ `run-upgrade.sh` is a stub. It exits 0 when no `x.y.z` tag exists (the first release
 only), fails if `fixtures/<from>.sql.gz` is missing, and otherwise prints the assertions
 above and exits 1 — none of them is implemented. `release.yml` runs it in the
-`upgrade-test` job, with no `--from`, `--to` or `LIBERIAEMR_VERSION`. This harness is a
+`upgrade-test` job, with no `--from`, `--to` or `LIBERIAEMR_VERSION`, after an
+`actions/checkout` at its default depth. On a tag-triggered run the pushed tag may be the
+only `x.y.z` tag the job can see, so `--from` can resolve to the release under test rather
+than taking the first-release exit; the workflow needs fixing before the gate means what
+it says. This harness is a
 definition-of-done item for the base scaffold and a go-live gate.

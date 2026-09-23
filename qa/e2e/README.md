@@ -19,7 +19,10 @@ In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 
 A suspended test uses `it.skip` with a comment saying why. Cypress reports it as pending,
 and the job stays green, so read the `N passing, M pending` tail rather than the check
-colour. No `CYPRESS_SKIP_*` variables are set in `ci.yml` at present.
+colour. No `CYPRESS_SKIP_*` variables are set in `ci.yml` at present, and nothing reads
+`RUN_LIVE_REGISTRATION`: the `ci.yml` comment saying it keeps a live registration test
+skipped is stale. The live-backend registration test in `Registration.cy.ts` runs on every
+CI run.
 
 ## Running
 

@@ -35,8 +35,17 @@ OpenWire) and `PgpRoundTrip.java` (dbsync's PGP services, sender to receiver).
 ## Run against live stacks
 
 Not run in CI. They need a running facility stack started with `--profile sync`, a central
-stack, or both. Defaults: facility `https://localhost`, central `https://localhost:8443`,
-user `admin`/`Admin123` (central credentials default to the facility's).
+stack, or both. To point them at a staging pair, override the connection flags:
+
+| Flag | Default | Accepted by |
+| --- | --- | --- |
+| `--facility-url` | `https://localhost` | all below except `verify-sender-capture.sh` (`--base-url`, same default) and `verify-receiver-failure.sh` |
+| `--central-url` | `https://localhost:8443` | `verify-e2e-push.sh`, `verify-initial-load.sh`, `verify-sync-status.sh`, `outage-drill.sh`, `verify-conflict-resolution.sh` |
+| `--user`, `--password` | `admin`, `Admin123` | all below except `verify-receiver-failure.sh` |
+| `--central-user`, `--central-password` | the `--user` values | `verify-e2e-push.sh`, `verify-initial-load.sh`, `outage-drill.sh`, `verify-conflict-resolution.sh` |
+
+`verify-sync-status.sh` uses `--user`/`--password` at central too. The table below lists each
+script's other flags.
 
 **Staging only.** They register fabricated patients, and several stop containers or resend a
 facility's whole database. `verify-sender-capture.sh`, and `verify-e2e-push.sh` through it,
@@ -48,7 +57,7 @@ refuse to run if the sender targets an `moh.gov.lr` broker; there is no override
 | `verify-e2e-push.sh [--timeout 300]` | A patient, visit, ANC encounter with an observation, programme enrolment, test order and drug order registered at the facility all reach central intact with the same UUIDs; the sender watches exactly the tables its template declares. LE-35 criterion 1 | Both |
 | `verify-sync-status.sh [--timeout 60]` | `/ws/rest/v1/liberiaemr/syncstatus` answers at central with numbers matching the broker and receiver, refuses a user without View Sync Status, and reports the feature off at a facility | Central with monitoring |
 | `verify-initial-load.sh [--timeout 600]` | With its saved position moved aside, the sender resends every record (`SYNC_SNAPSHOT_MODE=initial`); every record in a synced table then exists at central with no conflicts, retries or dead letters, sync carries on, and a restart does not resend everything. Prints how to restore the old position if it fails | Both |
-| `outage-drill.sh [--batch 10] [--timeout 600] [--outage-cmd] [--restore-cmd] [--allow-short-retention]` | Through a broker outage with container restarts, a counted batch registered at the facility lands at central exactly once with empty retry queues, and the facility keeps registering; binlog retention is at least 8553600 s (risk F1). LE-35 criterion 2 | Both, with `verify-e2e-push.sh` already passing |
+| `outage-drill.sh [--batch 10] [--timeout 600] [--outage-cmd] [--restore-cmd] [--allow-short-retention]` | Through a broker outage with container restarts, a counted batch registered at the facility lands at central exactly once with empty retry queues, and the facility keeps registering; binlog retention is at least 8553600 s (risk F1), unless `--allow-short-retention` turns that failure into a warning — lab stacks only, never a facility. LE-35 criterion 2 | Both, with `verify-e2e-push.sh` already passing |
 | `verify-receiver-failure.sh [--pki ~/.liberiaemr/sync-security] [--facility careysburg] [--prom-url http://127.0.0.1:9190] [--timeout 900]` | A signed but malformed message is redelivered, dead-lettered after 10 attempts and alerted, while valid messages behind it still apply and their reply requests are ignored. Clears DLQ at the end | Central |
 | `verify-conflict-resolution.sh [--prom-url http://127.0.0.1:9190] [--timeout 900]` | A real conflict (edited at central, then twice at the facility) resolved with `scripts/sync/conflicts.sh`: the waiting update applies on retry, a later change applies without a new conflict, the alert clears, no payload reaches the receiver log | Both, with a healthy baseline |
 | `verify-alerting.sh [--prom-url http://127.0.0.1:9090] [--timeout 600] [--resolve-timeout 2400] [--outage-cmd] [--restore-cmd]` | Cutting the broker and registering a patient fires `SyncPushErrors` in Prometheus; restoring resolves it. Resolution waits on the sender's 30-minute retry poller. LE-35 criterion 3 | Facility with `--profile sync`, a central broker to break |
