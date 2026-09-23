@@ -38,12 +38,23 @@ are not dropped into the app-data directory like an `.omod`.
 │   ├── content-liberia-{lab,pharmacy,opd-ipd}/
 │   ├── content-site-{careysburg,barnersville}/
 │   └── content-demo/              lifted from the RefApp demo package; NEVER in production
-├── packages/              CUSTOM BUILD — esm-liberia-epartograph-app; MODIFY+PR patches
+├── modules/               CUSTOM BUILD (backend) — the liberiaemr OpenMRS module (.omod)
+├── packages/              CUSTOM BUILD (frontend) — Liberia ESMs; MODIFY+PR patches
+│   ├── esm-liberia-epartograph-app/          WHO-aligned electronic partograph
+│   ├── esm-liberia-login-app/                login, loading and location-picker pages
+│   ├── esm-liberia-patient-chart-extension/  configurable obs-by-encounter widget
+│   ├── esm-liberia-sync-status-app/          national sync status page (central)
+│   └── modify-pr/                            patches to community code, each with an upstream PR
 ├── integration/           EXTERNAL — EIP sync, DHIS2, cross-facility, mSupply, FHIR
 ├── docs/                  architecture, ADRs, DAK, security, runbooks, metadata specs
-├── qa/                    api, e2e, manual, uat, upgrade harness
-└── scripts/               validate, build, deploy
+├── qa/                    api, e2e, manual, uat, sync verification, upgrade harness
+└── scripts/               validate, build, deploy, security (certs), sync admin
 ```
+
+Inside `distribution/`: `backend/` (the OpenMRS image, which builds `modules/liberiaemr` from
+source), `frontend/`, `gateway/` (TLS termination), `sync/` (dbsync sender and receiver),
+`broker/` (Artemis), `monitoring/` (Prometheus and alert rules), `compose/{facility,central}`
+and `env/` (example env files). See [distribution/README.md](distribution/README.md).
 
 Content layers load **common → national → programme → site**, each overriding the last
 ([ADR 0003](docs/adr/0003-layered-content-packages.md)).
@@ -51,14 +62,19 @@ Content layers load **common → national → programme → site**, each overrid
 ## Quick start
 
 ```bash
-# Validate and build every content package
-./scripts/build/build-content.sh
+# Validate every content package — seconds, run it before anything slower
+./scripts/validate/validate-content.sh
 
-# Bring up a facility stack locally
-cd distribution/compose/facility
-cp ../../env/facility.env.example facility.env    # then fill it in
-docker compose --env-file facility.env up -d
+# Build the images and bring up a local demo stack (15–25 min cold build)
+./scripts/build/build-distribution.sh --version 1.0.0 --site careysburg --demo
+cp distribution/env/demo.env.example distribution/env/demo.env   # then edit it
+./scripts/deploy/deploy-facility.sh --env distribution/env/demo.env --demo --local
 ```
+
+Drop `--demo` from both commands for a production-shaped stack with no demo content.
+[docs/runbooks/local-development.md](docs/runbooks/local-development.md) covers the content
+edit loop and frontend work; [demo-stack.md](docs/runbooks/demo-stack.md)
+covers a training room.
 
 Regenerate the directory tree at any time — it is idempotent and never overwrites an
 existing file:
@@ -79,11 +95,37 @@ duplicates.
 change a concept's datatype, remove coded answers, or delete program states that patient
 data references. Retire the wrong thing, add a corrected one, migrate the data.
 
+## Custom code
+
+Everything outside the community distribution is one of three build classes
+(IMPLEMENTATION.md §3), and each lives in exactly one place:
+
+| Where | What | How it ships |
+| --- | --- | --- |
+| [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots and opt-in releases go to Repsy |
+| [`packages/esm-liberia-*`](packages/) | O3 frontend modules | Published to npm, pinned in `distro.properties` like any other ESM |
+| [`packages/modify-pr/`](packages/modify-pr/) | Patches to community code | Only with an open or merged upstream PR — otherwise it is a fork |
+
+See [modules/liberiaemr/README.md](modules/liberiaemr/README.md) for the module's
+endpoints, SMTP configuration and the release opt-in rule.
+
+## Continuous integration
+
+| Workflow | Runs on | Does |
+| --- | --- | --- |
+| `ci.yml` | PRs to `main`/`develop`, pushes to `main` | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
+| `modules.yml` | changes under `modules/**`, releases | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
+| `packages.yml` | changes under `packages/**`, releases | Builds, tests and publishes the frontend modules |
+| `release.yml` | `x.y.z` tags | Full-stack tests, upgrade test from the previous release, publish images, deploy to staging, production approval |
+
 ## Current status
 
-Base scaffold with first-cut MCH metadata. **Not deployable yet.** The substantial open
-items are the password expiry mechanism, the cross-facility identity policy, CIEL mappings
-for the partograph concepts, the five MCH forms, and the e-partograph itself.
+**Not production-ready.** Metadata and forms exist for MCH and OPD/IPD, the e-partograph ships
+as a pre-release, and facility→central sync runs on openmrs-dbsync
+([ADR 0008](docs/adr/0008-adopt-openmrs-dbsync.md), still *Proposed*). Among the open items:
+the password expiry mechanism, the cross-facility identity policy
+([ADR 0005](docs/adr/0005-cross-facility-identity-reconciliation.md), awaiting MOH ICT), and
+CIEL mappings for the partograph concepts.
 
 Start at [docs/runbooks/go-live.md](docs/runbooks/go-live.md) for the full gate list.
 
@@ -94,10 +136,11 @@ Start at [docs/runbooks/go-live.md](docs/runbooks/go-live.md) for the full gate 
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Conventions and constraints — **read before contributing** |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branch strategy, upstream-PR workflow, review |
 | [HANDOVER.md](HANDOVER.md) | IP handover to the MOH |
-| [docs/architecture/](docs/architecture/) | Solution architecture |
+| [distribution/README.md](distribution/README.md) | Images, pins, compose stacks |
+| [docs/architecture/](docs/architecture/) | Solution architecture, including [sync](docs/architecture/sync-eip.md) |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/security/](docs/security/) | MOH ICT SOP and NCS control mapping |
-| [docs/runbooks/](docs/runbooks/) | Deploy, backup/restore, DR, go-live |
+| [docs/runbooks/](docs/runbooks/) | Local development, demo stack, deploy, sync operations, backup/restore, DR, go-live |
 | [docs/metadata-specs/](docs/metadata-specs/) | Per-programme metadata specifications |
 
 ## Licence
