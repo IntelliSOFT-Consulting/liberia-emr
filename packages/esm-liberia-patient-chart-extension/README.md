@@ -32,7 +32,7 @@ name, not under the package name.
 | `formUuid` | `''` | AMPATH form for **Add**; empty hides the button |
 | `encounterTypes` | `[]` | Encounter type UUIDs to include |
 | `displayMode` | `table` | `table`, `graph` or `switchable` |
-| `data` | `[]` | Ordered `{concept, label}`; an empty label uses the concept name |
+| `data` | `[]` | Ordered `{concept, label}`; an empty label shows the raw concept UUID, so always set one |
 | `maxEncounters` | `5` | Encounters per page |
 | `oldestFirst` | `false` | |
 | `showAddButton` | `true` | |

@@ -18,7 +18,7 @@ and adds a self-service **forgot / reset password** flow backed by `modules/libe
 
 | Route | Does |
 | --- | --- |
-| `login/forgot-password` | Takes an email address and `POST`s `{"email"}` to `/ws/liberiaemr/passwordReset/request`. Always answers "If an account exists with that email, a reset link has been sent." Reached from the **Forgot password?** link under the login button. |
+| `login/forgot-password` | Takes an email address, rejects a malformed one locally, and `POST`s `{"email"}` to `/ws/liberiaemr/passwordReset/request`. A successful request always answers "If an account exists with that email, a reset link has been sent."; a failed one shows an error. Reached from the **Forgot password?** link under the login button. |
 | `login/reset-password?token=…` | The page the emailed link opens (the backend builds it as `LIBERIAEMR_FRONTEND_URL` + `/login/reset-password?token=…`). `POST`s `{"token", "newPassword"}` to `/ws/liberiaemr/passwordReset/confirm`. With no token, or one the backend rejects, it offers a new link. |
 | `login/reset-success` | Confirmation, with a link back to login. |
 | `login/mfa` | **Placeholder.** Takes a 6-digit code and always answers "MFA verification is currently a placeholder." It calls no backend. |
