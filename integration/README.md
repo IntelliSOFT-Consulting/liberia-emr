@@ -8,7 +8,7 @@ into one makes both impossible to version or roll back independently.
 
 | Directory | Scope | Status |
 | --- | --- | --- |
-| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; sender, broker and receiver built on openmrs-dbsync; reconciliation outstanding |
+| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; sender and receiver built on openmrs-dbsync (`distribution/sync/`), ActiveMQ Artemis broker built separately (`distribution/broker/`); reconciliation outstanding |
 | [`dhis2/`](dhis2/) | Aggregate export + data-element mappings | Blocked on MOH mapping delivery |
 | [`cross-facility/`](cross-facility/) | Cross-facility patient query | Sprint 4 |
 | [`msupply/`](msupply/) | Stock integration | Deferred to the support period — spec only |

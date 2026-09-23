@@ -124,10 +124,10 @@ facility database in this release. There is exactly one write direction.
                                                              └────────────────────────────┘
 ```
 
-Two services marked **NEW** above do not exist in the compose files yet and are not
-optional: DB-sync's transport is JMS (§1.4), and its sender keeps its retry state in a
-**management database** separate from the OpenMRS database (§1.5). The `sync` service
-currently receives only OpenMRS database credentials.
+Two services marked **NEW** above did not exist in the compose files when this was drafted,
+and are not optional: DB-sync's transport is JMS (§1.4), and its sender keeps its retry state
+in a **management database** separate from the OpenMRS database (§1.5). The `sync` service
+then received only OpenMRS database credentials.
 
 > **RESOLVED (E5).** Both now exist: the `artemis` service in the central compose
 > ([`distribution/broker/`](../../distribution/broker/README.md)), and a management schema on
@@ -161,7 +161,7 @@ sync-layer regression risk, and §1.1 shows we are already two minor versions pa
 tested platform range. That is why the upgrade rehearsal in `qa/upgrade/` has to grow a
 sync assertion before the second facility goes live.
 
-> ⚠ **Required change, not yet made.** The facility `db` service does not enable binary
+> ⚠ **Required change, as drafted.** The facility `db` service did not enable binary
 > logging. Debezium needs, on the database container command:
 > `--log-bin --binlog-format=ROW --binlog-row-image=FULL --server-id=<unique-per-facility>`
 > and a replication-privileged database user (`REPLICATION SLAVE`, `REPLICATION CLIENT`,
@@ -213,7 +213,7 @@ Consequences:
   and its own entry in the disaster-recovery runbook. It holds PHI in transit and at rest
   in its journal.
 - **`EIP_CENTRAL_URL` on the facility `sync` service becomes a broker URL**, not an HTTP
-  endpoint. The current variable name will mislead whoever configures it, so rename it.
+  endpoint. The old variable name would mislead whoever configures it, so rename it.
   Done: it is now `ARTEMIS_URL` (`ssl://<central>:61617`).
 - **Facility identity is still established by mutual TLS**, now on the broker connection:
   the facility presents a client certificate, and the broker authorises it. The facility
@@ -221,8 +221,8 @@ Consequences:
 - Artemis must not be exposed beyond mTLS-authenticated facilities. An open broker accepting
   clinical messages is the single worst failure available in this topology.
 
-> ⚠ **Required change, not yet made.** The facility `sync` service mounts no TLS material,
-> while `sync-receiver` mounts `${TLS_CERT_DIR}`. Mutual TLS needs the client half. Control
+> ⚠ **Required change, as drafted.** The facility `sync` service mounted no TLS material,
+> while `sync-receiver` mounted `${TLS_CERT_DIR}`. Mutual TLS needs the client half. Control
 > D2 in [the SOP mapping](../security/moh-ict-sop-mapping.md) stays **Open** until the
 > broker exists in the central compose, the facility mounts its client certificate and key,
 > and the certificate lifecycle is owned by the MOH ICT Unit in writing.
@@ -239,8 +239,8 @@ DB-sync's sender keeps its own state (retry queues including `sender_retry_queue
 Debezium offset) in a **management database separate from the OpenMRS database**. The
 management database is documented as tested with MySQL and H2.
 
-Our facility `sync` service is currently given `EIP_DB_HOST: db` and the OpenMRS
-credentials, which is the *source* database, not the management one. Both are needed and
+When this was drafted, our facility `sync` service was given `EIP_DB_HOST: db` and the
+OpenMRS credentials, which is the *source* database, not the management one. Both are needed and
 they are not interchangeable. Resolved: the service now takes `OPENMRS_DB_*` for the source
 and `MGMT_DB_*` for the management schema (default `openmrs_mgmt`, on the same MariaDB).
 
