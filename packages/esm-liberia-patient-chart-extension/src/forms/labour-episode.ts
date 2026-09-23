@@ -3,8 +3,10 @@
  * A Delivery / Stage 3 encounter ends the previous pregnancy; later ANC or
  * labour encounters belong to the current episode.
  *
- * Delivery identity matches the e-partograph episode resolver. Do not invent
- * a calendar window here.
+ * Delivery identity is an independently built copy of the same clinical
+ * episode boundary used by the e-partograph delivery filter. Neither copy is
+ * a code-level source of truth for the other. Do not invent a calendar window
+ * here.
  */
 
 export interface EpisodeObs {
@@ -32,7 +34,21 @@ export interface LabourEpisodeConfig {
 export const ANC_INITIAL_FORM_NAME = 'ANC Initial Visit';
 export const DEFAULT_ANC_NATIONAL_FORM_NAME = '1. ANC Form';
 
-/** Stage 3 / Delivery identity from the e-partograph episode resolver. */
+/**
+ * IMPORTANT: Keep this delivery-episode identity semantically identical to the
+ * delivery filter in
+ * packages/esm-liberia-epartograph-app/src/partograph/use-partograph-encounters.ts.
+ *
+ * These are independently built copies in separately bundled ESMs. Neither
+ * file is a code-level source of truth for the other. Both predicates
+ * intentionally define the same pregnancy/labour episode boundary and must
+ * change together. Any change to encounter-type matching, Third Stage form
+ * matching, or fallback form-name matching must update both locations in the
+ * same PR.
+ *
+ * TODO: extract this into a shared frontend library when the repository has a
+ * supported JS workspace/shared-package structure.
+ */
 export function isDeliveryEncounter(enc: EpisodeEncounter, config: LabourEpisodeConfig): boolean {
   if (config.deliveryEncounterTypeUuid && enc.encounterType?.uuid === config.deliveryEncounterTypeUuid) {
     return true;

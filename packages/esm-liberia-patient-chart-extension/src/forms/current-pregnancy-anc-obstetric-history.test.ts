@@ -103,13 +103,17 @@ describe('ANC source identity', () => {
 });
 
 describe('delivery episode boundary', () => {
-  it('identifies Stage 3 / Delivery the same way the e-partograph does', () => {
+  it('covers every current delivery-identity signal, including the implemented form-name fallback', () => {
     assert.equal(isDeliveryEncounter(enc({ datetime: asOf.toISOString(), type: DELIVERY_TYPE }), config), true);
     assert.equal(isDeliveryEncounter(enc({ datetime: asOf.toISOString(), formUuid: THIRD_STAGE_FORM }), config), true);
     assert.equal(
-      isDeliveryEncounter(enc({ datetime: asOf.toISOString(), formName: '3. Third Stage of Labor and Delivery' }), config),
+      isDeliveryEncounter(
+        enc({ datetime: asOf.toISOString(), formName: '3. Third Stage of Labor and Delivery' }),
+        config,
+      ),
       true,
     );
+    assert.equal(isDeliveryEncounter(enc({ datetime: asOf.toISOString(), formName: 'Delivery Summary' }), config), true);
     assert.equal(
       isDeliveryEncounter(
         enc({ datetime: asOf.toISOString(), formName: '1. First and Second Stage of Labor and Delivery' }),
