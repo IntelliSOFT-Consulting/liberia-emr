@@ -13,10 +13,12 @@ have to be true:
 ### 1. Everything is reproducible from configuration
 
 Any release can be rebuilt from a git tag: `distribution/distro.properties` pins every
-platform, community module and frontend module version; `content-packages/` holds all
-clinical content and configuration; and the backend image builds the content packages and
-`modules/liberiaemr` from the tag's own source. There is no build step that depends on a
-machine, a person, or an undocumented artefact.
+platform, community module and shipped frontend module version; `content-packages/` holds
+all clinical content and configuration; and `scripts/build/build-distribution.sh` builds the
+content packages (`mvn package`) and, inside the backend image, `modules/liberiaemr` from the
+tag's own source. The one input fetched at build time is the CIEL dictionary: the OCL
+collection export pinned as `ocl.collection.version`, which needs `OCL_API_TOKEN`. There is
+no build step that depends on a machine, a person, or an undocumented artefact.
 
 This is why configuration is deliberately **not** included in backups — it is reproducible
 from the tag. It is also why `latest` and `-SNAPSHOT` are forbidden: a release that cannot be
@@ -52,9 +54,9 @@ The security mapping and the go-live checklist name the open items explicitly.
 | | |
 | --- | --- |
 | Source | This repository, complete history |
-| Content packages | Versioned Maven ZIPs, built from the tag into the backend image; not published to a registry |
+| Content packages | Versioned Maven ZIPs, built from the tag by the root reactor and baked into the backend image; not published to a registry |
 | Backend module | `modules/liberiaemr` — built from the tag into the backend image; also published to Repsy |
-| Frontend modules | Four `@liberiaemr/esm-liberia-*` ESMs, published to npm |
+| Frontend modules | Four `@liberiaemr/esm-liberia-*` ESMs, published to npm; three pinned in `distro.properties` (`esm-liberia-sync-status-app` is not yet) |
 | Images | Immutable, versioned, published to the registry |
 | Documentation | Architecture, ADRs, runbooks, metadata specs, security mapping |
 | Test suites | API, E2E, manual scripts, UAT records, upgrade harness |
@@ -70,7 +72,7 @@ complete:
 | npm | `@liberiaemr` | The four ESMs | `packages.yml` | `NPM_AUTH_TOKEN` in `npm-publish` |
 | Repsy | `intellisoftdev/liberiaemr` | `liberiaemr-omod` | `modules.yml` | `REPSY_USERNAME`, `REPSY_PASSWORD` in `repsy-publish` |
 | Docker Hub | `intellisoftdev` | `:latest` and `:<sha>` images from `main` (dev) | `ci.yml` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
-| GHCR | `ghcr.io/intellisoft-consulting` | Release images (the push step is still a stub) | `release.yml` | `GITHUB_TOKEN` |
+| GHCR | `ghcr.io/intellisoft-consulting` | Release images (the push step is still a stub) | `release.yml` | None — the per-run `GITHUB_TOKEN` with `packages: write`; moves with the GitHub organisation |
 
 The same applies to the GitHub repository itself and to the other secrets its workflows
 read (`OCL_API_TOKEN`, `SONAR_TOKEN`, `SONAR_HOST_URL`, `NVD_API_KEY`, `ANTHROPIC_API_KEY`,

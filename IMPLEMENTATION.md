@@ -292,7 +292,7 @@ Where each stage runs today (`.github/workflows/`):
 
 | Workflow | Runs on | Stages |
 | --- | --- | --- |
-| `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus the ESM and backend-module builds. Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment. |
+| `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment. |
 | `release.yml` | `x.y.z` tag | Release guards → build (both sites) → full stack → **upgrade test** → publish images (`ghcr.io/intellisoft-consulting`) → staging → production approval. The full-stack, image-push and staging steps are still `TODO` stubs. |
 | `modules.yml` | `modules/**` changes; GitHub release | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release only when its tag matches the pom's base version. |
 | `packages.yml` | `packages/**` changes; GitHub release | Builds the ESMs; publishes `-pre.<run>` versions (npm tag `next`) from `main`, and every ESM at the release tag's version on a release. |
@@ -367,10 +367,9 @@ with site overrides only where necessary. **Never** scaffold a looser default.
 - `content-site-careysburg` + `content-site-barnersville` seed facility locations.
 - `content-liberia-mch` scaffolded for the ANC/L&D/PNC/FP first-go-live scope.
 - `packages/esm-liberia-epartograph-app` scaffolded + stubbed. Its `spa.frontendModules`
-  line in `distro.properties` stays commented out until the module is published: a pin to a
+  line in `distro.properties` was commented out until the module was published: a pin to a
   coordinate npm has never seen fails `openmrs assemble` and with it the whole distribution.
-  (Since met: the module now builds with rspack and is pinned to an exact published
-  version.)
+  It is now published and pinned to an exact version.
 - `integration/eip/routes/` has a documented facility→central placeholder.
 - `qa/upgrade/` harness runs clean-install + upgrade tests; CI runs the §8 pipeline.
 - No secrets or PHI anywhere in the repository.
