@@ -28,7 +28,8 @@ point of the two-artefact model.
 
 ## Restore
 
-1. Stop the stack: `docker compose --env-file facility.env down`
+1. Stop the stack, from `distribution/compose/facility`:
+   `docker compose --env-file ../../env/facility.env down`
 2. Restore the database volume from the encrypted backup.
 3. Restore `openmrs-data` and `sync-queue`.
 4. Start with `LIBERIAEMR_VERSION` set to **the release the backup was taken from** — not
