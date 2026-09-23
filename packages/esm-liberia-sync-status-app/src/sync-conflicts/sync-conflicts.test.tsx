@@ -89,7 +89,21 @@ describe('sync conflicts page', () => {
     expect(screen.getByText('Sync conflicts are not available on this server')).toBeInTheDocument();
   });
 
-  it('shows the fields that differ and records the decision for the record reviewed', async () => {
+  const review = {
+    id: 7,
+    table: 'person',
+    identifier: person,
+    raised: 1790000000000,
+    facility: 'careysburg',
+    centralMissing: false,
+    fields: [
+      { field: 'gender', facility: 'F', central: 'M', compared: true, differs: true },
+      { field: 'birthdate', facility: '1990-04-01', central: '1990-04-01', compared: true, differs: false },
+    ],
+    decisions: [],
+  };
+
+  function givenOneConflict(decided = null) {
     given(listUrl, {
       data: {
         data: {
@@ -97,32 +111,24 @@ describe('sync conflicts page', () => {
           available: true,
           applyWindow: '01:00-05:00',
           conflicts: [
-            { id: 7, table: 'person', identifier: person, raised: 1790000000000, waiting: 1, decision: null, undecidedInTable: 0 },
+            { id: 7, table: 'person', identifier: person, raised: 1790000000000, waiting: 1, decision: decided, undecidedInTable: 0 },
           ],
           recent: [],
         },
       },
     });
-    given(`${listUrl}/7`, {
-      data: {
-        data: {
-          id: 7,
-          table: 'person',
-          identifier: person,
-          raised: 1790000000000,
-          facility: 'careysburg',
-          centralMissing: false,
-          fields: [
-            { field: 'gender', facility: 'F', central: 'M', compared: true, differs: true },
-            { field: 'birthdate', facility: '1990-04-01', central: '1990-04-01', compared: true, differs: false },
-          ],
-          decisions: [],
-        },
-      },
-    });
-    mockOpenmrsFetch.mockResolvedValue({ data: decision() });
+    given(`${listUrl}/7`, { data: { data: { ...review, decisions: decided ? [decided] : [] } } });
+  }
 
-    render(<SyncConflicts />);
+  it('shows the fields that differ and records the decision for the record reviewed', async () => {
+    givenOneConflict();
+    // Once the decision is saved, the server answers with it on the next read.
+    mockOpenmrsFetch.mockImplementation(async () => {
+      givenOneConflict(decision({ reason: 'Agreed with the records officer' }));
+      return { data: decision() };
+    });
+
+    const { rerender } = render(<SyncConflicts />);
     fireEvent.click(screen.getByText('Review'));
 
     expect(screen.getByText(/Sent by careysburg/)).toBeInTheDocument();
@@ -137,6 +143,9 @@ describe('sync conflicts page', () => {
     expect(record).toBeEnabled();
     fireEvent.click(record);
 
+    // Real SWR re-renders when mutate refetches; the stand-in above does not, so do it here.
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
+    rerender(<SyncConflicts />);
     await waitFor(() => expect(screen.getByText('Decision recorded')).toBeInTheDocument());
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(
       `${listUrl}/7/decision`,
@@ -145,5 +154,38 @@ describe('sync conflicts page', () => {
         body: { identifier: person, decision: 'FACILITY_STANDS', reason: 'Agreed with the records officer' },
       }),
     );
+    // The form gives way to what was decided and when it applies.
+    expect(screen.queryByText('Record decision')).not.toBeInTheDocument();
+    expect(screen.getByText('Agreed with the records officer')).toBeInTheDocument();
+    expect(screen.getByText('The receiver applies it between 01:00-05:00 UTC. This page updates when it has.')).toBeInTheDocument();
+  });
+
+  it('shows a decided conflict as its decision, and reopens the form to change it', () => {
+    givenOneConflict(decision());
+
+    render(<SyncConflicts />);
+    fireEvent.click(screen.getByText('View'));
+
+    expect(screen.getByText('Decision recorded')).toBeInTheDocument();
+    expect(screen.queryByText('Record decision')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Change decision'));
+
+    expect(screen.getByText('Change the decision')).toBeInTheDocument();
+    expect(screen.getByText('Record decision')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.getByText('Decision recorded')).toBeInTheDocument();
+  });
+
+  it('closes the review and says so once the receiver has applied the conflict', () => {
+    givenOneConflict(decision());
+    const { rerender } = render(<SyncConflicts />);
+    fireEvent.click(screen.getByText('View'));
+
+    given(listUrl, { data: { data: { enabled: true, available: true, applyWindow: '01:00-05:00', conflicts: [], recent: [] } } });
+    rerender(<SyncConflicts />);
+
+    expect(screen.getByText('Conflict applied')).toBeInTheDocument();
+    expect(screen.queryByText('Decision recorded')).not.toBeInTheDocument();
   });
 });

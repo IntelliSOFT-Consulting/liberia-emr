@@ -68,10 +68,14 @@ export type SyncConflictsError = Error & { response?: { status?: number } };
 
 const baseUrl = `${restBaseUrl}/liberiaemr/syncconflicts`;
 
+/** Often enough that a decision shows as applied soon after the receiver applies it. */
+const refreshInterval = 30_000;
+
 export function useSyncConflicts() {
   const { data, error, isLoading, mutate } = useSWR<{ data: SyncConflicts }, SyncConflictsError>(
     baseUrl,
     openmrsFetch,
+    { refreshInterval },
   );
   return { conflicts: data?.data, error, isLoading, mutate };
 }
@@ -80,6 +84,7 @@ export function useConflictDetail(id: number | null) {
   const { data, error, isLoading, mutate } = useSWR<{ data: ConflictDetail }, SyncConflictsError>(
     id === null ? null : `${baseUrl}/${id}`,
     openmrsFetch,
+    { refreshInterval },
   );
   return { detail: data?.data, error, isLoading, mutate };
 }
