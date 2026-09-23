@@ -13,5 +13,16 @@
             <property>visits.allowOverlappingVisits</property>
             <value>false</value>
         </globalProperty>
+
+        <globalProperty>
+            <property>liberiaemr.nextContactDateConceptUuid</property>
+            <value>${var.concept.ciel.return-visit-date.uuid}</value>
+            <description>The concept UUID for the "Next Contact Date" observation.</description>
+        </globalProperty>
+        <globalProperty>
+            <property>liberiaemr.defaultAppointmentServiceUuid</property>
+            <value>${var.appointmentservicedefinitions.outpatient-department.uuid}</value>
+            <description>The UUID of the default Appointment Service to assign to auto-generated appointments (Outpatient Department).</description>
+        </globalProperty>
     </globalProperties>
 </config>
