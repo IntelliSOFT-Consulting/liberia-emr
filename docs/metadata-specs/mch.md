@@ -571,6 +571,22 @@ Delivery Summary remains not written. See the
 for the inventory and the versioning rule (a released schema is historical data: new
 version, new UUID, old schema preserved).
 
+### Labour & Delivery Gravida / Parity prefill
+
+`1. First and Second Stage of Labor and Delivery` keeps CIEL Gravida (5624) and Parity
+(1053) editable. On a **new** encounter it prefills each field from the latest applicable
+ANC observation in the **current pregnancy**, independently (one value may be blank). The
+source is ANC-specific: prefer `ANC Initial Visit` (encounter type / form UUID / form name);
+fall back to legacy `1. ANC Form` identified by that form name, never by generic
+`Consultation`. Previous-pregnancy ANC is excluded using the same delivery boundary as the
+e-partograph (latest Stage 3 / Delivery encounter before now). Existing L&D observations
+win on edit. The `Parity cannot be greater than Gravida` validator is unchanged.
+
+The form calls `getCurrentPregnancyAncNumeric` from `calculateExpression`. That helper is
+registered at startup by `@liberiaemr/esm-liberia-patient-chart-extension`, which is in
+the facility import map and loads for every patient-chart session. It is **not** hosted
+by the e-partograph ESM.
+
 ### Legacy national Family Planning form superseded
 
 The national `3. Family Planning` v1.0 schema

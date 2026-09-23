@@ -29,7 +29,7 @@ runtime identity.
 
 Labour and Delivery in Liberia EMR follows the 4 clinical stages:
 
-1. **Stage 1 (Labour Admission / Latent phase):** `1. First and Second Stage of Labor and Delivery`. Records admission examination, baseline history, and initial vaginal examination. When cervical dilatation reaches $\ge 4\text{ cm}$, active labour begins.
+1. **Stage 1 (Labour Admission / Latent phase):** `1. First and Second Stage of Labor and Delivery` (active schema **v1.2** in `first_and_second_stage_of_labor_and_delivery-mch.json`; v1.1 remains the historical form). Records admission examination, baseline history, and initial vaginal examination. When cervical dilatation reaches $\ge 4\text{ cm}$, active labour begins.
 2. **Active Labour Monitoring (Partograph):** Serial observations are recorded on the Partograph form (`partograph-national.json` / `2. Partograph`) and visualised by `packages/esm-liberia-epartograph-app` plotted against WHO Alert and Action lines.
 3. **Stage 3 (Delivery):** `3. Third Stage of Labor and Delivery` or `Delivery Summary`. Captures delivery of infant and placenta, APGAR, AMTSL, and blood loss. **Clinically concludes the Partograph.** When a Stage 3 or Delivery encounter is recorded, the Partograph CDS engine automatically suppresses intrapartum alerts ("Update Due", "Action Line").
 4. **Stage 4 (Immediate Postpartum):** `4. Fourth Stage Monitoring for Woman and Baby`. Monitors maternal recovery, uterine tone, lochia, and newborn feeding for the first 1–2 hours post-delivery. These are kept distinct from the intrapartum partograph table.

@@ -195,6 +195,17 @@ export function usePartographEncounters(patientUuid: string | null): UsePartogra
 
   // 2. Identify all Delivery encounters (Stage 3 / Delivery Summary) sorted chronologically
   const deliveryEncounters = useMemo(() => {
+    // IMPORTANT: Keep this delivery-episode identity semantically identical to
+    // packages/esm-liberia-patient-chart-extension/src/forms/labour-episode.ts
+    // `isDeliveryEncounter`.
+    //
+    // Both independently built ESMs use this rule to determine the same
+    // pregnancy/labour episode boundary. Any change to encounter-type matching,
+    // Third Stage form matching, or fallback form-name matching must update both
+    // locations in the same PR.
+    //
+    // TODO: extract this into a shared frontend library when the repository has a
+    // supported JS workspace/shared-package structure.
     return rawEncounters
       .filter((enc) => {
         // Check Delivery encounter type via configuration

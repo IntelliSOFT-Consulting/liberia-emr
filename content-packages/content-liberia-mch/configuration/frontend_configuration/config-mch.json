@@ -58,5 +58,17 @@
       "cmPerHour": 1,
       "actionLineOffsetHours": 4
     }
+  },
+  "@liberiaemr/esm-liberia-patient-chart-extension": {
+    "_comment_current_pregnancy_anc": [
+      "Generic current-pregnancy ANC lookup used by form-engine calculateExpression helpers.",
+      "Registered at module startup as getCurrentPregnancyAncNumeric. Loaded for every",
+      "patient-chart session because this ESM is in the facility import map."
+    ],
+    "deliveryEncounterTypeUuid": "${var.encountertype.delivery.uuid}",
+    "thirdStageFormUuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
+    "ancInitialEncounterTypeUuid": "${var.encountertype.anc-initial.uuid}",
+    "ancInitialFormUuid": "${var.form.anc-initial.uuid}",
+    "ancNationalFormName": "1. ANC Form"
   }
 }
