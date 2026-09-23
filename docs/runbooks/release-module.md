@@ -10,10 +10,20 @@ published module version at all. Repsy serves consumers outside this repository.
 
 ## Before you start
 
-- You need push access and an SSH key on GitHub — `release:prepare` tags through
-  `developerConnection`, which is the SSH remote.
+- You need push access to the repository. You do **not** need SCM credentials for
+  `release:prepare` itself: with `pushChanges=false` (pinned in `modules/liberiaemr/pom.xml`),
+  `release:prepare` never contacts the remote — it runs `git tag` locally, same as the two
+  version commits. The credential you actually need is whatever your clone's own `origin`
+  remote already uses (often HTTPS, not SSH) for the later `git push origin <branch>` and
+  `git push origin liberiaemr-x.y.z` steps — the pom's `developerConnection` (SSH) is not
+  consulted with pushChanges=false.
 - You do **not** need Repsy credentials. They stay in the `repsy-publish` GitHub
   environment; CI does the deploy.
+- The `repsy-publish` GitHub environment currently has no deployment branch/tag policy and no
+  required reviewers (`protection_rules: []`, `deployment_branch_policy: null`), so a
+  `liberiaemr-x.y.z` tag push is free to deploy to it today. If a branch/tag policy is ever
+  added to that environment, it must include `liberiaemr-*`, or a release will fail at the
+  environment gate after the tag has already been pushed and the version burned.
 - Start from a clean tree on a branch cut from an up-to-date `main`.
 
 ## Cut the release
@@ -32,9 +42,10 @@ version: `./scripts/release/prepare-module.sh 1.1.0 1.2.0-SNAPSHOT`.
 
 1. **Open a PR** for the two version commits and get it reviewed.
 
-2. **Merge it with a merge commit, not a squash.** `release:prepare` tagged the release
-   commit; a squash rewrites that commit, so the tag would point at an object that never
-   reaches `main`. CI refuses to publish from such a tag — see below.
+2. **Merge it with a merge commit — not a squash, and not a rebase.** `release:prepare`
+   tagged the release commit; "Squash and merge" and "Rebase and merge" both rewrite that
+   commit exactly the same way, so the tag would point at an object that never reaches
+   `main`. CI refuses to publish from such a tag — see below.
 
 3. **Push the tag.** This is what publishes:
 
@@ -56,14 +67,26 @@ workflow against it.
 
 ## When it refuses
 
-The publish decision fails loudly rather than skipping. `scripts/ci/module-publish-decision.sh`
-is the single place these come from, and `qa/ci/verify-module-publish-decision.sh` tests each.
+The publish decision fails loudly rather than skipping. This table covers the refusals from
+`scripts/ci/module-publish-decision.sh` specifically; `qa/ci/verify-module-publish-decision.sh`
+tests each of them.
 
 | Error | Cause | Fix |
 |---|---|---|
 | `resolves to … a SNAPSHOT` | The tag is on a commit whose pom is still a snapshot | The tag is on the wrong commit; move it to the release commit |
 | `wants X but the pom says Y` | Tag and pom disagree | The tag was created by hand, not by `release:prepare` |
-| `is not reachable from origin/main` | The release PR was squashed, or the tag was pushed before it merged | Merge the PR, move the tag onto the merged commit, push again |
+| `is not reachable from origin/main` | The release PR was squashed or rebase-merged, or the tag was pushed before it merged | Merge the PR with a merge commit, move the tag onto the merged commit, push again |
+
+The decision script is not the only place a release can fail after the tag is pushed.
+`.github/workflows/modules.yml`'s `publish` job re-checks the same invariants against the tree
+it is actually deploying, and the `Deploy` step's own guard can fail too:
+
+| Error | Where | Cause | Fix |
+|---|---|---|---|
+| `tag … would publish a SNAPSHOT` | `Check the version matches the stream` | Same as `resolves to … a SNAPSHOT` above, caught a second time in the publish job | Same fix |
+| `version … does not match tag …` | `Check the version matches the stream` | Same as `wants X but the pom says Y` above, caught a second time | Same fix |
+| `main must publish a SNAPSHOT, got …` | `Check the version matches the stream` | A main push somehow has a non-SNAPSHOT pom version (e.g. `release:prepare`'s second commit, which sets the next `-SNAPSHOT`, never merged) | Check that both `[maven-release-plugin]` commits landed on `main` |
+| `deploy uploaded no .omod` | `Check the .omod was published` | `deploy` only uploaded a `.jar`; the `build-helper-maven-plugin` attach-omod execution in `modules/liberiaemr/omod/pom.xml` did not run or was reordered | Check that execution is still wired up |
 
 ## Abandoning a prepare
 
@@ -90,6 +113,12 @@ git log --oneline
 # then:
 git reset --hard <that commit>
 ```
+
+If you are going to `git reset --hard` anyway, skip `release:rollback` entirely and just run
+`mvn release:clean` (plus `git tag -d liberiaemr-1.1.0`) before the reset — `release:rollback`'s
+only job is undoing the pom via a third commit, which the reset makes pointless, but neither
+the reset nor `release:rollback` touches the untracked `release.properties` and
+`*.releaseBackup` files `release:prepare` left behind; only `release:clean` removes those.
 
 After the tag is pushed, the version is published and immutable. Do not delete and re-push
 a tag to "fix" a release — cut the next one.

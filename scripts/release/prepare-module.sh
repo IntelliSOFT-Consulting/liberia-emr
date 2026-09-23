@@ -24,12 +24,13 @@ next="${2:-}"
   echo "release version must be x.y.z, got '$version'" >&2
   exit 1
 }
-[[ "$version" != *SNAPSHOT* ]] || { echo "refusing to release a SNAPSHOT" >&2; exit 1; }
 
 # Default the next snapshot to a patch bump, which is what the plugin would suggest.
 if [[ -z "$next" ]]; then
   IFS=. read -r major minor patch <<<"$version"
-  next="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+  # 10#$patch forces base-10: a leading-zero segment (e.g. the "09" in 1.0.09) would
+  # otherwise be parsed as octal and abort on an invalid digit.
+  next="${major}.${minor}.$((10#$patch + 1))-SNAPSHOT"
 fi
 [[ "$next" == *-SNAPSHOT ]] || { echo "next version must end in -SNAPSHOT, got '$next'" >&2; exit 1; }
 
@@ -58,9 +59,9 @@ Next, in order -- the order matters:
        git push origin ${branch}
        gh pr create --base main --title "release(module): ${version}"
 
-  2. Merge it with a MERGE COMMIT, not a squash. A squash rewrites the commit
-     this tag points at, and CI refuses to publish from a tag that is not
-     reachable from main.
+  2. Merge it with a MERGE COMMIT -- not a squash, and not a rebase. Either one
+     rewrites the commit this tag points at, and CI refuses to publish from a
+     tag that is not reachable from main.
 
   3. Only then push the tag, which is what publishes to Repsy:
        git push origin ${tag}

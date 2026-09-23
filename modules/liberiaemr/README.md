@@ -147,10 +147,10 @@ publish it, and it does not need one:
 ```
 
 That runs `mvn release:prepare` locally — version commits plus a `liberiaemr-1.1.0` tag,
-none of it pushed. Open a PR for the commits, **merge it rather than squashing**, then push
-the tag; the tag push is what publishes to Repsy.
+none of it pushed. Open a PR for the commits, **merge it with a merge commit — not a squash,
+and not a rebase**, then push the tag; the tag push is what publishes to Repsy.
 
-Squashing would rewrite the commit the tag points at, so CI refuses to publish from a tag
+Squashing or rebasing would rewrite the commit the tag points at, so CI refuses to publish from a tag
 that is not reachable from `main`. The full sequence, the failure table and the abort path
 are in [docs/runbooks/release-module.md](../../docs/runbooks/release-module.md).
 

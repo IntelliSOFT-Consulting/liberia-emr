@@ -24,9 +24,9 @@ set -euo pipefail
 POM="${POM:-modules/liberiaemr/pom.xml}"
 MAIN_REF="${MAIN_REF:-origin/main}"
 
-say() { echo "$1"; [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] && echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+say() { echo "$1"; if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then echo "$1" >> "$GITHUB_STEP_SUMMARY"; fi; }
 emit() { echo "publish=$1" >> "$GITHUB_OUTPUT"; say "$2"; }
-die() { echo "::error::$1"; [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] && echo "FAILED: $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+die() { echo "::error::$1"; if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then echo "FAILED: $1" >> "$GITHUB_STEP_SUMMARY"; fi; exit 1; }
 
 # The project-level <version>, never <parent><version>. find() searches direct children
 # only, so the parent's version -- which comes first in this pom -- cannot be picked up.
@@ -79,7 +79,11 @@ if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; t
   # The workflow's `push` trigger carries no `paths` filter, and cannot: `paths` applies to
   # the whole push event, and the tag pushes handled above report no changed files at all,
   # so a paths filter beside the tags filter would stop module releases firing entirely.
-  # The filter therefore lives here. Same allow-list as the trigger used to carry.
+  # The filter therefore lives here, but it is narrower than what the trigger used to carry:
+  # the old trigger's paths were ['modules/**', '.github/workflows/modules.yml'], while this
+  # greps the diff for `^modules/` only. A workflow-only change (editing modules.yml itself)
+  # no longer republishes the SNAPSHOT -- matching modules/liberiaemr/README.md, which
+  # documents the stream as triggering on changes that touch `modules/**`.
   #
   # Uncertain cases FAIL OPEN, as ci.yml's `changes` job does: a base we cannot diff against
   # means publish, because re-deploying a SNAPSHOT over itself is cheap and missing one is not.

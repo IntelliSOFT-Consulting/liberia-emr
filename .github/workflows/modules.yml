@@ -24,6 +24,12 @@
 # being built into, so a release image never ships a SNAPSHOT (IMPLEMENTATION.md §6/§11) and
 # never depends on the module having been published at all. Repsy is for consumers outside
 # this repository.
+#
+# build-and-test carries no `paths` filter on the push trigger, so it builds on every push to
+# main, not just ones that touch modules/. That is the accepted price of a tag trigger that
+# cannot silently fail: gating the test job on `decide`'s output would make a bug in the
+# decision script also stop the module being tested, and the module's test signal must not
+# depend on the publish decision being correct.
 name: Modules CI / CD
 
 on:
@@ -70,6 +76,12 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
+      # This is what makes the `scripts/ci/` and `qa/ci/` entries in the pull_request `paths`
+      # filter above meaningful: without it, nothing in this workflow ever runs the test
+      # suite, and it starts decaying the day a change breaks it silently. Runs before the
+      # Maven build so a broken publish decision fails fast.
+      - name: Verify the publish decision
+        run: ./qa/ci/verify-module-publish-decision.sh
       - name: Build and test
         working-directory: modules/liberiaemr
         run: mvn -B clean package
@@ -106,6 +118,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # actions/checkout@v4 with fetch-depth: 0 already leaves origin/main in place on an
+      # ordinary checkout. This is belt-and-braces for the case that actually needs it: a
+      # detached tag checkout, where the ref being built is not a branch, so an explicit
+      # fetch is cheap insurance against a checkout behaviour change removing origin/main.
       - name: Make main available for the reachability check
         run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
       - id: decide
