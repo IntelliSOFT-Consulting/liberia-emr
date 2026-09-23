@@ -4,7 +4,7 @@ The executable pipelines live in [`.github/workflows/`](../../.github/workflows/
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `ci.yml` | push to `main`, PR to `main` or `develop`, manual | Stages 1–5 of the §8 pipeline: validate → build content → Initializer on a clean DB → metadata tests → E2E, plus SBOM, dependency check, image build and scan, the sync hardening suite, the custom ESMs and the `liberiaemr` module. On `main` only, it then publishes `:latest` images and updates dev |
+| `ci.yml` | push to `main`, PR to `main` or `develop`, manual | Stages 1–5 of the §8 pipeline: validate → build content → Initializer on a clean DB → metadata tests → E2E, plus SBOM, dependency check, image build and scan, the sync hardening suite, the login and sync status ESMs (the e-partograph step is a TODO; the patient chart extension is not built here) and the `liberiaemr` module. On `main` only, it then publishes `:latest` images and updates dev |
 | `release.yml` | `x.y.z` tag push, manual | Release guards, per-site image build, upgrade test, publish, staging and the production approval gate |
 | `modules.yml` | `modules/**` on push to `main` or PR to `main`; GitHub release created; manual | Builds and tests `modules/liberiaemr`; publishes the SNAPSHOT to Repsy from `main`, and a release version only when the pom asks for it |
 | `packages.yml` | `packages/**` on push to `main` or PR to `main`; GitHub release created; manual | Builds the ESMs in `packages/`; publishes `-pre.<run>` to npm under `next` from `main`, and the release version under `latest` |
@@ -48,7 +48,9 @@ commit against the branch point:
   monitoring,compose,env}/`, `distro.properties`, `scripts/security/`, `scripts/sync/`,
   `qa/sync/` or `ci.yml`.
 
-`e2e` is not one of them: it depends on `build-test` alone and runs whenever that succeeds.
+`e2e` is not one of them. It needs both `changes` and `build-test`, but its condition
+(`always()` and `build-test` succeeded) ignores the outputs of `changes`, so it runs whenever
+`build-test` succeeds.
 
 Two rules keep the exceptions from becoming a hole. The detection **fails open** — no usable
 base commit or a manual dispatch runs both jobs rather than assume they are unnecessary. And

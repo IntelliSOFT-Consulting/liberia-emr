@@ -41,6 +41,10 @@ The custom ESMs from `packages/` are pinned like any other frontend module, as
 `esm-login-app` (commented out). A `-pre.N` pin is a pre-release `packages.yml` published from
 `main`; re-pin deliberately, never to the `next` tag.
 
+`packages/esm-liberia-sync-status-app` is not pinned, so the frontend image does not carry
+the sync status page, although CI builds and tests it and central's backend serves the
+endpoint it reads.
+
 ## Images
 
 Seven per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`.
@@ -62,9 +66,11 @@ The central stack also names `liberia-emr-dhis2-export` under the `dhis2` profil
 this repository builds that image yet.
 
 A mutable git checkout is never mounted into a production container. If you find yourself
-wanting to, the answer is a runtime config change, not a bind mount. The one checkout
-directory the stacks do mount is `monitoring/`, read-only, for Prometheus and Alertmanager
-configuration.
+wanting to, the answer is a runtime config change, not a bind mount. The stacks do mount
+two checkout directories read-only, both configuration rather than code: `monitoring/` for
+Prometheus and Alertmanager, and each stack's own `initdb/` for MariaDB's first boot. A host
+deployed from images alone still needs both; without `initdb/`, a fresh volume never gets
+the sync database principals and the sender or receiver cannot connect.
 
 ## Stacks
 
@@ -121,7 +127,9 @@ it actually used. `build-distribution.sh` bakes that list into the frontend imag
 was built with; the `SPA_CONFIG_URLS` environment variable in a compose file does not change
 what the running image loads. The facility compose value (or the demo overlay's, for
 `--demo`) must still match: the build diffs it against `.config-urls` and fails on drift.
-The central compose file's list is not checked.
+The central compose file's list is not checked, and changes nothing either: the central
+stack runs the same frontend image, built with a facility site's list. The
+`config-central.json` it names exists in no content package.
 
 ## Building
 

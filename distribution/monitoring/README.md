@@ -57,7 +57,7 @@ Central (`rules-central.yml`):
 | `SyncDeadLetters` | anything is in the broker's `DLQ` | critical |
 | `SyncFacilitySilent` | a facility that was sending has sent nothing for three days | warning |
 | `SyncBrokerDown` | the broker's metrics endpoint does not answer | critical |
-| `SyncCertExpiresIn90Days`, `60Days`, `30Days` | a sync certificate expires within that many days | info, warning, critical |
+| `SyncCertExpiresIn90Days`, `60Days`, `30Days` | a sync certificate has less than that many days left (strictly less) | info, warning, critical |
 | `SyncCrlStale` | a quarter or less of the revocation list's validity is left | critical |
 | `SyncCrlInvalid` | the revocation list in place does not verify against the CA | critical |
 | `SyncCertExpiryBlind` | the exporter read no certificate, hit a read error, or found no revocation list | warning |
