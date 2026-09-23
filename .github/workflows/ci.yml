@@ -818,9 +818,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify login app
+        working-directory: packages/esm-liberia-login-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn test
+          yarn build
       - name: Verify e-partograph
         working-directory: packages/esm-liberia-epartograph-app
-        run: 'echo "TODO: yarn install && yarn verify once the module is implemented"'
+        run: 'echo "TODO: yarn install --no-frozen-lockfile && yarn verify once the module is implemented"'
       - name: Verify sync status page
         working-directory: packages/esm-liberia-sync-status-app
         run: |

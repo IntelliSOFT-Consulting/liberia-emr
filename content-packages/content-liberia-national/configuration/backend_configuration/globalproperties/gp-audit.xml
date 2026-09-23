@@ -1,0 +1,14 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>auditlog.auditingStrategy</property>
+      <value>ALL</value>
+      <description>Audit every auditable type rather than a hand-picked subset</description>
+    </globalProperty>
+    <globalProperty>
+      <property>auditlog.storeLastStateOfDeletedItems</property>
+      <value>true</value>
+      <description>Retain the final state of deleted records for investigation</description>
+    </globalProperty>
+  </globalProperties>
+</config>

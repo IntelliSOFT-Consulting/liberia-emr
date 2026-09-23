@@ -1,0 +1,44 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>security.passwordMinimumLength</property>
+      <value>${var.security.password.minimum-length}</value>
+      <description>Minimum password length (MOH ICT SOP: 13 characters)</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.passwordRequiresUpperAndLowerCase</property>
+      <value>true</value>
+      <description>Password must mix upper and lower case</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.passwordRequiresDigit</property>
+      <value>true</value>
+      <description>Password must contain a digit</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.passwordRequiresNonDigit</property>
+      <value>true</value>
+      <description>Password must contain a non-digit</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.passwordCannotMatchUsername</property>
+      <value>true</value>
+      <description>Password must not match the username or system id</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.passwordCustomRegex</property>
+      <value></value>
+      <description>Left empty deliberately - a custom regex would override the rules above</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.loginAttemptsBeforeLockout</property>
+      <value>${var.security.login.max-attempts}</value>
+      <description>Account locks after this many consecutive failures</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.validTime</property>
+      <value>300000</value>
+      <description>Lockout duration in milliseconds (5 minutes) after the attempt limit is hit</description>
+    </globalProperty>
+  </globalProperties>
+</config>
