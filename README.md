@@ -97,8 +97,9 @@ data references. Retire the wrong thing, add a corrected one, migrate the data.
 
 ## Custom code
 
-Everything outside the community distribution is one of three build classes
-(IMPLEMENTATION.md §3), and each lives in exactly one place:
+Custom code falls into three of the four build classes in IMPLEMENTATION.md §3 (the fourth,
+External, is integration work under [`integration/`](integration/)), and each lives in exactly
+one place:
 
 | Where | What | How it ships |
 | --- | --- | --- |
@@ -113,17 +114,18 @@ endpoints, SMTP configuration and the release opt-in rule.
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
-| `ci.yml` | PRs to `main`/`develop`, pushes to `main` | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
-| `modules.yml` | changes under `modules/**`, releases | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
-| `packages.yml` | changes under `packages/**`, releases | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here |
-| `release.yml` | `x.y.z` tags | Full-stack tests, upgrade test from the previous release, publish images, deploy to staging, production approval |
+| `ci.yml` | PRs to `main`/`develop`, pushes to `main`, manual runs | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
+| `modules.yml` | changes under `modules/**`, releases, manual runs | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
+| `packages.yml` | changes under `packages/**`, releases, manual runs | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here, and only for the login and sync-status apps |
+| `release.yml` | `x.y.z` tags, manual runs | Upgrade test from the previous release and production approval. Full-stack API/Cypress, image push and staging deploy are still `echo "TODO"` stubs |
 
 ## Current status
 
 **Not production-ready.** Metadata and forms exist for MCH and OPD/IPD, the e-partograph ships
 as a pre-release, and facility→central sync runs on openmrs-dbsync
 ([ADR 0008](docs/adr/0008-adopt-openmrs-dbsync.md), still *Proposed*). Among the open items:
-the password expiry mechanism, the cross-facility identity policy
+review of the five MCH forms, confirming the e-partograph's alert/action geometry against
+the DAK, the password expiry mechanism, the cross-facility identity policy
 ([ADR 0005](docs/adr/0005-cross-facility-identity-reconciliation.md), awaiting MOH ICT), and
 CIEL mappings for the partograph concepts.
 
@@ -140,7 +142,7 @@ Start at [docs/runbooks/go-live.md](docs/runbooks/go-live.md) for the full gate 
 | [docs/architecture/](docs/architecture/) | Solution architecture, including [sync](docs/architecture/sync-eip.md) |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/security/](docs/security/) | MOH ICT SOP and NCS control mapping |
-| [docs/runbooks/](docs/runbooks/) | Local development, demo stack, deploy, sync operations, backup/restore, DR, go-live |
+| [docs/runbooks/](docs/runbooks/) | Local development, demo stack, DAK → Initializer, deploy, sync operations, backup/restore, DR, go-live |
 | [docs/metadata-specs/](docs/metadata-specs/) | Per-programme metadata specifications |
 
 ## Licence
