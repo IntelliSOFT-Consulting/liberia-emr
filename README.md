@@ -1,6 +1,6 @@
 # LiberiaEMR
 
-Facility-scale **OpenMRS 3.x (O3)** EMR for **UNFPA Liberia** and the **Ministry of Health,
+Facility-scale **OpenMRS 3.x (O3)** EMR for the **Ministry of Health,
 Republic of Liberia**, deployed at **Careysburg** and **Barnersville** Health Centers.
 
 Base platform: **O3 RefApp 3.7.1 + HIS-Lite** (dispensing, laboratory, billing, stock).
