@@ -33,4 +33,5 @@ For each indicator in the MCH reporting set:
 
 Central only, never from a facility. See the `dhis2-export` service in
 `distribution/compose/central/docker-compose.yml` (behind the `dhis2` profile, so it stays
-off until the mappings land).
+off until the mappings land). Nothing in this repository builds its `liberia-emr-dhis2-export`
+image yet: `scripts/build/build-distribution.sh` does not produce it.

@@ -8,7 +8,7 @@ into one makes both impossible to version or roll back independently.
 
 | Directory | Scope | Status |
 | --- | --- | --- |
-| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; designed, not yet built |
+| [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; sender, broker and receiver built on openmrs-dbsync; reconciliation outstanding |
 | [`dhis2/`](dhis2/) | Aggregate export + data-element mappings | Blocked on MOH mapping delivery |
 | [`cross-facility/`](cross-facility/) | Cross-facility patient query | Sprint 4 |
 | [`msupply/`](msupply/) | Stock integration | Deferred to the support period — spec only |
@@ -25,10 +25,18 @@ The sync layer is designed in `docs/`; this directory holds the implementation c
 | [Entity coverage and sync order](../docs/architecture/sync-entity-coverage.md) | The 34 synced entities; dependency chain; what needs custom work |
 | [ADR 0008](../docs/adr/0008-adopt-openmrs-dbsync.md) | The module decision |
 
-**Current state:** no sync code exists. `distribution/` builds `backend`, `frontend` and
-`gateway` only; the `sync` and `sync-receiver` images named in the compose files are not
-produced by anything in this repository. The compose entries are an intended topology, not a
-deployment.
+**Current state:** the push is built. The sender and receiver are openmrs-dbsync, pinned as
+`sync.dbsync` / `sync.eip` in `distribution/distro.properties` and built in
+[`distribution/sync/`](../distribution/sync/README.md); the Artemis broker is in
+[`distribution/broker/`](../distribution/broker/README.md), and Prometheus alerting in
+`distribution/monitoring/`. `scripts/build/build-distribution.sh` builds the sync, receiver,
+broker and cert-expiry images alongside backend, frontend and gateway. Proof is in
+`qa/sync/`; operation is in the [sync runbook](../docs/runbooks/sync-operations.md). Still to
+build: reconciliation ([sync-eip.md](../docs/architecture/sync-eip.md) §5.5) and the identity
+layer at central (ADR 0005).
+
+The `dhis2-export` service in the central compose names an image that nothing in this
+repository builds yet; it stays off behind the `dhis2` profile.
 
 ## Why the sync layer carries the most risk
 

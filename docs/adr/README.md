@@ -18,7 +18,8 @@ Format: Context → Decision → Consequences → Status.
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
-implementation.
+implementation. The number is reserved and has no file until the decision is written; the
+options are set out in [the SOP mapping](../security/moh-ict-sop-mapping.md) (A4/A5).
 
 0005 and 0007 are drafted and **Proposed**, not Accepted; each names the specific questions
 the MOH must answer to close it (identity scheme and review-queue ownership for 0005;
@@ -28,7 +29,10 @@ push cannot be built without, 0007 a legal one that cross-facility query cannot.
 
 0008 selects the sync technology and is **conditional**: it holds as written only if the
 Debezium/MariaDB spike succeeds, and otherwise stands with MySQL 8.0 substituted. Unlike 0005
-and 0007 it needs no MOH decision, only a test.
+and 0007 it needs no MOH decision, only a test. That test passed on 2 September 2026
+([sync-eip.md](../architecture/sync-eip.md) §1.8a) and the sync layer is now built on it
+([`distribution/sync/`](../../distribution/sync/README.md)); the ADR's own status line still
+reads Proposed.
 
 Background for all three: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and

@@ -11,21 +11,32 @@ keeps working; sync catches up when the link returns.
   ┌────────────────────────┐          ┌────────────────────────┐
   │ gateway (TLS)          │          │ gateway (TLS)          │
   │ frontend (O3 shell)    │          │ frontend (O3 shell)    │
-  │ backend (OpenMRS+Init) │          │ backend (OpenMRS+Init) │
-  │ db (MariaDB)           │          │ db (MariaDB)           │
-  │ sync (EIP, queued)     │          │ sync (EIP, queued)     │
+  │ backend (OpenMRS+Init  │          │ backend (OpenMRS+Init  │
+  │   + liberiaemr omod)   │          │   + liberiaemr omod)   │
+  │ db (MariaDB, binlog)   │          │ db (MariaDB, binlog)   │
+  │ sync (dbsync sender)   │          │ sync (dbsync sender)   │
+  │ prometheus+alertmanager│          │ prometheus+alertmanager│
   └───────────┬────────────┘          └───────────┬────────────┘
               │  facility → central push only     │
-              │  (queues locally when offline)    │
+              │  mTLS JMS; PGP-signed + encrypted │
               └──────────────┬────────────────────┘
                              ▼
-                   ┌──────────────────────┐
-                   │  Central instance    │
-                   │  sync-receiver       │
-                   │  backend + db        │
-                   │  DHIS2 export ⚠      │
-                   └──────────────────────┘
+                   ┌──────────────────────────┐
+                   │  Central instance        │
+                   │  artemis (broker, 61617) │
+                   │  sync-receiver (dbsync)  │
+                   │  gateway, frontend       │
+                   │  backend + db            │
+                   │  prometheus+alertmanager │
+                   │  cert-expiry exporter    │
+                   │  DHIS2 export ⚠          │
+                   └──────────────────────────┘
 ```
+
+Compose stacks: `distribution/compose/facility/` and `distribution/compose/central/`. At a
+facility the sender, Prometheus and Alertmanager sit behind `--profile sync`; the demo stack
+has sync off. `dhis2-export` is declared at central behind the `dhis2` profile, but no build in
+this repository produces its image yet.
 
 Sync is **unidirectional** in this release. Central does not write back into a facility
 database. Cross-facility query (Sprint 4) is a read path, not a second write direction.
@@ -42,6 +53,22 @@ Decisions: [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md) (id
 [ADR 0007](../adr/0007-pulled-record-scope.md) (pulled-record scope),
 [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md) (module selection).
 
+## Components
+
+| Component | Where | What it is |
+| --- | --- | --- |
+| Gateway | `distribution/gateway/` | nginx; terminates TLS in front of frontend and backend. Certificates are mounted at run time, never baked in |
+| Frontend | `distribution/frontend/` | O3 app shell plus the ESMs pinned in `distro.properties` |
+| Backend | `distribution/backend/` | OpenMRS platform, pinned OMODs, Initializer content, and the `liberiaemr` module built from source |
+| `liberiaemr` module | [`modules/liberiaemr/`](../../modules/liberiaemr/README.md) | Rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`, the backend of `customFormsUrl`); anonymous password-reset flow over an SMTP relay configured from the environment; the national sync status endpoint (`/ws/rest/v1/liberiaemr/syncstatus`, `View Sync Status` privilege) |
+| Liberia ESMs | `packages/esm-liberia-*` | `epartograph-app`, `login-app`, `patient-chart-extension`, and `sync-status-app`, the national sync status page at central ([sync runbook](../runbooks/sync-operations.md) §13). The first three are pinned in `distro.properties`; `sync-status-app` is not yet, so the frontend image does not carry it |
+| Sync sender / receiver | [`distribution/sync/`](../../distribution/sync/README.md) | openmrs-dbsync, built from the `sync.dbsync` tag in `distro.properties` with a one-line platform 2.8 patch |
+| Broker | [`distribution/broker/`](../../distribution/broker/README.md) | ActiveMQ Artemis at central: mutual TLS only, one address per facility, dead letters kept and alerted |
+| Monitoring | `distribution/monitoring/` | Prometheus and Alertmanager on both sides. The facility watches its sender; central watches the receiver, the broker and certificate expiry (`cert-expiry`). Alerts go by email or webhook |
+
+The sync status page reads central's Prometheus (`LIBERIAEMR_SYNC_MONITORING_URL`). A
+facility has no national monitoring to read and reports the feature off.
+
 ## Artefacts
 
 Per [ADR 0001](../adr/0001-two-artefact-model.md), two kinds:
@@ -51,8 +78,10 @@ Per [ADR 0001](../adr/0001-two-artefact-model.md), two kinds:
 | `distribution/` | platform + modules + content → Docker images | **exact pins** |
 | `content-packages/*` | configuration + clinical content | **ranges (`>=`)** |
 
-Three images per release, immutable and versioned: `liberia-emr-backend:x.y.z`,
-`-frontend:x.y.z`, `-gateway:x.y.z`. A mutable git checkout is never mounted into a
+Seven images per release, immutable and versioned: `liberia-emr-backend:x.y.z`,
+`-frontend`, `-gateway`, `-sync`, `-sync-receiver`, `-broker` and `-cert-expiry`
+(`scripts/build/build-distribution.sh`; the last four are skipped for a demo build or with
+`--no-sync`). A mutable git checkout is never mounted into a
 production container.
 
 ## Content layering

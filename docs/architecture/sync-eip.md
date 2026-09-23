@@ -129,6 +129,12 @@ optional: DB-sync's transport is JMS (§1.4), and its sender keeps its retry sta
 **management database** separate from the OpenMRS database (§1.5). The `sync` service
 currently receives only OpenMRS database credentials.
 
+> **RESOLVED (E5).** Both now exist: the `artemis` service in the central compose
+> ([`distribution/broker/`](../../distribution/broker/README.md)), and a management schema on
+> each side, created on first boot by `distribution/compose/facility/initdb/10-sync-db-users.sh`
+> and `distribution/compose/central/initdb/10-sync-mgmt-db.sh`. The `sync` service is given
+> both sets of credentials (`OPENMRS_DB_*` and `MGMT_DB_*`).
+
 Services already declared: `sync` in
 [`distribution/compose/facility/docker-compose.yml`](../../distribution/compose/facility/docker-compose.yml)
 (behind the `sync` profile, with the `sync-queue` named volume) and `sync-receiver` in
@@ -160,6 +166,13 @@ sync assertion before the second facility goes live.
 > `--log-bin --binlog-format=ROW --binlog-row-image=FULL --server-id=<unique-per-facility>`
 > and a replication-privileged database user (`REPLICATION SLAVE`, `REPLICATION CLIENT`,
 > `SELECT`) that is **not** the OpenMRS application user.
+>
+> **RESOLVED.** The facility `db` command now carries `--log-bin`, `--binlog-format=ROW`,
+> `--binlog-row-image=FULL` and `--server-id=${DB_SERVER_ID}`, and
+> `distribution/compose/facility/initdb/10-sync-db-users.sh` creates a separate Debezium
+> user with `SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT`. Retention
+> defaults to 8553600 seconds, MariaDB's cap of 99 days, short of the six-month floor below
+> (F1).
 
 **Binlog retention is the real maximum-outage ceiling.** If the binlog is pruned past the
 sender's committed offset, the facility needs a reconciliation replay (§5.5), not a retry;
@@ -201,6 +214,7 @@ Consequences:
   in its journal.
 - **`EIP_CENTRAL_URL` on the facility `sync` service becomes a broker URL**, not an HTTP
   endpoint. The current variable name will mislead whoever configures it, so rename it.
+  Done: it is now `ARTEMIS_URL` (`ssl://<central>:61617`).
 - **Facility identity is still established by mutual TLS**, now on the broker connection:
   the facility presents a client certificate, and the broker authorises it. The facility
   code in a payload remains a label and is never trusted for authorisation.
@@ -212,6 +226,12 @@ Consequences:
 > D2 in [the SOP mapping](../security/moh-ict-sop-mapping.md) stays **Open** until the
 > broker exists in the central compose, the facility mounts its client certificate and key,
 > and the certificate lifecycle is owned by the MOH ICT Unit in writing.
+>
+> **Partly resolved.** The broker is in the central compose, the facility `sync` service
+> mounts its client certificate and PGP keys at `/app/sync-certs`, and
+> `qa/sync/verify-hardening.sh` proves the broker's refusals over mutual TLS. D2 now reads
+> **Partial** in the SOP mapping; still open are the MOH ICT Unit's ownership of the
+> certificate lifecycle and the §7.2 facility-code check.
 
 ### 1.5 The sender's management database
 
@@ -221,7 +241,8 @@ management database is documented as tested with MySQL and H2.
 
 Our facility `sync` service is currently given `EIP_DB_HOST: db` and the OpenMRS
 credentials, which is the *source* database, not the management one. Both are needed and
-they are not interchangeable.
+they are not interchangeable. Resolved: the service now takes `OPENMRS_DB_*` for the source
+and `MGMT_DB_*` for the management schema (default `openmrs_mgmt`, on the same MariaDB).
 
 This is also the honest answer to "where does the durable queue live": it is the management
 database plus the Debezium offset, not simply the `sync-queue` volume. Whatever backs that
@@ -860,7 +881,8 @@ Rules for the first load:
   report (§5.5) shows zero divergence, not when the queue is empty.
 - **Confirm snapshot behaviour in the spike** (E1): the snapshot is taken by the same
   Debezium engine whose MariaDB compatibility is unproven, so the spike must exercise both
-  streaming and snapshot modes.
+  streaming and snapshot modes. Done: streaming by the §1.8a spike, snapshot by
+  `qa/sync/verify-initial-load.sh` (below).
 
 **As built.** The sender takes a snapshot whenever it starts with no saved position: on its
 first start, or after its `/opt/eip` volume was lost, which also closes the gap that loss would
@@ -1110,17 +1132,17 @@ can invalidate the Sprint 3 plan.
 
 | # | Risk | Resolve by | Severity |
 | --- | --- | --- | --- |
-| E1 | MariaDB 10.11 versus DB-sync's documented MySQL 5.7/8.0: Debezium now treats MariaDB as a separate connector | Experiment, before anything else is built (§1.8a) | **Highest**: may change the database platform of the whole deployment |
-| E2 | Platform 2.8.8 versus documented 2.5/2.6: the sender reads the physical schema | Establish DB-sync 2.8.x support; budget upstream work (§1.8b) | High |
+| E1 | ~~MariaDB 10.11 versus DB-sync's documented MySQL 5.7/8.0: Debezium now treats MariaDB as a separate connector~~ RESOLVED 2026-09-02: the sender streams from MariaDB 10.11 (§1.8a) | Experiment, before anything else is built (§1.8a) | Closed |
+| E2 | ~~Platform 2.8.8 versus documented 2.5/2.6: the sender reads the physical schema~~ RESOLVED 2026-09-02: a version gate, cleared by a one-line patch pending upstream (§1.8b); provider role assignments not carried | Establish DB-sync 2.8.x support; budget upstream work (§1.8b) | Closed |
 | E3 | ~~`order-push` sits on DB-sync's known-defective `Order` subclasses~~ RESOLVED: on 4.0.0 test and drug orders arrive as their subclass, checked by `qa/sync/verify-e2e-push.sh`; referral orders unverified (§1.6) | Reconcile the route inventory with DB-sync's coverage | Closed |
 | E4 | ~~Neither `openmrs-eip` nor DB-sync is version-pinned anywhere~~ RESOLVED: pinned as `sync.dbsync` / `sync.eip` in `distro.properties` | Pin both, as their own artefacts (§1.1) | Closed |
 | E5 | ~~Artemis broker and sender management database do not exist in the compose files~~ RESOLVED: `artemis` service in the central compose, management schemas created by each stack's `initdb/` | Add both (§1.2) | Closed |
 | E6 | Central is only safe if clinical data there is read-only, and nothing enforces that | Enforce with roles at central (§1.8c) | Medium |
-| E7 | A shared broker with wrong permissions lets one facility read another's clinical data | Send-only, own-address-only per facility, **proven by a negative test in `qa/`** (§7.3) | **Highest**: national-scale data leak from one config line |
+| E7 | A shared broker with wrong permissions lets one facility read another's clinical data | Send-only, own-address-only per facility, **proven by a negative test in `qa/`** (§7.3). BUILT: `qa/sync/verify-hardening.sh` asserts the refusals and runs in CI on every change to the sync security surface | **Highest**: national-scale data leak from one config line |
 | E8 | Facility disk filled by binlog and queue during a long outage halts the database | Size disk for the full retention window; separate binlog volume; alarms (F2) | **Highest**: the only path where sync stops care |
 | E9 | Facility disk encryption is not in the SOP mapping, and facility servers are physically exposed | Raise with MOH ICT; add to the control register (§7.4) | High |
 | E10 | Nothing detects a facility that has silently stopped syncing | Per-facility heartbeat and silence alerting (F7). PARTLY BUILT: the `SyncFacilitySilent` alert and the sync status page both read the broker's per-facility message counts, so a facility that stops sending is noticed within three days. A heartbeat would tell "nothing recorded" apart from "no contact"; the broker cannot. | Medium |
-| E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4) | **Highest**: defeats every other durability control |
+| E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4). BUILT: the broker declares the receiver's subscription queue, so messages wait from its first start whether or not the receiver has connected; `qa/sync/verify-hardening.sh` checks it | **Highest**: defeats every other durability control |
 | E12 | Facility and central drift onto different content-package versions | Same image both sides; assert UUID parity in the upgrade rehearsal (§1.6) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; verification by reconciliation still waits on §5.5 | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
@@ -1132,27 +1154,30 @@ Superseding the checklist in
 [`integration/eip/routes/README.md`](../../integration/eip/routes/README.md):
 
 1. **E1 settled by experiment.** Nothing else is worth building until the sender is known to
-   stream from our database.
+   stream from our database. Done 2026-09-02 (§1.8a).
 2. ADR 0005 accepted (identity): questions 1 and 2 in §8.
 3. `openmrs-eip` **and** DB-sync versions pinned in `distribution/distro.properties`.
-   Currently neither is; ADR 0006 removed `omod.eip` correctly but nothing replaced it.
+   Done: `sync.dbsync=4.0.0`, `sync.eip=4.2.0` (E4).
 4. Binlog enabled on the facility database, with a dedicated replication user, and binlog
-   retention at the six-month floor (§1.3).
-5. Artemis broker and sender management database added to the compose files (§1.2).
+   retention at the six-month floor (§1.3). Done except the floor: MariaDB caps retention at
+   99 days (F1).
+5. Artemis broker and sender management database added to the compose files (§1.2). Done (E5).
 6. Client certificate mounted on the facility `sync` service; mTLS proven end to end over
-   the broker connection (§1.4).
-7. Route inventory reconciled against DB-sync's actual coverage (§1.6, E3).
+   the broker connection (§1.4). Done; certificate lifecycle ownership still open.
+7. Route inventory reconciled against DB-sync's actual coverage (§1.6, E3). Done.
 8. Queue and retry retention policy configured (§5.8).
 9. A sync assertion added to the upgrade rehearsal in `qa/upgrade/` (§1.3 accepts a schema
    coupling; this is what keeps that acceptable).
 10. Broker permissions set send-only per facility, with the **negative test** asserting that
     a facility credential cannot read another facility's address or consume from the
-    receiver queue (§7.3, E7).
+    receiver queue (§7.3, E7). Done: `qa/sync/verify-hardening.sh`.
 11. Facility disk sized for the retention window, with binlog on its own volume and alarms
     configured (F2, E8).
 12. Receiver-first start order enforced and tested: a sender started first must not lose
-    messages (E11).
-13. PGP payload encryption enabled, with key custody and rotation owned by MOH ICT (§7.7).
+    messages (E11). Done: the broker declares the subscription queue, and
+    `qa/sync/verify-hardening.sh` checks messages are kept before the receiver connects.
+13. PGP payload encryption enabled, with key custody and rotation owned by MOH ICT (§7.7). Encryption is on and neither side starts
+    without it; custody is still unassigned (E13).
 14. Initial-load procedure defined and rehearsed on the pilot data (§5.10, E14). Defined and
     rehearsed on a local pair of stacks; the pilot data itself is still to do.
 15. The §5.9 acceptance test written and passing. Until it passes, the offline guarantee is
