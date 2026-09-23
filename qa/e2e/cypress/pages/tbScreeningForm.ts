@@ -104,11 +104,8 @@ class TbScreeningFormPage {
         cy.get('#date_tb_treatment_was_started').should('not.exist');
     }
 
-    verifyRequiredFieldsAndSave() {
+    saveCompleteNegativeScreening() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTbScreening');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
-        cy.contains('Field is mandatory', { timeout: this.timeout }).should('exist');
-
         this.completeNegativeScreening();
 
         const today = new Date();
@@ -118,28 +115,23 @@ class TbScreeningFormPage {
             year: String(today.getFullYear())
         };
 
-        cy.get('[title="Required"]', { timeout: this.timeout }).each(($requiredMarker) => {
-            if ($requiredMarker.closest('legend').length) {
-                return;
-            }
-
-            const $container = $requiredMarker.closest('.cds--date-picker, .cds--form-item');
-            const $dateParts = $container.find('[data-type="day"], [data-type="month"], [data-type="year"]');
-
-            if ($dateParts.length) {
-                cy.wrap($dateParts, { log: false }).each(($part) => {
-                    const type = $part.attr('data-type') ?? '';
-                    cy.wrap($part, { log: false }).click().type(dateParts[type]);
+        cy.get('#date_the_screening_was_conducted', { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                Object.entries(dateParts).forEach(([type, value]) => {
+                    cy.get(`[data-type="${type}"]`, { timeout: this.timeout })
+                        .click()
+                        .type(value);
                 });
-                return;
-            }
-
-            cy.wrap($container, { log: false })
-                .find('input:not([type="hidden"]):not([readonly]), textarea')
-                .first()
-                .clear()
-                .type('Automated TB screening');
-        });
+            });
+        cy.get('#result_of_the_sputum_test_or_other_diagnostic_evaluation', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('No diagnostic abnormality');
+        cy.get('#observation', { timeout: this.timeout })
+            .scrollIntoView()
+            .clear()
+            .type('Automated negative TB screening');
 
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveTbScreening', { timeout: this.timeout }).then(({ response }) => {

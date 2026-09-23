@@ -755,15 +755,12 @@ jobs:
       # well-known training account (docs/runbooks/demo-stack.md), not a facility credential.
       # RUN_LIVE_REGISTRATION is deliberately left unset: the normal CI run must not create
       # real patient records, and the gated test stays skipped (qa/e2e/README.md Rules).
-      # Temporarily skip only the TB save scenario: the current form-engine build crashes
-      # during incomplete-form validation. The other TB scenarios must continue to run.
       - name: Cypress
         working-directory: qa/e2e
         env:
           CYPRESS_BASE_URL: https://localhost
           CYPRESS_USERNAME: admin
           CYPRESS_PASSWORD: Admin123
-          CYPRESS_SKIP_TB_SCREENING_SAVE_TEST: "true"
         run: npm test
 
       - name: Upload Cypress screenshots and videos
