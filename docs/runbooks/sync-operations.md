@@ -398,8 +398,9 @@ restarted, reads as quiet rather than silent until then.
 
 The page needs the `View Sync Status` privilege, which `Sync Administrator` carries along with
 `Application: Administers System`, and so anyone with `Organizational: System Administrator`
-(section 6). A facility server shows neither the page nor its menu entry: it has no national
-monitoring to read and reports the feature off.
+(section 6). A facility server has no national monitoring to read and reports the feature off:
+the menu entry is hidden, and opening `/openmrs/spa/sync-status` directly shows only a notice
+that sync status is not available on this server.
 
 Retries and conflicts are national totals, not per facility. dbsync records no sender on a
 queued or failed record, so central cannot say which facility one came from; use
@@ -408,5 +409,5 @@ be reached, sync itself may be perfectly healthy: check the central `prometheus`
 `qa/sync/verify-sync-status.sh` exercises the endpoint the page reads.
 
 The page itself is the `packages/esm-liberia-sync-status-app` frontend module, pinned in
-`distribution/distro.properties`. The same frontend image runs at facilities; there the endpoint
-reports the feature off and the page stays hidden.
+`distribution/distro.properties`. The same frontend image runs at facilities, which is why the
+page checks the endpoint rather than being left out of the facility image.
