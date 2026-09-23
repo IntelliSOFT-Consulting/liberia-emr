@@ -84,7 +84,16 @@ Notes specific to this project:
 - The **e-partograph** is the canonical Custom Build: `packages/esm-liberia-epartograph-app`.
   There is **no community component** — do not scaffold it as a "modify" of anything. It is a
   normal O3 frontend module, versioned and **pinned in the distribution** like any other — it
-  is **not** smuggled inside a content package.
+  is **not** smuggled inside a content package. The other Custom Build ESMs are
+  `esm-liberia-login-app`, `esm-liberia-patient-chart-extension` and
+  `esm-liberia-sync-status-app`; `.github/workflows/packages.yml` publishes all four to npm
+  under `@liberiaemr/`.
+- The **backend** Custom Build is `modules/liberiaemr/` — an OpenMRS module (`.omod`): the
+  rules-based form-visibility endpoint, the password-reset flow and a sync-status REST
+  endpoint. It is **not** pinned in `distro.properties`: `distribution/backend/Dockerfile`
+  builds it from the source in the commit being built and stamps it with the distribution
+  version (Appendix, item 3). `.github/workflows/modules.yml` publishes it to Repsy for
+  consumers outside this repository.
 - The **sync/EIP layer** is core MOH scope and the **highest engineering risk**. It lives in
   `integration/`, never inside a content package.
 - **DHIS2 data-element mappings** are an MOH dependency; stub `integration/dhis2/mappings/`
@@ -109,8 +118,11 @@ liberia-emr/
 │   ├── frontend/                          # frontend Dockerfile + import map
 │   ├── compose/facility/                  # offline-first facility stack
 │   ├── compose/central/                   # central aggregation stack
+│   ├── sync/                              # dbsync sender + receiver images
+│   ├── broker/                            # ActiveMQ Artemis sync broker (central)
+│   ├── monitoring/                        # Prometheus/Alertmanager config + rules, cert-expiry
 │   ├── env/                               # .env templates (NO real secrets)
-│   └── ci/                                # pipeline definitions
+│   └── ci/                                # pipeline notes (workflows: .github/workflows/)
 │
 ├── content-packages/                      # === DESCRIBE (Configure class) ===
 │   ├── content-common/
@@ -137,9 +149,14 @@ liberia-emr/
 │   └── content-demo/                      # NEVER shipped to production
 │       (each package has the same configuration/ skeleton as content-common)
 │
+├── modules/
+│   └── liberiaemr/                        # === CUSTOM BUILD === (backend OMOD; api/ + omod/)
+│
 ├── packages/
-│   ├── esm-liberia-epartograph-app/       # === CUSTOM BUILD === (greenfield ESM)
-│   │   └── src/
+│   ├── esm-liberia-epartograph-app/       # === CUSTOM BUILD === (greenfield ESMs)
+│   ├── esm-liberia-login-app/
+│   ├── esm-liberia-patient-chart-extension/
+│   ├── esm-liberia-sync-status-app/
 │   └── modify-pr/.patches/                # === MODIFY + PR === (patch + upstream PR link)
 │
 ├── integration/                           # === EXTERNAL ===
@@ -161,10 +178,13 @@ liberia-emr/
 │   ├── api/    e2e/                       # automated (QA Engineer directs)
 │   ├── manual/                            # manual/exploratory (Tester executes)
 │   ├── uat/                               # UAT scripts + sign-off
+│   ├── sync/                              # sync verification scripts + probes
 │   └── upgrade/                           # clean-install + upgrade harness
 │
 ├── scripts/{validate,build,deploy}/
-└── .github/workflows/
+├── scripts/security/                      # throwaway sync certs (never production)
+├── scripts/sync/                          # broker admin, receiver conflicts
+└── .github/workflows/                     # ci, modules, packages, release, claude-review
 ```
 
 ---
@@ -268,6 +288,20 @@ run unconditionally. The clean-database stage is the expensive one, so `ci.yml` 
 any commit that could affect what Initializer loads and stands it down on one that cannot —
 failing open whenever it cannot tell. See [`distribution/ci/README.md`](distribution/ci/README.md).
 
+Where each stage runs today (`.github/workflows/`):
+
+| Workflow | Runs on | Stages |
+| --- | --- | --- |
+| `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment. |
+| `release.yml` | `x.y.z` tag | Release guards → build (both sites) → full stack → **upgrade test** → publish images (`ghcr.io/intellisoft-consulting`) → staging → production approval. The full-stack, image-push and staging steps are still `TODO` stubs. |
+| `modules.yml` | `modules/**` changes; GitHub release | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release only when its tag matches the pom's base version. |
+| `packages.yml` | `packages/**` changes; GitHub release | Builds the ESMs; publishes `-pre.<run>` versions (npm tag `next`) from `main`, and every ESM at the release tag's version on a release. |
+| `claude-review.yml` | PR to `main`/`develop` | Advisory guardrail review; never blocks a merge. |
+
+Module publishing is kept out of `ci.yml` on purpose, so that a registry or credential
+failure can never block a merge
+([`modules/liberiaemr/README.md`](modules/liberiaemr/README.md)).
+
 Build **immutable, versioned Docker images** (`liberia-emr-backend:x.y.z`,
 `-frontend:x.y.z`, `-gateway:x.y.z`); never mount a mutable git checkout into a production
 container. Backend image = OpenMRS WAR + exact OMOD versions + Initializer + resolved content
@@ -333,9 +367,9 @@ with site overrides only where necessary. **Never** scaffold a looser default.
 - `content-site-careysburg` + `content-site-barnersville` seed facility locations.
 - `content-liberia-mch` scaffolded for the ANC/L&D/PNC/FP first-go-live scope.
 - `packages/esm-liberia-epartograph-app` scaffolded + stubbed. Its `spa.frontendModules`
-  line in `distro.properties` is commented out until the module is published: the scaffold
-  has no webpack or tsconfig, so it cannot be built, and a pin to a coordinate npm has
-  never seen fails `openmrs assemble` and with it the whole distribution.
+  line in `distro.properties` was commented out until the module was published: a pin to a
+  coordinate npm has never seen fails `openmrs assemble` and with it the whole distribution.
+  It is now published and pinned to an exact version.
 - `integration/eip/routes/` has a documented facility→central placeholder.
 - `qa/upgrade/` harness runs clean-install + upgrade tests; CI runs the §8 pipeline.
 - No secrets or PHI anywhere in the repository.
@@ -344,8 +378,8 @@ with site overrides only where necessary. **Never** scaffold a looser default.
 
 ## Appendix — deviations in this repository
 
-Two places where the implementation here differs from the letter of the instructions above,
-both deliberate:
+Three places where the implementation here differs from the letter of the instructions above,
+all deliberate:
 
 1. **Single repository rather than separate repos.** §0 describes distribution and content
    packages as separate repositories. They live in one repository here, in separate trees
@@ -357,3 +391,14 @@ both deliberate:
    comment syntax, so a `#` line is read as a malformed record. Explanatory prose that would
    naturally sit at the top of a CSV lives in a sibling `README.md` instead, and
    `scripts/validate/validate-content.sh` fails the build if a comment line reappears.
+
+3. **The backend module is built from source, not pinned.** §0 and §3 have the distribution
+   pin every backend and frontend module. `modules/liberiaemr` is absent from the `omod.*`
+   list in `distro.properties`: every entry there is resolved from `mavenrepo.openmrs.org`,
+   where this module has never been published. Instead a stage of
+   `distribution/backend/Dockerfile` builds it from the commit being built and stamps it with
+   the distribution version, so a release image never carries a `-SNAPSHOT` omod and there
+   is no coordinate to drift. The root `pom.xml` does not include it either; it is built on
+   its own (`mvn clean package` in `modules/liberiaemr/`). If it is ever published to a
+   repository the resolver reads, it moves into the `omod.*` list and the Dockerfile stage
+   goes — as `distro.properties` records at the end of the file.
