@@ -1,7 +1,7 @@
 # LiberiaEMR
 
 Facility-scale **OpenMRS 3.x (O3)** EMR for the **Ministry of Health,
-Republic of Liberia**, deployed at **Careysburg** and **Barnersville** Health Centers.
+Republic of Liberia**.
 
 Base platform: **O3 RefApp 3.7.1 + HIS-Lite** (dispensing, laboratory, billing, stock).
 
