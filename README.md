@@ -103,7 +103,7 @@ Everything outside the community distribution is one of three build classes
 | Where | What | How it ships |
 | --- | --- | --- |
 | [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots and opt-in releases go to Repsy |
-| [`packages/esm-liberia-*`](packages/) | O3 frontend modules | Published to npm, pinned in `distro.properties` like any other ESM |
+| [`packages/esm-liberia-*`](packages/) | O3 frontend modules | Published to npm; an app reaches the image only when pinned in `distro.properties` (`esm-liberia-sync-status-app` is not pinned yet) |
 | [`packages/modify-pr/`](packages/modify-pr/) | Patches to community code | Only with an open or merged upstream PR — otherwise it is a fork |
 
 See [modules/liberiaemr/README.md](modules/liberiaemr/README.md) for the module's
@@ -115,7 +115,7 @@ endpoints, SMTP configuration and the release opt-in rule.
 | --- | --- | --- |
 | `ci.yml` | PRs to `main`/`develop`, pushes to `main` | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
 | `modules.yml` | changes under `modules/**`, releases | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
-| `packages.yml` | changes under `packages/**`, releases | Builds, tests and publishes the frontend modules |
+| `packages.yml` | changes under `packages/**`, releases | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here |
 | `release.yml` | `x.y.z` tags | Full-stack tests, upgrade test from the previous release, publish images, deploy to staging, production approval |
 
 ## Current status
