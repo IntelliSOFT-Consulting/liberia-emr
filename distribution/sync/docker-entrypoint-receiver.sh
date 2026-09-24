@@ -13,6 +13,9 @@
 # Optional (defaulted here):
 #   SYNC_HASHES_UPDATE         false; true runs dbsync's hash updater instead of syncing, then
 #   SYNC_HASHES_UPDATE_TABLES    exits (docs/runbooks/sync-operations.md); tables comma-separated
+#   SYNC_CONFLICT_WINDOW       01:00-05:00 UTC, when conflict decisions recorded in the EMR are
+#                                applied; empty turns that off
+#   SYNC_CONFLICT_CHECK_SECONDS  600, how often decisions are looked for inside the window
 #   COMPLEX_OBS_DIR          /opt/eip/complex-obs
 #   LOG_LEVEL                INFO
 #   JAVA_OPTS                JVM flags, e.g. -Xmx2g
@@ -24,6 +27,8 @@ SYNC_ROLE="sync receiver"
 [ "${SYNC_PAYLOAD_ENCRYPTION:=true}" = true ] \
   || sync_refuse "SYNC_PAYLOAD_ENCRYPTION cannot be turned off at central"
 : "${SYNC_HASHES_UPDATE:=false}"
+: "${SYNC_CONFLICT_WINDOW=01:00-05:00}"
+: "${SYNC_CONFLICT_CHECK_SECONDS:=600}"
 : "${SYNC_HASHES_UPDATE_TABLES:=}"
 case "$SYNC_HASHES_UPDATE" in
   true|false) ;;
@@ -32,6 +37,13 @@ esac
 # A case pattern, not grep, so a value carrying a newline cannot slip a second property in.
 case "$SYNC_HASHES_UPDATE_TABLES" in
   *[!a-z_,]*) sync_refuse "SYNC_HASHES_UPDATE_TABLES must be comma-separated table names, got '$SYNC_HASHES_UPDATE_TABLES'" ;;
+esac
+if [ -n "$SYNC_CONFLICT_WINDOW" ]; then
+  printf '%s' "$SYNC_CONFLICT_WINDOW" | grep -Eq '^([01][0-9]|2[0-3]):[0-5][0-9]-([01][0-9]|2[0-3]):[0-5][0-9]$' \
+    || sync_refuse "SYNC_CONFLICT_WINDOW must be HH:MM-HH:MM in UTC, or empty to turn it off, got '$SYNC_CONFLICT_WINDOW'"
+fi
+case "$SYNC_CONFLICT_CHECK_SECONDS" in
+  ''|*[!0-9]*) sync_refuse "SYNC_CONFLICT_CHECK_SECONDS must be a number of seconds, got '$SYNC_CONFLICT_CHECK_SECONDS'" ;;
 esac
 : "${COMPLEX_OBS_DIR:=/opt/eip/complex-obs}"
 : "${LOG_LEVEL:=INFO}"
@@ -63,6 +75,66 @@ umask 077
 PGP_PASSWORD="$PGP_PASSWORD" envsubst "$vars" \
   < /app/receiver-application.properties.template > /app/config/application.properties
 unset PGP_PASSWORD
+
+# Only ever run with &: exec makes the background pid the JVM's.
+receiver_jvm() {
+  # shellcheck disable=SC2086 # JAVA_OPTS and TLS_ARGS are deliberately word-split
+  exec java ${JAVA_OPTS:--Xmx2g} $TLS_ARGS -jar /app/receiver.jar \
+    --spring.config.location=file:/app/config/application.properties "$@"
+}
+
+# Applying conflict decisions needs the receiver stopped for a while, so this shell stays as the
+# JVM's parent. An empty SYNC_CONFLICT_WINDOW turns it off.
+if [ "$SYNC_HASHES_UPDATE" = false ] && [ -n "$SYNC_CONFLICT_WINDOW" ]; then
+  . /app/conflict-decisions.sh
+  cd_setup
+  CD_CHILD=""
+  CD_IDS=""
+  tick=0
+  # After a failure, wait for the next night rather than restart the receiver at every check.
+  held_until=0
+  stop_child() {
+    if [ -n "$CD_CHILD" ]; then
+      kill -TERM "$CD_CHILD" 2>/dev/null || true
+      cd_wait "$CD_CHILD"
+      CD_CHILD=""
+    fi
+  }
+  shutdown() {
+    kill "$ticker" 2>/dev/null || true
+    stop_child
+    [ -z "$CD_IDS" ] || cd_reopen "$CD_IDS" || true
+    exit 143
+  }
+  trap shutdown TERM INT
+  trap 'tick=1' USR1
+
+  cd_reopen >/dev/null 2>&1 || true
+  ( while sleep "$SYNC_CONFLICT_CHECK_SECONDS"; do kill -USR1 $$ 2>/dev/null || exit 0; done ) &
+  ticker=$!
+  receiver_jvm & CD_CHILD=$!
+  while :; do
+    rc=0
+    wait "$CD_CHILD" || rc=$?
+    if [ "$tick" = 1 ]; then
+      tick=0
+      # A tick interrupts the wait; the receiver is still running.
+      if [ "$(date +%s)" -ge "$held_until" ] && cd_in_window && [ -n "$(cd_ready 2>/dev/null)" ]; then
+        cd_log "stopping the receiver to apply decided conflicts"
+        stop_child
+        if ! cd_apply receiver_jvm; then
+          held_until=$(( $(date +%s) + 12 * 3600 ))
+          cd_log "not trying again for 12 hours"
+        fi
+        receiver_jvm & CD_CHILD=$!
+      fi
+      continue
+    fi
+    # The receiver exited by itself; exit too so the restart policy applies.
+    kill "$ticker" 2>/dev/null || true
+    exit "$rc"
+  done
+fi
 
 # shellcheck disable=SC2086 # JAVA_OPTS and TLS_ARGS are deliberately word-split
 exec java ${JAVA_OPTS:--Xmx2g} $TLS_ARGS -jar /app/receiver.jar \

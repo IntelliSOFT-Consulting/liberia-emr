@@ -1,1094 +1,1133 @@
 {
-  "name": "OPD Consultation Form",
-  "uuid": "96b72a44-f8b8-472e-8d8d-327c73708eeb",
-  "version": "2.0",
-  "published": true,
-  "retired": false,
-  "encounter": "Consultation",
-  "processor": "EncounterFormProcessor",
-  "formOptions": {
-    "usePreviousValueDisabled": false
-  },
-  "pages": [
-    {
-      "label": "Patient Category",
-      "sections": [
-        {
-          "label": "Patient Category",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "patientCategory",
-              "label": "Patient Category",
-              "type": "obs",
-              "required": true,
-              "questionOptions": {
-                "rendering": "select",
-                "concept": "${var.concept.visit-type-opd.uuid}",
-                "answers": [
-                  {
-                    "concept": "${var.concept.visit-type-opd-new.uuid}",
-                    "label": "First Visit"
-                  },
-                  {
-                    "concept": "${var.concept.visit-type-opd-followup.uuid}",
-                    "label": "Follow-up Visit"
-                  },
-                  {
-                    "concept": "${var.concept.visit-type-opd-referral.uuid}",
-                    "label": "Referral"
-                  }
-                ]
-              }
-            },
-            {
-              "id": "encounterProvider",
-              "label": "Attending Clinician",
-              "type": "encounterProvider",
-              "required": true,
-              "questionOptions": {
-                "rendering": "ui-select-extended"
-              }
-            },
-            {
-              "id": "encounterLocation",
-              "label": "Encounter Location",
-              "type": "encounterLocation",
-              "required": true,
-              "questionOptions": {
-                "rendering": "ui-select-extended"
-              }
-            },
-            {
-              "id": "encounterDate",
-              "label": "Encounter Date",
-              "type": "encounterDatetime",
-              "required": true,
-              "questionOptions": {
-                "rendering": "date"
-              },
-              "validators": [
-                {
-                  "type": "date",
-                  "allowFutureDates": "false"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "name": "OPD Consultation Form",
+    "uuid": "96b72a44-f8b8-472e-8d8d-327c73708eeb",
+    "version": "2.0",
+    "published": true,
+    "retired": false,
+    "encounter": "Consultation",
+    "processor": "EncounterFormProcessor",
+    "formOptions": {
+        "usePreviousValueDisabled": false
     },
-    {
-      "label": "Clinical History",
-      "sections": [
+    "pages": [
         {
-          "label": "Clinical History",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "presentingComplaint",
-              "label": "Presenting Complaint",
-              "type": "obs",
-              "required": true,
-              "questionOptions": {
-                "rendering": "textarea",
-                "concept": "${var.concept.ciel.presenting-complaint.uuid}",
-                "rows": 3,
-                "max": 100
-              }
-            },
-            {
-              "id": "hpc",
-              "label": "History of Presenting Complaint",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "textarea",
-                "concept": "${var.concept.ciel.history-presenting-complaint.uuid}",
-                "rows": 3,
-                "max": 100
-              }
-            },
-            {
-              "id": "pmh",
-              "label": "Past Medical History",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "textarea",
-                "concept": "${var.concept.ciel.past-medical-history.uuid}",
-                "rows": 3,
-                "max": 100
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "label": "Vitals",
-      "sections": [
+            "label": "Patient Category",
+            "sections": [
+                {
+                    "label": "Patient Category",
+                    "isExpanded": "true",
+                    "questions": [
+                        {
+                            "id": "patientCategory",
+                            "label": "Patient Category",
+                            "type": "obs",
+                            "required": true,
+                            "questionOptions": {
+                                "rendering": "select",
+                                "concept": "${var.concept.visit-type-opd.uuid}",
+                                "answers": [
+                                    {
+                                        "concept": "${var.concept.visit-type-opd-new.uuid}",
+                                        "label": "First Visit"
+                                    },
+                                    {
+                                        "concept": "${var.concept.visit-type-opd-followup.uuid}",
+                                        "label": "Follow-up Visit"
+                                    },
+                                    {
+                                        "concept": "${var.concept.visit-type-opd-referral.uuid}",
+                                        "label": "Referral"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "encounterProvider",
+                            "label": "Attending Clinician",
+                            "type": "encounterProvider",
+                            "required": true,
+                            "questionOptions": {
+                                "rendering": "ui-select-extended"
+                            }
+                        },
+                        {
+                            "id": "encounterLocation",
+                            "label": "Encounter Location",
+                            "type": "encounterLocation",
+                            "required": true,
+                            "questionOptions": {
+                                "rendering": "ui-select-extended"
+                            }
+                        },
+                        {
+                            "id": "encounterDate",
+                            "label": "Encounter Date",
+                            "type": "encounterDatetime",
+                            "required": true,
+                            "questionOptions": {
+                                "rendering": "date"
+                            },
+                            "validators": [
+                                {
+                                    "type": "date",
+                                    "allowFutureDates": "false"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         {
-          "label": "Vitals",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "temperature",
-              "label": "Temperature (°C)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.temp.uuid}",
-                "min": "25",
-                "max": "43",
-                "step": 0.1
-              },
-              "validators": [
+            "label": "Clinical History",
+            "sections": [
                 {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 25 || myValue > 43",
-                  "message": "Temperature must be between 25 and 43 °C."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 35 || myValue > 37.7",
-                  "message": "Temperature is outside the normal range (35–37.7 °C). Please verify the reading."
+                    "label": "Clinical History",
+                    "isExpanded": "true",
+                    "questions": [
+                        {
+                            "id": "presentingComplaint",
+                            "label": "Presenting Complaint",
+                            "type": "obs",
+                            "required": true,
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "${var.concept.ciel.presenting-complaint.uuid}",
+                                "rows": 3,
+                                "max": 100
+                            }
+                        },
+                        {
+                            "id": "hpc",
+                            "label": "History of Presenting Complaint",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "${var.concept.ciel.history-presenting-complaint.uuid}",
+                                "rows": 3,
+                                "max": 100
+                            }
+                        },
+                        {
+                            "id": "pmh",
+                            "label": "Past Medical History",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "${var.concept.ciel.past-medical-history.uuid}",
+                                "rows": 3,
+                                "max": 100
+                            }
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "id": "pulse",
-              "label": "Pulse/Heart Rate (beats/min)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.pulse.uuid}",
-                "min": "0",
-                "max": "230",
-                "step": 1,
-                "disallowDecimals": true
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 230",
-                  "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 55 || myValue > 100",
-                  "message": "Pulse is outside the normal range (55–100 beats/min). Please verify the reading."
-                }
-              ]
-            },
-            {
-              "id": "respiratoryRate",
-              "label": "Respiratory Rate (breaths/min)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.rr.uuid}",
-                "min": "0",
-                "max": "80",
-                "step": 1,
-                "disallowDecimals": true
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 80",
-                  "message": "Respiratory Rate must be between 0 and 80 breaths/min."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 12 || myValue > 26",
-                  "message": "Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading."
-                }
-              ]
-            },
-            {
-              "id": "systolic",
-              "label": "Systolic Blood Pressure (mmHg)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.systolic.uuid}",
-                "min": "0",
-                "max": "250",
-                "step": 1,
-                "disallowDecimals": true
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 250",
-                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 100 || myValue > 140",
-                  "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
-                }
-              ]
-            },
-            {
-              "id": "diastolic",
-              "label": "Diastolic Blood Pressure (mmHg)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.diastolic.uuid}",
-                "min": "0",
-                "max": "150",
-                "step": 1,
-                "disallowDecimals": true
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 150",
-                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(systolic) && myValue >= systolic",
-                  "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 55 || myValue > 90",
-                  "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
-                }
-              ]
-            },
-            {
-              "id": "spo2",
-              "label": "Oxygen Saturation — SpO₂ (%)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.spo2.uuid}",
-                "min": "0",
-                "max": "100",
-                "step": 1,
-                "disallowDecimals": true
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 100",
-                  "message": "Oxygen Saturation (SpO₂) must be between 0 and 100%."
-                },
-                {
-                  "type": "js_expression",
-                  "warnsWhenExpression": "myValue < 95",
-                  "message": "SpO₂ below 95% — please verify the reading and consider clinical review."
-                }
-              ]
-            },
-            {
-              "id": "weight",
-              "label": "Weight (kg)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.weight.uuid}",
-                "min": "0",
-                "max": "250",
-                "step": 0.1
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 0 || myValue > 250",
-                  "message": "Weight must be between 0 and 250 kg."
-                }
-              ]
-            },
-            {
-              "id": "height",
-              "label": "Height/Length (cm)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.height.uuid}",
-                "min": "10",
-                "max": "272",
-                "step": 0.1
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 10 || myValue > 272",
-                  "message": "Height/Length must be between 10 and 272 cm."
-                }
-              ]
-            },
-            {
-              "id": "muac",
-              "label": "MUAC (cm)",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.muac.uuid}",
-                "min": "5",
-                "max": "35",
-                "step": 0.1
-              },
-              "hide": {
-                "hideWhenExpression": "age >= 5"
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "myValue < 5 || myValue > 35",
-                  "message": "MUAC must be between 5 and 35 cm."
-                }
-              ]
-            },
-            {
-              "id": "bmi",
-              "label": "BMI",
-              "type": "obs",
-              "isDisabled": true,
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.bmi.uuid}",
-                "disallowDecimals": false,
-                "calculate": {
-                  "calculateExpression": "age >= 5 ? calcBMI(height, weight) : ''"
-                }
-              },
-              "disabled": {
-                "disableWhenExpression": "true"
-              },
-              "hide": {
-                "hideWhenExpression": "age < 5"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "label": "General examination",
-      "sections": [
+            ]
+        },
         {
-          "label": "General Examination Findings",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "general_exam",
-              "label": "General Examination Findings",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "textarea",
-                "concept": "${var.concept.ciel.general-exam-findings.uuid}",
-                "rows": 3,
-                "max": 100
-              }
-            },
-            {
-              "id": "jaundice_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.jaundice-construct.uuid}"
-              },
-              "questions": [
+            "label": "Vitals",
+            "sections": [
                 {
-                  "id": "jaundice",
-                  "label": "Is there Jaundice?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-jaundice.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
+                    "label": "Vitals",
+                    "isExpanded": "true",
+                    "questions": [
+                        {
+                            "id": "temperature",
+                            "label": "Temperature (°C)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.temp.uuid}",
+                                "min": "25",
+                                "max": "43",
+                                "step": 0.1
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 25 || myValue > 43",
+                                    "message": "Temperature must be between 25 and 43 °C."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 35 || myValue > 37.7",
+                                    "message": "Temperature is outside the normal range (35–37.7 °C). Please verify the reading."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "pulse",
+                            "label": "Pulse/Heart Rate (beats/min)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.pulse.uuid}",
+                                "min": "0",
+                                "max": "230",
+                                "step": 1,
+                                "disallowDecimals": true
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 230",
+                                    "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 55 || myValue > 100",
+                                    "message": "Pulse is outside the normal range (55–100 beats/min). Please verify the reading."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "respiratoryRate",
+                            "label": "Respiratory Rate (breaths/min)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.rr.uuid}",
+                                "min": "0",
+                                "max": "80",
+                                "step": 1,
+                                "disallowDecimals": true
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 80",
+                                    "message": "Respiratory Rate must be between 0 and 80 breaths/min."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 12 || myValue > 26",
+                                    "message": "Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "systolic",
+                            "label": "Systolic Blood Pressure (mmHg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.systolic.uuid}",
+                                "min": "0",
+                                "max": "250",
+                                "step": 1,
+                                "disallowDecimals": true
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
+                                    "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 100 || myValue > 140",
+                                    "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "diastolic",
+                            "label": "Diastolic Blood Pressure (mmHg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.diastolic.uuid}",
+                                "min": "0",
+                                "max": "150",
+                                "step": 1,
+                                "disallowDecimals": true
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 150",
+                                    "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "!isEmpty(systolic) && myValue >= systolic",
+                                    "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 55 || myValue > 90",
+                                    "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "spo2",
+                            "label": "Oxygen Saturation — SpO₂ (%)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.spo2.uuid}",
+                                "min": "0",
+                                "max": "100",
+                                "step": 1,
+                                "disallowDecimals": true
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 100",
+                                    "message": "Oxygen Saturation (SpO₂) must be between 0 and 100%."
+                                },
+                                {
+                                    "type": "js_expression",
+                                    "warnsWhenExpression": "myValue < 95",
+                                    "message": "SpO₂ below 95% — please verify the reading and consider clinical review."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "weight",
+                            "label": "Weight (kg)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.weight.uuid}",
+                                "min": "0",
+                                "max": "250",
+                                "step": 0.1
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
+                                    "message": "Weight must be between 0 and 250 kg."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "height",
+                            "label": "Height/Length (cm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.height.uuid}",
+                                "min": "10",
+                                "max": "272",
+                                "step": 0.1
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 10 || myValue > 272",
+                                    "message": "Height/Length must be between 10 and 272 cm."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "muac",
+                            "label": "MUAC (cm)",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.muac.uuid}",
+                                "min": "5",
+                                "max": "35",
+                                "step": 0.1
+                            },
+                            "hide": {
+                                "hideWhenExpression": "age >= 5"
+                            },
+                            "validators": [
+                                {
+                                    "type": "js_expression",
+                                    "failsWhenExpression": "myValue < 5 || myValue > 35",
+                                    "message": "MUAC must be between 5 and 35 cm."
+                                }
+                            ]
+                        },
+                        {
+                            "id": "bmi",
+                            "label": "BMI",
+                            "type": "obs",
+                            "isDisabled": true,
+                            "questionOptions": {
+                                "rendering": "number",
+                                "concept": "${var.concept.ciel.bmi.uuid}",
+                                "disallowDecimals": false,
+                                "calculate": {
+                                    "calculateExpression": "age >= 5 ? calcBMI(height, weight) : ''"
+                                }
+                            },
+                            "disabled": {
+                                "disableWhenExpression": "true"
+                            },
+                            "hide": {
+                                "hideWhenExpression": "age < 5"
+                            }
+                        }
                     ]
-                  }
-                },
-                {
-                  "id": "jaundiceClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "jaundice !== '${var.concept.ciel.yes.uuid}'"
-                  }
                 }
-              ]
-            },
-            {
-              "id": "pallor_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.pallor-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "pallor",
-                  "label": "Is there pallor?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-pallor.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "pallorClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "pallor !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "cyanosis_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.cyanosis-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "cyanosis",
-                  "label": "Is there cyanosis?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-cyanosis.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "cyanosisClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "lymphadenopathy_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.lymphadenopathy-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "lymphadenopathy",
-                  "label": "Is there lymphadenopathy?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-lymphadenopathy.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "lymphadenopathyClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "dehydration_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.dehydration-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "dehydration",
-                  "label": "Is there dehydration?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-dehydration.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "dehydrationClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "dehydration !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "fingerClubbing_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.finger-clubbing-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "fingerClubbing",
-                  "label": "Is there finger clubbing?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-finger-clubbing.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "fingerClubbingClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "edema_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.edema-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "edema",
-                  "label": "Is there edema?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.exam-edema.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "edemaClinicalFindings",
-                  "label": "Clinical Findings",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.ciel.free-text-comment.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "edema !== '${var.concept.ciel.yes.uuid}'"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "label": "Systemic Examination",
-      "sections": [
+            ]
+        },
         {
-          "label": "Systemic Examination",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "heent_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.heent-construct.uuid}"
-              },
-              "questions": [
+            "label": "General examination",
+            "sections": [
                 {
-                  "id": "heent_status",
-                  "label": "Head, Eyes, Ears, Nose and Throat",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.heent-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
+                    "label": "General Examination Findings",
+                    "isExpanded": "true",
+                    "questions": [
+                        {
+                            "id": "general_exam",
+                            "label": "General Examination Findings",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "${var.concept.ciel.general-exam-findings.uuid}",
+                                "rows": 3,
+                                "max": 100
+                            }
+                        },
+                        {
+                            "id": "jaundice_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.jaundice-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "jaundice",
+                                    "label": "Is there Jaundice?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-jaundice.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "jaundiceClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "jaundice !== '${var.concept.ciel.yes.uuid}' ? '' : jaundiceClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "jaundice !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "pallor_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.pallor-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "pallor",
+                                    "label": "Is there pallor?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-pallor.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "pallorClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "pallor !== '${var.concept.ciel.yes.uuid}' ? '' : pallorClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "pallor !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cyanosis_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.cyanosis-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cyanosis",
+                                    "label": "Is there cyanosis?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-cyanosis.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "cyanosisClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}' ? '' : cyanosisClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "lymphadenopathy_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.lymphadenopathy-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "lymphadenopathy",
+                                    "label": "Is there lymphadenopathy?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-lymphadenopathy.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "lymphadenopathyClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}' ? '' : lymphadenopathyClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "dehydration_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.dehydration-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "dehydration",
+                                    "label": "Is there dehydration?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-dehydration.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "dehydrationClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "dehydration !== '${var.concept.ciel.yes.uuid}' ? '' : dehydrationClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "dehydration !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "fingerClubbing_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.finger-clubbing-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "fingerClubbing",
+                                    "label": "Is there finger clubbing?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-finger-clubbing.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "fingerClubbingClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}' ? '' : fingerClubbingClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "edema_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.edema-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "edema",
+                                    "label": "Is there edema?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.exam-edema.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "edemaClinicalFindings",
+                                    "label": "Clinical Findings",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.ciel.free-text-comment.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "edema !== '${var.concept.ciel.yes.uuid}' ? '' : edemaClinicalFindings"
+                                        }
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "edema !== '${var.concept.ciel.yes.uuid}'"
+                                    }
+                                }
+                            ]
+                        }
                     ]
-                  }
-                },
-                {
-                  "id": "heentFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "heent_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.head-neck-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
                 }
-              ]
-            },
-            {
-              "id": "cvs_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.cvs-construct.uuid}"
-              },
-              "questions": [
+            ]
+        },
+        {
+            "label": "Systemic Examination",
+            "sections": [
                 {
-                  "id": "cvs_status",
-                  "label": "Cardiovascular System",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.cvs-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
+                    "label": "Systemic Examination",
+                    "isExpanded": "true",
+                    "questions": [
+                        {
+                            "id": "heent_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.heent-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "heent_status",
+                                    "label": "Head, Eyes, Ears, Nose and Throat",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.heent-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "heentFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "heent_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.head-neck-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "heent_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : heentFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cvs_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.cvs-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cvs_status",
+                                    "label": "Cardiovascular System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.cvs-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "cvsFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "cvs_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.cardiovascular-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cvs_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : cvsFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "resp_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.resp-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "resp_status",
+                                    "label": "Respiratory System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.resp-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "respiratoryFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "resp_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.respiratory-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "resp_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : respiratoryFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "gi_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.gi-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "gi_status",
+                                    "label": "Gastrointestinal System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.gi-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "giFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "gi_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.abdominal-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "gi_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : giFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cns_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.cns-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "cns_status",
+                                    "label": "Central Nervous System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.cns-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "cnsFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "cns_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.neurological-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cns_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : cnsFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "msk_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.msk-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "msk_status",
+                                    "label": "Musculoskeletal System",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.opd.msk-status.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.normal.uuid}",
+                                                "label": "Normal"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.abnormal.uuid}",
+                                                "label": "Abnormal"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "musculoskeletalFindings",
+                                    "label": "Findings",
+                                    "type": "obs",
+                                    "hide": {
+                                        "hideWhenExpression": "msk_status !== '${var.concept.ciel.abnormal.uuid}'"
+                                    },
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.musculoskeletal-findings.uuid}",
+                                        "rows": 3,
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "msk_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : musculoskeletalFindings"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "nonPharmAdvice",
+                            "label": "Non-Pharmacological Advice Given",
+                            "type": "obs",
+                            "questionOptions": {
+                                "rendering": "textarea",
+                                "concept": "${var.concept.advice-non-pharmacological.uuid}",
+                                "rows": 3,
+                                "max": 100
+                            }
+                        },
+                        {
+                            "id": "followup_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.followup-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "followupRequired",
+                                    "label": "Follow-up Required?",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "radio",
+                                        "concept": "${var.concept.followup-required.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.yes.uuid}",
+                                                "label": "Yes"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.no.uuid}",
+                                                "label": "No"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "followupDate",
+                                    "label": "Follow-up Date",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "date",
+                                        "concept": "${var.concept.ciel.followup-date.uuid}"
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(followupRequired) || followupRequired !== '${var.concept.ciel.yes.uuid}'"
+                                    },
+                                    "validators": [
+                                        {
+                                            "type": "date",
+                                            "allowFutureDates": "true"
+                                        },
+                                        {
+                                            "type": "js_expression",
+                                            "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
+                                            "message": "follow up date cannot be set to previous dates"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "disposition_group",
+                            "type": "obsGroup",
+                            "questionOptions": {
+                                "rendering": "group",
+                                "concept": "${var.concept.opd.disposition-construct.uuid}"
+                            },
+                            "questions": [
+                                {
+                                    "id": "outcomeDisposition",
+                                    "label": "Outcome/Disposition",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "select",
+                                        "concept": "${var.concept.ciel.disposition.uuid}",
+                                        "answers": [
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-discharge.uuid}",
+                                                "label": "Discharged"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-admit.uuid}",
+                                                "label": "Admitted"
+                                            },
+                                            {
+                                                "concept": "${var.concept.ciel.disposition-refer.uuid}",
+                                                "label": "Referred"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "referralDestination",
+                                    "label": "Referral Destination",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "text",
+                                        "concept": "${var.concept.referral-destination.uuid}"
+                                    },
+                                    "required": {
+                                        "type": "conditionalRequired",
+                                        "message": "Please enter the Referral Destination",
+                                        "referenceQuestionId": "outcomeDisposition",
+                                        "referenceQuestionAnswers": [
+                                            "${var.concept.ciel.disposition-refer.uuid}"
+                                        ]
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
+                                    }
+                                },
+                                {
+                                    "id": "referralReason",
+                                    "label": "Reason for the referral.",
+                                    "type": "obs",
+                                    "questionOptions": {
+                                        "rendering": "textarea",
+                                        "concept": "${var.concept.referral-reason.uuid}",
+                                        "rows": 3,
+                                        "max": 100
+                                    },
+                                    "hide": {
+                                        "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
+                                    }
+                                }
+                            ]
+                        }
                     ]
-                  }
-                },
-                {
-                  "id": "cvsFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "cvs_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.cardiovascular-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
                 }
-              ]
-            },
-            {
-              "id": "resp_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.resp-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "resp_status",
-                  "label": "Respiratory System",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.resp-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "respiratoryFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "resp_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.respiratory-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
-                }
-              ]
-            },
-            {
-              "id": "gi_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.gi-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "gi_status",
-                  "label": "Gastrointestinal System",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.gi-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "giFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "gi_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.abdominal-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
-                }
-              ]
-            },
-            {
-              "id": "cns_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.cns-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "cns_status",
-                  "label": "Central Nervous System",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.cns-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "cnsFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "cns_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.neurological-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
-                }
-              ]
-            },
-            {
-              "id": "msk_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.msk-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "msk_status",
-                  "label": "Musculoskeletal System",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.opd.msk-status.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.normal.uuid}",
-                        "label": "Normal"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.abnormal.uuid}",
-                        "label": "Abnormal"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "musculoskeletalFindings",
-                  "label": "Findings",
-                  "type": "obs",
-                  "hide": {
-                    "hideWhenExpression": "msk_status !== '${var.concept.ciel.abnormal.uuid}'"
-                  },
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.musculoskeletal-findings.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  }
-                }
-              ]
-            },
-            {
-              "id": "nonPharmAdvice",
-              "label": "Non-Pharmacological Advice Given",
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "textarea",
-                "concept": "${var.concept.advice-non-pharmacological.uuid}",
-                "rows": 3,
-                "max": 100
-              }
-            },
-            {
-              "id": "followup_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.followup-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "followupRequired",
-                  "label": "Follow-up Required?",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "radio",
-                    "concept": "${var.concept.followup-required.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.yes.uuid}",
-                        "label": "Yes"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.no.uuid}",
-                        "label": "No"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "followupDate",
-                  "label": "Follow-up Date",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "date",
-                    "concept": "${var.concept.ciel.followup-date.uuid}"
-                  },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(followupRequired) || followupRequired !== '${var.concept.ciel.yes.uuid}'"
-                  },
-                  "validators": [
-                    {
-                      "type": "date",
-                      "allowFutureDates": "true"
-                    },
-                    {
-                      "type": "js_expression",
-                      "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
-                      "message": "follow up date cannot be set to previous dates"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "disposition_group",
-              "type": "obsGroup",
-              "questionOptions": {
-                "rendering": "group",
-                "concept": "${var.concept.opd.disposition-construct.uuid}"
-              },
-              "questions": [
-                {
-                  "id": "outcomeDisposition",
-                  "label": "Outcome/Disposition",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "select",
-                    "concept": "${var.concept.ciel.disposition.uuid}",
-                    "answers": [
-                      {
-                        "concept": "${var.concept.ciel.disposition-discharge.uuid}",
-                        "label": "Discharged"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.disposition-admit.uuid}",
-                        "label": "Admitted"
-                      },
-                      {
-                        "concept": "${var.concept.ciel.disposition-refer.uuid}",
-                        "label": "Referred"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "referralDestination",
-                  "label": "Referral Destination",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "text",
-                    "concept": "${var.concept.referral-destination.uuid}"
-                  },
-                  "required": {
-                    "type": "conditionalRequired",
-                    "message": "Please enter the Referral Destination",
-                    "referenceQuestionId": "outcomeDisposition",
-                    "referenceQuestionAnswers": [
-                      "${var.concept.ciel.disposition-refer.uuid}"
-                    ]
-                  },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
-                  }
-                },
-                {
-                  "id": "referralReason",
-                  "label": "Reason for the referral.",
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "textarea",
-                    "concept": "${var.concept.referral-reason.uuid}",
-                    "rows": 3,
-                    "max": 100
-                  },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
-                  }
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

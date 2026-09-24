@@ -72,6 +72,9 @@ services:
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
       # Empty turns the sync status page off, which is what a facility gets.
       LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
+      # Read by the Sync conflicts page; empty turns it off. The window is for display only.
+      LIBERIAEMR_SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
+      LIBERIAEMR_SYNC_CONFLICT_WINDOW: ${SYNC_CONFLICT_WINDOW-01:00-05:00}
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
@@ -164,6 +167,9 @@ services:
       OPENMRS_REST_USER: ${SYNC_REST_USER:?set in central.env}
       OPENMRS_REST_PASSWORD: ${SYNC_REST_PASSWORD:?set in central.env}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
+      # When conflict decisions are applied, in UTC; empty turns that off.
+      SYNC_CONFLICT_WINDOW: ${SYNC_CONFLICT_WINDOW-01:00-05:00}
+      SYNC_CONFLICT_CHECK_SECONDS: ${SYNC_CONFLICT_CHECK_SECONDS:-600}
     volumes:
       - receiver-state:/opt/eip
       - type: bind

@@ -633,6 +633,11 @@ jobs:
           refuses 'plain tcp is not accepted' -e ARTEMIS_URL=tcp://artemis:61616
           refuses 'sync-certs is missing or cannot be entered' -e ARTEMIS_URL=ssl://artemis:61617
           refuses 'cannot be turned off at central' -e ARTEMIS_URL=ssl://artemis:61617 -e SYNC_PAYLOAD_ENCRYPTION=false
+          # The window decides when the receiver stops itself to apply conflict decisions.
+          refuses 'SYNC_CONFLICT_WINDOW must be HH:MM-HH:MM' -e ARTEMIS_URL=ssl://artemis:61617 \
+            -e SYNC_CONFLICT_WINDOW=nightly
+          refuses 'SYNC_CONFLICT_CHECK_SECONDS must be a number' -e ARTEMIS_URL=ssl://artemis:61617 \
+            -e SYNC_CONFLICT_CHECK_SECONDS=soon
           # The receiver's protections live in its configuration template; none may be dropped.
           template=distribution/sync/receiver-application.properties.template
           for setting in '^camel\.input\.endpoint=.*[?&]acknowledgementMode=4(&|$)' \

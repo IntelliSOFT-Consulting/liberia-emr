@@ -31,7 +31,8 @@ Operator tools, run at central:
 
 - `scripts/sync/broker-admin.sh --admin <admin dir> <artemis command>` runs the Artemis CLI
   with the admin certificate on the broker's loopback acceptor.
-- `scripts/sync/conflicts.sh` lists and resolves conflicts.
+- `scripts/sync/conflicts.sh` lists and resolves conflicts by hand; the Sync conflicts page
+  (section 8) is the usual way.
 
 Useful checks: `broker-admin.sh ... queue stat --queueName DB-SYNC-REC.DB-SYNC-RECEIVER`
 (messages waiting for the receiver) and `... --queueName DLQ`.
@@ -263,7 +264,33 @@ Central's copy of a record was changed outside sync, so a facility's update to i
 along with every later update to that record (which also raises `ReceiverErrors`). Central is
 meant to be read-only for clinical data, so also find out what changed it. The procedure is
 dbsync's own, from its README ("Conflict Resolution In The Receiver" and "Updating Entity
-Hashes"); `scripts/sync/conflicts.sh` runs its steps.
+Hashes"). The receiver runs it by itself for decisions recorded on the Sync conflicts page;
+`scripts/sync/conflicts.sh` runs the same steps by hand.
+
+### On the Sync conflicts page
+
+1. At central, choose **Review** on the conflicts tile of `Sync status`, or open
+   `/openmrs/spa/sync-conflicts`. The page needs the `Sync Conflict Reviewer` role, which
+   reads patient records: give it only to named reviewers, not to every `Sync Administrator`.
+2. **Review** shows the facility's version next to central's. Central's `changedByUuid` names
+   the account that changed it. The facility shown is the one the sender claims (sync-eip.md
+   7.2).
+3. Agree the right version with the clinical owner at the facility and record it with a reason
+   naming who you agreed it with, never the patient. "Central's change is right" means the
+   facility makes the same change; until then central holds the facility's version.
+4. The receiver applies decisions inside `SYNC_CONFLICT_WINDOW` (01:00 to 05:00 UTC by default),
+   once every conflict in the table is decided. It stops, runs dbsync's hash updater, removes
+   the rows (clearing the alert) and starts again; held updates apply about two minutes later.
+   If none was held, have the facility save the record again. A failed run reopens the
+   conflicts, shows the failure on the page and waits for the next night.
+
+Decisions are kept in `liberiaemr_sync_conflict_decision`. A large table such as `obs` can keep
+the receiver down for a while, so keep the window at a quiet time. On a central database created
+before this page, run the grant in `initdb/10-sync-mgmt-db.sh` by hand once.
+
+### By hand
+
+When `SYNC_CONFLICT_WINDOW` is empty, or a conflict has to be applied before the window:
 
 1. `scripts/sync/conflicts.sh list` shows each queued conflict's table, UUID, how many updates
    are waiting behind it, and whether it is still open.
@@ -299,7 +326,8 @@ The hash updater accepts central's current copy of every row in the table, so an
 made at central to that table is no longer detected, including one no facility has updated over
 yet and which `list` therefore cannot show. Find out what changed central (step 2) before
 resolving, and resolve a table at a time rather than waiting for conflicts to collect.
-`qa/sync/verify-conflict-resolution.sh` exercises this section.
+`qa/sync/verify-conflict-review.sh` exercises the page and the receiver applying a decision;
+`qa/sync/verify-conflict-resolution.sh` exercises the procedure by hand.
 
 ## 9. Alert delivery
 
@@ -403,7 +431,7 @@ monitoring to read and reports the feature off.
 
 Retries and conflicts are national totals, not per facility. dbsync records no sender on a
 queued or failed record, so central cannot say which facility one came from; use
-`scripts/sync/conflicts.sh list` for the records themselves. If the page says monitoring cannot
+the Sync conflicts page (section 8) for the conflicts themselves. If the page says monitoring cannot
 be reached, sync itself may be perfectly healthy: check the central `prometheus` service first.
 `qa/sync/verify-sync-status.sh` exercises the endpoint the page reads.
 
