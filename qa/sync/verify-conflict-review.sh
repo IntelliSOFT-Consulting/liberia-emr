@@ -173,8 +173,9 @@ sys.exit(0 if gone and stamped else 1)' "$CONFLICT"
 }
 until_true "$TIMEOUT" applied || fail "the receiver applies the decision in its window" "$(list | head -c 400)"
 pass "the receiver applied it: the conflict left the queue and the decision is stamped applied, with who decided"
-docker logs --since "$started" "$RECEIVER" 2>&1 | grep -q "conflict decisions: applied conflicts .*$CONFLICT" \
-  || fail "the receiver logs what it applied"
+# grep -c, not -q: an early exit would fail docker logs on a closed pipe, and pipefail with it.
+logged() { [[ "$(docker logs --since "$started" "$RECEIVER" 2>&1 | grep -c "conflict decisions: applied conflicts .*$CONFLICT")" -gt 0 ]]; }
+until_true 60 logged || fail "the receiver logs what it applied"
 pass "the receiver logs what it applied"
 
 until_true 300 alert_is ReceiverConflicts none || fail "ReceiverConflicts clears"
