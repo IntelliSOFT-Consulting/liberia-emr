@@ -40,6 +40,9 @@ Go-live cannot proceed while any of these is open.
 - [ ] Identity reconciliation policy agreed (ADR 0005)
 - [ ] Facility→central push tested including a multi-day outage and recovery
 - [ ] Mutual TLS working with MOH ICT Unit certificates
+- [ ] Sync conflicts page reads the queue at central: on a database created before it, run the
+      grant in `distribution/compose/central/initdb/10-sync-mgmt-db.sh` by hand once
+- [ ] `Sync Conflict Reviewer` given only to the named reviewers the MOH agrees
 
 ### Operations
 - [ ] Backup running, off-site, and a restore rehearsed
