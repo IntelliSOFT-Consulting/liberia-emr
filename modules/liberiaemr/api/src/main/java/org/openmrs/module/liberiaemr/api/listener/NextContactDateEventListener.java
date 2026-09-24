@@ -56,8 +56,12 @@ public class NextContactDateEventListener implements EventListener {
 		}
 
 		AdministrationService adminService = Context.getAdministrationService();
-		String targetConceptUuid = adminService.getGlobalProperty("liberiaemr.nextContactDateConceptUuid",
-		    "5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		String targetConceptUuid = adminService.getGlobalProperty("liberiaemr.nextContactDateConceptUuid");
+
+		if (targetConceptUuid == null || targetConceptUuid.trim().isEmpty()) {
+			log.warn("Global property 'liberiaemr.nextContactDateConceptUuid' is not set. Skipping appointment auto-scheduling.");
+			return;
+		}
 
 		if (targetConceptUuid.equals(obs.getConcept().getUuid())) {
 			log.info("Intercepted Next Contact Date Observation creation for patient: " + obs.getPerson().getUuid());
