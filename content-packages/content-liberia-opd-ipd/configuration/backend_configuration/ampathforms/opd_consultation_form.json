@@ -421,7 +421,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "jaundice !== '${var.concept.ciel.yes.uuid}' ? '' : jaundiceClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "jaundice !== '${var.concept.ciel.yes.uuid}'"
@@ -464,7 +467,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "pallor !== '${var.concept.ciel.yes.uuid}' ? '' : pallorClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "pallor !== '${var.concept.ciel.yes.uuid}'"
@@ -507,7 +513,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}' ? '' : cyanosisClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "cyanosis !== '${var.concept.ciel.yes.uuid}'"
@@ -550,7 +559,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}' ? '' : lymphadenopathyClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "lymphadenopathy !== '${var.concept.ciel.yes.uuid}'"
@@ -593,7 +605,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "dehydration !== '${var.concept.ciel.yes.uuid}' ? '' : dehydrationClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "dehydration !== '${var.concept.ciel.yes.uuid}'"
@@ -636,7 +651,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}' ? '' : fingerClubbingClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "fingerClubbing !== '${var.concept.ciel.yes.uuid}'"
@@ -679,7 +697,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.ciel.free-text-comment.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "edema !== '${var.concept.ciel.yes.uuid}' ? '' : edemaClinicalFindings"
+                                        }
                                     },
                                     "hide": {
                                         "hideWhenExpression": "edema !== '${var.concept.ciel.yes.uuid}'"
@@ -736,7 +757,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.head-neck-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "heent_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : heentFindings"
+                                        }
                                     }
                                 }
                             ]
@@ -779,7 +803,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.cardiovascular-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cvs_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : cvsFindings"
+                                        }
                                     }
                                 }
                             ]
@@ -822,7 +849,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.respiratory-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "resp_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : respiratoryFindings"
+                                        }
                                     }
                                 }
                             ]
@@ -865,7 +895,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.abdominal-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "gi_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : giFindings"
+                                        }
                                     }
                                 }
                             ]
@@ -908,7 +941,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.neurological-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "cns_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : cnsFindings"
+                                        }
                                     }
                                 }
                             ]
@@ -951,7 +987,10 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.musculoskeletal-findings.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 100,
+                                        "calculate": {
+                                            "calculateExpression": "msk_status !== '${var.concept.ciel.abnormal.uuid}' ? '' : musculoskeletalFindings"
+                                        }
                                     }
                                 }
                             ]
