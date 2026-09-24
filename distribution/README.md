@@ -37,13 +37,10 @@ Two backend pieces do not follow the `omod.*` pattern, on purpose:
 
 The custom ESMs from `packages/` are pinned like any other frontend module, as
 `spa.frontendModules.@liberiaemr/*`: `esm-liberia-epartograph-app`,
-`esm-liberia-patient-chart-extension` and `esm-liberia-login-app`, which replaces the core
-`esm-login-app` (commented out). A `-pre.N` pin is a pre-release `packages.yml` published from
+`esm-liberia-patient-chart-extension`, `esm-liberia-sync-status-app` (the national sync status
+page; at a facility its menu item is hidden and the page shows a not-available notice) and
+`esm-liberia-login-app`, which replaces the core `esm-login-app` (commented out). A `-pre.N` pin is a pre-release `packages.yml` published from
 `main`; re-pin deliberately, never to the `next` tag.
-
-`packages/esm-liberia-sync-status-app` is not pinned, so the frontend image does not carry
-the sync status page, although CI builds and tests it and central's backend serves the
-endpoint it reads.
 
 ## Images
 

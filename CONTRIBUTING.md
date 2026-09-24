@@ -17,7 +17,7 @@ this wrong is the most common way this kind of project decays.
 
 The backend Custom Build, [`modules/liberiaemr/`](modules/liberiaemr/), is not pinned in
 `distro.properties`: the backend image builds it from source (IMPLEMENTATION.md §3 and
-Appendix item 3). `esm-liberia-sync-status-app` is not pinned either; no stack ships it yet.
+Appendix item 3).
 
 Ask in order: can this be **configuration**? If not, can it be a **new extension** in a
 Custom Build ESM? Only then reach for a patch — and open the upstream PR the same week.

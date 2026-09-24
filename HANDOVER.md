@@ -56,7 +56,7 @@ The security mapping and the go-live checklist name the open items explicitly.
 | Source | This repository, complete history |
 | Content packages | Versioned Maven ZIPs, built from the tag by the root reactor and baked into the backend image; not published to a registry |
 | Backend module | `modules/liberiaemr` — built from the tag into the backend image; also published to Repsy |
-| Frontend modules | Four `@liberiaemr/esm-liberia-*` ESMs, published to npm; three pinned in `distro.properties` (`esm-liberia-sync-status-app` is not yet) |
+| Frontend modules | Four `@liberiaemr/esm-liberia-*` ESMs, published to npm; all four pinned in `distro.properties` |
 | Images | Immutable, versioned, published to the registry |
 | Documentation | Architecture, ADRs, runbooks, metadata specs, security mapping |
 | Test suites | API, E2E, manual scripts, UAT records, upgrade harness |
