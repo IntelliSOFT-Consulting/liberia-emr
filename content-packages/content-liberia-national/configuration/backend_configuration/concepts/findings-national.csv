@@ -10,6 +10,6 @@ ${var.concept.ciel.5242.uuid},,CIEL:5242;PIH:5242;AMPATH:5242;SNOMED-CT:86290005
 ${var.concept.ciel.5283.uuid},,CIEL:5283;AMPATH:5283,Karnofsky performance score,,KPS,,Zero to 100 scale commonly used for assessing terminally ill patients.,,Finding,Numeric,,,,,,,%,,0,,
 ${var.concept.national.blood-pressure-systolic.uuid},,,Blood Pressure (Systolic),,BP Systolic,,Blood Pressure (Systolic),,Finding,Numeric,0,85,100,140,180,250,mmHg,No,,,
 ${var.concept.national.blood-pressure-diastolic.uuid},,,Blood Pressure (Diastolic),,BP Diastolic,,Blood Pressure (Diastolic),,Finding,Numeric,0,40,55,90,120,150,mmHg,No,,,
-${var.concept.national.gestational-age-weeks.uuid},,,Gestational age (Weeks),,Gestational age,,Gestational age (Weeks),,Finding,Numeric,0,,,,,,45,Weeks,No,,,
-${var.concept.national.fundal-height-cm.uuid},,,Fundal height (cm),,Fundal height,,Fundal height (cm),,Finding,Numeric,0,,,,,,50,cm,No,,,
+${var.concept.national.gestational-age-weeks.uuid},,,Gestational age (Weeks),,Gestational age,,Gestational age (Weeks),,Finding,Numeric,0,,,,,45,Weeks,No,,,
+${var.concept.national.fundal-height-cm.uuid},,,Fundal height (cm),,Fundal height,,Fundal height (cm),,Finding,Numeric,0,,,,,50,cm,No,,,
 ${var.concept.ciel.5092.uuid},,CIEL:5092;AMPATH:5092;SNOMED-CT:431314004,Arterial blood oxygen saturation (pulse oximeter),Saturation d'oxygène dans le sang,SpO2,,"Oxygen saturation, as measured from a peripheral oximeter.",,Finding,Numeric,0,90,95,,,100,%,Yes,,,,
