@@ -82,7 +82,8 @@
               "label": "Birth Weight (kg)",
               "questionOptions": {
                 "rendering": "number",
-                "concept": "${var.concept.ciel.birth-weight.uuid}"
+                "concept": "${var.concept.ciel.birth-weight.uuid}",
+                "step": 0.1
               }
             },
             {
@@ -92,7 +93,8 @@
               "required": true,
               "questionOptions": {
                 "rendering": "number",
-                "concept": "${var.concept.ciel.weight-kg.uuid}"
+                "concept": "${var.concept.ciel.weight-kg.uuid}",
+                "step": 0.1
               }
             },
             {

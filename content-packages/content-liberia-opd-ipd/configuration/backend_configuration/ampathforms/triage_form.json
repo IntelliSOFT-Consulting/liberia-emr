@@ -1,391 +1,481 @@
 {
-    "name": "Triage Form",
-    "uuid": "cc825000-8dc4-4d87-b9ba-a47d2b4f9712",
-    "version": "2.0",
-    "published": true,
-    "retired": false,
-    "encounter": "Triage",
-    "processor": "EncounterFormProcessor",
-    "pages": [
+  "name": "Triage Form",
+  "uuid": "cc825000-8dc4-4d87-b9ba-a47d2b4f9712",
+  "version": "2.0",
+  "published": true,
+  "retired": false,
+  "encounter": "Triage",
+  "processor": "EncounterFormProcessor",
+  "pages": [
+    {
+      "label": "Triage Assessment",
+      "sections": [
         {
-            "label": "Triage Assessment",
-            "sections": [
+          "label": "Vital Signs",
+          "isExpanded": true,
+          "questions": [
+            {
+              "label": "Ebola Screening Result",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age >= 16"
+              },
+              "questionOptions": {
+                "rendering": "radio",
+                "concept": "${var.concept.ebola-screening-result.uuid}",
+                "answers": [
+                  {
+                    "label": "Negative",
+                    "concept": "${var.concept.ciel.no.uuid}"
+                  },
+                  {
+                    "label": "Positive",
+                    "concept": "${var.concept.ciel.yes.uuid}"
+                  }
+                ]
+              },
+              "required": true,
+              "id": "ebola_screen"
+            },
+            {
+              "label": "Temperature (°C)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.temperature.uuid}",
+                "min": "20",
+                "max": "45",
+                "step": 0.1
+              },
+              "validators": [
                 {
-                    "label": "Vital Signs",
-                    "isExpanded": true,
-                    "questions": [
-                        {
-                            "label": "Ebola Screening Result",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age >= 16"
-                            },
-                            "questionOptions": {
-                                "rendering": "radio",
-                                "concept": "${var.concept.ebola-screening-result.uuid}",
-                                "answers": [
-                                    {
-                                        "label": "Negative",
-                                        "concept": "${var.concept.ciel.no.uuid}"
-                                    },
-                                    {
-                                        "label": "Positive",
-                                        "concept": "${var.concept.ciel.yes.uuid}"
-                                    }
-                                ]
-                            },
-                            "required": true,
-                            "id": "ebola_screen"
-                        },
-                        {
-                            "label": "Temperature (°C)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.temperature.uuid}",
-                                "min": "20",
-                                "max": "45",
-                                "step": 0.1
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 20 || myValue > 45",
-                                    "message": "Temperature must be between 20 and 45 °C."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 36 || myValue > 38",
-                                    "message": "Temperature is outside the normal range (36–38 °C). Please verify the reading."
-                                }
-                            ],
-                            "id": "temp"
-                        },
-                        {
-                            "label": "Heart Rate (bpm)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.pulse.uuid}",
-                                "min": "0",
-                                "max": "300",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 300",
-                                    "message": "Heart Rate must be between 0 and 300 bpm."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 60 || myValue > 100",
-                                    "message": "Heart Rate is outside the normal range (60–100 bpm). Please verify the reading."
-                                }
-                            ],
-                            "id": "hr"
-                        },
-                        {
-                            "label": "Respiratory Rate (breaths/min)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.respiratory-rate.uuid}",
-                                "min": "0",
-                                "max": "80",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 80",
-                                    "message": "Respiratory Rate must be between 0 and 80 breaths/min."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 12 || myValue > 26",
-                                    "message": "Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading."
-                                }
-                            ],
-                            "id": "rr"
-                        },
-                        {
-                            "label": "Systolic Blood Pressure (mmHg)",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age < 16"
-                            },
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.systolic-bp.uuid}",
-                                "min": "0",
-                                "max": "250",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
-                                    "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 100 || myValue > 140",
-                                    "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
-                                }
-                            ],
-                            "id": "sbp"
-                        },
-                        {
-                            "label": "Diastolic Blood Pressure (mmHg)",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age < 16"
-                            },
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.diastolic-bp.uuid}",
-                                "min": "0",
-                                "max": "150",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 150",
-                                    "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "!isEmpty(sbp) && myValue >= sbp",
-                                    "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 55 || myValue > 90",
-                                    "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
-                                }
-                            ],
-                            "id": "dbp"
-                        },
-                        {
-                            "label": "Oxygen Saturation — SpO₂ (%)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.oxygen-saturation.uuid}",
-                                "min": "0",
-                                "max": "100",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 100",
-                                    "message": "Oxygen Saturation (SpO₂) must be between 0 and 100%."
-                                },
-                                {
-                                    "type": "js_expression",
-                                    "warnsWhenExpression": "myValue < 95",
-                                    "message": "SpO₂ below 95% — please verify the reading and consider clinical review."
-                                }
-                            ],
-                            "id": "spo2"
-                        },
-                        {
-                            "label": "Weight (kg)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.weight.uuid}",
-                                "min": "0",
-                                "max": "250",
-                                "step": 1
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 0 || myValue > 250",
-                                    "message": "Weight must be between 0 and 250 kg."
-                                }
-                            ],
-                            "id": "weight"
-                        },
-                        {
-                            "label": "Height/Length (cm)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.height.uuid}",
-                                "min": "10",
-                                "max": "272",
-                                "step": 0.1
-                            },
-                            "validators": [
-                                {
-                                    "type": "js_expression",
-                                    "failsWhenExpression": "myValue < 10 || myValue > 272",
-                                    "message": "Height/Length must be between 10 and 272 cm."
-                                }
-                            ],
-                            "id": "height"
-                        },
-                        {
-                            "label": "W/Z score",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age >= 16"
-                            },
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.wz-score.uuid}"
-                            },
-                            "id": "wz_score"
-                        },
-                        {
-                            "label": "MUAC (cm)",
-                            "type": "obs",
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.muac.uuid}"
-                            },
-                            "id": "muac"
-                        },
-                        {
-                            "id": "bmi",
-                            "label": "BMI",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age < 16"
-                            },
-                            "isDisabled": true,
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.ciel.bmi.uuid}",
-                                "disallowDecimals": false,
-                                "calculate": {
-                                    "calculateExpression": "age >= 16 ? calcBMI(height, weight) : ''"
-                                }
-                            },
-                            "disabled": {
-                                "disableWhenExpression": "true"
-                            }
-                        },
-                        {
-                            "label": "Pain Score",
-                            "type": "obs",
-                            "hide": {
-                                "hideWhenExpression": "age < 16"
-                            },
-                            "questionOptions": {
-                                "rendering": "number",
-                                "concept": "${var.concept.pain-score.uuid}",
-                                "min": "0",
-                                "max": "10",
-                                "step": 1,
-                                "disallowDecimals": true
-                            },
-                            "id": "pain_score"
-                        }
-                    ]
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 20 || myValue > 45",
+                  "message": "Temperature must be between 20 and 45 °C."
                 },
                 {
-                    "label": "Triage Category",
-                    "isExpanded": true,
-                    "hide": {
-                        "hideWhenExpression": "age >= 16"
-                    },
-                    "questions": [
-                        {
-                            "label": "Triage Category (Child)",
-                            "type": "obs",
-                            "id": "triage_category_child",
-                            "hide": {
-                                "hideWhenExpression": "age >= 16"
-                            },
-                            "required": true,
-                            "questionOptions": {
-                                "rendering": "select",
-                                "concept": "${var.concept.triage-category.uuid}",
-                                "answers": [
-                                    { "label": "Non-urgent Priority", "concept": "${var.concept.triage-green.uuid}" },
-                                    { "label": "Urgent Priority", "concept": "${var.concept.triage-yellow.uuid}" },
-                                    { "label": "Emergency Priority", "concept": "${var.concept.triage-red.uuid}" }
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
-                    "label": "Signs for Child",
-                    "isExpanded": true,
-                    "hide": {
-                        "hideWhenExpression": "age >= 16"
-                    },
-                    "questions": [
-                        {
-                            "label": "Emergency Signs",
-                            "type": "obs",
-                            "id": "red_signs_child",
-                            "hide": {
-                                "hideWhenExpression": "age >= 16 || triage_category_child !== '${var.concept.triage-red.uuid}'"
-                            },
-                            "questionOptions": {
-                                "rendering": "checkbox",
-                                "concept": "${var.concept.red-emergency-signs-coded.uuid}",
-                                "answers": [
-                                    { "label": "Apnoea", "concept": "${var.concept.sign.apnoea.uuid}" },
-                                    { "label": "Cyanosis", "concept": "${var.concept.ciel.143050.uuid}" },
-                                    { "label": "Severe resp. distress", "concept": "${var.concept.sign.severe-resp-distress.uuid}" },
-                                    { "label": "Circulatory failure", "concept": "${var.concept.sign.circulatory-failure.uuid}" },
-                                    { "label": "Shock + dehydration", "concept": "${var.concept.sign.shock-dehydration.uuid}" },
-                                    { "label": "Bleeding", "concept": "${var.concept.ciel.147241.uuid}" },
-                                    { "label": "Anaphylaxis", "concept": "${var.concept.ciel.148888.uuid}" },
-                                    { "label": "Coma", "concept": "${var.concept.ciel.144576.uuid}" },
-                                    { "label": "Convulsions", "concept": "${var.concept.ciel.113054.uuid}" },
-                                    { "label": "Severe trauma", "concept": "${var.concept.sign.severe-trauma.uuid}" },
-                                    { "label": "Severe burns", "concept": "${var.concept.sign.severe-burns.uuid}" },
-                                    { "label": "Contagious disease", "concept": "${var.concept.sign.contagious-disease.uuid}" }
-                                ]
-                            }
-                        },
-                        {
-                            "label": "Urgent priority signs",
-                            "type": "obs",
-                            "id": "yellow_signs_child",
-                            "hide": {
-                                "hideWhenExpression": "age >= 16 || triage_category_child !== '${var.concept.triage-yellow.uuid}'"
-                            },
-                            "questionOptions": {
-                                "rendering": "checkbox",
-                                "concept": "${var.concept.yellow-priority-signs-coded.uuid}",
-                                "answers": [
-                                    { "label": "Tiny baby (<2 months)", "concept": "${var.concept.sign.tiny-baby.uuid}" },
-                                    { "label": "Abnormal temperature", "concept": "${var.concept.sign.abnormal-temp.uuid}" },
-                                    { "label": "Urgent trauma/surgical", "concept": "${var.concept.sign.urgent-trauma-surgical.uuid}" },
-                                    { "label": "Toxic ingestion", "concept": "${var.concept.sign.toxic-ingestion.uuid}" },
-                                    { "label": "Severe pain", "concept": "${var.concept.sign.severe-pain.uuid}" },
-                                    { "label": "Pallor / severe anaemia", "concept": "${var.concept.sign.pallor-severe-anaemia.uuid}" },
-                                    { "label": "Resp. distress, SaO2 >92%", "concept": "${var.concept.sign.resp-distress-sao2.uuid}" },
-                                    { "label": "Restless/irritable/lethargic", "concept": "${var.concept.sign.restless-irritable-lethargic.uuid}" },
-                                    { "label": "External referral", "concept": "${var.concept.sign.external-referral.uuid}" },
-                                    { "label": "Malnutrition / oedema", "concept": "${var.concept.sign.malnutrition-oedema.uuid}" },
-                                    { "label": "Major burns (non-red)", "concept": "${var.concept.sign.major-burns.uuid}" },
-                                    { "label": "Sexual abuse", "concept": "${var.concept.ciel.sexual-abuse.uuid}" },
-                                    { "label": "Hematuria / oliguria", "concept": "${var.concept.sign.hematuria-oliguria.uuid}" },
-                                    { "label": "Moderate dehydration", "concept": "${var.concept.ciel.moderate-dehydration.uuid}" },
-                                    { "label": "Nurse concern", "concept": "${var.concept.sign.nurse-concern.uuid}" }
-                                ]
-                            }
-                        }
-                    ]
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 36 || myValue > 38",
+                  "message": "Temperature is outside the normal range (36–38 °C). Please verify the reading."
                 }
-            ]
+              ],
+              "id": "temp"
+            },
+            {
+              "label": "Heart Rate (bpm)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.pulse.uuid}",
+                "min": "0",
+                "max": "300",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 300",
+                  "message": "Heart Rate must be between 0 and 300 bpm."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 60 || myValue > 100",
+                  "message": "Heart Rate is outside the normal range (60–100 bpm). Please verify the reading."
+                }
+              ],
+              "id": "hr"
+            },
+            {
+              "label": "Respiratory Rate (breaths/min)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.respiratory-rate.uuid}",
+                "min": "0",
+                "max": "80",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 80",
+                  "message": "Respiratory Rate must be between 0 and 80 breaths/min."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 12 || myValue > 26",
+                  "message": "Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading."
+                }
+              ],
+              "id": "rr"
+            },
+            {
+              "label": "Systolic Blood Pressure (mmHg)",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age < 16"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.systolic-bp.uuid}",
+                "min": "0",
+                "max": "250",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 250",
+                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 100 || myValue > 140",
+                  "message": "Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading."
+                }
+              ],
+              "id": "sbp"
+            },
+            {
+              "label": "Diastolic Blood Pressure (mmHg)",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age < 16"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.diastolic-bp.uuid}",
+                "min": "0",
+                "max": "150",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 150",
+                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(sbp) && myValue >= sbp",
+                  "message": "Diastolic pressure cannot be greater than or equal to systolic pressure."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 55 || myValue > 90",
+                  "message": "Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading."
+                }
+              ],
+              "id": "dbp"
+            },
+            {
+              "label": "Oxygen Saturation — SpO₂ (%)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.oxygen-saturation.uuid}",
+                "min": "0",
+                "max": "100",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 100",
+                  "message": "Oxygen Saturation (SpO₂) must be between 0 and 100%."
+                },
+                {
+                  "type": "js_expression",
+                  "warnsWhenExpression": "myValue < 95",
+                  "message": "SpO₂ below 95% — please verify the reading and consider clinical review."
+                }
+              ],
+              "id": "spo2"
+            },
+            {
+              "label": "Weight (kg)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.weight.uuid}",
+                "min": "0",
+                "max": "250",
+                "step": 0.1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 0 || myValue > 250",
+                  "message": "Weight must be between 0 and 250 kg."
+                }
+              ],
+              "id": "weight"
+            },
+            {
+              "label": "Height/Length (cm)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.height.uuid}",
+                "min": "10",
+                "max": "272",
+                "step": 0.1
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "myValue < 10 || myValue > 272",
+                  "message": "Height/Length must be between 10 and 272 cm."
+                }
+              ],
+              "id": "height"
+            },
+            {
+              "label": "W/Z score",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age >= 16"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.wz-score.uuid}"
+              },
+              "id": "wz_score"
+            },
+            {
+              "label": "MUAC (cm)",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.muac.uuid}"
+              },
+              "id": "muac"
+            },
+            {
+              "id": "bmi",
+              "label": "BMI",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age < 16"
+              },
+              "isDisabled": true,
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.bmi.uuid}",
+                "disallowDecimals": false,
+                "calculate": {
+                  "calculateExpression": "age >= 16 ? calcBMI(height, weight) : ''"
+                }
+              },
+              "disabled": {
+                "disableWhenExpression": "true"
+              }
+            },
+            {
+              "label": "Pain Score",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "age < 16"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.pain-score.uuid}",
+                "min": "0",
+                "max": "10",
+                "step": 1,
+                "disallowDecimals": true
+              },
+              "id": "pain_score"
+            }
+          ]
+        },
+        {
+          "label": "Triage Category",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age >= 16"
+          },
+          "questions": [
+            {
+              "label": "Triage Category (Child)",
+              "type": "obs",
+              "id": "triage_category_child",
+              "hide": {
+                "hideWhenExpression": "age >= 16"
+              },
+              "required": true,
+              "questionOptions": {
+                "rendering": "select",
+                "concept": "${var.concept.triage-category.uuid}",
+                "answers": [
+                  {
+                    "label": "Non-urgent Priority",
+                    "concept": "${var.concept.triage-green.uuid}"
+                  },
+                  {
+                    "label": "Urgent Priority",
+                    "concept": "${var.concept.triage-yellow.uuid}"
+                  },
+                  {
+                    "label": "Emergency Priority",
+                    "concept": "${var.concept.triage-red.uuid}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "label": "Signs for Child",
+          "isExpanded": true,
+          "hide": {
+            "hideWhenExpression": "age >= 16"
+          },
+          "questions": [
+            {
+              "label": "Emergency Signs",
+              "type": "obs",
+              "id": "red_signs_child",
+              "hide": {
+                "hideWhenExpression": "age >= 16 || triage_category_child !== '${var.concept.triage-red.uuid}'"
+              },
+              "questionOptions": {
+                "rendering": "checkbox",
+                "concept": "${var.concept.red-emergency-signs-coded.uuid}",
+                "answers": [
+                  {
+                    "label": "Apnoea",
+                    "concept": "${var.concept.sign.apnoea.uuid}"
+                  },
+                  {
+                    "label": "Cyanosis",
+                    "concept": "${var.concept.ciel.143050.uuid}"
+                  },
+                  {
+                    "label": "Severe resp. distress",
+                    "concept": "${var.concept.sign.severe-resp-distress.uuid}"
+                  },
+                  {
+                    "label": "Circulatory failure",
+                    "concept": "${var.concept.sign.circulatory-failure.uuid}"
+                  },
+                  {
+                    "label": "Shock + dehydration",
+                    "concept": "${var.concept.sign.shock-dehydration.uuid}"
+                  },
+                  {
+                    "label": "Bleeding",
+                    "concept": "${var.concept.ciel.147241.uuid}"
+                  },
+                  {
+                    "label": "Anaphylaxis",
+                    "concept": "${var.concept.ciel.148888.uuid}"
+                  },
+                  {
+                    "label": "Coma",
+                    "concept": "${var.concept.ciel.144576.uuid}"
+                  },
+                  {
+                    "label": "Convulsions",
+                    "concept": "${var.concept.ciel.113054.uuid}"
+                  },
+                  {
+                    "label": "Severe trauma",
+                    "concept": "${var.concept.sign.severe-trauma.uuid}"
+                  },
+                  {
+                    "label": "Severe burns",
+                    "concept": "${var.concept.sign.severe-burns.uuid}"
+                  },
+                  {
+                    "label": "Contagious disease",
+                    "concept": "${var.concept.sign.contagious-disease.uuid}"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Urgent priority signs",
+              "type": "obs",
+              "id": "yellow_signs_child",
+              "hide": {
+                "hideWhenExpression": "age >= 16 || triage_category_child !== '${var.concept.triage-yellow.uuid}'"
+              },
+              "questionOptions": {
+                "rendering": "checkbox",
+                "concept": "${var.concept.yellow-priority-signs-coded.uuid}",
+                "answers": [
+                  {
+                    "label": "Tiny baby (<2 months)",
+                    "concept": "${var.concept.sign.tiny-baby.uuid}"
+                  },
+                  {
+                    "label": "Abnormal temperature",
+                    "concept": "${var.concept.sign.abnormal-temp.uuid}"
+                  },
+                  {
+                    "label": "Urgent trauma/surgical",
+                    "concept": "${var.concept.sign.urgent-trauma-surgical.uuid}"
+                  },
+                  {
+                    "label": "Toxic ingestion",
+                    "concept": "${var.concept.sign.toxic-ingestion.uuid}"
+                  },
+                  {
+                    "label": "Severe pain",
+                    "concept": "${var.concept.sign.severe-pain.uuid}"
+                  },
+                  {
+                    "label": "Pallor / severe anaemia",
+                    "concept": "${var.concept.sign.pallor-severe-anaemia.uuid}"
+                  },
+                  {
+                    "label": "Resp. distress, SaO2 >92%",
+                    "concept": "${var.concept.sign.resp-distress-sao2.uuid}"
+                  },
+                  {
+                    "label": "Restless/irritable/lethargic",
+                    "concept": "${var.concept.sign.restless-irritable-lethargic.uuid}"
+                  },
+                  {
+                    "label": "External referral",
+                    "concept": "${var.concept.sign.external-referral.uuid}"
+                  },
+                  {
+                    "label": "Malnutrition / oedema",
+                    "concept": "${var.concept.sign.malnutrition-oedema.uuid}"
+                  },
+                  {
+                    "label": "Major burns (non-red)",
+                    "concept": "${var.concept.sign.major-burns.uuid}"
+                  },
+                  {
+                    "label": "Sexual abuse",
+                    "concept": "${var.concept.ciel.sexual-abuse.uuid}"
+                  },
+                  {
+                    "label": "Hematuria / oliguria",
+                    "concept": "${var.concept.sign.hematuria-oliguria.uuid}"
+                  },
+                  {
+                    "label": "Moderate dehydration",
+                    "concept": "${var.concept.ciel.moderate-dehydration.uuid}"
+                  },
+                  {
+                    "label": "Nurse concern",
+                    "concept": "${var.concept.sign.nurse-concern.uuid}"
+                  }
+                ]
+              }
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }
