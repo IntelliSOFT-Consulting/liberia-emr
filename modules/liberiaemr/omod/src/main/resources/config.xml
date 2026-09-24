@@ -28,6 +28,12 @@
 		<require_module version="3.0.0">
 			org.openmrs.module.webservices.rest
 		</require_module>
+		<require_module version="4.0.0">
+			org.openmrs.event
+		</require_module>
+		<require_module version="2.1.0">
+			org.bahmni.module.appointments
+		</require_module>
 	</require_modules>
 	
 	<aware_of_modules>
@@ -35,6 +41,24 @@
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->
+
+	<!-- Appointment Integration Configuration -->
+	<globalProperty>
+		<property>liberiaemr.nextContactDateConceptUuid</property>
+		<defaultValue></defaultValue>
+		<description>
+			The concept UUID for the "Next Contact Date" (e.g., CIEL 5096) observation.
+			When an observation is created with this concept, a corresponding appointment will be scheduled automatically.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.defaultAppointmentServiceUuid</property>
+		<defaultValue></defaultValue>
+		<description>
+			The UUID of the default Appointment Service to assign to auto-generated appointments.
+			If left blank, the appointment will be created without a specific service.
+		</description>
+	</globalProperty>
 
 	<!-- Email / SMTP Configuration -->
 	<globalProperty>
