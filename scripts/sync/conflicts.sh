@@ -63,6 +63,15 @@ sql() { # mariadb-output-flags statement
     'IFS= read -r MYSQL_PWD; export MYSQL_PWD; exec mariadb -u "$1" $2 "$3"' sh "$MGMT_USER" "$1" "$MGMT_DB"
 }
 
+OPENMRS_DB="$(receiver_env OPENMRS_DB_NAME)"
+OPENMRS_USER="$(receiver_env OPENMRS_DB_USER)"
+OPENMRS_PASSWORD="$(receiver_env OPENMRS_DB_PASSWORD)"
+openmrs_sql() { # statement
+  # shellcheck disable=SC2016 # expanded inside the container
+  { printf '%s\n' "$OPENMRS_PASSWORD"; printf '%s\n' "$1"; } | docker exec -i "$DB" sh -c \
+    'IFS= read -r MYSQL_PWD; export MYSQL_PWD; exec mariadb -u "$1" --batch --skip-column-names "$2"' sh "$OPENMRS_USER" "$OPENMRS_DB"
+}
+
 # dbsync's table names (TableToSyncEnum) for the model classes it keeps hashes for.
 TABLES="PersonModel:person PatientModel:patient VisitModel:visit EncounterModel:encounter
 ObservationModel:obs PersonAttributeModel:person_attribute PatientProgramModel:patient_program
@@ -160,8 +169,15 @@ case "$COMMAND" in
     # Written before the rows go, so the decision outlives a failure to remove them.
     record="resolved conflicts $ids in $table by $by ($(id -un)@$(hostname)): $reason"
     logger -t liberiaemr-sync-conflicts "$record" 2>/dev/null || echo "WARNING: could not write to syslog" >&2
+    pairs="$(sql "--batch --skip-column-names" "SELECT id, identifier FROM receiver_conflict_queue WHERE id IN ($ids);")"
     sql "--batch --skip-column-names" "DELETE FROM receiver_conflict_queue WHERE id IN ($ids);"
     state=removed
+    # Decisions recorded on the Sync conflicts page for these conflicts are now applied.
+    match="$(awk -F'\t' 'BEGIN { sep = "" } $2 ~ /^[A-Za-z0-9-]+$/ && $1 ~ /^[0-9]+$/ {
+        printf "%s(conflict_id = %s AND identifier = '\''%s'\'')", sep, $1, $2; sep = " OR " }
+      END { if (sep == "") printf "FALSE" }' <<<"$pairs")"
+    openmrs_sql "UPDATE liberiaemr_sync_conflict_decision SET date_applied = NOW(), apply_error = NULL WHERE date_applied IS NULL AND ($match);" \
+      || echo "WARNING: could not mark the page's decisions for conflicts $ids applied" >&2
     echo "$record"
     [[ "$was_running" != "true" ]] || echo "starting the receiver; waiting updates apply on its first retry run, in about two minutes"
     ;;

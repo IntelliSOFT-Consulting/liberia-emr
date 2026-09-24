@@ -13,7 +13,7 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
+import { ConfigurableLink, formatDate } from '@openmrs/esm-framework';
 import { useSyncStatus } from './sync-status.resource';
 import styles from './sync-status.scss';
 
@@ -106,6 +106,9 @@ const SyncStatus: React.FC = () => {
           <Tile className={styles.tile}>
             <div className={styles.tileValue}>{central.conflicts}</div>
             <div className={styles.tileLabel}>{t('conflicts', 'Conflicts to resolve')}</div>
+            {central.conflicts > 0 && (
+              <ConfigurableLink to="${openmrsSpaBase}/sync-conflicts">{t('reviewConflicts', 'Review')}</ConfigurableLink>
+            )}
           </Tile>
           <Tile className={styles.tile}>
             <div className={styles.tileValue}>{central.deadLetters}</div>

@@ -12,26 +12,64 @@ package org.openmrs.module.liberiaemr;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.BaseModuleActivator;
+import org.openmrs.module.DaemonToken;
+import org.openmrs.module.DaemonTokenAware;
 
 /**
  * This class contains the logic that is run every time this module is either started or shutdown
  */
-public class LiberiaEMRActivator extends BaseModuleActivator {
-	
+public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTokenAware {
+
 	private Log log = LogFactory.getLog(this.getClass());
-	
+
+	private static DaemonToken daemonToken;
+
+	/**
+	 * Called by OpenMRS to supply a daemon token that allows event listeners to run privileged
+	 * background tasks without username/password credentials.
+	 */
+	@Override
+	public void setDaemonToken(DaemonToken token) {
+		daemonToken = token;
+		log.info("LiberiaEMR: daemon token received");
+	}
+
+	public static DaemonToken getDaemonToken() {
+		return daemonToken;
+	}
+
 	/**
 	 * @see #started()
 	 */
 	public void started() {
 		log.info("Started LiberiaEMR");
+		try {
+			org.openmrs.event.Event.subscribe(
+			    org.openmrs.Obs.class,
+			    org.openmrs.event.Event.Action.CREATED.name(),
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.NextContactDateEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to subscribe to Obs CREATED event", e);
+		}
 	}
-	
+
 	/**
 	 * @see #shutdown()
 	 */
 	public void shutdown() {
 		log.info("Shutdown LiberiaEMR");
+		try {
+			org.openmrs.event.Event.unsubscribe(
+			    org.openmrs.Obs.class,
+			    org.openmrs.event.Event.Action.CREATED,
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.NextContactDateEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to unsubscribe from Obs CREATED event", e);
+		}
 	}
-	
+
 }

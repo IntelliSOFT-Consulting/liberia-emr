@@ -41,4 +41,49 @@
 		</createIndex>
 	</changeSet>
  
+	<changeSet id="liberiaemr-2026-09-23-create-sync-conflict-decision" author="liberiaemr">
+		<preConditions onFail="MARK_RAN">
+			<not><tableExists tableName="liberiaemr_sync_conflict_decision"/></not>
+		</preConditions>
+		<comment>Decisions on sync conflicts at central. Append-only: a later decision supersedes.</comment>
+		<createTable tableName="liberiaemr_sync_conflict_decision">
+			<column name="decision_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="conflict_id" type="bigint">
+				<constraints nullable="false"/>
+			</column>
+			<column name="identifier" type="varchar(255)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="table_name" type="varchar(64)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="decision" type="varchar(50)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="reason" type="varchar(500)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="decided_by" type="int">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_decided" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_applied" type="datetime"/>
+			<column name="date_apply_failed" type="datetime"/>
+			<column name="apply_error" type="varchar(255)"/>
+			<column name="uuid" type="char(38)">
+				<constraints nullable="false" unique="true"/>
+			</column>
+		</createTable>
+		<addForeignKeyConstraint constraintName="liberiaemr_scd_decided_by_fk"
+			baseTableName="liberiaemr_sync_conflict_decision" baseColumnNames="decided_by"
+			referencedTableName="users" referencedColumnNames="user_id"/>
+		<createIndex indexName="liberiaemr_scd_conflict_idx" tableName="liberiaemr_sync_conflict_decision">
+			<column name="conflict_id"/>
+		</createIndex>
+	</changeSet>
+
 </databaseChangeLog>

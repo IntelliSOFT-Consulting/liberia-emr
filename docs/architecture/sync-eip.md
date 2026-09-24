@@ -765,7 +765,7 @@ way to tell when it started.
 | Queue disk over threshold | Approaching the real outage ceiling | Escalate before it is reached |
 | Oldest unacknowledged message age | The true "how far behind is this facility" number | Dashboard metric, per facility |
 | Dead-letter queue non-empty | A defect exists | Human inspection |
-| Conflict queue non-empty | Central's row was changed outside sync, so an incoming update is held | Human resolution (`scripts/sync/conflicts.sh`): and if it is not rare, something is writing at central that should not be |
+| Conflict queue non-empty | Central's row was changed outside sync, so an incoming update is held | Human decision on the Sync conflicts page, applied by the receiver in its nightly window with dbsync's hash updater (`scripts/sync/conflicts.sh` by hand): and if it is not rare, something is writing at central that should not be |
 | Parked-dependency message aged out | Something upstream was lost | Investigate; likely reconciliation |
 | Binlog retention approaching sender offset | Replay territory, not retry territory | Urgent |
 

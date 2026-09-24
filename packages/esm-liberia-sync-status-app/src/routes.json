@@ -1,13 +1,16 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "webservices.rest": ">=2.47.0",
-    "liberiaemr": ">=1.0.0"
+    "webservices.rest": ">=2.47.0"
   },
   "pages": [
     {
       "component": "root",
       "route": "sync-status"
+    },
+    {
+      "component": "syncConflicts",
+      "route": "sync-conflicts"
     }
   ],
   "extensions": [

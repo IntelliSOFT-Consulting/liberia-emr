@@ -1,0 +1,111 @@
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.container {
+  margin: spacing.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-04');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.subheading {
+  @include type.type-style('heading-03');
+}
+
+.label {
+  @include type.type-style('heading-compact-01');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.explainer {
+  @include type.type-style('body-01');
+  margin-bottom: spacing.$spacing-05;
+}
+
+.meta {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+}
+
+.notice {
+  margin-bottom: spacing.$spacing-05;
+}
+
+.section {
+  margin-top: spacing.$spacing-07;
+}
+
+.identifier {
+  @include type.type-style('code-01');
+  color: var(--cds-text-secondary);
+}
+
+.stateText {
+  @include type.type-style('body-compact-01');
+}
+
+.selectedRow td {
+  background-color: var(--cds-layer-selected);
+}
+
+// The review panel sits apart from the list it was opened from.
+.review {
+  margin-top: spacing.$spacing-06;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: spacing.$spacing-05;
+}
+
+.comparisonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comparison {
+  margin: spacing.$spacing-03 0 spacing.$spacing-06;
+}
+
+// Carbon's warning background, so a changed field reads as "look here" in any theme.
+.differs td {
+  background-color: var(--cds-notification-background-warning, #fcf4d6);
+}
+
+.summary,
+.form {
+  padding-top: spacing.$spacing-05;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.summaryList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: spacing.$spacing-06;
+  row-gap: spacing.$spacing-03;
+  margin: spacing.$spacing-05 0;
+  @include type.type-style('body-compact-01');
+
+  dt {
+    color: var(--cds-text-secondary);
+  }
+}
+
+.reason {
+  margin: spacing.$spacing-05 0;
+}
+
+.actions {
+  display: flex;
+  gap: spacing.$spacing-03;
+}
+
+.history {
+  margin-top: spacing.$spacing-06;
+}

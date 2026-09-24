@@ -35,7 +35,11 @@ nothing. A `403` gets its own message: the user needs the **View Sync Status** p
 | Page | `root` | route `sync-status` |
 | Extension | `sync-status-app-menu-item` | `app-menu-slot`, online only |
 
-Backend dependencies (`routes.json`): `webservices.rest >=2.47.0`, `liberiaemr >=1.0.0`.
+Backend dependencies (`routes.json`): `webservices.rest >=2.47.0`. The `liberiaemr` module is
+deliberately not declared: builds stamp it with the distribution version, and CI and dev
+builds (`0.0.0-ci`) never satisfy a `>=1.0.0` floor. The app shell then raises an
+"unresolved backend dependencies" alert on every page, which broke the E2E suite. Without
+the module the endpoint does not answer, and the page shows its "not available" notice.
 
 ## Configuration
 
