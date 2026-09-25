@@ -68,6 +68,6 @@ and firing alerts. `qa/sync/verify-sync-status.sh` exercises the backend endpoin
 - **`packages.yml`**: `tsc` and build on changes to `packages/**` (no lint); publishes
   `1.0.0-pre.<run>` to npm tag `next` on a merge to `main`, and the release tag to `latest`
   on a GitHub release. See [`packages/README.md`](../README.md#ci-and-publishing).
-- **Pin: none yet.** `distribution/distro.properties` has no
-  `spa.frontendModules.@liberiaemr/esm-liberia-sync-status-app` line, so the page is **not**
-  in the frontend image until one is added.
+- **Pin:** `spa.frontendModules.@liberiaemr/esm-liberia-sync-status-app` in
+  `distribution/distro.properties`. The frontend image installs that exact version from npm;
+  re-pin deliberately after each publish.

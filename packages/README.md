@@ -8,7 +8,7 @@ tracking records for patches to community code (**Modify + PR**).
 | [`esm-liberia-epartograph-app/`](esm-liberia-epartograph-app/) | `@liberiaemr/esm-liberia-epartograph-app` | `1.0.0-pre.53` | WHO-aligned electronic partograph in the patient chart |
 | [`esm-liberia-login-app/`](esm-liberia-login-app/) | `@liberiaemr/esm-liberia-login-app` | `10.0.0` | Replaces core `@openmrs/esm-login-app`; adds forgot/reset password |
 | [`esm-liberia-patient-chart-extension/`](esm-liberia-patient-chart-extension/) | `@liberiaemr/esm-liberia-patient-chart-extension` | `1.0.1-pre.53` | Configurable obs-by-encounter widget (TB Screening today) |
-| [`esm-liberia-sync-status-app/`](esm-liberia-sync-status-app/) | `@liberiaemr/esm-liberia-sync-status-app` | **not pinned** | National sync status page, shown at central only |
+| [`esm-liberia-sync-status-app/`](esm-liberia-sync-status-app/) | `@liberiaemr/esm-liberia-sync-status-app` | `1.0.0-pre.98` | National sync status page, shown at central only |
 | [`modify-pr/`](modify-pr/) | — | — | Sidecars tracking each patch to a community component and its upstream PR |
 
 A module reaches the image only through its pin: `distribution/frontend/Dockerfile` runs

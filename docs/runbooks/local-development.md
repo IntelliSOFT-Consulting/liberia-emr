@@ -129,7 +129,7 @@ Or just re-run `build-distribution.sh`, which does all of it in the right order.
 | `esm-liberia-epartograph-app` | WHO-aligned electronic partograph | pinned in `distro.properties` |
 | `esm-liberia-login-app` | login, loading and location-picker pages | pinned in `distro.properties` |
 | `esm-liberia-patient-chart-extension` | configurable obs-by-encounter widget | pinned in `distro.properties` |
-| `esm-liberia-sync-status-app` | national sync status page (central) | **not pinned yet**, so no image carries it |
+| `esm-liberia-sync-status-app` | national sync status page (central) | pinned in `distro.properties` |
 
 The frontend image installs these from npm at the versions pinned in `distro.properties`,
 not from this checkout. A change here reaches a stack only once `packages.yml` has published
