@@ -1,7 +1,7 @@
 {
   "name": "Adverse Event Following Immunization (AEFI)",
-  "uuid": "3a60d3b5-1a28-4c8a-8ee7-8960587e8274",
-  "version": "1.0",
+  "uuid": "${var.form.aefi.uuid}",
+  "version": "1.1",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -40,8 +40,157 @@
               "label": "Vaccine Name",
               "type": "obs",
               "id": "aefi_vaccine_name",
+              "required": true,
               "questionOptions": {
-                "concept": "${var.concept.national.aefi-vaccine-name.uuid}",
+                "concept": "${var.concept.national.aefi-vaccine.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.bcg.uuid}",
+                    "label": "BCG"
+                  },
+                  {
+                    "concept": "${var.concept.national.opv0-1-dose.uuid}",
+                    "label": "OPV0 (1 Dose)"
+                  },
+                  {
+                    "concept": "${var.concept.national.opv1.uuid}",
+                    "label": "OPV1"
+                  },
+                  {
+                    "concept": "${var.concept.national.penta-1.uuid}",
+                    "label": "Penta 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.pneumo-1.uuid}",
+                    "label": "Pneumo 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.rota-1.uuid}",
+                    "label": "Rota 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.opv2.uuid}",
+                    "label": "OPV2"
+                  },
+                  {
+                    "concept": "${var.concept.national.penta-2.uuid}",
+                    "label": "Penta 2"
+                  },
+                  {
+                    "concept": "${var.concept.national.pneumo-2.uuid}",
+                    "label": "Pneumo 2"
+                  },
+                  {
+                    "concept": "${var.concept.national.rota-2.uuid}",
+                    "label": "Rota 2"
+                  },
+                  {
+                    "concept": "${var.concept.national.opv3.uuid}",
+                    "label": "OPV3"
+                  },
+                  {
+                    "concept": "${var.concept.national.penta-3.uuid}",
+                    "label": "Penta 3"
+                  },
+                  {
+                    "concept": "${var.concept.national.pneumo-3.uuid}",
+                    "label": "Pneumo 3"
+                  },
+                  {
+                    "concept": "${var.concept.national.ipv.uuid}",
+                    "label": "IPV"
+                  },
+                  {
+                    "concept": "${var.concept.national.mcv1.uuid}",
+                    "label": "MCV1"
+                  },
+                  {
+                    "concept": "${var.concept.national.mcv2.uuid}",
+                    "label": "MCV2"
+                  },
+                  {
+                    "concept": "${var.concept.national.tcv.uuid}",
+                    "label": "TCV"
+                  },
+                  {
+                    "concept": "${var.concept.national.yellow-fever.uuid}",
+                    "label": "Yellow Fever"
+                  },
+                  {
+                    "concept": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
+                    "label": "Malaria Vaccine dose 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
+                    "label": "Malaria Vaccine dose 2"
+                  },
+                  {
+                    "concept": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
+                    "label": "Malaria Vaccine dose 3"
+                  },
+                  {
+                    "concept": "${var.concept.national.malaria-vaccine-dose-4.uuid}",
+                    "label": "Malaria Vaccine dose 4"
+                  },
+                  {
+                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+                    "label": "Pediatric Pfizer COVID-19 dose 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+                    "label": "Pediatric Pfizer COVID-19 dose 2"
+                  },
+                  {
+                    "concept": "${var.concept.national.hpv1.uuid}",
+                    "label": "HPV1"
+                  },
+                  {
+                    "concept": "${var.concept.national.hpv2.uuid}",
+                    "label": "HPV2"
+                  },
+                  {
+                    "concept": "${var.concept.national.td.uuid}",
+                    "label": "TD"
+                  },
+                  {
+                    "concept": "${var.concept.national.td2.uuid}",
+                    "label": "TD2"
+                  },
+                  {
+                    "concept": "${var.concept.national.td3.uuid}",
+                    "label": "TD3"
+                  },
+                  {
+                    "concept": "${var.concept.national.td4.uuid}",
+                    "label": "TD4"
+                  },
+                  {
+                    "concept": "${var.concept.national.td5.uuid}",
+                    "label": "TD5"
+                  },
+                  {
+                    "concept": "${var.concept.national.pfizer.uuid}",
+                    "label": "Pfizer"
+                  },
+                  {
+                    "concept": "${var.concept.national.j-j.uuid}",
+                    "label": "J & J"
+                  },
+                  {
+                    "concept": "${var.concept.national.covid-19-booster.uuid}",
+                    "label": "COVID-19 Booster"
+                  }
+                ]
+              }
+            },
+            {
+              "label": "Batch Number",
+              "type": "obs",
+              "id": "aefi_batch_number",
+              "required": true,
+              "questionOptions": {
+                "concept": "${var.concept.ciel.vaccine-lot-number.uuid}",
                 "rendering": "text"
               }
             },
@@ -49,15 +198,24 @@
               "label": "Date of onset of the adverse events",
               "type": "obs",
               "id": "aefi_onset_date",
+              "required": true,
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-onset-of-the-adverse-events.uuid}",
                 "rendering": "date"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && isDateAfterSimple(myValue, today())",
+                  "message": "Date of onset cannot be in the future."
+                }
+              ]
             },
             {
               "label": "Complaint experienced",
               "type": "obs",
               "id": "aefi_complaint",
+              "required": true,
               "questionOptions": {
                 "concept": "${var.concept.national.complaint-experienced.uuid}",
                 "rendering": "textarea"
