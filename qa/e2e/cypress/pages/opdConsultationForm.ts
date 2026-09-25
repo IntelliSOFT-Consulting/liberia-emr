@@ -8,7 +8,7 @@ class OpdConsultationFormPage {
         { id: 'systolic', min: '0', max: '250', step: '1', value: '120' },
         { id: 'diastolic', min: '0', max: '150', step: '1', value: '80' },
         { id: 'spo2', min: '0', max: '100', step: '1', value: '98' },
-        { id: 'weight', min: '0', max: '250', step: '1', value: '70' },
+        { id: 'weight', min: '0', max: '250', step: '0.1', value: '70.5' },
         { id: 'height', min: '10', max: '272', step: '0.1', value: '170' }
     ];
 
