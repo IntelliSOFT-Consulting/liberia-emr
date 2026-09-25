@@ -10,6 +10,7 @@
 package org.openmrs.module.liberiaemr.identity;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.scheduler.tasks.AbstractTask;
@@ -17,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Runs the identity service on the OpenMRS scheduler, every minute at central.
+ * Runs the identity service on the OpenMRS scheduler at central, every liberiaemr.identity.intervalSeconds.
  */
 public class IdentityAssignmentTask extends AbstractTask {
 
@@ -25,12 +26,14 @@ public class IdentityAssignmentTask extends AbstractTask {
 
 	private static final Logger log = LoggerFactory.getLogger(IdentityAssignmentTask.class);
 
+	/** Static, because a reschedule starts a new instance while the old one may still be running. */
+	private static final AtomicBoolean RUNNING = new AtomicBoolean();
+
 	@Override
 	public void execute() {
-		if (isExecuting) {
+		if (!RUNNING.compareAndSet(false, true)) {
 			return;
 		}
-		isExecuting = true;
 		try {
 			IdentityService service = Context.getRegisteredComponent("liberiaemr.IdentityService", IdentityService.class);
 			Map<String, Object> result = service.assignPending();
@@ -43,7 +46,7 @@ public class IdentityAssignmentTask extends AbstractTask {
 			log.error("Identity task failed", e);
 		}
 		finally {
-			isExecuting = false;
+			RUNNING.set(false);
 		}
 	}
 }

@@ -444,18 +444,19 @@ page checks the endpoint rather than being left out of the facility image.
 
 Central gives every patient record it receives a Central Person Identifier (sync-eip.md 2.5,
 ADR 0005), and links records of one person across facilities without merging them. The
-identity task runs every minute on central's OpenMRS scheduler (`LiberiaEMR Identity
-Assignment`, under Administration, Scheduler). Two records link when they carry the same
+identity task runs on central's OpenMRS scheduler (`LiberiaEMR Identity Assignment`, under
+Administration, Scheduler), every `liberiaemr.identity.intervalSeconds` (60 by default, set in the
+national content package); a change to it applies without a restart. Two records link when they carry the same
 Liberia National ID and their sex and date of birth agree; a National ID that matches while
 they disagree is held as a possible match for a person to decide. A National ID added on a later
-visit is checked the same way once it syncs, within a few hours; a changed National ID on a
+visit is checked the same way once it syncs, within a few hours at the default interval; a changed National ID on a
 record already linked to others never moves the group, it is held for review. Nothing links on name and date of birth alone.
 
 The identity data lives in the `openmrs_identity` schema, apart from the OpenMRS replica the
 receiver maintains. `initdb/20-identity-db.sh` creates it on a fresh central; on a central
 database that predates it, run the script's statements by hand once and restart OpenMRS, since
 the module creates the tables at startup. The task then works through every existing patient at
-`liberiaemr.identity.batchSize` a minute; at the default 200 a million records take about 3.5
+`liberiaemr.identity.batchSize` a run; at the defaults (200 a minute) a million records take about 3.5
 days, so raise it for the backfill and set it back after. Back it up with the
 database (section 3 of backup-restore.md): the CPIs and links exist nowhere else.
 

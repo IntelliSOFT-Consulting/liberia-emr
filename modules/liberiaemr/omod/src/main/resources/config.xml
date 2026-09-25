@@ -148,7 +148,15 @@
 		<property>liberiaemr.identity.batchSize</property>
 		<defaultValue>200</defaultValue>
 		<description>
-			How many newly received patients the identity task assigns a CPI per minute.
+			How many newly received patients the identity task assigns a CPI on each run.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.identity.intervalSeconds</property>
+		<defaultValue>60</defaultValue>
+		<description>
+			How often the identity task runs, in seconds (at least 10). A change takes effect without
+			a restart.
 		</description>
 	</globalProperty>
 

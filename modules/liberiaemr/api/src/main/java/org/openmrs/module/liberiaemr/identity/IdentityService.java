@@ -65,7 +65,7 @@ public class IdentityService {
 
 	public static final String REVIEW_OPEN = "OPEN";
 
-	/** How many links each run compares for a changed National ID; a million take about three hours. */
+	/** How many links each run compares for a changed National ID; a million take about three hours at one run a minute. */
 	static final int RECHECK_SLICE = 5000;
 
 	private volatile int recheckCursor = 0;

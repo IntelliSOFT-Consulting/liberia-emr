@@ -46,7 +46,7 @@ Go-live cannot proceed while any of these is open.
 - [ ] Identity schema present at central: on a database created before it, run
       `distribution/compose/central/initdb/20-identity-db.sh` by hand once and restart OpenMRS so
       the module creates its tables; the identity task then assigns every existing patient a CPI at
-      `liberiaemr.identity.batchSize` a minute (about 3.5 days for a million at the default 200,
+      `liberiaemr.identity.batchSize` a run (about 3.5 days for a million at the defaults of 200 a minute,
       so raise it for the backfill)
 
 ### Operations

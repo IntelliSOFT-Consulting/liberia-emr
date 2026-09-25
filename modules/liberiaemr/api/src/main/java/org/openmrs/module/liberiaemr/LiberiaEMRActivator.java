@@ -9,17 +9,13 @@
  */
 package org.openmrs.module.liberiaemr;
 
-import java.util.Date;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
-import org.openmrs.module.liberiaemr.identity.IdentityAssignmentTask;
-import org.openmrs.scheduler.SchedulerService;
-import org.openmrs.scheduler.TaskDefinition;
+import org.openmrs.module.liberiaemr.identity.IdentitySchedule;
 
 /**
  * This class contains the logic that is run every time this module is either started or shutdown
@@ -29,6 +25,8 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	private Log log = LogFactory.getLog(this.getClass());
 
 	private static DaemonToken daemonToken;
+
+	private IdentitySchedule identitySchedule;
 
 	/**
 	 * Called by OpenMRS to supply a daemon token that allows event listeners to run privileged
@@ -63,30 +61,14 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	}
 
 	/**
-	 * Registers the identity task once; the scheduler keeps it across restarts. The task does
-	 * nothing on a server without the identity schema, so every facility carries it harmlessly.
+	 * Schedules the identity task at liberiaemr.identity.intervalSeconds and follows later changes
+	 * to it. The task does nothing on a server without the identity schema, so every facility
+	 * carries it harmlessly.
 	 */
 	private void scheduleIdentityTask() {
-		try {
-			SchedulerService scheduler = Context.getSchedulerService();
-			TaskDefinition task = scheduler.getTaskByName(IdentityAssignmentTask.NAME);
-			if (task == null) {
-				task = new TaskDefinition();
-				task.setName(IdentityAssignmentTask.NAME);
-				task.setDescription("Mints a Central Person Identifier for each patient central receives and links records on National ID");
-				task.setTaskClass(IdentityAssignmentTask.class.getName());
-				task.setStartTime(new Date());
-				task.setRepeatInterval(60L);
-				task.setStartOnStartup(true);
-				task.setStarted(true);
-				scheduler.saveTaskDefinition(task);
-				scheduler.scheduleTask(task);
-				log.info("LiberiaEMR: identity task scheduled");
-			}
-		}
-		catch (Exception e) {
-			log.error("Failed to schedule the identity task", e);
-		}
+		IdentitySchedule.apply(Context.getAdministrationService().getGlobalProperty(IdentitySchedule.GP_INTERVAL_SECONDS));
+		identitySchedule = new IdentitySchedule(daemonToken);
+		Context.getAdministrationService().addGlobalPropertyListener(identitySchedule);
 	}
 
 	/**
@@ -103,6 +85,9 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		catch (Exception e) {
 			log.error("Failed to unsubscribe from Obs CREATED event", e);
+		}
+		if (identitySchedule != null) {
+			Context.getAdministrationService().removeGlobalPropertyListener(identitySchedule);
 		}
 	}
 
