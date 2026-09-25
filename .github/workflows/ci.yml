@@ -929,19 +929,23 @@ jobs:
   #   2. PR merged: 1, plus publish :latest images and update dev
   #   3. Release: separate pipeline, see release.yml
   #
-  # Both jobs below are gated on `needs: gate` (so they only start once
-  # the entire PR-equivalent pipeline has actually passed on main) AND
-  # their own `if:` (so they never run on a PR, even though gate itself
-  # does run there). If gate is skipped or fails, needs: gate causes both
-  # of these to skip automatically — the if: is there for clarity as much
-  # as enforcement.
+  # Both jobs below are gated on `needs: gate` AND their own `if:` which
+  # checks the upstream job's result directly. The `if:` is the active
+  # enforcement mechanism — a skipped or failed upstream causes
+  # needs.<job>.result to be 'skipped'/'failure', which fails the check
+  # and skips the downstream job. Do not simplify away the result check;
+  # implicit success() would wrongly block on skipped parents.
   # ---------------------------------------------------------------------
 
   publish-latest:
     name: Publish :latest images
     runs-on: ubuntu-latest
     needs: gate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      !cancelled() &&
+      needs.gate.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     # These images are published and deployed to dev. Building them without
     # the dictionary would push a distribution whose concepts do not resolve,
     # so this is the one place the token's absence matters most — and, because
@@ -989,7 +993,11 @@ jobs:
     name: Update dev environment
     runs-on: ubuntu-latest
     needs: publish-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      !cancelled() &&
+      needs.publish-latest.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     outputs:
       backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
       frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
@@ -1094,7 +1102,11 @@ jobs:
     name: Smoke test (dev)
     runs-on: ubuntu-latest
     needs: deploy-dev
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      !cancelled() &&
+      needs.deploy-dev.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     steps:
       - name: Wait for the SPA to respond
         run: |
@@ -1202,7 +1214,11 @@ jobs:
     name: DAST scan (dev)
     runs-on: ubuntu-latest
     needs: smoke-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      !cancelled() &&
+      needs.smoke-test.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     steps:
       - name: OWASP ZAP baseline scan
         uses: zaproxy/action-baseline@v0.14.0
