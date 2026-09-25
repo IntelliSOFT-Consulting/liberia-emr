@@ -456,7 +456,7 @@ mapped. Resolve before load — see the
 
 ### Family Planning
 
-Introduced with the Family Planning form (`3. Family Planning` v2.0). Row-level DAK provenance is in
+Introduced with the Family Planning form (`3. Family Planning` v2.0). The active schema is v2.1. Row-level DAK provenance is in
 [`../dak/traceability-mch.csv`](../dak/traceability-mch.csv); this section is the model only.
 
 Local MCH questions:
@@ -591,7 +591,7 @@ by the e-partograph ESM.
 
 The national `3. Family Planning` v1.0 schema
 (`content-liberia-national/.../ampathforms/family_planning-national.json`) remains declared
-in metadata and is superseded by MCH `3. Family Planning` v2.0, which is the active FP
+in metadata and is superseded by MCH `3. Family Planning` v2.1, which is the active FP
 workflow. Both schemas carry the same form name, `3. Family Planning`, and are told apart by
 version. The legacy schema's JSON `uuid` field reads
 `d82ce32c-65fa-4ec5-b644-6517a8359133`; that is the source schema's own identifier for
@@ -606,14 +606,14 @@ point of the note:
   create a brand-new already-retired form on a clean database — its creation path supplies
   no retire reason — so a clean install fails if the schema ships retired.
 - **At runtime, `retired=false` is the creation state, not the end state.** On a clean load
-  the legacy v1.0 schema is created first; MCH `3. Family Planning` v2.0 is then loaded
+  the legacy v1.0 schema is created first; MCH `3. Family Planning` v2.1 is then loaded
   under the same form name, and Initializer's same-name replacement path retires v1 with the
-  reason `Replaced with new version by Iniz` before creating v2. Do not read the source
+  reason `Replaced with new version by Iniz` before creating v2.1. Do not read the source
   `retired=false` as a guarantee about the form's state once a complete load has run.
 - `published=false` withdraws the legacy form independently of any of that: clinicians
   should no longer launch it for new FP encounters, whatever its retired flag happens to
   read at a given moment.
-- MCH `3. Family Planning` v2.0 is the active, published workflow once the load completes.
+- MCH `3. Family Planning` v2.1 is the active, published workflow once the load completes.
 - Historical encounters stay associated with the legacy form and keep rendering against
   its preserved v1.0 schema.
 - This PR performs **no patient-data migration**. Existing FP observations are untouched.

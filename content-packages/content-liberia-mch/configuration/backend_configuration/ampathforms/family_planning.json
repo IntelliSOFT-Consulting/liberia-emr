@@ -1,7 +1,7 @@
 {
   "name": "3. Family Planning",
   "uuid": "${var.form.family-planning.uuid}",
-  "version": "2.0",
+  "version": "2.1",
   "published": true,
   "retired": false,
   "encounter": "Family Planning Visit",
@@ -79,11 +79,17 @@
                     "concept": "${var.concept.mch.fp-purpose-side-effects.uuid}",
                     "label": "Side Effects Management"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? [] : purposeOfVisit"
+                }
               },
               "id": "purposeOfVisit",
               "label": "Purpose of Visit",
-              "required": true
+              "required": true,
+              "hide": {
+                "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}'"
+              }
             }
           ]
         },
@@ -98,7 +104,10 @@
                 "concept": "${var.concept.ciel.gravida.uuid}",
                 "disallowDecimals": true,
                 "step": 1,
-                "min": "0"
+                "min": "0",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : gravida"
+                }
               },
               "id": "gravida",
               "label": "Gravida",
@@ -111,13 +120,19 @@
                 "concept": "${var.concept.ciel.parity.uuid}",
                 "disallowDecimals": true,
                 "step": 1,
-                "min": "0"
+                "min": "0",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : parity"
+                }
               },
               "id": "parity",
               "label": "Parity",
               "required": false
             }
-          ]
+          ],
+          "hide": {
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}'"
+          }
         },
         {
           "label": "Method Record",
@@ -169,7 +184,10 @@
                     "concept": "${var.concept.mch.fp-sayana-press.uuid}",
                     "label": "Sayana Press"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : chosenFamilyPlanningMethod"
+                }
               },
               "id": "chosenFamilyPlanningMethod",
               "label": "Chosen Family Planning Method"
@@ -216,13 +234,19 @@
                     "concept": "${var.concept.mch.fp-sayana-press.uuid}",
                     "label": "Sayana Press"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : familyPlanningMethodDispensed"
+                }
               },
               "id": "familyPlanningMethodDispensed",
               "label": "Family Planning Method Dispensed",
               "required": false
             }
-          ]
+          ],
+          "hide": {
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}'"
+          }
         },
         {
           "label": "Pregnancy Assessment",
@@ -242,7 +266,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : amenorrhea"
+                }
               },
               "id": "amenorrhea",
               "label": "Amenorrhea (Menses Not Returned)"
@@ -261,7 +288,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : missedOrLateMenses"
+                }
               },
               "id": "missedOrLateMenses",
               "label": "Missed or Late Menses"
@@ -273,7 +303,10 @@
                 "concept": "${var.concept.mch.fp-days-since-unprotected-sex.uuid}",
                 "disallowDecimals": true,
                 "step": 1,
-                "min": "0"
+                "min": "0",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : daysSinceUnprotectedSex"
+                }
               },
               "id": "daysSinceUnprotectedSex",
               "label": "Days Since Unprotected Sex"
@@ -292,7 +325,10 @@
                     "concept": "${var.concept.ciel.703.uuid}",
                     "label": "Positive"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : pregnancyTestResult"
+                }
               },
               "id": "pregnancyTestResult",
               "label": "Pregnancy Test Result"
@@ -366,7 +402,7 @@
                 "rendering": "date",
                 "concept": "${var.concept.ciel.return-visit-date.uuid}",
                 "calculate": {
-                  "calculateExpression": "(amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && ((chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}') || chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}')) ? addDaysToDate(sessionDate, 21) : null"
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : ((amenorrhea === '${var.concept.ciel.yes.uuid}' && pregnancyTestResult === '${var.concept.ciel.664.uuid}' && ((chosenFamilyPlanningMethod === '${var.concept.mch.fp-microgynon.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.injectable-contraceptives.uuid}' || chosenFamilyPlanningMethod === '${var.concept.mch.fp-sayana-press.uuid}') || chosenFamilyPlanningMethod === '${var.concept.mch.fp-implants.uuid}' || chosenFamilyPlanningMethod === '${var.concept.ciel.iud.uuid}')) ? addDaysToDate(sessionDate, 21) : null)"
                 }
               },
               "datePickerFormat": "calendar",
@@ -377,7 +413,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "isEmpty(chosenFamilyPlanningMethod) || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.injectable-contraceptives.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-sayana-press.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microgynon.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microlut.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.iud.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}')"
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' || (isEmpty(chosenFamilyPlanningMethod) || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.injectable-contraceptives.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-sayana-press.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microgynon.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-microlut.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.ciel.iud.uuid}' && chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}'))"
           }
         },
         {
@@ -398,7 +434,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : exclusiveBreastfeeding"
+                }
               },
               "id": "exclusiveBreastfeeding",
               "label": "Exclusive Breastfeeding"
@@ -407,7 +446,10 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.mch.fp-date-of-delivery.uuid}"
+                "concept": "${var.concept.mch.fp-date-of-delivery.uuid}",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : dateOfLastDelivery"
+                }
               },
               "id": "dateOfLastDelivery",
               "label": "Date of Last Delivery",
@@ -462,7 +504,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}'"
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-lam.uuid}')"
           }
         },
         {
@@ -483,7 +525,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : unexplainedVaginalBleeding"
+                }
               },
               "id": "unexplainedVaginalBleeding",
               "label": "Unexplained Vaginal Bleeding"
@@ -502,7 +547,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : historyOfBreastCancer"
+                }
               },
               "id": "historyOfBreastCancer",
               "label": "History of Breast Cancer"
@@ -521,7 +569,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : severeLiverDisease"
+                }
               },
               "id": "severeLiverDisease",
               "label": "Severe Liver Disease"
@@ -540,7 +591,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : currentDvtOrPulmonaryEmbolism"
+                }
               },
               "id": "currentDvtOrPulmonaryEmbolism",
               "label": "Current DVT or Pulmonary Embolism"
@@ -588,7 +642,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}'"
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}')"
           }
         },
         {
@@ -609,7 +663,10 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ]
+                ],
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : implantInserted"
+                }
               },
               "id": "implantInserted",
               "label": "Implant Inserted"
@@ -618,7 +675,10 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.mch.fp-implant-insertion-date.uuid}"
+                "concept": "${var.concept.mch.fp-implant-insertion-date.uuid}",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : implantInsertionDate"
+                }
               },
               "id": "implantInsertionDate",
               "label": "Implant Insertion Date",
@@ -640,7 +700,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}'"
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' || (chosenFamilyPlanningMethod !== '${var.concept.mch.fp-implants.uuid}' && familyPlanningMethodDispensed !== '${var.concept.mch.fp-implants.uuid}')"
           }
         },
         {
@@ -651,7 +711,10 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}"
+                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}",
+                "calculate": {
+                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : dateMethodRemoved"
+                }
               },
               "id": "dateMethodRemoved",
               "label": "Date Method Removed",
@@ -665,7 +728,7 @@
             }
           ],
           "hide": {
-            "hideWhenExpression": "isEmpty(purposeOfVisit) || !arrayContains(purposeOfVisit, '${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid}')"
+            "hideWhenExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' || (isEmpty(purposeOfVisit) || !arrayContains(purposeOfVisit, '${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid}'))"
           }
         }
       ]
