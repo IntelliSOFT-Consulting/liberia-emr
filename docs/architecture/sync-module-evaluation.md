@@ -235,7 +235,8 @@ line Debezium is moving away from. "MariaDB is a drop-in for MySQL" is broadly t
 SQL layer and **not** a safe assumption at the binlog/replication-protocol layer, which is
 the layer we depend on.
 
-**This must be settled by experiment before Sprint 3 commits.** See §7.
+**This must be settled by experiment before Sprint 3 commits.** See §7. Settled 2 September
+2026: the sender attaches to MariaDB 10.11 and streams ([architecture](sync-eip.md) §1.8a).
 
 ### 5.2 The platform-version question
 
@@ -291,11 +292,11 @@ rehearsal.
 
 | Step | Work | Expected outcome | If it fails |
 | --- | --- | --- | --- |
-| **0** | **MariaDB/Debezium spike** (§5.1): binlog on, dbsync 4.0.0 sender against our stack | Sender attaches and streams row events | Switch both compose files to MySQL 8.0: cheap now, a data migration after go-live |
-| 1 | Schema diff, 2.6 → 2.8.8, across the 34 synced tables | No material differences, or a short known list | Budget upstream compatibility work; do **not** pin the platform back (undoes ADR 0006) |
-| 2 | Pin dbsync 4.0.0 + eip 4.2.0; build `sync` / `sync-receiver` images | Images exist and are versioned (today they are named but never built |) |
-| 3 | Add Artemis broker + sender management DB to compose | Stack starts; receiver subscribes **before** any sender publishes |: |
-| 4 | mTLS + PGP keys, end to end | Facility authenticates; payloads encrypted at rest in transit | Certificate lifecycle is MOH ICT's: escalate early |
+| **0** | **MariaDB/Debezium spike** (§5.1): binlog on, dbsync 4.0.0 sender against our stack | Sender attaches and streams row events | Done 2026-09-02: it streams; no switch to MySQL ([architecture](sync-eip.md) §1.8a) |
+| 1 | Schema diff, 2.6 → 2.8.8, across the 34 synced tables | No material differences, or a short known list | Done 2026-09-02 from the 2.8.x changelog: one nullable column on `provider`; a version-gate patch pending upstream ([architecture](sync-eip.md) §1.8b) |
+| 2 | Pin dbsync 4.0.0 + eip 4.2.0; build `sync` / `sync-receiver` images | Images exist and are versioned | Done: `distribution/sync/`, built by `build-distribution.sh` |
+| 3 | Add Artemis broker + sender management DB to compose | Stack starts; receiver subscribes **before** any sender publishes | Done: the broker declares the receiver's subscription queue ([`distribution/broker/`](../../distribution/broker/README.md)) |
+| 4 | mTLS + PGP keys, end to end | Facility authenticates; payloads encrypted at rest in transit | Built and proven by `qa/sync/verify-hardening.sh`. Certificate lifecycle is MOH ICT's: escalate early |
 | 5 | Entity/route reconciliation | Confirmed list of covered vs custom routes | Done: the set is declared as `eip.watchedTables`, and the subclass defect did not reproduce for test and drug orders on 4.0.0 |
 | 6 | Identity layer (CPI + link + review queue) at central | Duplicates surfaced, never auto-merged | Blocked on ADR 0005 sign-off |
 | 7 | **Offline acceptance test** ([architecture](sync-eip.md) §5.9) | Full drain and zero divergence after a long outage | The guarantee is unproven until this passes |
@@ -313,7 +314,7 @@ rehearsal.
 
 | # | Risk | Severity | Mitigation |
 | --- | --- | --- | --- |
-| R1 | MariaDB unsupported by the shipped connector | **Highest** | Step 0 spike before anything is built |
+| R1 | MariaDB unsupported by the shipped connector | Closed | Step 0 spike passed 2026-09-02 |
 | R2 | Facility disk filled by binlog → **database stops → care stops** | **Highest** | Size for full retention; separate volume; alarms |
 | R3 | Broker permissions let one facility read another's data | **Highest** | Send-only per facility, proven by negative test |
 | R4 | **Receiver not subscribed before a sender publishes → messages lost** | High | Durable topic subscription; enforce receiver-first start order |
@@ -334,7 +335,8 @@ that a national client registry can later occupy.
 
 **Conditional on Step 0.** If the MariaDB spike fails, the same recommendation stands with
 MySQL 8.0 substituted for MariaDB 10.11 in both compose files, a change that is nearly free
-today and expensive after a facility is live.
+today and expensive after a facility is live. Step 0 passed on 2 September 2026, so the
+recommendation holds as written.
 
 Recorded as [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md).
 
