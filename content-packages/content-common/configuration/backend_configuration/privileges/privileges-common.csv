@@ -35,3 +35,4 @@ ${var.privilege.manage-ordertemplates.uuid},Manage OrderTemplates,Add/Edit/Remov
 ${var.privilege.view-ordertemplates.uuid},View OrderTemplates,View Order Templates,
 ${var.privilege.view-sync-status.uuid},View Sync Status,Read the national sync status page: which facilities are sending and what is waiting at central,
 ${var.privilege.resolve-sync-conflicts.uuid},Resolve Sync Conflicts,Review sync conflicts at central with the record they hold and record the decision the receiver applies,
+${var.privilege.view-identity-links.uuid},View Identity Links,See which records at other facilities central has linked to the same person through the Central Person Identifier,

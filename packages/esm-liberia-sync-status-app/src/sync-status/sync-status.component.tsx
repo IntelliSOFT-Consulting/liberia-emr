@@ -14,7 +14,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { ConfigurableLink, formatDate } from '@openmrs/esm-framework';
-import { useSyncStatus } from './sync-status.resource';
+import { useIdentityStatus, useSyncStatus } from './sync-status.resource';
 import styles from './sync-status.scss';
 
 /**
@@ -26,6 +26,7 @@ import styles from './sync-status.scss';
 const SyncStatus: React.FC = () => {
   const { t } = useTranslation();
   const { status, error, isLoading } = useSyncStatus();
+  const { identity } = useIdentityStatus();
 
   if (isLoading) {
     return <InlineLoading className={styles.container} description={t('loading', 'Loading sync status...')} />;
@@ -131,6 +132,34 @@ const SyncStatus: React.FC = () => {
             <div className={styles.tileLabel}>{t('broker', 'Broker')}</div>
           </Tile>
         </div>
+      )}
+
+      {identity?.enabled && (
+        <>
+          <h4 className={styles.subheading}>{t('identity', 'People across facilities')}</h4>
+          <div className={styles.tiles}>
+            <Tile className={styles.tile}>
+              <div className={styles.tileValue}>{identity.people}</div>
+              <div className={styles.tileLabel}>{t('people', 'People identified')}</div>
+            </Tile>
+            <Tile className={styles.tile}>
+              <div className={styles.tileValue}>{identity.records}</div>
+              <div className={styles.tileLabel}>{t('recordsIdentified', 'Facility records with a CPI')}</div>
+            </Tile>
+            <Tile className={styles.tile}>
+              <div className={styles.tileValue}>{identity.linked}</div>
+              <div className={styles.tileLabel}>{t('linkedRecords', 'Records linked to another facility')}</div>
+            </Tile>
+            <Tile className={styles.tile}>
+              <div className={styles.tileValue}>{identity.openReviews}</div>
+              <div className={styles.tileLabel}>{t('openReviews', 'Possible matches awaiting review')}</div>
+            </Tile>
+            <Tile className={styles.tile}>
+              <div className={styles.tileValue}>{identity.unassigned}</div>
+              <div className={styles.tileLabel}>{t('unassigned', 'Records waiting for a CPI')}</div>
+            </Tile>
+          </div>
+        </>
       )}
 
       <TableContainer title={t('facilities', 'Facilities')}>

@@ -1,0 +1,9 @@
+<config>
+    <globalProperties>
+        <!-- The identifier whose exact match links two records to one person (ADR 0005). -->
+        <globalProperty>
+            <property>liberiaemr.identity.nationalIdTypeUuid</property>
+            <value>${var.identifiertype.national-id.uuid}</value>
+        </globalProperty>
+    </globalProperties>
+</config>

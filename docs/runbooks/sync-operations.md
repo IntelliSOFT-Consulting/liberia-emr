@@ -439,3 +439,30 @@ be reached, sync itself may be perfectly healthy: check the central `prometheus`
 The page itself is the `packages/esm-liberia-sync-status-app` frontend module, pinned in
 `distribution/distro.properties`. The same frontend image runs at facilities, which is why the
 page checks the endpoint rather than being left out of the facility image.
+
+## 14. The Central Person Identifier
+
+Central gives every patient record it receives a Central Person Identifier (sync-eip.md 2.5,
+ADR 0005), and links records of one person across facilities without merging them. The
+identity task runs every minute on central's OpenMRS scheduler (`LiberiaEMR Identity
+Assignment`, under Administration, Scheduler). Two records link when they carry the same
+Liberia National ID and their sex and date of birth agree; a National ID that matches while
+they disagree is held as a possible match for a person to decide. A National ID added on a later
+visit is checked the same way once it syncs, within a few hours; a changed National ID on a
+record already linked to others never moves the group, it is held for review. Nothing links on name and date of birth alone.
+
+The identity data lives in the `openmrs_identity` schema, apart from the OpenMRS replica the
+receiver maintains. `initdb/20-identity-db.sh` creates it on a fresh central; on a central
+database that predates it, run the script's statements by hand once and restart OpenMRS, since
+the module creates the tables at startup. The task then works through every existing patient at
+`liberiaemr.identity.batchSize` a minute; at the default 200 a million records take about 3.5
+days, so raise it for the backfill and set it back after. Back it up with the
+database (section 3 of backup-restore.md): the CPIs and links exist nowhere else.
+
+`Sync status` shows how many people central knows, how many facility records carry a CPI, how
+many are linked to a record at another facility, how many possible matches wait for review and
+how many records still wait for a CPI. A record's own links are read at
+`/ws/rest/v1/liberiaemr/identity/patient/<uuid>`, which needs the `View Identity Links`
+privilege because it says which other facilities hold the person; no role carries it until the
+MOH names the review queue's owner. `qa/sync/verify-identity.sh` exercises this section against
+two facility stacks.

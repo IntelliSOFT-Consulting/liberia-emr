@@ -10,14 +10,23 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? _key }),
 }));
 
+// The status and the identity counts are separate requests; the identity one answers only when set.
 jest.mock('swr', () => ({
   __esModule: true,
-  default: () => ({ data: (global as any).__swrData, error: (global as any).__swrError, isLoading: false }),
+  default: (key: string) =>
+    key.endsWith('/identity/status')
+      ? { data: (global as any).__swrIdentity, error: undefined, isLoading: false }
+      : { data: (global as any).__swrData, error: (global as any).__swrError, isLoading: false },
 }));
 
 function givenStatus(status: unknown) {
   (global as any).__swrData = { data: status };
   (global as any).__swrError = undefined;
+  (global as any).__swrIdentity = undefined;
+}
+
+function givenIdentity(identity: unknown) {
+  (global as any).__swrIdentity = { data: identity };
 }
 
 function givenRefused() {
@@ -85,6 +94,26 @@ describe('sync status page', () => {
     render(<SyncStatus />);
 
     expect(screen.getByText('Monitoring cannot be reached')).toBeInTheDocument();
+  });
+
+  it('shows the identity counts where central has an identity schema', () => {
+    givenStatus({ enabled: true, available: true, facilities: [], central: null, alerts: [] });
+    givenIdentity({ enabled: true, people: 40, records: 42, linked: 2, openReviews: 1, unassigned: 0 });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('People identified')).toBeInTheDocument();
+    expect(screen.getByText('42')).toBeInTheDocument();
+    expect(screen.getByText('Possible matches awaiting review')).toBeInTheDocument();
+  });
+
+  it('shows no identity section where there is no identity schema', () => {
+    givenStatus({ enabled: true, available: true, facilities: [], central: null, alerts: [] });
+    givenIdentity({ enabled: false });
+
+    render(<SyncStatus />);
+
+    expect(screen.queryByText('People identified')).not.toBeInTheDocument();
   });
 
   it('shows the alerts that are firing', () => {

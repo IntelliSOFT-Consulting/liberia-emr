@@ -10,6 +10,11 @@
   margin-bottom: spacing.$spacing-03;
 }
 
+.subheading {
+  @include type.type-style('heading-03');
+  margin-bottom: spacing.$spacing-03;
+}
+
 .explainer {
   @include type.type-style('body-01');
   margin-bottom: spacing.$spacing-05;

@@ -86,4 +86,140 @@
 		</createIndex>
 	</changeSet>
 
+	<!--
+		The identity schema (sync-eip.md 2.5.3) exists only at central, created by initdb. Where
+		it is missing these changesets are skipped and tried again at the next start, so a
+		facility runs the same module untouched.
+	-->
+	<changeSet id="liberiaemr-2026-09-25-identity-cpi" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<not><tableExists schemaName="openmrs_identity" tableName="cpi"/></not>
+		</preConditions>
+		<comment>Central Person Identifiers. An aliased CPI keeps its row and points at its primary.</comment>
+		<createTable schemaName="openmrs_identity" tableName="cpi">
+			<column name="cpi_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="cpi" type="char(36)">
+				<constraints nullable="false" unique="true"/>
+			</column>
+			<column name="code" type="char(16)">
+				<constraints nullable="false" unique="true"/>
+			</column>
+			<column name="primary_cpi_id" type="int"/>
+			<column name="date_created" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_changed" type="datetime"/>
+			<column name="change_reason" type="varchar(500)"/>
+		</createTable>
+		<addForeignKeyConstraint constraintName="cpi_primary_fk"
+			baseTableSchemaName="openmrs_identity" baseTableName="cpi" baseColumnNames="primary_cpi_id"
+			referencedTableSchemaName="openmrs_identity" referencedTableName="cpi" referencedColumnNames="cpi_id"/>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-25-identity-patient-link" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<not><tableExists schemaName="openmrs_identity" tableName="patient_link"/></not>
+		</preConditions>
+		<comment>Each patient record central receives, and the CPI minted for it. Never deleted.</comment>
+		<createTable schemaName="openmrs_identity" tableName="patient_link">
+			<column name="link_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="patient_uuid" type="char(38)">
+				<constraints nullable="false" unique="true"/>
+			</column>
+			<column name="cpi_id" type="int">
+				<constraints nullable="false"/>
+			</column>
+			<column name="facility_location_uuid" type="char(38)"/>
+			<column name="basis" type="varchar(30)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_created" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+		<addForeignKeyConstraint constraintName="patient_link_cpi_fk"
+			baseTableSchemaName="openmrs_identity" baseTableName="patient_link" baseColumnNames="cpi_id"
+			referencedTableSchemaName="openmrs_identity" referencedTableName="cpi" referencedColumnNames="cpi_id"/>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-25-identity-cpi-event" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<not><tableExists schemaName="openmrs_identity" tableName="cpi_event"/></not>
+		</preConditions>
+		<comment>Every mint, alias and reversal, with who and why. Append-only.</comment>
+		<createTable schemaName="openmrs_identity" tableName="cpi_event">
+			<column name="event_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="cpi_id" type="int">
+				<constraints nullable="false"/>
+			</column>
+			<column name="kind" type="varchar(30)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="primary_before" type="int"/>
+			<column name="primary_after" type="int"/>
+			<column name="reason" type="varchar(500)"/>
+			<column name="actor_user_id" type="int"/>
+			<column name="date_created" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+		<addForeignKeyConstraint constraintName="cpi_event_cpi_fk"
+			baseTableSchemaName="openmrs_identity" baseTableName="cpi_event" baseColumnNames="cpi_id"
+			referencedTableSchemaName="openmrs_identity" referencedTableName="cpi" referencedColumnNames="cpi_id"/>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-25-identity-match-review" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<not><tableExists schemaName="openmrs_identity" tableName="match_review"/></not>
+		</preConditions>
+		<comment>Possible matches that need a person to decide (the middle band of ADR 0005).</comment>
+		<createTable schemaName="openmrs_identity" tableName="match_review">
+			<column name="review_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="patient_uuid" type="char(38)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="candidate_patient_uuid" type="char(38)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="reason" type="varchar(255)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="status" type="varchar(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_created" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+			<column name="decision" type="varchar(20)"/>
+			<column name="decided_by" type="int"/>
+			<column name="date_decided" type="datetime"/>
+		</createTable>
+		<createIndex schemaName="openmrs_identity" indexName="match_review_patient_idx" tableName="match_review">
+			<column name="patient_uuid"/>
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-25-identity-link-national-id" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<not><columnExists schemaName="openmrs_identity" tableName="patient_link" columnName="national_id"/></not>
+		</preConditions>
+		<comment>The National ID the rule last ran against, so one added or corrected later is checked again.</comment>
+		<addColumn schemaName="openmrs_identity" tableName="patient_link">
+			<column name="national_id" type="varchar(50)"/>
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>
