@@ -155,11 +155,11 @@ sync-layer regression risk, and §1.1 shows we are already two minor versions pa
 tested platform range. That is why the upgrade rehearsal in `qa/upgrade/` has to grow a
 sync assertion before the second facility goes live.
 
-> ⚠ **Required change, not yet made.** The facility `db` service does not enable binary
-> logging. Debezium needs, on the database container command:
-> `--log-bin --binlog-format=ROW --binlog-row-image=FULL --server-id=<unique-per-facility>`
-> and a replication-privileged database user (`REPLICATION SLAVE`, `REPLICATION CLIENT`,
-> `SELECT`) that is **not** the OpenMRS application user.
+> **Done.** The facility `db` service enables binary logging for Debezium:
+> `--log-bin --binlog-format=ROW --binlog-row-image=FULL --server-id=<unique-per-facility>`,
+> with `--binlog-expire-logs-seconds` for retention (risk F1) and `--sync-binlog=1` for
+> crash safety (risk F11), and a replication-privileged database user (`REPLICATION SLAVE`,
+> `REPLICATION CLIENT`, `SELECT`) that is **not** the OpenMRS application user.
 
 **Binlog retention is the real maximum-outage ceiling.** If the binlog is pruned past the
 sender's committed offset, the facility needs a reconciliation replay (§5.5), not a retry;
@@ -807,6 +807,7 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional** |
 | F9 | **Reconnection storm** | Regional outage ends; all facilities return at once | Receiver overwhelmed; the first facilities to reconnect starve the rest | Jittered backoff and per-facility rate limiting at central (§7.6) |
 | F10 | **Facility server stolen or dies outright** | Physical | Loss of the local record and its credentials | Facility backups (existing runbook), full-disk encryption (§7.4), certificate revocation at central (§7.2) |
+| F11 | **Power cut tears or drops the binlog tail** | Facility loses power with `sync_binlog=0` | The sender stops at the torn event and retries forever, or a committed change never reaches the binlog and never syncs (**silent gap**) | `--sync-binlog=1` with `innodb_flush_log_at_trx_commit=1` on the facility database, so no acknowledged commit is lost or torn; the outage drill asserts both. An unacknowledged commit cut off mid-write can still leave a partial tail event, which the sender may stop on. FOUND 2026-09-25 on a lab stack after a forced Docker restart |
 
 Two of these deserve emphasis because they are the ones that get deferred:
 

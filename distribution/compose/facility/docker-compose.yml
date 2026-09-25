@@ -15,7 +15,9 @@ services:
     # Binlog feeds the sync sender's Debezium engine (sync-eip.md §1.3). Retention is
     # the maximum-outage ceiling and the disk must be sized for it (risk F2). MariaDB
     # CAPS this variable at 8553600 (99 days); the doc's six-month floor is not
-    # reachable here, see risk F1. Safe on an existing volume.
+    # reachable here, see risk F1. Safe on an existing volume. sync-binlog=1 puts every
+    # binlog event on disk before its commit returns, so a power cut cannot lose or tear an
+    # acknowledged commit before the sender reads it (risk F11).
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -25,6 +27,7 @@ services:
       --binlog-row-image=FULL
       --server-id=${DB_SERVER_ID:-1}
       --binlog-expire-logs-seconds=${BINLOG_EXPIRE_SECONDS:-8553600}
+      --sync-binlog=1
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
       MARIADB_USER: ${MYSQL_USER}

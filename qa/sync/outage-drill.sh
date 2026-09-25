@@ -88,6 +88,9 @@ if [[ "$retention" -lt "$RETENTION_FLOOR" ]]; then
     exit 1
   fi
 fi
+durability="$(docker exec "$DB_CONTAINER" sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(@@sync_binlog, \",\", @@innodb_flush_log_at_trx_commit);"' 2>/dev/null | tr -d '[:space:]')"
+echo "   sync_binlog,innodb_flush_log_at_trx_commit=$durability"
+[[ "$durability" == "1,1" ]] || { echo "FAIL: both must be 1, or a power cut can tear the binlog or lose a committed change (risk F11)" >&2; exit 1; }
 
 echo "== 1. healthy baseline =="
 "$HERE/verify-e2e-push.sh" --facility-url "$FACILITY_URL" --central-url "$CENTRAL_URL" \
