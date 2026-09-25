@@ -102,8 +102,8 @@ public class IdentityService {
 	public Map<String, Object> assignPending() {
 		final Map<String, Object> result = new LinkedHashMap<String, Object>();
 		final String nationalIdType = gp(GP_NATIONAL_ID_TYPE, "");
-		final int tolerance = Integer.parseInt(gp(GP_DOB_TOLERANCE_DAYS, "0").trim());
-		final int batch = Integer.parseInt(gp(GP_BATCH_SIZE, "200").trim());
+		final int tolerance = gpInt(GP_DOB_TOLERANCE_DAYS, 0, 0);
+		final int batch = gpInt(GP_BATCH_SIZE, 200, 1);
 		return sessionFactory.getCurrentSession().doReturningWork(new ReturningWork<Map<String, Object>>() {
 
 			@Override
@@ -466,6 +466,18 @@ public class IdentityService {
 	private static boolean schemaReady(Connection connection) throws SQLException {
 		return count(connection, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '" + SCHEMA
 		        + "' AND table_name = 'match_review'") > 0;
+	}
+
+	/** A number from a global property; a typo there falls back to the default rather than stopping the task. */
+	private static int gpInt(String name, int fallback, int min) {
+		String value = gp(name, String.valueOf(fallback)).trim();
+		try {
+			return Math.max(min, Integer.parseInt(value));
+		}
+		catch (NumberFormatException e) {
+			log.warn("{} is '{}', not a number; using {}", name, value, fallback);
+			return fallback;
+		}
 	}
 
 	private static String gp(String name, String fallback) {
