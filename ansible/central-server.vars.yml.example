@@ -9,4 +9,5 @@
 repo_url: <repo_url>
 repo_dest: <add_repo_dir>
 certbot_domain: <add_the_cert_bot_domain>
+certbot_email: <admin_email>
 tls_cert_dir: <add_the_cert_bot_dir>

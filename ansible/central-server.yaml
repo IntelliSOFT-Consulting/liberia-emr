@@ -117,7 +117,7 @@
 
   - name: Issue certificate via standalone mode
     ansible.builtin.command: >
-      certbot certonly --standalone --non-interactive --agree-tos -m admin@intellisoftkenya.com -d {{ certbot_domain }}
+      certbot certonly --standalone --non-interactive --agree-tos -m {{ certbot_email }} -d {{ certbot_domain }}
     when: not existing_cert.stat.exists
 
   - name: Create TLS cert directory for the gateway container
