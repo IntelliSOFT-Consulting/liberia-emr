@@ -1,0 +1,8 @@
+# inventory.ini — TEMPLATE ONLY.
+#
+# Copy to inventory.ini and fill in the real host:
+#   cp inventory.ini.example inventory.ini
+#
+
+[Placeholder]
+domain.example.com ansible_user=your_ssh_user
