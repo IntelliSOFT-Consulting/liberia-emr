@@ -119,7 +119,7 @@ of clinical data at rest (sync-eip.md section 7.4).
   counted batch through the outage including container restarts, restores the link, and
   asserts every record lands at central exactly once with empty retry queues. Also
   asserts the binlog retention floor (risk F1), the one thing time compression cannot
-  exercise.
+  exercise, and that the binlog is flushed on every commit (risk F11).
 - `qa/sync/verify-hardening.sh`: the broker's refusals, from real certificates over
   OpenWire (the apps' protocol): other facilities' addresses, the topic, subscriptions,
   missing, foreign and revoked certificates, wrong host names, removed enrolment, the
