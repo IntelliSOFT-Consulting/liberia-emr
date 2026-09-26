@@ -1,7 +1,7 @@
 # Runbook — Jira automation for the LE board
 
-> ⚠ **Not yet rehearsed.** The rules below must be created by an LE project admin, then
-> checked with the rehearsal at the end of this runbook.
+> ⚠ **Not yet rehearsed.** The flows below were created in LE on 2026-09-26 and are enabled;
+> they have not yet been checked with the rehearsal at the end of this runbook.
 
 Work on this repository moves its issue across the **LE board** (project `LE`, board id 497)
 without anyone dragging cards. Pushing a branch starts the issue, opening a PR puts it in
@@ -23,7 +23,7 @@ The contributor side — how to name branches, commits and PRs so the rules fire
 | Column / status | Status ID | Moved by |
 | --- | --- | --- |
 | To Do | 11297 | Manual |
-| In Development | 11298 | R1 |
+| In Development | 11298 | R1a, R1b |
 | In Review | 11299 | R2 |
 | Ready for Testing | 11371 | R3 |
 | Testing | 11300 | QA |
@@ -34,13 +34,15 @@ The contributor side — how to name branches, commits and PRs so the rules fire
 
 ## The rules
 
-Create each in **Project settings → Automation → Create rule**, scoped to project LE, with
-the rule actor left as *Automation for Jira*. The triggers are under **DevOps**; each acts on
-every issue whose key appears in the event.
+They live in **Space settings → Automation** (*Create flow → Create from scratch*), scoped to
+LE, with the actor left as *Automation for Jira*. The triggers are under **DevOps**; each acts
+on every issue whose key appears in the event. The flow builder takes one trigger per flow,
+so R1 is two flows with the same condition and action.
 
 | Rule | Trigger | Condition: *Issue fields condition*, Status is one of | Action: *Transition issue* to |
 | --- | --- | --- | --- |
-| **R1 Start work** | Branch created — and a second trigger, Commit created | To Do, Reopened (Failed QA) | In Development |
+| **R1a Start work** (branch created) | Branch created | To Do, Reopened (Failed QA) | In Development |
+| **R1b Start work** (commit created) | Commit created | To Do, Reopened (Failed QA) | In Development |
 | **R2 Open for review** | Pull request created | To Do, In Development, Reopened (Failed QA) | In Review |
 | **R3 Ready for QA** | Deployment successful, environment type **Development** | In Development, In Review | Ready for Testing |
 
@@ -79,7 +81,7 @@ if it ran, which condition stopped it.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Stays in To Do after pushing | Key missing or lowercase in the branch name; branch not pushed | Push a commit whose subject ends `[LE-n]` — R1 fires on commits too |
+| Stays in To Do after pushing | Key missing or lowercase in the branch name; branch not pushed | Push a commit whose subject ends `[LE-n]` — R1b fires on commits |
 | Stays in In Review after a merge | Dev deploy or smoke test failed, or rolled back | Fix `main`; the next successful dev deploy should carry the issue — if it does not, move it by hand (see ⚠ above) |
 | Stays in In Review after a green deploy | PR title and commits lack an uppercase key; or the deployment is Unmapped | Move it by hand and note it in the PR; check the environment mapping above |
 | Moved backwards unexpectedly | A rule condition was widened | Compare the rule with the table above |
