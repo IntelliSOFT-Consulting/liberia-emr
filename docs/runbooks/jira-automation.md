@@ -54,14 +54,16 @@ Do not widen them.
 ## The dev environment
 
 GitHub records a deployment for every job that declares `environment:`. The GitHub for Jira
-app reads the environment name `dev` as type **Development** and links the deployment to
-every issue key in the commits since the previous successful `dev` deployment. A merge
+app is expected to read the environment name `dev` as type **Development** — R3 depends on
+it — and to link the deployment to every issue key in the commits since the previous
+successful `dev` deployment. A merge
 commit carries the PR title in its body, which is why the PR title must contain the key.
 
-> ⚠ **Unverified:** that a deploy following a failed, rolled-back or cancelled one still
-> links the earlier commits, and which commits the very first `dev` deployment links. Until
-> someone has watched both happen, treat a card stuck in In Review after a failed deploy as
-> a manual move.
+> ⚠ **Unverified:** that `dev` maps to Development rather than Unmapped (the rehearsal
+> checks this; apply the mapping below if it does not); that a deploy following a failed,
+> rolled-back or cancelled one still links the earlier commits; and which commits the very
+> first `dev` deployment links. Until someone has watched these happen, treat a card stuck
+> in In Review after a deploy as a manual move.
 
 If an issue's Development panel shows the deployment as **Unmapped** rather than
 Development, R3 will not fire. Add a `.jira/config.yml` to the repository root mapping the
@@ -97,5 +99,6 @@ Moving a card by hand is the documented fallback, not a workaround.
    **In Development**.
 3. Open a PR titled `chore: jira automation smoke [LE-<n>]`. Expect **In Review**.
 4. Merge. When the `main` run's **Smoke test (dev)** job passes, expect a `dev` deployment on
-   the issue's Development panel and the card in **Ready for Testing**.
+   the issue's Development panel, typed **Development** (not Unmapped), and the card in
+   **Ready for Testing**.
 5. Move the card to Cancelled, and remove the ⚠ banner at the top of this runbook.

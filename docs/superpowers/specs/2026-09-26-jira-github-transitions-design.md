@@ -1,7 +1,7 @@
 # Jira ↔ GitHub status transitions — design
 
 **Date:** 2026-09-26
-**Status:** approved design, pending implementation plan
+**Status:** approved; implemented by `docs/superpowers/plans/2026-09-26-jira-github-transitions.md`
 
 ## Goal
 
@@ -97,12 +97,14 @@ runbook is the hand-off.
 Add `environment: dev` to the `smoke-test` job (not `deploy-dev`). GitHub then records a
 deployment whose success means *deployed and healthy*; a smoke failure that triggers
 `rollback-dev` never reaches QA. GitHub creates the environment on first use; no protection
-rules or secrets are needed. The GitHub for Jira app maps the name `dev` to the Development
-environment type and associates the deployment with every issue key found in the commits
-since the previous successful `dev` deployment.
+rules or secrets are needed. The GitHub for Jira app is expected to map the name `dev` to
+the Development environment type and to associate the deployment with every issue key found
+in the commits since the previous successful `dev` deployment.
 
-To verify during implementation, not assume: that commits from a cancelled or failed `main`
-run are picked up by the next successful deployment.
+To verify, not assume — both are open until the runbook's rehearsal: that `dev` maps to
+Development rather than Unmapped (if not, the runbook's `.jira/config.yml` mapping is the
+fix); and that commits from a cancelled or failed `main` run are picked up by the next
+successful deployment.
 
 ### C. Documentation
 
