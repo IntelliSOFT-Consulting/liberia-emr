@@ -15,7 +15,7 @@ is recorded against the existing concepts, using the variables — never a bare 
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Mother PNC | `${var.form.pnc-visit.uuid}` | Postnatal Visit | released (`pnc-visit.json`, v1.0) |
 | Newborn PNC | `${var.form.newborn-pnc.uuid}` | Postnatal Visit | released (`newborn-pnc.json`, v1.0) |
-| 3. Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | released (`family_planning.json`, v2.1) |
+| 3. Family Planning | `${var.form.family-planning.uuid}` | Family Planning Visit | released (`family_planning.json`, v2.2) |
 
 The `Variable` column is the repository alias for each form's **runtime Form UUID**.
 `AmpathFormsLoader` ignores the JSON `uuid` field when deriving Form identity. Runtime

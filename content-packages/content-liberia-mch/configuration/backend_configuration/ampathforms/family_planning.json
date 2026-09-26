@@ -1,7 +1,7 @@
 {
   "name": "3. Family Planning",
   "uuid": "${var.form.family-planning.uuid}",
-  "version": "2.1",
+  "version": "2.2",
   "published": true,
   "retired": false,
   "encounter": "Family Planning Visit",
@@ -97,22 +97,6 @@
           "label": "Obstetric Profile",
           "isExpanded": "true",
           "questions": [
-            {
-              "type": "obs",
-              "questionOptions": {
-                "rendering": "number",
-                "concept": "${var.concept.ciel.gravida.uuid}",
-                "disallowDecimals": true,
-                "step": 1,
-                "min": "0",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : gravida"
-                }
-              },
-              "id": "gravida",
-              "label": "Gravida",
-              "required": false
-            },
             {
               "type": "obs",
               "questionOptions": {
