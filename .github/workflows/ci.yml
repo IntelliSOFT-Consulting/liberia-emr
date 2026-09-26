@@ -1102,6 +1102,12 @@ jobs:
     name: Smoke test (dev)
     runs-on: ubuntu-latest
     needs: deploy-dev
+    # Records a GitHub deployment to "dev" that succeeds only when the new version
+    # is up AND healthy. The GitHub for Jira app reads it as a Development deploy and
+    # Jira rule R3 moves the linked LE issues to Ready for Testing
+    # (docs/runbooks/jira-automation.md). Deliberately not on deploy-dev: a deploy
+    # that smoke-test then rolls back must never reach QA.
+    environment: dev
     if: >
       !cancelled() &&
       needs.deploy-dev.result == 'success' &&
