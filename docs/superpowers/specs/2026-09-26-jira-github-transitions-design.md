@@ -45,9 +45,9 @@ transition restrictions. Columns, left to right, one status each:
 - **Branch:** `<type>/LE-<n>-<scope>-<summary>`, e.g. `feat/LE-224-mch-opd-exam-findings`.
   The key is **uppercase**. One branch per issue. `<type>` and `<scope>` keep their
   existing meanings from `CONTRIBUTING.md`.
-- **Commit subject:** conventional-commit form with the key as a suffix —
-  `feat(mch): add parity field [LE-224]`. Every commit carries the key.
-- **PR title:** the same form — `feat(mch): add parity field [LE-224]`. GitHub writes the PR
+- **Commit subject:** the scope-prefix form from CONTRIBUTING.md's Commits section with the
+  key as a suffix — `mch: add parity field [LE-224]`. Every commit carries the key.
+- **PR title:** the same form — `mch: add parity field [LE-224]`. GitHub writes the PR
   title into the merge commit body, which puts an uppercase key in the commit the
   deployment scan reads (the branch name in `Merge pull request #N from …` is not enough).
 - **No Jira issue:** pure `chore/` or `ci/` work keeps its keyless name; nothing moves on the
