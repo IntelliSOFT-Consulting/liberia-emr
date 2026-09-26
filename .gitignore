@@ -93,4 +93,4 @@ qa/e2e/cypress/videos/
 
 
 #Ansible
-/ansible/inventory.ini
+ansible/inventory.ini
