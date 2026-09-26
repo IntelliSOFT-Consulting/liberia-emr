@@ -1,0 +1,14 @@
+<config>
+    <globalProperties>
+        <!-- The identifier whose exact match links two records to one person (ADR 0005). -->
+        <globalProperty>
+            <property>liberiaemr.identity.nationalIdTypeUuid</property>
+            <value>${var.identifiertype.national-id.uuid}</value>
+        </globalProperty>
+        <!-- How often central assigns CPIs and applies the National ID rule, in seconds. -->
+        <globalProperty>
+            <property>liberiaemr.identity.intervalSeconds</property>
+            <value>60</value>
+        </globalProperty>
+    </globalProperties>
+</config>

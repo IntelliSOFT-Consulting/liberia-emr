@@ -43,3 +43,22 @@ export function useSyncStatus() {
 
   return { status: data?.data, error, isLoading };
 }
+
+export interface IdentityStatus {
+  /** False where there is no identity schema, which is every facility. */
+  enabled: boolean;
+  people?: number;
+  records?: number;
+  linked?: number;
+  openReviews?: number;
+  unassigned?: number;
+}
+
+export function useIdentityStatus() {
+  const { data } = useSWR<{ data: IdentityStatus }, SyncStatusError>(
+    `${restBaseUrl}/liberiaemr/identity/status`,
+    openmrsFetch,
+    { refreshInterval },
+  );
+  return { identity: data?.data };
+}

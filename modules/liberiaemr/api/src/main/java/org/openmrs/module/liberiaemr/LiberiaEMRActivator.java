@@ -11,9 +11,11 @@ package org.openmrs.module.liberiaemr;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openmrs.api.context.Context;
 import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
+import org.openmrs.module.liberiaemr.identity.IdentitySchedule;
 
 /**
  * This class contains the logic that is run every time this module is either started or shutdown
@@ -23,6 +25,8 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	private Log log = LogFactory.getLog(this.getClass());
 
 	private static DaemonToken daemonToken;
+
+	private IdentitySchedule identitySchedule;
 
 	/**
 	 * Called by OpenMRS to supply a daemon token that allows event listeners to run privileged
@@ -53,6 +57,18 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		catch (Exception e) {
 			log.error("Failed to subscribe to Obs CREATED event", e);
 		}
+		scheduleIdentityTask();
+	}
+
+	/**
+	 * Schedules the identity task at liberiaemr.identity.intervalSeconds and follows later changes
+	 * to it. The task does nothing on a server without the identity schema, so every facility
+	 * carries it harmlessly.
+	 */
+	private void scheduleIdentityTask() {
+		IdentitySchedule.apply(Context.getAdministrationService().getGlobalProperty(IdentitySchedule.GP_INTERVAL_SECONDS));
+		identitySchedule = new IdentitySchedule(daemonToken);
+		Context.getAdministrationService().addGlobalPropertyListener(identitySchedule);
 	}
 
 	/**
@@ -69,6 +85,9 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		catch (Exception e) {
 			log.error("Failed to unsubscribe from Obs CREATED event", e);
+		}
+		if (identitySchedule != null) {
+			Context.getAdministrationService().removeGlobalPropertyListener(identitySchedule);
 		}
 	}
 

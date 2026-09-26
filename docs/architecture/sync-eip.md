@@ -546,6 +546,23 @@ If the MOH later wants the CPI printed on a patient card or written into the fac
 record, that is a **second write direction** and needs its own ADR; it is not a
 configuration change, and it should not be presented as one.
 
+**As built.** The identity service is part of the liberiaemr module and runs on the OpenMRS
+scheduler at central, every `liberiaemr.identity.intervalSeconds` (60 by default; `IdentityAssignmentTask`). It mints a CPI (a UUID, with the
+`LR-XXXXX-XXXXX-C` form beside it) for every patient in the replica that has none, records the
+facility as the top of the location tree the record's identifier was issued at, then applies
+rule 4 of §2.2: an exact match on the National ID identifier type links the new CPI as an alias
+of the existing person's, provided sex agrees and date of birth agrees within
+`liberiaemr.identity.dobToleranceDays` (year only when either date is estimated); a match that
+fails that check is written to `match_review` for a person to decide. A National ID recorded on a
+later visit is checked the same way once it reaches central (a sweep of 5,000 links a run);
+a changed one on a record already linked to others goes to review rather than moving the group. Nothing else links yet:
+the probabilistic scoring of rule 5, the review queue's page and its MOH owner are the next
+slice, as is folding a facility-side merge (the voided losing record) into an alias, which
+ADR 0005's consequences require. Voided patients are not given a CPI. The schema is `openmrs_identity`, created by
+`distribution/compose/central/initdb/20-identity-db.sh`; the CPI is read through
+`/ws/rest/v1/liberiaemr/identity/patient/{uuid}` behind the `View Identity Links` privilege, and
+the Sync status page shows the counts. `qa/sync/verify-identity.sh` proves it on two facilities.
+
 ---
 
 ## 3. DECISION 2: Pulled-record scope

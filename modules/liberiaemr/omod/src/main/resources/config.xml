@@ -126,6 +126,40 @@
 		</description>
 	</globalProperty>
 
+	<!-- Central Person Identifier (sync-eip.md 2.5). Active only where the identity schema exists. -->
+	<globalProperty>
+		<property>liberiaemr.identity.nationalIdTypeUuid</property>
+		<defaultValue></defaultValue>
+		<description>
+			The patient identifier type whose exact match links two records to one person,
+			once sex and date of birth agree (ADR 0005). Set by the national content package
+			to the Liberia National ID; empty mints CPIs without linking.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.identity.dobToleranceDays</property>
+		<defaultValue>0</defaultValue>
+		<description>
+			How far apart two documented dates of birth may be and still agree for the National
+			ID rule. When either date is estimated only the year is compared.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.identity.batchSize</property>
+		<defaultValue>200</defaultValue>
+		<description>
+			How many newly received patients the identity task assigns a CPI on each run.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.identity.intervalSeconds</property>
+		<defaultValue>60</defaultValue>
+		<description>
+			How often the identity task runs, in seconds (at least 10). A change takes effect without
+			a restart.
+		</description>
+	</globalProperty>
+
 	<!-- Future SMS MFA Provisions (not yet implemented) -->
 	<globalProperty>
 		<property>liberiaemr.sms.provider.url</property>

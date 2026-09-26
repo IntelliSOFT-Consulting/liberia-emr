@@ -11,7 +11,7 @@ on this schedule, not only on the audit module's own settings.
 
 | Item | Contains | Frequency |
 | --- | --- | --- |
-| MariaDB database | all patient data | daily, plus before every upgrade |
+| MariaDB database | all patient data; at central also the `openmrs_mgmt` sync schema and the `openmrs_identity` schema (CPIs and links, which nothing else holds) | daily, plus before every upgrade |
 | `openmrs-data` volume | attachments, uploaded files | daily |
 | `sync-queue` volume | undelivered sync messages | daily |
 | `facility.env` | connection secrets | on change — **store in the MOH secret store, never in git** |
