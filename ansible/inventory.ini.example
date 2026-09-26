@@ -4,5 +4,5 @@
 #   cp inventory.ini.example inventory.ini
 #
 
-[Placeholder]
+[Host]
 domain.example.com ansible_user=your_ssh_user
