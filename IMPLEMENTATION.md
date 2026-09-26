@@ -292,7 +292,7 @@ Where each stage runs today (`.github/workflows/`):
 
 | Workflow | Runs on | Stages |
 | --- | --- | --- |
-| `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment. |
+| `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment; a passing smoke test there records a `dev` deployment that Jira reads. |
 | `release.yml` | `x.y.z` tag | Release guards → build (both sites) → full stack → **upgrade test** → publish images (`ghcr.io/intellisoft-consulting`) → staging → production approval. The full-stack, image-push and staging steps are still `TODO` stubs. |
 | `modules.yml` | `modules/**` changes; GitHub release | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release only when its tag matches the pom's base version. |
 | `packages.yml` | `packages/**` changes; GitHub release | Builds the ESMs; publishes `-pre.<run>` versions (npm tag `next`) from `main`, and every ESM at the release tag's version on a release. |
@@ -313,6 +313,23 @@ launches; (b) **upgrade** from the previous production DB → migrations run →
 updates metadata → existing patient data stays valid. The upgrade test catches UUID
 collisions, changed concepts, retired metadata, and altered workflows that a clean install
 never surfaces.
+
+### Work tracking — the LE Jira board
+
+Git activity moves issues on the LE board through Jira Automation. To keep it working:
+
+1. **Work from an issue.** Before creating a branch, get the `LE-<n>` key from the human. Name
+   the branch `<type>/LE-<n>-<scope>-<summary>`, key in uppercase. Only work with no issue
+   uses a keyless `chore/` or `ci/` branch.
+2. **Key every commit and the PR title**, suffixed in square brackets: `mch: add ANC
+   workflow states [LE-224]`. One key, the branch's own.
+3. **Open a PR — draft or not — only when the work is ready for review**; opening one moves
+   the issue to In Review. For CI before then, `gh workflow run ci.yml --ref <branch>`.
+4. **Do not move issues yourself** between In Development, In Review and Ready for Testing;
+   the automation does. Testing, Done and Reopened belong to QA.
+5. **A card that did not move is a finding to report**, with the symptom from the table in
+   [CONTRIBUTING.md](CONTRIBUTING.md#jira-board). Do not edit `ci.yml` or the Jira rules to
+   force a transition — see [docs/runbooks/jira-automation.md](docs/runbooks/jira-automation.md).
 
 ---
 
