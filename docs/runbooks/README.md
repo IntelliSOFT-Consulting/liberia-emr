@@ -13,10 +13,12 @@ fails it.
 | [disaster-recovery.md](disaster-recovery.md) | Rebuild a facility after total loss |
 | [go-live.md](go-live.md) | Go-live checklist and cutover |
 | [sync-operations.md](sync-operations.md) | Enrol facilities, rotate certificates and keys, handle sync alerts |
+| [jira-automation.md](jira-automation.md) | Jira Automation rules that move LE issues from branch, PR and dev deploy — ⚠ not yet rehearsed |
 | [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
-a document, not a capability. Two procedures here have not been executed end to end, and each
+a document, not a capability. Three procedures here have not been executed end to end, and each
 says so at the top: `dak-to-iniz.md`, because the DAK itself is not in this repository, and
 the enrolment, rotation, upgrade and account sections of `sync-operations.md`, which wait for
-MOH-issued material.
+MOH-issued material. The Jira rules in `jira-automation.md` wait for an LE project admin to
+create them.
