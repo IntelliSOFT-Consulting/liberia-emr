@@ -103,6 +103,11 @@ these, is a **contract breach** — treat it as the top finding regardless of in
 - Content strategy and review sit with the **senior engineer**; test strategy and QA sign-off
   with the **QA Engineer**. Flag a change that has a junior/support role owning strategy or
   QA rather than executing against it.
+- **Jira key** (CONTRIBUTING "Branches", "Jira board"): the branch name
+  (`git branch --show-current`) and PR title carry the uppercase `LE-<n>` of one issue, and
+  commit subjects end `[LE-<n>]`. A lowercase `le-<n>`, a missing key, or two keys stops the
+  board moving. A keyless `chore/` or `ci/` branch with no issue is fine. Report it as a
+  finding, not a blocker — it breaks tracking, not the product.
 
 ## Output
 
