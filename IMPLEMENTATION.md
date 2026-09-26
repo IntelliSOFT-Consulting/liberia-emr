@@ -322,7 +322,8 @@ Git activity moves issues on the LE board through Jira Automation. To keep it wo
    the branch `<type>/LE-<n>-<scope>-<summary>`, key in uppercase. Only work with no issue
    uses a keyless `chore/` or `ci/` branch.
 2. **Key every commit and the PR title**, suffixed in square brackets: `mch: add ANC
-   workflow states [LE-224]`. One key, the branch's own.
+   workflow states [LE-224]`. One key, the branch's own. A key anywhere in the message,
+   body included, moves that issue — mention other issues by title or link, never by key.
 3. **Open a PR — draft or not — only when the work is ready for review**; opening one moves
    the issue to In Review. For CI before then, `gh workflow run ci.yml --ref <branch>`.
 4. **Do not move issues yourself** between In Development, In Review and Ready for Testing;

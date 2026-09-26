@@ -17,8 +17,8 @@ on:
   #
   # A required status check therefore needs exactly one run per commit, and that
   # run is the pull_request one. The cost is that a branch gets no CI until a PR
-  # exists for it; workflow_dispatch below covers an ad-hoc run before then, and
-  # a draft PR gets the full pipeline.
+  # exists for it; workflow_dispatch below covers an ad-hoc run before then. (A
+  # draft PR also runs it, but moves the Jira issue to In Review — CONTRIBUTING.md.)
   push:
     branches: [main]
   pull_request:

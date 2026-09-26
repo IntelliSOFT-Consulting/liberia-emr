@@ -13,7 +13,9 @@ The executable pipelines live in [`.github/workflows/`](../../.github/workflows/
 `ci.yml` fires on a push to `main` only, not to every branch. A branch push that already had
 a PR used to start two runs for one commit; the concurrency group cancelled one, and the
 cancelled run still published a `CI gate` check that blocked the merge. So a branch gets CI
-from its pull request (a draft PR gets the full pipeline), or from a manual run before then.
+from its pull request, or from a manual run before then (`gh workflow run ci.yml --ref
+<branch>`). A draft PR also gets the full pipeline, but opening one moves the branch's Jira
+issue to In Review — see [CONTRIBUTING.md](../../CONTRIBUTING.md#jira-board).
 A `concurrency` group keyed on the branch cancels the run still in flight when a new commit
 lands. Pushes to `main` are exempt from that cancellation — `publish-latest`, `deploy-dev`,
 `smoke-test`, `rollback-dev` and `dast` only run there, and half-applying a deploy is worse

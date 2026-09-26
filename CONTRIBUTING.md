@@ -61,15 +61,16 @@ cards; QA drags the rest.
 | → **Done** / **Reopened (Failed QA)** | QA | Passed / failed. Your next push after a reopen moves it back to In Development |
 | → Issues/Bugs, Cancelled | Anyone | By hand; not git-driven |
 
-**One key per branch, PR title and commit.** Two keys move two issues. A PR closed without
-merging moves nothing — whoever closes it moves the card.
+**One key per branch, PR title and commit.** Two keys move two issues — and a key anywhere in
+a commit message counts, body included, so refer to other issues by title or link, not by
+key. A PR closed without merging moves nothing — whoever closes it moves the card.
 
 ### If a card does not move
 
 | Symptom | Fix |
 | --- | --- |
 | Still To Do after pushing | Key missing or lowercase in the branch — push a commit whose subject ends `[LE-n]` |
-| Still In Review after merging | The dev deploy or smoke test failed; the next green deploy carries it |
+| Still In Review after merging | The `main` pipeline has not finished, or the dev deploy or smoke test failed. The next green deploy should carry it; if it does not, move it by hand |
 | Still In Review after a green deploy | Key missing from the PR title — move it by hand and say so in the PR |
 
 Moving a card by hand is the fallback, not a workaround; do not change `ci.yml` or the Jira

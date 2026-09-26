@@ -56,6 +56,11 @@ app reads the environment name `dev` as type **Development** and links the deplo
 every issue key in the commits since the previous successful `dev` deployment. A merge
 commit carries the PR title in its body, which is why the PR title must contain the key.
 
+> ⚠ **Unverified:** that a deploy following a failed, rolled-back or cancelled one still
+> links the earlier commits, and which commits the very first `dev` deployment links. Until
+> someone has watched both happen, treat a card stuck in In Review after a failed deploy as
+> a manual move.
+
 If an issue's Development panel shows the deployment as **Unmapped** rather than
 Development, R3 will not fire. Add a `.jira/config.yml` to the repository root mapping the
 name:
@@ -75,10 +80,10 @@ if it ran, which condition stopped it.
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
 | Stays in To Do after pushing | Key missing or lowercase in the branch name; branch not pushed | Push a commit whose subject ends `[LE-n]` — R1 fires on commits too |
-| Stays in In Review after a merge | Dev deploy or smoke test failed, or rolled back | Fix `main`; the next successful dev deploy carries the issue |
+| Stays in In Review after a merge | Dev deploy or smoke test failed, or rolled back | Fix `main`; the next successful dev deploy should carry the issue — if it does not, move it by hand (see ⚠ above) |
 | Stays in In Review after a green deploy | PR title and commits lack an uppercase key; or the deployment is Unmapped | Move it by hand and note it in the PR; check the environment mapping above |
 | Moved backwards unexpectedly | A rule condition was widened | Compare the rule with the table above |
-| Two issues moved by one PR | Two keys in the PR title or commits | Move the wrong one back by hand; one key per PR |
+| Two issues moved by one PR | Two keys in the PR title or commits (bodies count) | Move the wrong one back by hand; one key per PR |
 
 Moving a card by hand is the documented fallback, not a workaround.
 
