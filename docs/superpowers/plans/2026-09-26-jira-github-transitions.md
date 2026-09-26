@@ -22,7 +22,7 @@ job, and (b) documentation for humans (`CONTRIBUTING.md`), agents (`IMPLEMENTATI
 - Commit subject and PR title end with the key in square brackets: `… [LE-224]`.
 - One branch, one PR, one issue key.
 - Status IDs: To Do 11297, In Development 11298, In Review 11299, Ready for Testing 11371, Testing 11300, Issues/Bugs 11405, Reopened (Failed QA) 11301, Cancelled 11577, Done 11302.
-- Rules: R1 Branch/Commit created → In Development (from To Do, Reopened (Failed QA)); R2 Pull request created → In Review (from To Do, In Development, Reopened (Failed QA)); R3 Deployment successful, environment type Development → Ready for Testing (from In Development, In Review).
+- Rules: R1a Branch created and R1b Commit created (two flows — the LE flow builder takes one trigger per flow) → In Development (from To Do, Reopened (Failed QA)); R2 Pull request created → In Review (from To Do, In Development, Reopened (Failed QA)); R3 Deployment successful, environment type Development → Ready for Testing (from In Development, In Review).
 - `environment: dev` goes on the `smoke-test` job, **not** `deploy-dev`.
 - Manual transitions: Testing, Done, Reopened (Failed QA), Issues/Bugs, Cancelled — and any card the automation missed.
 - Agents never edit the pipeline or Jira rules to unstick a card; they report it.
@@ -45,14 +45,14 @@ job, and (b) documentation for humans (`CONTRIBUTING.md`), agents (`IMPLEMENTATI
 - Modify: `docs/runbooks/README.md` (runbook table, and the "not yet rehearsed" paragraph)
 
 **Interfaces:**
-- Produces: the path `docs/runbooks/jira-automation.md` and the rule names `R1 Start work`, `R2 Open for review`, `R3 Ready for QA`, which Tasks 3 and 4 link to and cite.
+- Produces: the path `docs/runbooks/jira-automation.md` and the rule names `R1a Start work`, `R1b Start work`, `R2 Open for review`, `R3 Ready for QA`, which Tasks 3 and 4 link to and cite.
 
 - [ ] **Step 1: Write the failing check**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 test -f docs/runbooks/jira-automation.md \
- && grep -q 'R1 Start work' docs/runbooks/jira-automation.md \
+ && grep -q 'R1a Start work' docs/runbooks/jira-automation.md \
  && grep -q 'R3 Ready for QA' docs/runbooks/jira-automation.md \
  && grep -q '11371' docs/runbooks/jira-automation.md \
  && grep -q '(jira-automation.md)' docs/runbooks/README.md \
@@ -89,7 +89,7 @@ The contributor side — how to name branches, commits and PRs so the rules fire
 | Column / status | Status ID | Moved by |
 | --- | --- | --- |
 | To Do | 11297 | Manual |
-| In Development | 11298 | R1 |
+| In Development | 11298 | R1a, R1b |
 | In Review | 11299 | R2 |
 | Ready for Testing | 11371 | R3 |
 | Testing | 11300 | QA |
@@ -106,7 +106,8 @@ every issue whose key appears in the event.
 
 | Rule | Trigger | Condition: *Issue fields condition*, Status is one of | Action: *Transition issue* to |
 | --- | --- | --- | --- |
-| **R1 Start work** | Branch created — and a second trigger, Commit created | To Do, Reopened (Failed QA) | In Development |
+| **R1a Start work** (branch created) | Branch created | To Do, Reopened (Failed QA) | In Development |
+| **R1b Start work** (commit created) | Commit created | To Do, Reopened (Failed QA) | In Development |
 | **R2 Open for review** | Pull request created | To Do, In Development, Reopened (Failed QA) | In Review |
 | **R3 Ready for QA** | Deployment successful, environment type **Development** | In Development, In Review | Ready for Testing |
 
@@ -140,7 +141,7 @@ if it ran, which condition stopped it.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Stays in To Do after pushing | Key missing or lowercase in the branch name; branch not pushed | Push a commit whose subject ends `[LE-n]` — R1 fires on commits too |
+| Stays in To Do after pushing | Key missing or lowercase in the branch name; branch not pushed | Push a commit whose subject ends `[LE-n]` — R1b fires on commits |
 | Stays in In Review after a merge | Dev deploy or smoke test failed, or rolled back | Fix `main`; the next successful dev deploy carries the issue |
 | Stays in In Review after a green deploy | PR title and commits lack an uppercase key; or the deployment is Unmapped | Move it by hand and note it in the PR; check the environment mapping above |
 | Moved backwards unexpectedly | A rule condition was widened | Compare the rule with the table above |

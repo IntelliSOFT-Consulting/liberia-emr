@@ -57,12 +57,12 @@ transition restrictions. Columns, left to right, one status each:
 
 | From → To | Who | Trigger |
 |---|---|---|
-| To Do / Reopened (Failed QA) → **In Development** | Automation (R1) | Branch created or commit created containing the key |
+| To Do / Reopened (Failed QA) → **In Development** | Automation (R1a, R1b) | Branch created or commit created containing the key |
 | To Do / In Development / Reopened (Failed QA) → **In Review** | Automation (R2) | Pull request created |
 | In Development / In Review → **Ready for Testing** | Automation (R3) | Deployment successful to the `dev` environment |
 | Ready for Testing → **Testing** | QA | Picks the issue up |
 | Testing → **Done** | QA | Passed on dev |
-| Testing → **Reopened (Failed QA)** | QA | Failed; the next push returns it to In Development via R1 |
+| Testing → **Reopened (Failed QA)** | QA | Failed; the next push returns it to In Development via R1b |
 | any → Issues/Bugs, Cancelled | Manual | Not git-driven |
 
 Clarifications that belong in the docs:
@@ -81,10 +81,12 @@ Clarifications that belong in the docs:
 
 | Rule | Trigger | Conditions | Action |
 |---|---|---|---|
-| R1 Start work | Branch created **or** Commit created | Status ∈ {To Do, Reopened (Failed QA)} | Transition to In Development |
+| R1a Start work (branch) | Branch created | Status ∈ {To Do, Reopened (Failed QA)} | Transition to In Development |
+| R1b Start work (commit) | Commit created | Status ∈ {To Do, Reopened (Failed QA)} | Transition to In Development |
 | R2 Open for review | Pull request created | Status ∈ {To Do, In Development, Reopened (Failed QA)} | Transition to In Review |
 | R3 Ready for QA | Deployment successful | Environment type = Development; status ∈ {In Development, In Review} | Transition to Ready for Testing |
 
+R1 is two flows because the LE flow builder takes one trigger per flow.
 The conditions only allow forward moves, so commits pushed during review or QA never drag an
 issue backwards. R2 accepts To Do in case the PR event is processed before the branch
 event; R3 accepts In Development in case the PR step was skipped.
@@ -120,7 +122,7 @@ successful deployment.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Stays in To Do after pushing | Key missing or lowercase in branch name; branch not pushed | Push a commit with `[LE-n]` — R1 fires on commits too |
+| Stays in To Do after pushing | Key missing or lowercase in branch name; branch not pushed | Push a commit with `[LE-n]` — R1b fires on commits |
 | Stays in In Review after merge | Dev deploy or smoke test failed / rolled back | Fix `main`; the next successful deploy carries the issue |
 | Stays in In Review after a green deploy | PR title and commits lack an uppercase key | Move by hand; note it in the PR |
 | Moved backwards unexpectedly | A rule condition was loosened | Compare the audit log with the runbook table |
