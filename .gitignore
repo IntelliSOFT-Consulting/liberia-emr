@@ -94,3 +94,4 @@ qa/e2e/cypress/videos/
 
 #Ansible
 ansible/inventory.ini
+ansible/central-server.vars.yml

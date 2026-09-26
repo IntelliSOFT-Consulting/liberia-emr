@@ -9,191 +9,181 @@
 # Usage:
 #   ansible-playbook -i inventory.ini central-server.yml
 #
-# ASSUMPTIONS — confirm before running against a real box:
-#   1. Repo is public (confirmed) — plain HTTPS clone, no deploy key needed.
-#   2. sync-receiver and dhis2-export are deliberately excluded from the
-#      `docker compose up` service list — neither has been built yet
-#      (confirmed: no source, no Dockerfile, nothing in scripts/build/).
-#      Add them back once they exist.
+
 
 - name: Provision LiberiaEMR central server
   hosts: central
   become: true
   vars_files:
-    - central-server.vars.yml
+  - central-server.vars.yml
   vars:
     central_env_file: "{{ repo_dest }}/distribution/env/central.env"
 
   tasks:
-    # -----------------------------------------------------------------
-    # Docker — same steps as docker_installation.sh, as idempotent
-    # Ansible tasks instead of a re-run-unsafe shell script.
-    # -----------------------------------------------------------------
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
+  # -----------------------------------------------------------------
+  # Docker — same steps as docker_installation.sh, as idempotent
+  # Ansible tasks instead of a re-run-unsafe shell script.
+  # -----------------------------------------------------------------
+  - name: Update apt cache
+    ansible.builtin.apt:
+      update_cache: true
 
-    - name: Install prerequisites
-      ansible.builtin.apt:
-        name:
-          - ca-certificates
-          - curl
-        state: present
+  - name: Install prerequisites
+    ansible.builtin.apt:
+      name:
+      - ca-certificates
+      - curl
+      state: present
 
-    - name: Create keyrings directory
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
+  - name: Create keyrings directory
+    ansible.builtin.file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: "0755"
 
-    - name: Download Docker's GPG key
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
+  - name: Download Docker's GPG key
+    ansible.builtin.get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.asc
+      mode: "0644"
 
-    - name: Get Ubuntu codename
-      ansible.builtin.command: bash -c '. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}"'
-      register: ubuntu_codename
-      changed_when: false
+  - name: Get Ubuntu codename
+    ansible.builtin.command: bash -c '. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}"'
+    register: ubuntu_codename
+    changed_when: false
 
-    - name: Get system architecture
-      ansible.builtin.command: dpkg --print-architecture
-      register: dpkg_arch
-      changed_when: false
+  - name: Get system architecture
+    ansible.builtin.command: dpkg --print-architecture
+    register: dpkg_arch
+    changed_when: false
 
-    - name: Add Docker apt source
-      ansible.builtin.copy:
-        dest: /etc/apt/sources.list.d/docker.sources
-        mode: "0644"
-        content: |
-          Types: deb
-          URIs: https://download.docker.com/linux/ubuntu
-          Suites: {{ ubuntu_codename.stdout }}
-          Components: stable
-          Architectures: {{ dpkg_arch.stdout }}
-          Signed-By: /etc/apt/keyrings/docker.asc
+  - name: Add Docker apt source
+    ansible.builtin.copy:
+      dest: /etc/apt/sources.list.d/docker.sources
+      mode: "0644"
+      content: |
+        Types: deb
+        URIs: https://download.docker.com/linux/ubuntu
+        Suites: {{ ubuntu_codename.stdout }}
+        Components: stable
+        Architectures: {{ dpkg_arch.stdout }}
+        Signed-By: /etc/apt/keyrings/docker.asc
 
-    - name: Update apt cache after adding Docker source
-      ansible.builtin.apt:
-        update_cache: true
+  - name: Update apt cache after adding Docker source
+    ansible.builtin.apt:
+      update_cache: true
 
-    - name: Install Docker
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
+  - name: Install Docker
+    ansible.builtin.apt:
+      name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      state: present
 
-    - name: Add {{ ansible_user }} to the docker group
-      ansible.builtin.user:
-        name: "{{ ansible_user }}"
-        groups: docker
-        append: true
+  - name: Add {{ ansible_user }} to the docker group
+    ansible.builtin.user:
+      name: "{{ ansible_user }}"
+      groups: docker
+      append: true
 
-    # -----------------------------------------------------------------
-    # Repo
-    # -----------------------------------------------------------------
-    - name: Clone liberia-emr
-      ansible.builtin.git:
-        repo: "{{ repo_url }}"
-        dest: "{{ repo_dest }}"
-        version: main
-        force: false
+  # -----------------------------------------------------------------
+  # Repo
+  # -----------------------------------------------------------------
+  - name: Clone liberia-emr
+    ansible.builtin.git:
+      repo: "{{ repo_url }}"
+      dest: "{{ repo_dest }}"
+      version: main
+      force: false
 
-    # -----------------------------------------------------------------
-    # Certbot — standalone, since nothing is bound to port 80 yet on a
-    # fresh server. Re-running this playbook after the gateway is up
-    # would need --webroot or a brief gateway stop instead; standalone
-    # only works on a genuinely empty box like this one.
-    # -----------------------------------------------------------------
-    - name: Install certbot
-      ansible.builtin.apt:
-        name: certbot
-        state: present
+  # -----------------------------------------------------------------
+  # Certbot — standalone, since nothing is bound to port 80 yet on a
+  # fresh server. Re-running this playbook after the gateway is up
+  # would need --webroot or a brief gateway stop instead; standalone
+  # only works on a genuinely empty box like this one.
+  # -----------------------------------------------------------------
+  - name: Install certbot
+    ansible.builtin.apt:
+      name: certbot
+      state: present
 
-    - name: Check for an existing certificate
-      ansible.builtin.stat:
-        path: "/etc/letsencrypt/live/{{ certbot_domain }}/fullchain.pem"
-      register: existing_cert
+  - name: Check for an existing certificate
+    ansible.builtin.stat:
+      path: "/etc/letsencrypt/live/{{ certbot_domain }}/fullchain.pem"
+    register: existing_cert
 
-    - name: Issue certificate via standalone mode
-      ansible.builtin.command: >
-        certbot certonly --standalone --non-interactive --agree-tos
-        -m admin@intellisoftkenya.com -d {{ certbot_domain }}
-      when: not existing_cert.stat.exists
+  - name: Issue certificate via standalone mode
+    ansible.builtin.command: >
+      certbot certonly --standalone --non-interactive --agree-tos -m admin@intellisoftkenya.com -d {{ certbot_domain }}
+    when: not existing_cert.stat.exists
 
-    - name: Create TLS cert directory for the gateway container
-      ansible.builtin.file:
-        path: "{{ tls_cert_dir }}"
-        state: directory
-        mode: "0750"
+  - name: Create TLS cert directory for the gateway container
+    ansible.builtin.file:
+      path: "{{ tls_cert_dir }}"
+      state: directory
+      mode: "0750"
 
-    - name: Symlink fullchain.pem into TLS_CERT_DIR
-      ansible.builtin.file:
-        src: "/etc/letsencrypt/live/{{ certbot_domain }}/fullchain.pem"
-        dest: "{{ tls_cert_dir }}/fullchain.pem"
-        state: link
-        force: true
+  - name: Symlink fullchain.pem into TLS_CERT_DIR
+    ansible.builtin.file:
+      src: "/etc/letsencrypt/live/{{ certbot_domain }}/fullchain.pem"
+      dest: "{{ tls_cert_dir }}/fullchain.pem"
+      state: link
+      force: true
 
-    - name: Symlink privkey.pem into TLS_CERT_DIR
-      ansible.builtin.file:
-        src: "/etc/letsencrypt/live/{{ certbot_domain }}/privkey.pem"
-        dest: "{{ tls_cert_dir }}/privkey.pem"
-        state: link
-        force: true
+  - name: Symlink privkey.pem into TLS_CERT_DIR
+    ansible.builtin.file:
+      src: "/etc/letsencrypt/live/{{ certbot_domain }}/privkey.pem"
+      dest: "{{ tls_cert_dir }}/privkey.pem"
+      state: link
+      force: true
 
-    # certbot's own systemd timer (installed with the package on Ubuntu)
-    # already runs `certbot renew` twice daily — this just adds the
-    # deploy-hook so the gateway container actually picks up a renewed
-    # cert instead of serving the old one until someone notices.
-    - name: Add a renewal deploy-hook to restart the gateway on cert renewal
-      ansible.builtin.copy:
-        dest: /etc/letsencrypt/renewal-hooks/deploy/restart-gateway.sh
-        mode: "0755"
-        content: |
-          #!/bin/sh
-          docker restart liberiaemr-central-gateway-1
+  # certbot's own systemd timer (installed with the package on Ubuntu)
+  # already runs `certbot renew` twice daily — this just adds the
+  # deploy-hook so the gateway container actually picks up a renewed
+  # cert instead of serving the old one until someone notices.
+  - name: Add a renewal deploy-hook to restart the gateway on cert renewal
+    ansible.builtin.copy:
+      dest: /etc/letsencrypt/renewal-hooks/deploy/restart-gateway.sh
+      mode: "0755"
+      content: |
+        #!/bin/sh
+        docker restart liberiaemr-central-gateway-1
 
-    # -----------------------------------------------------------------
-    # Bring up the central stack.
-    #
-    # central.env does not exist yet on a fresh checkout (it's
-    # git-ignored, same as facility.env) — copy the example and stop
-    # here for a human to fill in real values (DB passwords, DHIS2
-    # creds if/when needed) rather than templating secrets through
-    # Ansible unreviewed.
-    # -----------------------------------------------------------------
-    - name: Check whether central.env already exists
-      ansible.builtin.stat:
-        path: "{{ central_env_file }}"
-      register: central_env_stat
+  # -----------------------------------------------------------------
+  # Bring up the central stack.
+  #
+  # central.env does not exist yet on a fresh checkout (it's
+  # git-ignored, same as facility.env) — copy the example and stop
+  # here for a human to fill in real values (DB passwords, DHIS2
+  # creds if/when needed) rather than templating secrets through
+  # Ansible unreviewed.
+  # -----------------------------------------------------------------
+  - name: Check whether central.env already exists
+    ansible.builtin.stat:
+      path: "{{ central_env_file }}"
+    register: central_env_stat
 
-    - name: Copy central.env.example to central.env
-      ansible.builtin.copy:
-        src: "{{ repo_dest }}/distribution/env/central.env.example"
-        dest: "{{ central_env_file }}"
-        remote_src: true
-        mode: "0640"
-      when: not central_env_stat.stat.exists
+  - name: Copy central.env.example to central.env
+    ansible.builtin.copy:
+      src: "{{ repo_dest }}/distribution/env/central.env.example"
+      dest: "{{ central_env_file }}"
+      remote_src: true
+      mode: "0640"
+    when: not central_env_stat.stat.exists
 
-    - name: Fail here if central.env needs real values filled in
-      ansible.builtin.fail:
-        msg: >
-          central.env was just created from the example template at
-          {{ central_env_file }}. Edit it with real DB passwords before
-          re-running this playbook — the MYSQL_* placeholders in the
-          example are not safe to run with as-is.
-      when: not central_env_stat.stat.exists
+  - name: Fail here if central.env needs real values filled in
+    ansible.builtin.fail:
+      msg: >
+        central.env was just created from the example template at {{ central_env_file }}. Edit it with real DB passwords before re-running this playbook — the MYSQL_* placeholders in the example are not safe to run with as-is.
+    when: not central_env_stat.stat.exists
 
-    # sync-receiver and dhis2-export deliberately omitted — see the
-    # ASSUMPTIONS note at the top of this file.
-    - name: Bring up db, backend, frontend, gateway
-      ansible.builtin.command: >
-        docker compose --env-file {{ central_env_file }} up -d
-        db backend frontend gateway
-      args:
-        chdir: "{{ repo_dest }}/distribution/compose/central"
+  # sync-receiver and dhis2-export deliberately omitted — see the
+  # ASSUMPTIONS note at the top of this file.
+  - name: Bring up db, backend, frontend, gateway
+    ansible.builtin.command: >
+      docker compose --env-file {{ central_env_file }} up -d db backend frontend gateway
+    args:
+      chdir: "{{ repo_dest }}/distribution/compose/central"
