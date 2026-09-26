@@ -17,8 +17,8 @@ on:
   #
   # A required status check therefore needs exactly one run per commit, and that
   # run is the pull_request one. The cost is that a branch gets no CI until a PR
-  # exists for it; workflow_dispatch below covers an ad-hoc run before then, and
-  # a draft PR gets the full pipeline.
+  # exists for it; workflow_dispatch below covers an ad-hoc run before then. (A
+  # draft PR also runs it, but moves the Jira issue to In Review — CONTRIBUTING.md.)
   push:
     branches: [main]
   pull_request:
@@ -1102,6 +1102,12 @@ jobs:
     name: Smoke test (dev)
     runs-on: ubuntu-latest
     needs: deploy-dev
+    # Records a GitHub deployment to "dev" that succeeds only when the new version
+    # is up AND healthy. The GitHub for Jira app should read it as a Development
+    # deploy (unverified until the rehearsal) so Jira rule R3 moves the linked LE
+    # issues to Ready for Testing (docs/runbooks/jira-automation.md). Deliberately not on deploy-dev: a deploy
+    # that smoke-test then rolls back must never reach QA.
+    environment: dev
     if: >
       !cancelled() &&
       needs.deploy-dev.result == 'success' &&
