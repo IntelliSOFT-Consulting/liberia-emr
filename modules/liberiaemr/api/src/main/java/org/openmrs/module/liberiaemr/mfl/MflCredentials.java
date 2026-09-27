@@ -46,14 +46,9 @@ public final class MflCredentials {
 	 * The password file (a path, read verbatim) wins over the plain variable, as for the SMTP relay.
 	 */
 	public static MflCredentials fromEnvironment(Map<String, String> env) {
-		String password = null;
 		String path = env.get(ENV_PASSWORD_FILE);
-		if (path != null && !path.trim().isEmpty()) {
-			password = readSecretFile(path.trim());
-		} else {
-			password = env.get(ENV_PASSWORD);
-		}
-		return new MflCredentials(env.get(ENV_USERNAME), password);
+		boolean fromFile = path != null && !path.trim().isEmpty();
+		return new MflCredentials(env.get(ENV_USERNAME), fromFile ? readSecretFile(path.trim()) : env.get(ENV_PASSWORD));
 	}
 
 	public static MflCredentials fromEnvironment() {
