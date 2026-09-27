@@ -90,14 +90,19 @@ resource that call creates.
     "startedBy": null,
     "started": 1790474400000,
     "finished": 1790474431000,
-    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1107, "failed": 0, "warnings": 11 },
+    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1106, "failed": 0, "warnings": 11 },
     "message": null
   },
   "lastSuccessfulRun": { "id": 42, "...": "same shape as lastRun" },
-  "held": { "counties": 15, "districts": 106, "facilities": 996, "retired": 2 }
+  "held": { "counties": 15, "districts": 98, "facilities": 996, "retired": 2 }
 }
 ```
 
+- `config.url` never carries user information. `PUT /config` rejects a URL with a user name or
+  password, and `GET /status` strips any `user:password@` from a `liberiaemr.mfl.url` edited
+  directly in the database before returning it.
+- `held` counts what this instance holds after a complete sync: 15 counties, 98 districts (the 8
+  level-3 units with no facilities are not created, ADR 0009 §3) and 996 facilities.
 - `config.username` is shown so an administrator can see *which* account is configured; it is
   `null` when unset. There is **no** password field, masked or otherwise.
 - `nextRun` is `null` when `enabled` is false.
@@ -129,8 +134,10 @@ accepted.
 
 ### `POST /test-connection`
 
-No body. The module calls `GET {url}/api/system/info` and counts the level-4 org units
-(`pageSize=1`), using the configured credentials.
+No body. The module makes two requests with the configured credentials:
+`GET {url}/api/system/info` gives `dhis2Version`, and
+`GET {url}/api/organisationUnits.json?filter=level:eq:4&pageSize=1&fields=id` gives `facilities`
+from `pager.total`.
 
 ```json
 { "ok": true, "dhis2Version": "2.40.4.1", "facilities": 996, "message": null }

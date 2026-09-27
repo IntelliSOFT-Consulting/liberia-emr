@@ -192,7 +192,11 @@ their `Attribute|MFL UID` column resolves.
 
 ### 6. Tags: the switcher at central filters on `Health Facility`
 
-MFL facilities get `Health Facility` and **not** `Login Location`. LE-324 replaces the
+Facilities the sync **creates** get `Health Facility` and **not** `Login Location`. An
+**adopted** site root keeps the `Login Location` tag its site CSV gives it, because the sync only
+adds tags and never removes one (decision 4). The site's own staff log in there, so the tag has
+to stay. The central switcher does not depend on `Login Location` either way: it filters on
+`Health Facility`, which adopted and created facilities both carry. LE-324 replaces the
 login app's boolean `chooseLocation.useLoginLocationTag` with a string,
 `chooseLocation.locationTag` (default `Login Location`). Central's frontend config sets it to
 `Health Facility`. The switcher shows the MFL code and district next to each name.
@@ -299,7 +303,7 @@ Where the two disagree, the document wins.
 | 3 | Field ownership, name disambiguation, group tie-breaks by UID, no `openingDate`, counties top-level | **Accepted** (from LE-318) |
 | 4 | Canonical attribute types | **Accepted** |
 | 5 | Retire on close or absence, guard on a failed page or a pull under 90%, moves as close + new | **Accepted** (from LE-318) |
-| 6 | Switcher filters on `Health Facility`; no `Login Location` | **Accepted** |
+| 6 | Switcher filters on `Health Facility`; rows the sync creates get no `Login Location`, adopted roots keep theirs | **Accepted** |
 | 7 | Credentials from env or a password file only | **Accepted** |
 | 8 | Full pull on every run; operator settings in `config.xml`, not Initializer | **Accepted** (from LE-318) |
 | 9 | Admin route in `esm-liberia-sync-status-app` | **Accepted** |
