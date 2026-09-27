@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineNotification, TextInput, Tile, Toggle } from '@carbon/react';
-import { isValidTime, isValidUrl, messageOf, updateMflConfig } from './mfl-sync.resource';
+import { isAboutUrl, isValidTime, isValidUrl, messageOf, statusOf, updateMflConfig } from './mfl-sync.resource';
 import { type MflConfigUpdate, type MflStatus } from './mfl-sync.types';
 import styles from './mfl-sync.scss';
 
@@ -23,8 +23,12 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
   const [time, setTime] = useState(config.schedule.time);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: 'success' | 'error'; title: string } | null>(null);
+  // The server's reason for refusing the address, such as a host outside the deployment's allowlist.
+  // It stands against the field until the address is edited.
+  const [urlRefusal, setUrlRefusal] = useState<string | null>(null);
 
-  const urlInvalid = !isValidUrl(url);
+  const urlMalformed = !isValidUrl(url);
+  const urlInvalid = urlMalformed || urlRefusal !== null;
   const timeInvalid = !isValidTime(time);
 
   const changes: MflConfigUpdate = {};
@@ -47,7 +51,13 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
       onSaved(response.data);
       setResult({ kind: 'success', title: t('settingsSaved', 'Settings saved') });
     } catch (e) {
-      setResult({ kind: 'error', title: messageOf(e) ?? t('settingsNotSaved', 'The settings were not saved. Try again.') });
+      const message = messageOf(e);
+      if (statusOf(e) === 400 && changes.url && message && isAboutUrl(message)) {
+        setUrlRefusal(message);
+        setResult({ kind: 'error', title: t('urlRefused', 'The MFL address was not accepted, so nothing was saved.') });
+      } else {
+        setResult({ kind: 'error', title: message ?? t('settingsNotSaved', 'The settings were not saved. Try again.') });
+      }
     } finally {
       setSaving(false);
     }
@@ -85,12 +95,24 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
           <TextInput
             id="mfl-url"
             labelText={t('mflUrl', 'MFL address')}
-            helperText={t('mflUrlHelper', 'The DHIS2 instance root, starting https:// and without /api.')}
+            helperText={t(
+              'mflUrlHelper',
+              'The DHIS2 instance root, starting https:// and without /api. Only hosts the deployment allows can be used; ICT sets that list on the server, not here.',
+            )}
             value={url}
             disabled={!canManage}
             invalid={urlInvalid}
-            invalidText={t('urlInvalid', 'Use an https:// address that does not end in /api.')}
-            onChange={(event) => setUrl(event.target.value)}
+            invalidText={
+              urlMalformed
+                ? t('urlInvalid', 'Use an https:// address without a user name or password, and not ending in /api.')
+                : t('urlRefusedBy', '{{reason}}. The allowed hosts are set by the deployment, not on this page: ask ICT to add the host if it is right.', {
+                    reason: urlRefusal?.replace(/\.$/, ''),
+                  })
+            }
+            onChange={(event) => {
+              setUrl(event.target.value);
+              setUrlRefusal(null);
+            }}
           />
         </div>
         {result && (

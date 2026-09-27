@@ -88,10 +88,29 @@ export function messageOf(error: unknown): string | undefined {
   return (error as MflFetchError)?.responseBody?.error;
 }
 
-/** The same rules PUT /config applies, checked before the round trip. */
+const loopback = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i;
+
+/**
+ * The shape rules PUT /config applies, checked before the round trip: https, no credentials in the
+ * address, not ending in /api. Plain http is let through for a loopback host only, because a
+ * development stub may be allowed it by LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP, which only the server
+ * knows. Whether the host is allowed at all is the server's call (LIBERIAEMR_MFL_ALLOWED_HOSTS).
+ */
 export function isValidUrl(url: string) {
   const trimmed = url.trim();
-  return /^https:\/\/[^\s/]+/.test(trimmed) && !/\/api\/?$/.test(trimmed);
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return false;
+  }
+  const scheme = parsed.protocol === 'https:' || (parsed.protocol === 'http:' && loopback.test(trimmed));
+  return scheme && Boolean(parsed.hostname) && !parsed.username && !parsed.password && !/\/api\/?$/i.test(parsed.pathname);
+}
+
+/** A PUT /config 400 about the address rather than the schedule. */
+export function isAboutUrl(message: string) {
+  return !/schedule/i.test(message) && /url|host|https|address/i.test(message);
 }
 
 export function isValidTime(time: string) {

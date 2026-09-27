@@ -244,7 +244,9 @@ describe('MFL sync page', () => {
     render(<MflSync />);
     fireEvent.change(screen.getByLabelText('MFL address'), { target: { value: 'https://dhis2.moh.gov.lr/mfl/api' } });
 
-    expect(screen.getByText('Use an https:// address that does not end in /api.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Use an https:// address without a user name or password, and not ending in /api.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
   });
 
@@ -272,6 +274,81 @@ describe('MFL sync page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
 
     await waitFor(() => expect(screen.getByText('schedule.time must be HH:MM')).toBeInTheDocument());
+  });
+
+  it.each([
+    ['plain http to a real host', 'http://dhis2.moh.gov.lr/mfl'],
+    ['a user name in the address', 'https://someone@dhis2.moh.gov.lr/mfl'],
+    ['not an address at all', 'dhis2.moh.gov.lr/mfl'],
+  ])('refuses %s before sending it', (_case, value) => {
+    given('/status', { data: { data: status() } });
+
+    render(<MflSync />);
+    fireEvent.change(screen.getByLabelText('MFL address'), { target: { value } });
+
+    expect(
+      screen.getByText('Use an https:// address without a user name or password, and not ending in /api.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
+  });
+
+  it('lets plain http to a loopback stub through, for the server to decide', () => {
+    given('/status', { data: { data: status() } });
+
+    render(<MflSync />);
+    fireEvent.change(screen.getByLabelText('MFL address'), { target: { value: 'http://localhost:8099/mfl' } });
+
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
+  });
+
+  it('shows a host outside the allowlist against the address, and says who sets the list', async () => {
+    const refused =
+      "'mfl.example.org' is not an allowed MFL host. Allowed: [dhis2.moh.gov.lr], set by LIBERIAEMR_MFL_ALLOWED_HOSTS in the deployment environment";
+    given('/status', { data: { data: status() } });
+    mockOpenmrsFetch.mockRejectedValue(refusal(400, refused));
+
+    render(<MflSync />);
+    const field = screen.getByLabelText('MFL address');
+    fireEvent.change(field, { target: { value: 'https://mfl.example.org' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('The MFL address was not accepted, so nothing was saved.')).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/'mfl.example.org' is not an allowed MFL host/)).toHaveTextContent(
+      'The allowed hosts are set by the deployment, not on this page',
+    );
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
+
+    // Editing the address clears the refusal so it can be tried again.
+    fireEvent.change(field, { target: { value: 'https://dhis2.moh.gov.lr/mfl2' } });
+    expect(screen.queryByText(/is not an allowed MFL host/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
+  });
+
+  it('renders a country change in the drill-down', () => {
+    given('/status', { data: { data: status() } });
+    given('/runs/42', { data: { data: run() } });
+    given('/runs/42/items', {
+      data: {
+        data: {
+          results: [
+            {
+              ...items.results[0],
+              changes: [{ field: 'country', from: null, to: 'Liberia' }],
+            },
+          ],
+          totalCount: 1,
+        },
+      },
+    });
+
+    render(<MflSync />);
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    expect(screen.getByText('country')).toBeInTheDocument();
+    expect(screen.getByText(/Liberia/)).toBeInTheDocument();
   });
 
   it("opens a run's changes, warnings and errors", () => {
