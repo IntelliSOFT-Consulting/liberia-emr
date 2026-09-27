@@ -16,6 +16,7 @@ Format: Context → Decision → Consequences → Status.
 | [0006](0006-pin-o3-refapp-3.7.1.md) | Rebase the distribution on O3 RefApp 3.7.1 | Accepted |
 | [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | **Proposed** |
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
+| [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** |
 | [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
