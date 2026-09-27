@@ -118,8 +118,9 @@ applies to both kinds of row.
 | `shortName`, `path`, service/programme groups | **not mapped** | the ~36 *Facilities Rendering …* groups, CRDF and EPI OSDV are out of v1 |
 
 **Name disambiguation.** A name that clashes, case-insensitively, with another *active*
-location gets ` (<District name>)` appended. Clashes are counted against the whole pull plus the
-instance's non-MFL locations.
+location gets ` (<District name>)` appended. It applies to created rows only. Clashes are counted
+against the whole pull, the instance's non-MFL locations, and the local names of adopted rows,
+which the sync never renames (decision 1).
 
 - When several MFL units share a name, **every one of them** gets the suffix. That keeps the
   outcome the same on every instance and independent of processing order.
