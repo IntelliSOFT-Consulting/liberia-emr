@@ -83,6 +83,7 @@ public class MflSyncServiceTest extends BaseModuleContextSensitiveTest {
 				jah = item;
 			}
 		}
+		assertNotNull("the run holds an item for Jah Clinic", jah);
 		assertEquals("FACILITY", jah.get("level"));
 		assertEquals("LBR-06-0624-06", jah.get("mflCode"));
 		assertEquals(MflUuid.forUid("nY6mPgT0Kc6"), jah.get("locationUuid"));
