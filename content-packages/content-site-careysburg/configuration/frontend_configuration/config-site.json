@@ -10,7 +10,7 @@
       "alt": "Ministry of Health, Republic of Liberia — Careysburg Health Center"
     }
   },
-  "@openmrs/esm-login-app": {
+  "@liberiaemr/esm-liberia-login-app": {
     "chooseLocation": {
       "enabled": true,
       "useLoginLocationTag": true,

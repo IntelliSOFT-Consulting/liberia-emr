@@ -8,7 +8,12 @@ A production dump in a CI runner is a PHI breach. Fixtures are built from the
 `content-demo` package plus **synthetic** patients.
 
 `.gitignore` excludes `*.sql` and `*.sql.gz` here so a dump cannot be committed by accident.
-Fixtures are published as release artefacts instead, alongside the images they correspond to.
+Fixtures are to be published as release artefacts instead, alongside the images they
+correspond to.
+
+⚠ Nothing publishes or fetches them yet, and none exists. `run-upgrade.sh` reads
+`qa/upgrade/fixtures/<from>.sql.gz` from the working tree, and `release.yml` downloads
+nothing into it first.
 
 ## Coverage
 

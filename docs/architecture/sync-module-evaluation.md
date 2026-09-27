@@ -162,7 +162,7 @@ The identity problem is separable from the transport problem, and it has its own
 | I5: `csaude/openmrs-module-mpi` | OpenMRS module pushing patients to OpenCR/SanteMPI via Debezium | Useful precedent, **wrong fit as-is** |
 
 **Why I1 for v1.** Two facilities, one central instance, and a matching policy that is not
-yet agreed (ADR 0005 is still Proposed). Adopting a full MPI now means deploying and
+yet agreed (ADR 0005 was still Proposed when this was written; it has since been accepted). Adopting a full MPI now means deploying and
 operating another national-scale service, with its own database, backup, security review and
 MOH training burden, in order to serve two sites, before the policy it would enforce has
 been signed off. The identity layer we need for v1 is a CPI, a link table and a review
@@ -298,7 +298,7 @@ rehearsal.
 | 3 | Add Artemis broker + sender management DB to compose | Stack starts; receiver subscribes **before** any sender publishes | Done: the broker declares the receiver's subscription queue ([`distribution/broker/`](../../distribution/broker/README.md)) |
 | 4 | mTLS + PGP keys, end to end | Facility authenticates; payloads encrypted at rest in transit | Built and proven by `qa/sync/verify-hardening.sh`. Certificate lifecycle is MOH ICT's: escalate early |
 | 5 | Entity/route reconciliation | Confirmed list of covered vs custom routes | Done: the set is declared as `eip.watchedTables`, and the subclass defect did not reproduce for test and drug orders on 4.0.0 |
-| 6 | Identity layer (CPI + link + review queue) at central | Duplicates surfaced, never auto-merged | Blocked on ADR 0005 sign-off |
+| 6 | Identity layer (CPI + link + review queue) at central | Duplicates surfaced, never auto-merged | ADR 0005 accepted (LE-22). CPI minting and the National ID rule built (LE-35, `qa/sync/verify-identity.sh`); scoring, the review queue page and its MOH owner still to do ([architecture](sync-eip.md) §2.5) |
 | 7 | **Offline acceptance test** ([architecture](sync-eip.md) §5.9) | Full drain and zero divergence after a long outage | The guarantee is unproven until this passes |
 | 8 | Cross-facility query (Sprint 4) | Read path over FHIR, scoped per ADR 0007 | Blocked on ADR 0007 sign-off |
 

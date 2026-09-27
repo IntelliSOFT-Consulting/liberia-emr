@@ -1,7 +1,7 @@
 {
   "name": "1. First and Second Stage of Labor and Delivery",
   "uuid": "${var.form.first-and-second-stage-of-labor-and-delivery.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -124,7 +124,10 @@
                 "rendering": "number",
                 "min": 1,
                 "step": 1,
-                "disallowDecimals": true
+                "disallowDecimals": true,
+                "calculate": {
+                  "calculateExpression": "mode === 'enter' && isEmpty(myValue) ? getCurrentPregnancyAncNumeric(patient.id, '${var.concept.ciel.gravida.uuid}').then(v => v) : myValue"
+                }
               }
             },
             {
@@ -136,7 +139,10 @@
                 "rendering": "number",
                 "min": 0,
                 "step": 1,
-                "disallowDecimals": true
+                "disallowDecimals": true,
+                "calculate": {
+                  "calculateExpression": "mode === 'enter' && isEmpty(myValue) ? getCurrentPregnancyAncNumeric(patient.id, '${var.concept.ciel.parity.uuid}').then(v => v) : myValue"
+                }
               },
               "validators": [
                 {

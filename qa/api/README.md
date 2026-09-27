@@ -18,8 +18,16 @@ Automated tests against the OpenMRS REST and FHIR APIs of a running distribution
 ## Fixtures
 
 Use the worked instances in `integration/fhir/examples/` so the profiles and the tests
-cannot drift apart.
+cannot drift apart. That directory is planned in
+[`integration/fhir/README.md`](../../integration/fhir/README.md) but does not exist yet.
 
 ## Running
 
-Against a stack brought up by `qa/upgrade/run-clean-install.sh`, in CI on every PR.
+Intended to run against the stack `qa/upgrade/run-clean-install.sh` brings up, on every PR.
+That script destroys its stack (`down -v`) on exit, so the tests either run from inside it
+or bring up a stack of their own.
+
+## Status
+
+⚠ No tests written yet. Both placeholders are `echo` steps: `API tests` at the end of the
+`initializer-clean-db` job in `ci.yml`, and in the `full-stack-tests` job in `release.yml`.

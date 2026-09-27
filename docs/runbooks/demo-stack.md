@@ -54,7 +54,7 @@ against `SPA_CONFIG_URLS` in the demo compose file, and builds three images:
 
 ```text
 liberia-emr-backend-demo:1.0.0     platform + OMODs + Liberia content + content-demo
-liberia-emr-frontend-demo:1.0.0    app shell + config-core/national/mch/site/demo
+liberia-emr-frontend-demo:1.0.0    app shell + config-core/national/mch/opd/site/demo
 liberia-emr-gateway:1.0.0          shared with production — there is no -demo gateway
 ```
 

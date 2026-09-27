@@ -1,13 +1,16 @@
 # Branding assets
 
-MOH and LiberiaEMR branding, copied into the frontend image and referenced from the runtime
-configuration as `${openmrsSpaBase}/branding/<file>`.
+MOH and LiberiaEMR branding, copied into the frontend image at `/openmrs/spa/branding/` and
+referenced from the runtime configuration as `${openmrsSpaBase}/branding/<file>`.
 
 | File | Referenced from |
 | --- | --- |
-| `liberiaemr-logo.svg` | `config-core.json`, site `config-site.json` |
-| `moh-liberia-logo.svg` | `config-core.json` (login screen) |
-| `favicon.ico` | app shell |
+| `moh-liberia-logo.svg` | `config-core.json` and each site's `config-site.json`, as the `@openmrs/esm-primary-navigation-app` logo |
+| `liberiaemr-logo.svg` | `config-core.json`, as the `@openmrs/esm-login-app` logo |
+
+The login logo is configured under the core `@openmrs/esm-login-app`, which
+`distro.properties` no longer ships: `@liberiaemr/esm-liberia-login-app` replaces it and reads
+its own `logo` key under its own module name. No favicon is supplied in this directory.
 
 ## Why branding is runtime config, not source
 
@@ -16,5 +19,4 @@ intermittent link. The asset ships in the image, but which asset is used, and it
 come from the content packages' `frontend_configuration/` — so a site can rebrand without
 touching this directory.
 
-⚠ Assets not yet supplied. Obtain the official MOH mark from the Ministry; do not
-approximate it.
+Obtain any replacement MOH mark from the Ministry; do not approximate it.

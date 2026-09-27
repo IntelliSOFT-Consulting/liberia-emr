@@ -32,8 +32,9 @@ The sync layer is designed in `docs/`; this directory holds the implementation c
 `distribution/monitoring/`. `scripts/build/build-distribution.sh` builds the sync, receiver,
 broker and cert-expiry images alongside backend, frontend and gateway. Proof is in
 `qa/sync/`; operation is in the [sync runbook](../docs/runbooks/sync-operations.md). Still to
-build: reconciliation ([sync-eip.md](../docs/architecture/sync-eip.md) §5.5) and the identity
-layer at central (ADR 0005).
+build: reconciliation ([sync-eip.md](../docs/architecture/sync-eip.md) §5.5) and the rest of
+the identity layer at central (ADR 0005): CPI minting and the National ID rule are built in
+the liberiaemr module, while probabilistic scoring and the review queue are not.
 
 The `dhis2-export` service in the central compose names an image that nothing in this
 repository builds yet; it stays off behind the `dhis2` profile.

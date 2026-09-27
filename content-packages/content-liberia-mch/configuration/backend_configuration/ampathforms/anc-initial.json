@@ -527,7 +527,8 @@
                 "rendering": "number",
                 "concept": "${var.concept.ciel.weight-kg.uuid}",
                 "min": "20",
-                "max": "300"
+                "max": "300",
+                "step": 0.1
               },
               "id": "weight",
               "label": "Weight",

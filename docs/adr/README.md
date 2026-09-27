@@ -12,7 +12,7 @@ Format: Context → Decision → Consequences → Status.
 | [0002](0002-pin-o3-refapp-3.6.md) | Base on O3 RefApp 3.6 + HIS-Lite, pinned exactly | Superseded by [0006](0006-pin-o3-refapp-3.7.1.md) |
 | [0003](0003-layered-content-packages.md) | Layer content packages common → programme → site | Accepted |
 | 0004 | Password expiry and history enforcement mechanism | **Open** |
-| [0005](0005-cross-facility-identity-reconciliation.md) | Cross-facility identity reconciliation: link, never merge | **Proposed** |
+| [0005](0005-cross-facility-identity-reconciliation.md) | Cross-facility identity reconciliation: link, never merge | Accepted |
 | [0006](0006-pin-o3-refapp-3.7.1.md) | Rebase the distribution on O3 RefApp 3.7.1 | Accepted |
 | [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | **Proposed** |
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
@@ -21,18 +21,21 @@ Format: Context → Decision → Consequences → Status.
 implementation. The number is reserved and has no file until the decision is written; the
 options are set out in [the SOP mapping](../security/moh-ict-sop-mapping.md) (A4/A5).
 
-0005 and 0007 are drafted and **Proposed**, not Accepted; each names the specific questions
-the MOH must answer to close it (identity scheme and review-queue ownership for 0005;
-sensitive-category exclusions and lawful basis for 0007). Both are due for MOH ICT sign-off
-by 21 August 2026 and both block the sync layer: 0005 is a clinical safety decision the
-push cannot be built without, 0007 a legal one that cross-facility query cannot.
+0005 is Accepted by MOH ICT (LE-22) and is being built as the CPI service in the liberiaemr
+module: minting and the National ID rule are in (LE-35); scoring, the review queue and the
+queue's MOH owner follow. 0007 is drafted and **Proposed**, not Accepted; it names the
+questions the MOH must answer to close it (sensitive-category exclusions and lawful basis).
+It was due for MOH ICT sign-off by 21 August 2026 and blocks cross-facility query, which is a
+legal decision rather than a technical one.
 
 0008 selects the sync technology and is **conditional**: it holds as written only if the
-Debezium/MariaDB spike succeeds, and otherwise stands with MySQL 8.0 substituted. Unlike 0005
-and 0007 it needs no MOH decision, only a test. That test passed on 2 September 2026
+Debezium/MariaDB spike succeeds, and otherwise stands with MySQL 8.0 substituted. Unlike 0007
+it needs no MOH decision, only a test. That test passed on 2 September 2026
 ([sync-eip.md](../architecture/sync-eip.md) §1.8a) and the sync layer is now built on it
-([`distribution/sync/`](../../distribution/sync/README.md)); the ADR's own status line still
-reads Proposed.
+([`distribution/sync/`](../../distribution/sync/README.md)). The ADR itself was not updated:
+its status line still reads Proposed, and its Context and Decision still say nothing is built
+or pinned. Read those as the state when it was written, pending an Accepted status (or a
+superseding ADR) from its owner.
 
 Background for all three: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and

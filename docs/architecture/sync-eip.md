@@ -48,9 +48,10 @@ a design document produces a plan that cannot be implemented.
 
 The note in `distribution/distro.properties` (that `openmrs-eip` is a standalone Camel
 application rather than an OMOD) is correct but incomplete: it names the toolbox, not the
-deployable. Neither is version-pinned anywhere in the distribution today.
+deployable. Neither was version-pinned in the distribution when this was drafted; both are
+now (`sync.dbsync`, `sync.eip` in `distribution/distro.properties`, §10 item 3).
 
-**Versions to pin** (neither is pinned today; see [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md)):
+**Versions pinned** (see [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md)):
 `openmrs-dbsync` **4.0.0**, `openmrs-eip` **4.2.0**, Camel 4.1.0, Java 17. Master is
 `4.1.0-SNAPSHOT`; no SNAPSHOT ships. The 3.x line is Java 8 and therefore not a candidate.
 
@@ -161,18 +162,14 @@ sync-layer regression risk, and §1.1 shows we are already two minor versions pa
 tested platform range. That is why the upgrade rehearsal in `qa/upgrade/` has to grow a
 sync assertion before the second facility goes live.
 
-> ⚠ **Required change, as drafted.** The facility `db` service did not enable binary
-> logging. Debezium needs, on the database container command:
-> `--log-bin --binlog-format=ROW --binlog-row-image=FULL --server-id=<unique-per-facility>`
-> and a replication-privileged database user (`REPLICATION SLAVE`, `REPLICATION CLIENT`,
-> `SELECT`) that is **not** the OpenMRS application user.
->
-> **RESOLVED.** The facility `db` command now carries `--log-bin`, `--binlog-format=ROW`,
-> `--binlog-row-image=FULL` and `--server-id=${DB_SERVER_ID}`, and
-> `distribution/compose/facility/initdb/10-sync-db-users.sh` creates a separate Debezium
-> user with `SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT`. Retention
-> defaults to 8553600 seconds, MariaDB's cap of 99 days, short of the six-month floor below
-> (F1).
+> **Done** (it was drafted as a required change: the facility `db` service did not enable
+> binary logging). The facility `db` command now carries `--log-bin`, `--binlog-format=ROW`,
+> `--binlog-row-image=FULL` and `--server-id=${DB_SERVER_ID}`, with
+> `--binlog-expire-logs-seconds` for retention (risk F1) and `--sync-binlog=1` for crash
+> safety (risk F11). `distribution/compose/facility/initdb/10-sync-db-users.sh` creates a
+> separate Debezium user with `SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE,
+> REPLICATION CLIENT` that is **not** the OpenMRS application user. Retention defaults to
+> 8553600 seconds, MariaDB's cap of 99 days, short of the six-month floor below (F1).
 
 **Binlog retention is the real maximum-outage ceiling.** If the binlog is pruned past the
 sender's committed offset, the facility needs a reconciliation replay (§5.5), not a retry;
@@ -567,6 +564,23 @@ If the MOH later wants the CPI printed on a patient card or written into the fac
 record, that is a **second write direction** and needs its own ADR; it is not a
 configuration change, and it should not be presented as one.
 
+**As built.** The identity service is part of the liberiaemr module and runs on the OpenMRS
+scheduler at central, every `liberiaemr.identity.intervalSeconds` (60 by default; `IdentityAssignmentTask`). It mints a CPI (a UUID, with the
+`LR-XXXXX-XXXXX-C` form beside it) for every patient in the replica that has none, records the
+facility as the top of the location tree the record's identifier was issued at, then applies
+rule 4 of §2.2: an exact match on the National ID identifier type links the new CPI as an alias
+of the existing person's, provided sex agrees and date of birth agrees within
+`liberiaemr.identity.dobToleranceDays` (year only when either date is estimated); a match that
+fails that check is written to `match_review` for a person to decide. A National ID recorded on a
+later visit is checked the same way once it reaches central (a sweep of 5,000 links a run);
+a changed one on a record already linked to others goes to review rather than moving the group. Nothing else links yet:
+the probabilistic scoring of rule 5, the review queue's page and its MOH owner are the next
+slice, as is folding a facility-side merge (the voided losing record) into an alias, which
+ADR 0005's consequences require. Voided patients are not given a CPI. The schema is `openmrs_identity`, created by
+`distribution/compose/central/initdb/20-identity-db.sh`; the CPI is read through
+`/ws/rest/v1/liberiaemr/identity/patient/{uuid}` behind the `View Identity Links` privilege, and
+the Sync status page shows the counts. `qa/sync/verify-identity.sh` proves it on two facilities.
+
 ---
 
 ## 3. DECISION 2: Pulled-record scope
@@ -786,7 +800,7 @@ way to tell when it started.
 | Queue disk over threshold | Approaching the real outage ceiling | Escalate before it is reached |
 | Oldest unacknowledged message age | The true "how far behind is this facility" number | Dashboard metric, per facility |
 | Dead-letter queue non-empty | A defect exists | Human inspection |
-| Conflict queue non-empty | Central's row was changed outside sync, so an incoming update is held | Human resolution (`scripts/sync/conflicts.sh`): and if it is not rare, something is writing at central that should not be |
+| Conflict queue non-empty | Central's row was changed outside sync, so an incoming update is held | Human decision on the Sync conflicts page, applied by the receiver in its nightly window with dbsync's hash updater (`scripts/sync/conflicts.sh` by hand): and if it is not rare, something is writing at central that should not be |
 | Parked-dependency message aged out | Something upstream was lost | Investigate; likely reconciliation |
 | Binlog retention approaching sender offset | Replay territory, not retry territory | Urgent |
 
@@ -828,6 +842,7 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional** |
 | F9 | **Reconnection storm** | Regional outage ends; all facilities return at once | Receiver overwhelmed; the first facilities to reconnect starve the rest | Jittered backoff and per-facility rate limiting at central (§7.6) |
 | F10 | **Facility server stolen or dies outright** | Physical | Loss of the local record and its credentials | Facility backups (existing runbook), full-disk encryption (§7.4), certificate revocation at central (§7.2) |
+| F11 | **Power cut tears or drops the binlog tail** | Facility loses power with `sync_binlog=0` | The sender stops at the torn event and retries forever, or a committed change never reaches the binlog and never syncs (**silent gap**) | `--sync-binlog=1` with `innodb_flush_log_at_trx_commit=1` on the facility database, so no acknowledged commit is lost or torn; the outage drill asserts both. An unacknowledged commit cut off mid-write can still leave a partial tail event, which the sender may stop on. FOUND 2026-09-25 on a lab stack after a forced Docker restart |
 
 Two of these deserve emphasis because they are the ones that get deferred:
 
@@ -1155,7 +1170,9 @@ Superseding the checklist in
 
 1. **E1 settled by experiment.** Nothing else is worth building until the sender is known to
    stream from our database. Done 2026-09-02 (§1.8a).
-2. ADR 0005 accepted (identity): questions 1 and 2 in §8.
+2. ADR 0005 accepted (identity): questions 1 and 2 in §8. Accepted by MOH ICT (LE-22); the
+   CPI service is built through the National ID rule (§2.5, As built). The review queue's
+   named MOH owner (question 2) is still open.
 3. `openmrs-eip` **and** DB-sync versions pinned in `distribution/distro.properties`.
    Done: `sync.dbsync=4.0.0`, `sync.eip=4.2.0` (E4).
 4. Binlog enabled on the facility database, with a dedicated replication user, and binlog

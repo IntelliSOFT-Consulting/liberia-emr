@@ -109,6 +109,11 @@ export const configSchema = {
     _description:
       'Whether to show the password field on a separate screen. If false, the password field will be shown on the same screen.',
   },
+  showPasswordReset: {
+    _type: Type.Boolean,
+    _default: true,
+    _description: 'Whether to show the "Forgot password?" link on the login screen.',
+  },
   background: {
     _type: Type.Object,
     _description:
@@ -191,5 +196,6 @@ export interface ConfigSchema {
     type: 'basic' | 'oauth2' | 'custom';
   };
   showPasswordOnSeparateScreen: boolean;
+  showPasswordReset: boolean;
   twoFactorAuth: TwoFactorAuthConfigObject;
 }

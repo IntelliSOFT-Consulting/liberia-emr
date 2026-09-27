@@ -15,17 +15,40 @@ module is an ADR-level decision, not a quiet swap.
   `content-packages/**`. The MCH content package supplies its *configuration*; the module
   itself is a distribution concern.
 
-## Why the concepts are not compiled in
+## Configuration
 
-Every concept UUID and the alert/action line geometry come from runtime configuration
-(`content-liberia-mch/configuration/frontend_configuration/config-mch.json`, which itself
-resolves `${var.*}` from `variables.properties`). A concept correction then ships as a
-config change instead of a frontend release — which matters when the fix has to reach a
-facility over an intermittent link.
+Concept UUIDs, encounter types, forms and the alert/action line geometry are runtime
+configuration under the key `@liberiaemr/esm-liberia-epartograph-app`. Production values come
+from `content-liberia-mch/configuration/frontend_configuration/config-mch.json`, which
+resolves `${var.*}` from `variables.properties` and sets every key below. A concept
+correction then ships as a config change instead of a frontend release — which matters when
+the fix has to reach a facility over an intermittent link.
 
-Config defaults are deliberately **empty strings**, not "a UUID that works on the test
-server". An unset concept must fail visibly in config validation rather than silently
-write observations against the wrong concept.
+| Key | Default | |
+| --- | --- | --- |
+| `encounterTypeUuid` | a UUID | Encounter type of each serial partograph observation |
+| `deliveryEncounterTypeUuid` | a UUID | Delivery outcome / summary encounter type |
+| `formUuid` | a UUID | Partograph AMPATH form opened by **Add** |
+| `thirdStageFormUuid` | a UUID | Stage 3 / delivery of infant and placenta form |
+| `firstAndSecondStageFormUuid` | a UUID | Stage 1 and 2 admission form |
+| `concepts.*` | a UUID each, except the five `*DipstickUuid` keys (`''`) | Dilatation, descent, contractions, FHR, moulding, liquor, maternal vitals, oxytocin, drugs/IV fluids, urine |
+| `alertLine.startDilationCm` | `4` | Where the alert line starts; also the T₀ threshold |
+| `alertLine.cmPerHour` | `1` | Alert line slope |
+| `alertLine.actionLineOffsetHours` | `4` | Action line offset to the right of the alert line |
+
+**The defaults are not empty.** The comment at the top of `src/config-schema.ts` says they are
+deliberately empty so that an unset concept fails validation; in the code, every key except
+the dipstick concepts has a concrete UUID default. Until that is resolved, a missing entry in
+`config-mch.json` falls back silently to the compiled-in UUID rather than failing.
+
+## Where it is mounted
+
+| Extension | Slot | |
+| --- | --- | --- |
+| `partograph-dashboard-link` | `patient-chart-dashboard-slot` | **Partograph** in the chart's left nav; opens dashboard path `partograph` |
+| `partograph-chart` | `patient-chart-partograph-dashboard-slot` | The table/graph view and CDS alerts |
+
+No pages. Backend dependencies (`routes.json`): `webservices.rest >=2.47.0`, `fhir2 >=2.0.0`.
 
 ## Clinical Architecture & Stage Tracking
 
@@ -65,7 +88,33 @@ CDS alerts are rendered through `PersistentNotification`, anchored via a React P
 
 ```bash
 yarn install
-yarn start:local  # loads both config-national.json and config-mch.json
+yarn start        # openmrs develop, default backend
+yarn typescript
+yarn build
 ```
 
-The module is published as `@liberiaemr/esm-liberia-epartograph-app` and consumed through the pinned import map — never mounted into a running container from a git checkout.
+`start:dev` and `start:local` (port 8083, backend `localhost:8085`) pass
+`../../distribution/frontend/config/config-national.json` and `config-mch.json`; that
+directory does not exist. The files are under
+`content-packages/content-liberia-{national,mch}/configuration/frontend_configuration/`.
+
+There are no tests yet: `yarn test` points at a `jest.config.js` that is not in the package,
+and `yarn lint` / `yarn verify` call `eslint` and `turbo`, which are not dependencies.
+
+The tooling (`@openmrs/esm-framework`, `openmrs`) must stay on `10.0.0` to match
+`spa.core=10.0.0`: per `distro.properties`, 10.0.1-pre and newer inject a Module Federation
+runtime guard the 10.0.0 app shell cannot satisfy, and the module refuses to start.
+
+## Build and publish
+
+- **CI gate** (`ci.yml`, job `frontend`): nothing runs yet — the step is an
+  `echo "TODO: …"`.
+- **`packages.yml`**: `tsc` and build on changes to `packages/**` (no lint); publishes
+  `1.0.0-pre.<run>` to npm tag `next` on a merge to `main`, and the release tag to `latest`
+  on a GitHub release. See [`packages/README.md`](../README.md#ci-and-publishing).
+- **Pin**: `spa.frontendModules.@liberiaemr/esm-liberia-epartograph-app=1.0.0-pre.53` in
+  `distribution/distro.properties`, the build verified against `spa.core=10.0.0`. Re-pin
+  deliberately after each publish — never `next` (IMPLEMENTATION.md §6).
+
+The module is published as `@liberiaemr/esm-liberia-epartograph-app` and consumed through
+the pinned import map — never mounted into a running container from a git checkout.
