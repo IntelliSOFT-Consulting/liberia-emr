@@ -3,3 +3,5 @@ ${var.privilege.view-audit-log.uuid},,View Audit Log,Read the audit log. Granted
 ${var.privilege.export-national-report.uuid},,Export National Report,Generate and export MOH national indicator reports
 ${var.privilege.manage-facility-sync.uuid},,Manage Facility Sync,Inspect and retry the facility-to-central sync queue
 ${var.privilege.register-maternal-program.uuid},,Register Maternal Program,"Enrol a patient in ANC, L&D, PNC or Family Planning"
+${var.privilege.view-mfl-sync.uuid},,View MFL Sync,Read the Master Facility List sync status and run history
+${var.privilege.manage-mfl-sync.uuid},,Manage MFL Sync,"Change the Master Facility List sync settings, test the connection and start a run"
