@@ -77,6 +77,10 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       !chooseLocation.locationTag || facilities.some((facility) => facility.uuid === locationUuid),
     [chooseLocation.locationTag, facilities],
   );
+  const isUsable = useCallback(
+    (locationUuid?: string) => !chooseLocation.locationTag || (!isLoadingFacilities && isChoosable(locationUuid)),
+    [chooseLocation.locationTag, isLoadingFacilities, isChoosable],
+  );
   const usableDefaultLocation =
     chooseLocation.locationTag && (isLoadingFacilities || !isChoosable(defaultLocation)) ? null : defaultLocation;
 
@@ -88,6 +92,9 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // In the tagged flow a location counts as chosen only once the tagged list has loaded and holds it.
+  const chosenLocation = isUsable(activeLocation) ? activeLocation : undefined;
 
   useEffect(() => {
     if (chooseLocation.locationTag && !isLoadingFacilities && activeLocation && !isChoosable(activeLocation)) {
@@ -152,13 +159,13 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     (evt: React.FormEvent<HTMLFormElement>) => {
       evt.preventDefault();
 
-      if (!activeLocation) {
+      if (!chosenLocation) {
         return;
       }
 
-      changeLocation(activeLocation, savePreference);
+      changeLocation(chosenLocation, savePreference);
     },
-    [activeLocation, changeLocation, savePreference],
+    [chosenLocation, changeLocation, savePreference],
   );
 
   return (
@@ -222,7 +229,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
                   className={styles.confirmButton}
                   kind="primary"
                   type="submit"
-                  disabled={!activeLocation || !isLoginEnabled || isSubmitting}
+                  disabled={!chosenLocation || !isLoginEnabled || isSubmitting}
                 >
                   {isSubmitting ? (
                     <InlineLoading className={styles.loader} description={t('submitting', 'Submitting')} />

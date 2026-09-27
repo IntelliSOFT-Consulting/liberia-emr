@@ -238,6 +238,51 @@ describe('LocationPickerView facility switcher wiring', () => {
       expect(mockSetSessionLocation).not.toHaveBeenCalled();
     });
 
+    it('keeps Confirm disabled for a current location until the tagged list confirms it', async () => {
+      let release: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const base = mockOpenmrsFetch.getMockImplementation();
+      mockOpenmrsFetch.mockImplementation(async (url: string, init?: unknown) => {
+        if (url.startsWith('/ws/rest/v1/location?')) {
+          await gate;
+        }
+        return base(url, init as never);
+      });
+      // A tag no other test uses, so SWR has no cached list and the load is really pending.
+      mockUseConfig.mockReturnValue({
+        ...tagged,
+        chooseLocation: { ...tagged.chooseLocation, locationTag: 'Gated Facility' },
+      });
+      renderWithRouter(LocationPickerView, { currentLocationUuid: 'not-tagged', hideWelcomeMessage: true });
+
+      expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+      release();
+      await screen.findAllByRole('radio', { name: /jah clinic/i });
+      expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+    });
+
+    it('enables Confirm for a current location once it is found in the tagged list', async () => {
+      let release: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const base = mockOpenmrsFetch.getMockImplementation();
+      mockOpenmrsFetch.mockImplementation(async (url: string, init?: unknown) => {
+        if (url.startsWith('/ws/rest/v1/location?')) {
+          await gate;
+        }
+        return base(url, init as never);
+      });
+      mockUseConfig.mockReturnValue({
+        ...tagged,
+        chooseLocation: { ...tagged.chooseLocation, locationTag: 'Gated Facility 2' },
+      });
+      renderWithRouter(LocationPickerView, { currentLocationUuid: 'f1', hideWelcomeMessage: true });
+
+      expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+      release();
+      await screen.findAllByRole('radio', { name: /jah clinic/i });
+      await waitFor(() => expect(screen.getByRole('button', { name: /confirm/i })).toBeEnabled());
+    });
+
     it('still honours any valid saved default when no locationTag is set', async () => {
       mockUseConfig.mockReturnValue(mockConfig);
       withSavedDefault('login-only');

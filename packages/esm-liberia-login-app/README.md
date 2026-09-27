@@ -97,11 +97,11 @@ The list shows at most `locationsPerRequest` rows and asks the user to refine th
 more.
 
 It is off by default. With `locationTag` empty, the picker is the framework `LocationPicker`
-exactly as before. It belongs only in central's frontend configuration, but there is no
-central-only frontend layer yet. The central stack runs the frontend image built with a
-facility's config list, and the `config-central.json` its compose file names exists in no
-content package (see `distribution/README.md`). So nothing in this repository turns the
-switcher on yet.
+exactly as before. It belongs only in central's frontend configuration, which now exists: the
+`content-central` package and its `config-central.json` (ADR 0011, LE-359). The switcher is
+deliberately not enabled there yet. Once this change is merged, it is enabled by adding
+`"locationTag": "Health Facility"` under `@liberiaemr/esm-liberia-login-app` → `chooseLocation` in
+`content-packages/content-central/configuration/frontend_configuration/config-central.json`.
 
 ## Development
 
