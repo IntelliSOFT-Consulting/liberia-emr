@@ -518,3 +518,25 @@ queue. Until then digests are refused and the facilities try again every six hou
 that cannot reach the broker at all tries every hour, before reading anything. `SYNC_RECON=false` in
 either env file turns reconciliation off. `qa/sync/verify-reconciliation.sh` exercises this
 section.
+
+## 16. A facility stops capturing: `SyncCaptureStalled`
+
+The facility's sender is running, but for over 15 minutes new records have been saved there
+while its position in the database's binary log has not moved. Nothing saved since then is
+being sent. The sender's own metrics cannot show this, so the `sync-capture` exporter at the
+facility watches for it (distribution/monitoring/README.md).
+
+1. Find the error the sender repeats: `facility logs --since 30m sync | grep -m3 ERROR`.
+2. `bogus data in log event` (error 1236) at a position near the end of a binary log file
+   means a power cut or hard stop tore the last event in that file. With `sync_binlog=1`
+   (risk F11 in sync-eip.md) that event belongs to a transaction the database never
+   committed, so no record is in it, but the sender cannot read past it. Send the facility's
+   records again (section 11); the sender then starts from a clean position. The first load
+   that follows does not raise this alert.
+3. Any other error: fix its cause and restart the sender (`facility restart sync`). It resumes
+   from its saved position and sends everything recorded since, provided the binary log still
+   holds it (about 99 days).
+
+Records are safe in the facility database throughout, and clinical work carries on as normal.
+`SyncCaptureCheckBlind` means the exporter itself cannot see: it is down, or cannot sign in to
+the database with the Debezium account.

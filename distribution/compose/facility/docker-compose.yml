@@ -260,6 +260,23 @@ services:
     profiles: ["sync"]
     networks: [liberiaemr]
 
+  # Tells whether the sender is still capturing: rows arriving in watched tables while its
+  # saved binlog position stands still (distribution/monitoring/sync-capture/). Reads the
+  # position from the sender's volume, read-only, and the newest row ids with the Debezium
+  # account, which can already read every table.
+  sync-capture:
+    image: ${REGISTRY}/liberia-emr-sync-capture:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${DEBEZIUM_DB_USER:-debezium}
+      DB_PASSWORD: ${DEBEZIUM_DB_PASSWORD:-}
+    volumes:
+      - sync-queue:/eip:ro
+    profiles: ["sync"]
+    networks: [liberiaemr]
+
   # Watches the sync sender (distribution/monitoring/); rides the sync profile because
   # it monitors nothing else. UI binds loopback by default: reach it over an SSH tunnel,
   # or set PROM_BIND_ADDR consciously.

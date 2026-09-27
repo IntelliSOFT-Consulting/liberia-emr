@@ -17,3 +17,7 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["sync:8080"]
+
+  - job_name: sync-capture
+    static_configs:
+      - targets: ["sync-capture:9102"]

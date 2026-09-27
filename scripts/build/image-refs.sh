@@ -11,7 +11,7 @@
 # Site-bearing images carry one site's content: the backend bakes in its site package, the
 # frontend its site config. They are named per site (liberia-emr-backend-careysburg), the way
 # -central and -demo already are, so two sites released at one version can never overwrite
-# each other. Site-agnostic images (gateway, sync, broker, cert-expiry) are identical for every
+# each other. Site-agnostic images (gateway, sync, broker, the exporters) are identical for every
 # site; a release publishes them ONCE, from the first facility site in its list.
 #
 # --check fails if two sites in one release would publish the same repository, or if the list
@@ -33,7 +33,7 @@ done
 
 shared() {
   printf '%s\n' liberia-emr-gateway liberia-emr-sync liberia-emr-sync-receiver \
-    liberia-emr-broker liberia-emr-cert-expiry
+    liberia-emr-broker liberia-emr-cert-expiry liberia-emr-sync-capture
 }
 
 site_images() {
