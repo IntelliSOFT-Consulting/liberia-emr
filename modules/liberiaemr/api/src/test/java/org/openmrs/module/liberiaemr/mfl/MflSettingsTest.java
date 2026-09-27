@@ -111,6 +111,14 @@ public class MflSettingsTest {
 	}
 
 	@Test
+	public void displayUrl_shouldStripUserInfoFromADirectlyEditedUrl() {
+		assertEquals("https://dhis2.moh.gov.lr/mfl", MflSettings.displayUrl("https://user:s3cr&t@dhis2.moh.gov.lr/mfl"));
+		assertEquals("https://dhis2.moh.gov.lr:8443/mfl", MflSettings.displayUrl("https://user@dhis2.moh.gov.lr:8443/mfl"));
+		assertEquals("https://dhis2.moh.gov.lr/mfl/a@b", MflSettings.displayUrl("https://dhis2.moh.gov.lr/mfl/a@b"));
+		assertEquals("https://dhis2.moh.gov.lr/mfl", MflSettings.displayUrl(null));
+	}
+
+	@Test
 	public void nextRun_shouldBeTodayWhenTheTimeIsStillAheadElseTomorrow() {
 		ZoneId monrovia = ZoneId.of("Africa/Monrovia");
 		long now = ZonedDateTime.of(2026, 9, 27, 1, 0, 0, 0, monrovia).toInstant().toEpochMilli();

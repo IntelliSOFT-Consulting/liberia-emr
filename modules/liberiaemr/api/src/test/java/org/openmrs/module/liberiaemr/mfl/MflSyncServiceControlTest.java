@@ -110,6 +110,17 @@ public class MflSyncServiceControlTest extends BaseModuleContextSensitiveTest {
 	}
 
 	@Test
+	public void getStatus_shouldStripUserInfoFromAUrlEditedDirectlyInTheDatabase() throws Exception {
+		org.openmrs.api.context.Context.getAdministrationService().setGlobalProperty(MflSettings.GP_URL,
+		    "https://leak-user:leak-s3cret@dhis2.moh.gov.lr/mfl");
+		Map<String, Object> status = service.getStatus();
+		assertEquals("https://dhis2.moh.gov.lr/mfl", config(status).get("url"));
+		String json = MflUnit.JSON.writeValueAsString(status);
+		assertThat(json, not(containsString("leak-s3cret")));
+		assertThat(json, not(containsString("leak-user")));
+	}
+
+	@Test
 	public void updateConfig_shouldSaveAndReportTheNewSettings() {
 		Map<String, Object> schedule = new LinkedHashMap<String, Object>();
 		schedule.put("time", "03:30");

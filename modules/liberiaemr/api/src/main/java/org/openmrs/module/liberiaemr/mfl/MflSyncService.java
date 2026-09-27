@@ -180,7 +180,7 @@ public class MflSyncService {
 		schedule.put("time", time);
 		Map<String, Object> config = new LinkedHashMap<String, Object>();
 		config.put("enabled", enabled);
-		config.put("url", MflSettings.url(admin.getGlobalProperty(MflSettings.GP_URL)));
+		config.put("url", MflSettings.displayUrl(admin.getGlobalProperty(MflSettings.GP_URL)));
 		config.put("username", MflCredentials.fromEnvironment(environment).getUsername());
 		config.put("schedule", schedule);
 

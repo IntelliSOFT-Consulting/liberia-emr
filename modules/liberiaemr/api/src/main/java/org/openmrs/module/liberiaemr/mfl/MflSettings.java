@@ -40,6 +40,9 @@ public final class MflSettings {
 
 	private static final Pattern TIME = Pattern.compile("([01][0-9]|2[0-3]):[0-5][0-9]");
 
+	/** scheme:// then user info up to the last @ before the first path, query or fragment */
+	private static final Pattern USER_INFO = Pattern.compile("^([A-Za-z][A-Za-z0-9+.-]*://)[^/?#]*@");
+
 	private MflSettings() {
 	}
 
@@ -49,6 +52,15 @@ public final class MflSettings {
 
 	public static String url(String configured) {
 		return configured == null || configured.trim().isEmpty() ? DEFAULT_URL : configured.trim();
+	}
+
+	/**
+	 * @return {@link #url} without any user info, for GET /status. PUT /config rejects a URL that
+	 *         carries a user name or password, but a value edited directly in the database never
+	 *         went through that check, and no response may contain a password.
+	 */
+	public static String displayUrl(String configured) {
+		return USER_INFO.matcher(url(configured)).replaceFirst("$1");
 	}
 
 	/** @return HH:MM, the default when unset or not a valid time */
