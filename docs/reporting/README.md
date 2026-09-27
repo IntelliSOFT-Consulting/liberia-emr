@@ -158,7 +158,17 @@ long as its encounter type and concepts stay the same.
     uuid nor parent;
   - `mamba_dim_encounter_form`: `encounter_id` and `form_uuid`. It is needed wherever several
     forms share an encounter type (for example *Consultation*). Filter on the form's
-    `${var.form.*}` tokens, **every version of the form included**.
+    `${var.form.*}` tokens, **every version of the form included**. It also has `form_id`, and
+    it keeps retired form versions;
+  - `mamba_dim_location_ancestor`: one row per `location_id` and each of its ancestors,
+    itself included (`ancestor_location_id`, `depth`). To report on any MFL node, join on
+    `ancestor_location_id` = that node;
+  - `mamba_dim_encounter_location`: `encounter_id`, `visit_id` and **`location_id`, the
+    attribution location** as defined above. Every fact takes its `location_id` from here;
+  - `mamba_dim_person_cpi`: `person_id` and **`person_key`**. Count people with
+    `COUNT(DISTINCT person_key)`. At central the key is the primary CPI from
+    `openmrs_identity`, so a person with records at two facilities counts once. At a facility
+    it is the patient itself.
 - **Attribution rule.** Never attribute by patient address, patient identifier prefix or
   creator.
 
@@ -179,6 +189,9 @@ long as its encounter type and concepts stay the same.
   ```
   # ---- common (coordinator) ----
   derived/common/sp_mamba_dim_location_hierarchy.sql
+  derived/common/sp_mamba_dim_encounter_form.sql
+  derived/common/sp_mamba_dim_encounter_location.sql
+  derived/common/sp_mamba_dim_person_cpi.sql
   # ---- rmncah (RPT 6) ----
   # ---- nutrition (RPT 6) ----
   # ---- malaria (RPT 7) ----
