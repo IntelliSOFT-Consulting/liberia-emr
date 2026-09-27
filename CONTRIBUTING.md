@@ -70,7 +70,7 @@ key. A PR closed without merging moves nothing — whoever closes it moves the c
 | Symptom | Fix |
 | --- | --- |
 | Still To Do after pushing | Key missing or lowercase in the branch — push a commit whose subject ends `[LE-n]` |
-| Still In Review after merging | The `main` pipeline has not finished, or the dev deploy or smoke test failed. The next green deploy should carry it; if it does not, move it by hand |
+| Still In Review after merging | The `main` pipeline has not finished, or the dev deploy or smoke test failed. The next green deploy carries it (seen in a simulation); if it doesn't, move it by hand |
 | Still In Review after a green deploy | Key missing from the PR title — move it by hand and say so in the PR |
 
 Moving a card by hand is the fallback, not a workaround; do not change `ci.yml` or the Jira
