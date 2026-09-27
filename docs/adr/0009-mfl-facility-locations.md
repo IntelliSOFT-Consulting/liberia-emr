@@ -303,7 +303,7 @@ Where the two disagree, the document wins.
 | 3 | Field ownership, name disambiguation, group tie-breaks by UID, no `openingDate`, counties top-level | **Accepted** (from LE-318) |
 | 4 | Canonical attribute types | **Accepted** |
 | 5 | Retire on close or absence, guard on a failed page or a pull under 90%, moves as close + new | **Accepted** (from LE-318) |
-| 6 | Switcher filters on `Health Facility`; no `Login Location` | **Accepted** |
+| 6 | Switcher filters on `Health Facility`; rows the sync creates get no `Login Location`, adopted roots keep theirs | **Accepted** |
 | 7 | Credentials from env or a password file only | **Accepted** |
 | 8 | Full pull on every run; operator settings in `config.xml`, not Initializer | **Accepted** (from LE-318) |
 | 9 | Admin route in `esm-liberia-sync-status-app` | **Accepted** |
