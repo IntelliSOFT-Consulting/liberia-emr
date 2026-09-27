@@ -37,6 +37,7 @@ A profile that hard-codes a concept UUID reintroduces exactly the coupling
 
 ## Validation
 
-Profiles are validated in CI and their examples are used as fixtures by the API tests in
+Profiles are to be validated in CI and their examples used as fixtures by the API tests in
 `qa/api/`, so a profile change that breaks the contract fails the build rather than
-surfacing during a facility push.
+surfacing during a facility push. Neither exists yet: this directory holds no profiles, and no
+workflow validates FHIR.
