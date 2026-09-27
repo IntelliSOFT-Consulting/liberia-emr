@@ -126,8 +126,9 @@ code.
 
 **Level-3 units that are not districts:** six County Health Team units (`CHT - Bong`,
 `CHT - Grand Cape Mount`, `CHT - Grand Gedeh`, `CHT - Lofa`, `CHT - Nimba`, `CHT - River Gee`),
-plus `Medicine Stores` and `Pharmacy` under Montserrado. None of the eight has a facility, and
-nine districts have no `code` (the eight above and *Bushrod District*). One district,
+plus `Medicine Stores` and `Pharmacy` under Montserrado. None of the eight has a facility.
+Nine level-3 units have no `code`: those eight non-districts and one real district, *Bushrod
+District*. One district,
 *Tarsue District*, belongs to a service group. Groups are only meaningful at level 4.
 
 ### Name uniqueness: OpenMRS rejects the national duplicates
