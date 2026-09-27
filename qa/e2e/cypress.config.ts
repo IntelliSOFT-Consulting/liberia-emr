@@ -68,6 +68,7 @@ const assertApprovedBaseUrl = (baseUrl: string, allowlistedHosts: string[]) => {
 assertApprovedBaseUrl(defaultBaseUrl, parseHostAllowlist(configuredAllowlist))
 
 export default defineConfig({
+  allowCypressEnv: false,
   env: {
     ...localEnv,
     baseUrl: defaultBaseUrl,
