@@ -1,6 +1,6 @@
 # 0011: Compose central as its own build, with `content-central` in the site layer's place
 
-**Status:** Proposed
+**Status:** Accepted (Option A, 27 September 2026)
 **Date:** 27 September 2026 · **Ticket:** LE-359 (related: LE-339, LE-324)
 
 ## Context
