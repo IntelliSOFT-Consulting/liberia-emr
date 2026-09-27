@@ -203,8 +203,8 @@ to stay. The central switcher does not depend on `Login Location` either way: it
 `Health Facility`, which adopted and created facilities both carry. LE-324 replaces the
 login app gains a string setting, `chooseLocation.locationTag`, alongside the existing boolean
 `chooseLocation.useLoginLocationTag`. It is empty by default, and when empty the boolean applies
-exactly as before, so facilities are unaffected. Central's `config-central.json` (ADR 0011)
-sets it to `Health Facility`. The switcher shows the MFL code and district next to each name.
+exactly as before, so facilities are unaffected. Central is to set it to `Health Facility` in
+`content-central`'s `config-central.json` (ADR 0011) once LE-324 merges; it is not set yet. The switcher shows the MFL code and district next to each name.
 For an adopted root, which has no District parent, the district comes from its `countyDistrict`
 address field.
 
