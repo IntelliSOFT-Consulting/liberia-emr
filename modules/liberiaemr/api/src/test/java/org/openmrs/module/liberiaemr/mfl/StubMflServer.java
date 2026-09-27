@@ -131,6 +131,16 @@ final class StubMflServer implements AutoCloseable {
 		respond(exchange, 404, "{}");
 	}
 
+	/** A malformed number in a query is ignored, as DHIS2 would, rather than failing the request. */
+	private static Integer intOrNull(String value) {
+		try {
+			return Integer.valueOf(value);
+		}
+		catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
 	private String page(String query) {
 		int min = 1, max = 4, page = 1, pageSize = 50;
 		for (String param : query.split("&")) {
@@ -140,7 +150,10 @@ final class StubMflServer implements AutoCloseable {
 			}
 			if ("filter".equals(kv[0])) {
 				String[] f = kv[1].split(":");
-				int level = Integer.parseInt(f[2]);
+				Integer level = f.length < 3 ? null : intOrNull(f[2]);
+				if (level == null) {
+					continue;
+				}
 				if ("eq".equals(f[1])) {
 					min = level;
 					max = level;
@@ -149,10 +162,10 @@ final class StubMflServer implements AutoCloseable {
 				} else if ("le".equals(f[1])) {
 					max = level;
 				}
-			} else if ("page".equals(kv[0])) {
-				page = Integer.parseInt(kv[1]);
-			} else if ("pageSize".equals(kv[0])) {
-				pageSize = Integer.parseInt(kv[1]);
+			} else if ("page".equals(kv[0]) && intOrNull(kv[1]) != null) {
+				page = intOrNull(kv[1]);
+			} else if ("pageSize".equals(kv[0]) && intOrNull(kv[1]) != null) {
+				pageSize = intOrNull(kv[1]);
 			}
 		}
 		List<JsonNode> matching = new ArrayList<JsonNode>();

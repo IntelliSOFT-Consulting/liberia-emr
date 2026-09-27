@@ -103,6 +103,9 @@ public class MflSyncEngine {
 
 		boolean retired;
 
+		/** Carries an MFL UID but was not created by the sync: content owns its name and parent. */
+		boolean adopted;
+
 		MflLevel level;
 
 		final Set<String> tags = new HashSet<String>();
@@ -123,18 +126,22 @@ public class MflSyncEngine {
 
 		final boolean create;
 
+		/** An adopted row: name and parent are never written (ADR 0009 decisions 1 and 3). */
+		final boolean adopted;
+
 		/** TRUE to retire, FALSE to un-retire, null to leave the retired flag as it is. */
 		final Boolean retire;
 
 		final String retireReason;
 
-		Plan(MflRunItem item, MflLocationSpec spec, String uuid, String parentUuid, boolean create, Boolean retire,
-		    String retireReason) {
+		Plan(MflRunItem item, MflLocationSpec spec, String uuid, String parentUuid, boolean create, boolean adopted,
+		    Boolean retire, String retireReason) {
 			this.item = item;
 			this.spec = spec;
 			this.uuid = uuid;
 			this.parentUuid = parentUuid;
 			this.create = create;
+			this.adopted = adopted;
 			this.retire = retire;
 			this.retireReason = retireReason;
 		}
@@ -190,12 +197,17 @@ public class MflSyncEngine {
 					continue;
 				}
 			}
-			Plan plan = rows == null ? planCreate(spec, parentUuid, specByUid) : planUpdate(spec, rows.get(0), parentUuid,
-			    specByUid, protectedUuids);
-			if (plan == null) {
-				unchanged++;
-				uuidByUid.put(spec.getUid(), rows.get(0).uuid);
-				continue;
+			Plan plan;
+			if (rows == null) {
+				plan = planCreate(spec, parentUuid, specByUid);
+			} else {
+				Held row = rows.get(0);
+				plan = planUpdate(spec, row, parentUuid, specByUid, protectedUuids);
+				if (plan == null) {
+					unchanged++;
+					uuidByUid.put(spec.getUid(), row.uuid);
+					continue;
+				}
 			}
 			items.add(plan.item);
 			if (plan.item.getAction() == MflAction.ERROR && plan.create) {
@@ -253,8 +265,8 @@ public class MflSyncEngine {
 			if (protectedUuids.contains(row.uuid)) {
 				item.fail(ownRoot());
 			} else {
-				plans.add(new Plan(item, null, row.uuid, null, false, Boolean.TRUE, MflConstants.RETIRE_REASON_PREFIX
-				        + " not in the MFL since " + ymd(runDate)));
+				plans.add(new Plan(item, null, row.uuid, null, false, row.adopted, Boolean.TRUE,
+				        MflConstants.RETIRE_REASON_PREFIX + " not in the MFL since " + ymd(runDate)));
 			}
 			items.add(item);
 		}
@@ -304,6 +316,11 @@ public class MflSyncEngine {
 			Held row = new Held();
 			row.uuid = location.getUuid();
 			row.name = location.getName();
+			row.adopted = !MflUuid.forUid(uid).equals(location.getUuid());
+			if (row.adopted && !location.getRetired()) {
+				// Its name stays local, so an MFL unit that shares it clashes (ADR 0009 decision 3).
+				localNames.add(location.getName());
+			}
 			row.parentUuid = location.getParentLocation() == null ? null : location.getParentLocation().getUuid();
 			row.parentName = location.getParentLocation() == null ? null : location.getParentLocation().getName();
 			row.retired = location.getRetired();
@@ -336,13 +353,13 @@ public class MflSyncEngine {
 			return new Plan(new MflRunItem(MflAction.ERROR, spec.getLevel(), spec.getUid(), spec.getCode(), uuid,
 			        spec.getName(), none(), spec.getWarnings(), "Location " + uuid
 			                + " already exists but carries no MFL UID: add the attribute or retire it by hand"), spec, uuid,
-			        parentUuid, true, null, null);
+			        parentUuid, true, false, null, null);
 		}
 		Held nothing = new Held();
 		List<MflRunItem.Change> changes = changes(nothing, spec, parentUuid, specByUid);
 		MflRunItem item = new MflRunItem(MflAction.CREATE, spec.getLevel(), spec.getUid(), spec.getCode(), uuid,
 		        spec.getName(), changes, spec.getWarnings(), null);
-		return new Plan(item, spec, uuid, parentUuid, true, spec.isClosed() ? Boolean.TRUE : null,
+		return new Plan(item, spec, uuid, parentUuid, true, false, spec.isClosed() ? Boolean.TRUE : null,
 		        spec.isClosed() ? closedReason(spec) : null);
 	}
 
@@ -380,15 +397,17 @@ public class MflSyncEngine {
 		if (action == MflAction.RETIRE && protectedUuids.contains(row.uuid)) {
 			item.fail(ownRoot());
 		}
-		return new Plan(item, spec, row.uuid, parentUuid, false, retire, reason);
+		return new Plan(item, spec, row.uuid, parentUuid, false, row.adopted, retire, reason);
 	}
 
 	/** Every owned field that differs, in a fixed order: fields, then the level tag, then attributes. */
 	private List<MflRunItem.Change> changes(Held row, MflLocationSpec spec, String parentUuid,
 	        Map<String, MflLocationSpec> specByUid) {
 		List<MflRunItem.Change> changes = new ArrayList<MflRunItem.Change>();
-		change(changes, "name", row.name, spec.getName());
-		if (!equal(row.parentUuid, parentUuid)) {
+		if (!row.adopted) {
+			change(changes, "name", row.name, spec.getName());
+		}
+		if (!row.adopted && !equal(row.parentUuid, parentUuid)) {
 			MflLocationSpec parent = spec.getParentUid() == null ? null : specByUid.get(spec.getParentUid());
 			changes.add(new MflRunItem.Change("parent", row.parentName, parent == null ? null : parent.getName()));
 		}
@@ -445,18 +464,23 @@ public class MflSyncEngine {
 		}
 	}
 
-	/** Sets every owned field; attributes only where they differ, so unchanged ones are not voided. */
+	/**
+	 * Sets every owned field; attributes only where they differ, so unchanged ones are not voided. An
+	 * adopted row keeps its name and parent: content owns them (ADR 0009 decisions 1 and 3).
+	 */
 	private void write(Location location, Plan plan) {
 		MflLocationSpec spec = plan.spec;
-		location.setName(spec.getName());
-		if (plan.parentUuid == null) {
-			location.setParentLocation(null);
-		} else {
-			Location parent = locations.getLocationByUuid(plan.parentUuid);
-			if (parent == null) {
-				throw new IllegalStateException("Parent " + spec.getParentUid() + " was not created, so this was not either");
+		if (!plan.adopted) {
+			location.setName(spec.getName());
+			if (plan.parentUuid == null) {
+				location.setParentLocation(null);
+			} else {
+				Location parent = locations.getLocationByUuid(plan.parentUuid);
+				if (parent == null) {
+					throw new IllegalStateException("Parent " + spec.getParentUid() + " was not created, so this was not either");
+				}
+				location.setParentLocation(parent);
 			}
-			location.setParentLocation(parent);
 		}
 		location.setLatitude(spec.getLatitude());
 		location.setLongitude(spec.getLongitude());

@@ -343,15 +343,61 @@ public class MflSyncEngineTest extends BaseModuleContextSensitiveTest {
 		assertEquals(FIXTURE_LOCATIONS - 1, result.getCounts().getCreated());
 		assertNull("no second row for the facility", mfl(BARNERSVILLE));
 		Location adopted = locations.getLocationByUuid(rootUuid);
-		assertEquals("Barnersville HC", adopted.getName());
-		assertEquals(mfl(SOMALIA_DRIVE), adopted.getParentLocation());
+		assertEquals("content owns an adopted row's name", "Barnersville Health Center", adopted.getName());
+		assertNull("content owns an adopted row's parent", adopted.getParentLocation());
 		assertEquals("seeded by the site package", adopted.getDescription());
 		assertTrue("local tags stay", adopted.hasTag(MflConstants.TAG_LOGIN_LOCATION));
 		assertTrue(adopted.hasTag(MflConstants.TAG_HEALTH_FACILITY));
+		assertEquals("LBR-30-3014-03", attribute(adopted, MflConstants.ATTR_MFL_CODE));
+		assertEquals("Montserrado", adopted.getStateProvince());
+		assertEquals("Somalia Drive District", adopted.getCountyDistrict());
+		assertEquals("Liberia", adopted.getCountry());
 		Location child = locations.getLocationByUuid(opd.getUuid());
 		assertEquals("Barnersville OPD", child.getName());
 		assertEquals(adopted, child.getParentLocation());
-		assertEquals(MflAction.UPDATE, item(result, BARNERSVILLE).getAction());
+		MflRunItem item = item(result, BARNERSVILLE);
+		assertEquals(MflAction.UPDATE, item.getAction());
+		for (MflRunItem.Change change : item.getChanges()) {
+			assertFalse("no name or parent change is reported for an adopted row: " + change.getField(),
+			    "name".equals(change.getField()) || "parent".equals(change.getField()));
+		}
+	}
+
+	@Test
+	public void run_shouldNeverRenameOrReparentAnAdoptedRowWhileCreatedRowsFollowTheMfl() throws Exception {
+		Location root = siteRoot("Barnersville Health Center", BARNERSVILLE);
+		run();
+		MflSyncEngine.Result second = run();
+		MflRunItem again = item(second, BARNERSVILLE);
+		assertTrue("an adopted row is unchanged on a second run",
+		    again == null || again.getAction() == MflAction.WARNING);
+
+		List<MflUnit> units = MflFixture.units();
+		MflUnit barnersville = MflFixture.unit(units, BARNERSVILLE);
+		MflUnit jah = MflFixture.unit(units, JAH);
+		units = replace(units, with(barnersville, "Barnersville Community HC", FUAMAH, null));
+		units = replace(units, with(jah, "Jah Community Clinic", FUAMAH, null));
+		MflSyncEngine.Result result = run(units, false);
+
+		Location adopted = locations.getLocationByUuid(root.getUuid());
+		assertEquals("Barnersville Health Center", adopted.getName());
+		assertNull(adopted.getParentLocation());
+		assertEquals("its address still follows the MFL", "Fuamah", adopted.getCountyDistrict());
+		assertEquals("Bong", adopted.getStateProvince());
+		for (MflRunItem.Change change : item(result, BARNERSVILLE).getChanges()) {
+			assertFalse(change.getField(), "name".equals(change.getField()) || "parent".equals(change.getField()));
+		}
+
+		assertEquals("a created row is still renamed", "Jah Community Clinic", mfl(JAH).getName());
+		assertEquals("and reparented", mfl(FUAMAH), mfl(JAH).getParentLocation());
+	}
+
+	@Test
+	public void run_shouldSuffixAnMflNameThatAnAdoptedRowHoldsLocally() throws Exception {
+		Location root = siteRoot("Jah Clinic", BARNERSVILLE);
+		run();
+		assertEquals("Jah Clinic (Kpaai)", mfl(JAH).getName());
+		assertEquals("Jah Clinic", locations.getLocationByUuid(root.getUuid()).getName());
 	}
 
 	@Test

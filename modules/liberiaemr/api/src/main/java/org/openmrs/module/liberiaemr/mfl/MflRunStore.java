@@ -77,9 +77,10 @@ public class MflRunStore {
 					insert.setTimestamp(5, new Timestamp(started.getTime()));
 					insert.setString(6, UUID.randomUUID().toString());
 					insert.executeUpdate();
-					ResultSet keys = insert.getGeneratedKeys();
-					keys.next();
-					return keys.getInt(1);
+					try (ResultSet keys = insert.getGeneratedKeys()) {
+						keys.next();
+						return keys.getInt(1);
+					}
 				}
 				finally {
 					insert.close();
@@ -235,9 +236,8 @@ public class MflRunStore {
 			@Override
 			public List<Map<String, Object>> execute(Connection connection) throws SQLException {
 				List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
-				PreparedStatement select = prepare(connection, sql, params);
-				try {
-					ResultSet rows = select.executeQuery();
+				try (PreparedStatement select = prepare(connection, sql, params);
+				        ResultSet rows = select.executeQuery()) {
 					while (rows.next()) {
 						Map<String, Object> item = new LinkedHashMap<String, Object>();
 						item.put("action", rows.getString("action"));
@@ -252,9 +252,6 @@ public class MflRunStore {
 						item.put("error", rows.getString("error"));
 						out.add(item);
 					}
-				}
-				finally {
-					select.close();
 				}
 				return out;
 			}
@@ -273,15 +270,11 @@ public class MflRunStore {
 			@Override
 			public List<Map<String, Object>> execute(Connection connection) throws SQLException {
 				List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
-				PreparedStatement select = prepare(connection, sql, params);
-				try {
-					ResultSet rows = select.executeQuery();
+				try (PreparedStatement select = prepare(connection, sql, params);
+				        ResultSet rows = select.executeQuery()) {
 					while (rows.next()) {
 						out.add(run(rows));
 					}
-				}
-				finally {
-					select.close();
 				}
 				return out;
 			}
@@ -313,14 +306,10 @@ public class MflRunStore {
 
 			@Override
 			public Integer execute(Connection connection) throws SQLException {
-				PreparedStatement select = prepare(connection, sql, params);
-				try {
-					ResultSet rows = select.executeQuery();
+				try (PreparedStatement select = prepare(connection, sql, params);
+				        ResultSet rows = select.executeQuery()) {
 					rows.next();
 					return rows.getInt(1);
-				}
-				finally {
-					select.close();
 				}
 			}
 		});
