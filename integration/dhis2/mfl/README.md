@@ -3,7 +3,9 @@
 The MOH Master Facility List runs in a DHIS2 instance of its own, separate from the
 reporting DHIS2 in [`../mappings/`](../mappings/README.md). LiberiaEMR caches it as OpenMRS
 `Location`s. This page records how the API behaves, what the data looks like, and the field
-mapping the sync implements. Every figure below comes from a read-only probe on
+mapping this exploration proposed for the sync. [ADR 0009](../../../docs/adr/0009-mfl-facility-locations.md)
+decides the mapping, and LE-321 implements it. Where this page and the ADR differ, the ADR
+wins. Every figure below comes from a read-only probe on
 **2026-09-27**. Re-run it with [`probe.sh`](probe.sh):
 
 ```bash
@@ -193,6 +195,11 @@ The two site packages seed a facility root that facility-scoped identifiers poin
 likely MFL counterparts are listed below. Both matches **need confirmation from the MOH or
 the site team** before the sync adopts them.
 
+Adoption never changes a root's UUID: facility-scoped identifiers, child locations and synced
+records all point at it. Each site package declares its root's MFL UID in an
+`Attribute|MFL UID` column of its locations CSV (LE-320), and the sync matches existing
+locations on that attribute, never on the UUID ([ADR 0009](../../../docs/adr/0009-mfl-facility-locations.md) §1).
+
 | Site package root | Likely MFL unit | Note |
 | --- | --- | --- |
 | Barnersville Health Center | `kueVlXwUXiI` *Barnersville HC*, `LBR-30-3014-03`, Somalia Drive District, Montserrado | name is an abbreviation |
@@ -205,11 +212,11 @@ repeat nationally.
 
 | MFL field | OpenMRS | Datatype / cardinality | Rule |
 | --- | --- | --- | --- |
-| `id` (UID) | attribute **MFL UID**, and the seed of `Location.uuid` | FreeText, 1..1 on every MFL-managed location | The join key. The UUID is derived from it deterministically, so every instance creates the same row (ADR) |
+| `id` (UID) | attribute **MFL UID** | FreeText, 1..1 on every MFL-managed location | The join key: existing locations are matched on it, never on UUID, and keep their UUIDs. Only a location the sync **creates** gets a UUID derived from it (ADR 0009 §1) |
 | `code` | attribute **MFL Code** | FreeText, 0..1 | Trimmed. For display and search only; never a key and never parsed |
-| `name` | `Location.name` | | Collapse whitespace and trim. If the name collides with another active location, suffix ` (<district name>)` (ADR to confirm) |
+| `name` | `Location.name` | | Collapse whitespace and trim. If the name collides with another active location, suffix ` (<district name>)`. ADR 0009 §3 gives the exact rule |
 | `shortName` | not mapped | | Only differs by truncation |
-| `level` 1 | root location **Liberia** | | One root, so counties share a parent (ADR to confirm) |
+| `level` 1 | not created | | Counties are top-level (ADR 0009 §3) |
 | `level` 2 | tag **County** | exists in `content-liberia-national` | |
 | `level` 3 | tag **District** | exists | Skip level-3 units with no facilities: the 6 CHTs, *Medicine Stores* and *Pharmacy* |
 | `level` 4 | tag **Health Facility** | exists | |
@@ -222,7 +229,7 @@ repeat nationally.
 | ownership × type groups | not mapped | | Repeat the two attributes above |
 | *Facilities Rendering …*, CRDF, EPI OSDV | **out of scope for v1** | | Programme and reporting flags. If needed later: one attribute **MFL Service**, FreeText, 0..n |
 | `openingDate` | not mapped | | 914 of 996 are `2000-*` placeholders |
-| `closedDate` | `Location.retired` + `retireReason` | | `Closed in MFL on <date>`. No attribute. A later reopen un-retires |
+| `closedDate` | `Location.retired` + `retireReason`, and attribute **MFL Closed Date** | Date, 0..1 | Retire reason as in ADR 0009 §5. A later reopen un-retires |
 | absent from a complete pull | `Location.retired` + `retireReason` | | `No longer in the MFL`, subject to the completeness guard above |
 | `lastUpdated` | attribute **MFL Last Updated** | FreeText (ISO-8601), 0..1 | Diagnostics and "unchanged" reporting, not fetch selection |
 | `created`, `path`, `attributeValues` | not mapped | | `path` is derivable; `attributeValues` is always empty |
@@ -256,3 +263,9 @@ contains no patient data and no credentials.
 | Many service groups | *A Refuge Place int'l,* (the trailing comma is in the MFL) |
 | Level-3 unit that is not a district | *CHT - Bong* |
 | Site-root candidates | *Barnersville HC*, *Careysburg Clinic* |
+
+**Not covered.** No fixture facility is in the Faith Based (`h4oGe3jDqml`) or Concession
+(`r4GnS2GDzJO`) ownership groups, and neither group record is in `organisationUnitGroups.json`.
+The LE-321 mapper unit tests cover Faith Based with synthetic units. Concession has no test
+yet. The fixture is left as it is, because the QA stub (LE-325) and the backend tests assert its
+counts.
