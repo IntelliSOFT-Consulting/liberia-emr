@@ -43,6 +43,9 @@ REMOVED_FACILITY = "bP0PeqBGKgB"  # Come & See Clinic, Careysburg District
 # real MFL records a move as close + new (ADR 0009 §5), but a reparent must still apply.
 RENAMED_FACILITY = ("VxgfT09KRV4", "Kesselee Memorial Health Centre")
 REPARENTED_FACILITY = ("LDoJbUPbnU4", "E57DkQD0HC4")  # City Lab Clinic: Bushrod -> Somalia Drive
+# The adopted site root's unit is renamed and moved too: content owns an adopted row's name and
+# parent (ADR 0009 decisions 1 and 3), so neither may change, while its address follows the MFL.
+ADOPTED_FACILITY = ("jbGSiLCEFKJ", "Careysburg Community Clinic", "E57DkQD0HC4")
 # with-extra: one facility that exists only in this scenario. The own-root test gives this
 # instance's facility root this MFL UID, so the unit's later absence tests that the sync never
 # retires the instance's own root.
@@ -74,7 +77,7 @@ SCENARIOS = {
     "remove-one": f"the fixture without {REMOVED_FACILITY}: retire on absence",
     "shrink": f"only {SHRINK_KEEP} facilities: the completeness guard must skip retirement",
     "failed-page": f"pages of {FAILED_PAGE_SIZE}, page 2 answers 500: the guard must skip retirement",
-    "rename-reparent": "one facility renamed, one moved to another district",
+    "rename-reparent": "one facility renamed, one moved to another district, the adopted one both",
     "with-extra": f"the fixture plus {EXTRA_FACILITY['id']}",
     "remove-site-root": f"the fixture without {SITE_ROOT_FACILITY}, Careysburg's site root",
     "redirect-cross-host": "every API call answers 302 to the same path on another host name "
@@ -130,6 +133,12 @@ def scenario_units(base_units, scenario):
                 u["lastUpdated"] = stamp
             if u["id"] == REPARENTED_FACILITY[0]:
                 new_parent = next(p for p in units if p["id"] == REPARENTED_FACILITY[1])
+                u["parent"] = {"id": new_parent["id"]}
+                u["path"] = f"{new_parent['path']}/{u['id']}"
+                u["lastUpdated"] = stamp
+            if u["id"] == ADOPTED_FACILITY[0]:
+                new_parent = next(p for p in units if p["id"] == ADOPTED_FACILITY[2])
+                u["name"] = u["shortName"] = ADOPTED_FACILITY[1]
                 u["parent"] = {"id": new_parent["id"]}
                 u["path"] = f"{new_parent['path']}/{u['id']}"
                 u["lastUpdated"] = stamp
@@ -380,7 +389,8 @@ def make_handler(state, fixture, prefix, username, password, redirect_host, port
         def route(self, method):
             url = urlsplit(self.path)
             if url.path.startswith("/__stub/"):
-                return self.control(method, url.path[len("/__stub/"):])
+                self.control(method, url.path[len("/__stub/"):])
+                return
             query = parse_qs(url.query, keep_blank_values=True)
             with state.lock:
                 scenario, delay = state.scenario, state.delay_ms
@@ -397,8 +407,9 @@ def make_handler(state, fixture, prefix, username, password, redirect_host, port
                 time.sleep(delay / 1000)
             api = prefix.rstrip("/") + "/api/"
             if not url.path.startswith(api):
-                return self.send_json(404, {"httpStatus": "Not Found", "httpStatusCode": 404,
-                                            "status": "ERROR", "message": "Not found"}, record)
+                self.send_json(404, {"httpStatus": "Not Found", "httpStatusCode": 404,
+                                     "status": "ERROR", "message": "Not found"}, record)
+                return
             if scenario == "redirect-cross-host" and host != redirect_host:
                 target = f"https://{redirect_host}:{port}{self.path}"
                 record["status"] = 302
@@ -410,17 +421,20 @@ def make_handler(state, fixture, prefix, username, password, redirect_host, port
                 self.end_headers()
                 return
             if scenario == "down":
-                return self.send_json(503, {"httpStatus": "Service Unavailable",
-                                            "httpStatusCode": 503, "status": "ERROR",
-                                            "message": "Service Unavailable"}, record)
+                self.send_json(503, {"httpStatus": "Service Unavailable",
+                                     "httpStatusCode": 503, "status": "ERROR",
+                                     "message": "Service Unavailable"}, record)
+                return
             if not auth_ok or scenario == "unauthorized":
-                return self.send_json(401, {"httpStatus": "Unauthorized", "httpStatusCode": 401,
-                                            "status": "ERROR",
-                                            "message": "Unauthorized"}, record)
+                self.send_json(401, {"httpStatus": "Unauthorized", "httpStatusCode": 401,
+                                     "status": "ERROR",
+                                     "message": "Unauthorized"}, record)
+                return
             if method != "GET":
-                return self.send_json(405, {"httpStatus": "Method Not Allowed",
-                                            "httpStatusCode": 405, "status": "ERROR",
-                                            "message": "The MFL stub is read-only"}, record)
+                self.send_json(405, {"httpStatus": "Method Not Allowed",
+                                     "httpStatusCode": 405, "status": "ERROR",
+                                     "message": "The MFL stub is read-only"}, record)
+                return
             resource = url.path[len(api):]
             resource = resource[:-5] if resource.endswith(".json") else resource
             catalogue = Catalogue(scenario_units(base_units, scenario), base_groups,
@@ -436,7 +450,8 @@ def make_handler(state, fixture, prefix, username, password, redirect_host, port
             except ValueError as e:
                 status, body = 400, {"httpStatus": "Bad Request", "httpStatusCode": 400,
                                      "status": "ERROR", "message": str(e)}
-            return self.send_json(status, body, record)
+            self.send_json(status, body, record)
+            return
 
         def api(self, resource, query, catalogue, scenario, record):
             fields_spec = ",".join(query.get("fields", []))

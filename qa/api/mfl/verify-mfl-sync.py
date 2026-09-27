@@ -568,9 +568,11 @@ def adoption_target(c):
 
 
 def first_sync(c, exp):
-    # Adoption: an existing row that already carries an MFL UID is updated in place.
+    # Adoption: an existing row that already carries an MFL UID is updated in place, and keeps
+    # the name and parent content gave it (ADR 0009 decisions 1 and 3).
     adopt_uuid, adopt_name = adoption_target(c)
-    c.adopt_uuid = adopt_uuid
+    c.adopt_uuid, c.adopt_name = adopt_uuid, adopt_name
+    c.adopt_parent = parent_uuid(c.location(adopt_uuid))
     held_before = c.status()["held"]
 
     c.stub("DELETE", "requests")
@@ -601,6 +603,9 @@ def first_sync(c, exp):
     items = c.items(run["id"])
     check_first_sync_rows(c, exp, adopt_uuid)
     check_warnings(c, exp, run, items)
+    adopted_fields = {ch["field"] for i in find_items(items, ADOPTED) for ch in i.get("changes") or []}
+    R.check("first sync: the adopted row's item reports no name or parent change",
+            not adopted_fields & {"name", "parent"}, sorted(adopted_fields))
 
     s = c.status()
     R.check("GET /status after the first sync: held counts match the fixture",
@@ -632,9 +637,14 @@ def check_first_sync_rows(c, exp, adopt_uuid):
             continue
         if attr(loc, "MFL UID") != u["id"]:
             wrong_attrs.append((u["id"], "MFL UID", attr(loc, "MFL UID")))
-        if not u.get("closedDate") and loc["name"] != exp.name[u["id"]]:
-            wrong_names.append((u["id"], loc["name"], exp.name[u["id"]]))
-        want_parent = None if u["level"] == 2 else v5(u["parent"]["id"])
+        # Content owns an adopted row's name and parent; the sync owns them on the rows it creates.
+        want_name = c.adopt_name if u["id"] == ADOPTED else exp.name[u["id"]]
+        if not u.get("closedDate") and loc["name"] != want_name:
+            wrong_names.append((u["id"], loc["name"], want_name))
+        if u["id"] == ADOPTED:
+            want_parent = c.adopt_parent
+        else:
+            want_parent = None if u["level"] == 2 else v5(u["parent"]["id"])
         if parent_uuid(loc) != want_parent:
             wrong_parents.append((u["id"], parent_uuid(loc), want_parent))
         want_tag = {2: "County", 3: "District", 4: "Health Facility"}[u["level"]]
@@ -656,10 +666,10 @@ def check_first_sync_rows(c, exp, adopt_uuid):
                     county["name"].strip(), " ".join(district["name"].split()), "Liberia"):
                 wrong_address.append((u["id"], loc.get("stateProvince"), loc.get("countyDistrict"),
                                       loc.get("country")))
-    R.check("names: whitespace collapsed, clashing active names suffixed with the district",
-            not wrong_names, *wrong_names)
-    R.check("parents: counties top-level, districts under counties, facilities under districts",
-            not wrong_parents, *wrong_parents)
+    R.check("names: whitespace collapsed, clashing active names suffixed with the district; "
+            "the adopted row keeps its local name", not wrong_names, *wrong_names)
+    R.check("parents: counties top-level, districts under counties, facilities under districts; "
+            "the adopted row keeps its parent", not wrong_parents, *wrong_parents)
     R.check("tags: County / District / Health Facility; the sync never adds Login Location",
             not wrong_tags, *wrong_tags)
     R.check("attributes: MFL UID, trimmed MFL Code, type/ownership/EmONC/setting by the ADR "
@@ -765,8 +775,8 @@ def local_fields_and_updates(c):
     c.scenario("rename-reparent")
     run = c.run(label="rename and reparent")
     items = c.items(run["id"])
-    R.check("rename/reparent: SUCCEEDED with two updates",
-            run["status"] == "SUCCEEDED" and run["counts"]["updated"] == 2, run["counts"])
+    R.check("rename/reparent: SUCCEEDED with three updates (two created rows, the adopted one's address)",
+            run["status"] == "SUCCEEDED" and run["counts"]["updated"] == 3, run["counts"])
     renamed = c.location(kesselee)
     R.check("rename: same UUID, new name", renamed["name"] == RENAMED[1], renamed["name"])
     R.check("rename: local description, address1 and extra tag untouched",
@@ -780,12 +790,22 @@ def local_fields_and_updates(c):
           for c2 in i.get("changes") or []}
     R.check("rename/reparent items name the changed fields",
             (RENAMED[0], "name") in ch and (REPARENTED[0], "parent") in ch, sorted(ch))
+    adopted = c.location(c.adopt_uuid)
+    R.check("an MFL rename and move never rename or reparent the adopted row",
+            adopted["name"] == c.adopt_name and parent_uuid(adopted) == c.adopt_parent,
+            adopted["name"], parent_uuid(adopted))
+    R.check("the adopted row's address still follows the MFL",
+            adopted.get("countyDistrict") == "Somalia Drive District", adopted.get("countyDistrict"))
+    adopted_fields = {c2["field"] for i in find_items(items, ADOPTED) for c2 in i.get("changes") or []}
+    R.check("the adopted row's item reports no name or parent change",
+            not adopted_fields & {"name", "parent"} and "countyDistrict" in adopted_fields, sorted(adopted_fields))
 
     c.scenario("normal")
     run = c.run(label="rename back")
     R.check("back to the recorded MFL: the rename and move are reverted",
             c.location(kesselee)["name"] == "Kesselee Memorial Health Center"
-            and parent_uuid(c.location(v5(REPARENTED[0]))) == v5("Aoq6H9sPvlW"), run["counts"])
+            and parent_uuid(c.location(v5(REPARENTED[0]))) == v5("Aoq6H9sPvlW")
+            and c.location(c.adopt_uuid).get("countyDistrict") == "Careysburg District", run["counts"])
 
 
 def retire_and_unretire(c):
@@ -806,7 +826,7 @@ def retire_and_unretire(c):
     degei = v5(HUMAN_RETIRED)
     r = c.rest("DELETE", f"/location/{degei}?reason=QA+manual+retire")
     R.check("retire a facility by hand", r.status in (200, 204), r)
-    run = c.run(label="after a human retirement")
+    c.run(label="after a human retirement")
     loc = c.location(degei)
     R.check("the sync never reverses a human's retirement",
             loc["retired"] and retire_reason(loc) == "QA manual retire", loc.get("retired"), retire_reason(loc))
@@ -883,8 +903,10 @@ def own_root(c):
         R.check("give the facility root an MFL UID", r.status in (200, 201), r)
         c.scenario("with-extra")
         run = c.run(label="root adopted")
-        R.check("the root is adopted in place: same UUID, MFL name",
-                c.location(root)["name"] == EXTRA[1] and c.location(v5(EXTRA[0])) is None, run["counts"])
+        R.check("the root is adopted in place: same UUID, its local name and parent kept",
+                c.location(root)["name"] == c.root_before["name"]
+                and parent_uuid(c.location(root)) == parent_uuid(c.root_before)
+                and c.location(v5(EXTRA[0])) is None, run["counts"])
         uid, gone = EXTRA[0], "normal"
     elif uid == ADOPTED:
         gone = "remove-site-root"
@@ -905,8 +927,8 @@ def own_root(c):
 
 def restore_root(c):
     """Put the root back as content seeded it, so the specs after these tests see the site as
-    they expect: drop every attribute added since, restore the fields and the parent the sync
-    owns. An MFL UID the content declared stays."""
+    they expect: drop every attribute added since, and restore the fields the sync owns (and
+    the parent, in case an older build moved it). An MFL UID the content declared stays."""
     c.scenario("normal")
     root = c.args.own_root_uuid
     before = c.root_before

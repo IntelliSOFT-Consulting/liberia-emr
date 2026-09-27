@@ -104,12 +104,13 @@ Then:
    counts as the dry run.
 3. Turn **Scheduled sync** on and save. The sync then runs daily at the set time.
 
-A site root the sync adopts takes the MFL's name. Careysburg Health Center becomes *Careysburg
-Clinic* and Barnersville Health Center becomes *Barnersville HC*. Both matches are **pending MOH
-or site confirmation** (ADR 0009 §1). Until a match is confirmed, the site package must not
-declare the MFL UID. Once it is confirmed, set the root's name in the site CSV to the MFL name
-in the same release, or Initializer and the sync overwrite each other's name on every boot and
-run.
+A site root the sync adopts keeps its own name and parent: content owns both (ADR 0009 §1 and
+§3). *Careysburg Health Center* stays *Careysburg Health Center*, top-level, although the MFL
+calls it *Careysburg Clinic*. The sync adds its MFL attributes, the `Health Facility` tag,
+coordinates and county/district address, so the central switcher places it in its district.
+Both matches are **pending MOH or site confirmation** (ADR 0009 §1). Until a match is
+confirmed, the site package must not declare the MFL UID, and the sync creates a separate row
+for that facility.
 
 ## 3. Reading a run
 
