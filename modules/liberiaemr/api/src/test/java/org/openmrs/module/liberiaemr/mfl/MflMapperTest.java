@@ -108,8 +108,19 @@ public class MflMapperTest {
 	 * unit counts as a clash too.
 	 */
 	@Test
-	public void map_shouldSuffixAClosedUnitAndTheActiveUnitThatSharesItsName() {
+	public void map_shouldSuffixAClosedUnitButNotTheOneActiveUnitThatSharesItsName() {
 		Map<String, MflLocationSpec> specs = mapFixture();
+		assertEquals("Jamaica Rd Clinic (Bushrod District)", specs.get("ucTzZhF5okn").getName());
+		assertEquals("only another active location is a clash for an active one", "Jamaica Rd Clinic",
+		    specs.get("ZktsAIReh6z").getName());
+		assertThat(specs.get("ZktsAIReh6z").getWarnings(), empty());
+	}
+
+	@Test
+	public void map_shouldSuffixAClosedUnitWhoseNameALocalLocationHolds() {
+		Set<String> local = new HashSet<String>();
+		local.add("Jamaica Rd Clinic");
+		Map<String, MflLocationSpec> specs = byUid(MflMapper.map(MflFixture.units(), local));
 		assertEquals("Jamaica Rd Clinic (Bushrod District)", specs.get("ucTzZhF5okn").getName());
 		assertEquals("Jamaica Rd Clinic (Somalia Drive District)", specs.get("ZktsAIReh6z").getName());
 	}

@@ -121,6 +121,10 @@ instance's non-MFL locations.
 - When several MFL units share a name, **every one of them** gets the suffix. That keeps the
   outcome the same on every instance and independent of processing order.
 - When an MFL name clashes only with a local location, the MFL row gets the suffix.
+- A **closed** unit is suffixed whenever anything else shares its name, open or closed.
+  OpenMRS refuses to save even a retired location under an active one's name. So of *Jamaica
+  Rd Clinic* (closed, Bushrod) and its reopened namesake (Somalia Drive), only the closed one
+  becomes *Jamaica Rd Clinic (Bushrod District)*.
 - The suffix goes as soon as the clash does.
 - Today five active pairs need it, for example *Agape Clinic (Suakoko)* and *Agape Clinic
   (Gar-Bain District)*. No MFL name collides with a content-package location.
