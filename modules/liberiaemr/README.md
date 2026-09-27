@@ -46,6 +46,30 @@ set, `available: false` when monitoring cannot be reached (4-second timeout), ot
 `central` (`recordsWaiting`, `recordsRetrying`, `conflicts`, `deadLetters`, `receiverUp`,
 `brokerUp`) and the firing `alerts`.
 
+### MOH Master Facility List sync
+Caches the MOH Master Facility List (a DHIS2 instance) as OpenMRS locations: counties,
+districts and facilities, matched on the `MFL UID` location attribute. The design is
+[ADR 0009](../../docs/adr/0009-mfl-facility-locations.md); the REST contract is
+[`docs/architecture/mfl-sync-api.md`](../../docs/architecture/mfl-sync-api.md), served
+under `/ws/rest/v1/liberiaemr/mfl`. Reads need `View MFL Sync` and changes `Manage MFL Sync`,
+both from `content-liberia-national`, which also creates the location attribute types the
+sync writes.
+
+The task `LiberiaEMR MFL Sync` pulls the whole MFL daily at `liberiaemr.mfl.schedule.time`
+(default `02:00`, Africa/Monrovia), while `liberiaemr.mfl.enabled` is true. Every run is
+recorded, with its per-location changes, in `liberiaemr_mfl_sync_run` and
+`liberiaemr_mfl_sync_run_item`.
+
+| Variable | Meaning |
+|---|---|
+| `LIBERIAEMR_MFL_USERNAME` | The MFL account. Unset, or without a password, means the sync is unavailable on this instance. |
+| `LIBERIAEMR_MFL_PASSWORD_FILE` | A path read verbatim for the password; preferred. |
+| `LIBERIAEMR_MFL_PASSWORD` | The password, when no file is used. |
+| `LIBERIAEMR_MFL_ALLOWED_HOSTS` | Comma-separated hosts the credentials may be sent to; default `dhis2.moh.gov.lr`. `liberiaemr.mfl.url` is editable over REST, so this list is checked when it is saved and before every request. |
+
+There is no global property for the credentials or the allowed hosts: global properties are
+readable over REST.
+
 ### Password Reset Flow
 The module introduces a secure, automated password reset flow for users. It integrates with an external SMTP server (e.g., Gmail) to send time-limited password reset tokens to registered users.
 

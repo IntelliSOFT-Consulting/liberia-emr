@@ -17,10 +17,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.jdbc.ReturningWork;
 import org.openmrs.User;
+import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.context.Daemon;
+import org.openmrs.module.liberiaemr.LiberiaEMRActivator;
+import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.api.db.hibernate.DbSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,11 +51,52 @@ public class MflSyncService {
 
 	private static final Logger log = LoggerFactory.getLogger(MflSyncService.class);
 
+	/** The sync has no credentials on this instance (REST 503). */
+	public static class UnavailableException extends RuntimeException {
+
+		public UnavailableException() {
+			super("MFL credentials are not configured on this instance");
+		}
+	}
+
+	/** A run is already going (REST 409): runs never overlap and are not queued. */
+	public static class BusyException extends RuntimeException {
+
+		private final Integer runId;
+
+		public BusyException(Integer runId) {
+			super("A run is already in progress");
+			this.runId = runId;
+		}
+
+		public Integer getRunId() {
+			return runId;
+		}
+	}
+
+	/** Runs a manual run in the background, as the daemon, with a session of its own. */
+	private static final Executor DAEMON = new Executor() {
+
+		@Override
+		public void execute(Runnable command) {
+			Daemon.runInDaemonThread(command, LiberiaEMRActivator.getDaemonToken());
+		}
+	};
+
 	@Autowired
 	private MflRunStore store;
 
 	@Autowired
 	private DbSessionFactory sessionFactory;
+
+	/** The run in progress: 0 for none, -1 while one is being recorded, else its id. */
+	private final AtomicInteger running = new AtomicInteger();
+
+	private Map<String, String> environment = System.getenv();
+
+	private Executor executor = DAEMON;
+
+	private MflSource sourceOverride;
 
 	/**
 	 * Runs one sync to the end in the calling thread.
@@ -106,8 +153,9 @@ public class MflSyncService {
 		return store.items(runId, action, startIndex, limit);
 	}
 
+	/** @return the newest finished run, whatever its outcome, or null */
 	public Map<String, Object> getLastRun() {
-		return store.latest(null);
+		return store.latestFinished();
 	}
 
 	public Map<String, Object> getLastSuccessfulRun() {
@@ -116,6 +164,185 @@ public class MflSyncService {
 
 	public Map<String, Object> getRunningRun() {
 		return store.latest(MflRunStore.STATUS_RUNNING);
+	}
+
+	/** The sync is available where both MFL credentials are configured (ADR 0009 decision 2). */
+	public boolean isAvailable() {
+		return MflCredentials.fromEnvironment(environment).isAvailable();
+	}
+
+	/** @return MflStatus (docs/architecture/mfl-sync-api.md); it never carries the password */
+	public Map<String, Object> getStatus() {
+		AdministrationService admin = Context.getAdministrationService();
+		boolean enabled = MflSettings.enabled(admin.getGlobalProperty(MflSettings.GP_ENABLED));
+		String time = MflSettings.time(admin.getGlobalProperty(MflSettings.GP_SCHEDULE_TIME));
+		Map<String, Object> schedule = new LinkedHashMap<String, Object>();
+		schedule.put("time", time);
+		Map<String, Object> config = new LinkedHashMap<String, Object>();
+		config.put("enabled", enabled);
+		config.put("url", MflSettings.url(admin.getGlobalProperty(MflSettings.GP_URL)));
+		config.put("username", MflCredentials.fromEnvironment(environment).getUsername());
+		config.put("schedule", schedule);
+
+		Map<String, Object> status = new LinkedHashMap<String, Object>();
+		status.put("available", isAvailable());
+		status.put("config", config);
+		status.put("nextRun", enabled ? MflSettings.nextRun(time, System.currentTimeMillis()) : null);
+		status.put("running", getRunningRun());
+		status.put("lastRun", getLastRun());
+		status.put("lastSuccessfulRun", getLastSuccessfulRun());
+		status.put("held", getHeld());
+		return status;
+	}
+
+	/**
+	 * Saves a partial config. Every field is checked before any is saved.
+	 *
+	 * @return the status after the change
+	 * @throws IllegalArgumentException when a field is invalid (REST 400)
+	 */
+	public Map<String, Object> updateConfig(Map<String, Object> body) {
+		Map<String, String> properties = MflSettings.validate(body, MflEndpointPolicy.fromEnvironment(environment));
+		// Manage MFL Sync is the privilege this takes; saving its own settings is part of it.
+		Context.addProxyPrivilege(PrivilegeConstants.MANAGE_GLOBAL_PROPERTIES);
+		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+		try {
+			for (Map.Entry<String, String> property : properties.entrySet()) {
+				Context.getAdministrationService().setGlobalProperty(property.getKey(), property.getValue());
+			}
+		}
+		finally {
+			Context.removeProxyPrivilege(PrivilegeConstants.MANAGE_GLOBAL_PROPERTIES);
+			Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+		}
+		return getStatus();
+	}
+
+	/**
+	 * @return MflConnectionTest: a refused or unreachable MFL is an answer, not an error
+	 * @throws UnavailableException without credentials
+	 */
+	public Map<String, Object> testConnection() {
+		if (!isAvailable()) {
+			throw new UnavailableException();
+		}
+		return client().testConnection();
+	}
+
+	/**
+	 * Starts a manual run in the background.
+	 *
+	 * @return the run as it started, in status RUNNING
+	 * @throws UnavailableException without credentials
+	 * @throws BusyException while another run is going
+	 */
+	public Map<String, Object> startRun(final boolean dryRun, User startedBy) {
+		if (!isAvailable()) {
+			throw new UnavailableException();
+		}
+		if (!running.compareAndSet(0, -1)) {
+			throw new BusyException(currentRunId());
+		}
+		final int runId;
+		try {
+			runId = store.create(dryRun, TRIGGER_MANUAL, startedBy, new Date());
+		}
+		catch (RuntimeException e) {
+			running.set(0);
+			throw e;
+		}
+		running.set(runId);
+		Map<String, Object> run = store.get(runId);
+		final MflSource source = source();
+		executor.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					execute(runId, source, dryRun);
+				}
+				finally {
+					running.set(0);
+				}
+			}
+		});
+		return run;
+	}
+
+	/**
+	 * The daily run (MflSyncTask). It does nothing while the sync is disabled or unavailable, or
+	 * while a manual run is going.
+	 */
+	public void runScheduled() {
+		if (!MflSettings.enabled(Context.getAdministrationService().getGlobalProperty(MflSettings.GP_ENABLED))) {
+			return;
+		}
+		if (!isAvailable()) {
+			log.warn("The MFL sync is enabled but has no credentials on this instance; the scheduled run is skipped");
+			return;
+		}
+		if (!running.compareAndSet(0, -1)) {
+			log.info("The scheduled MFL sync is skipped: run {} is still going", currentRunId());
+			return;
+		}
+		try {
+			int runId = store.create(false, TRIGGER_SCHEDULE, null, new Date());
+			running.set(runId);
+			execute(runId, source(), false);
+		}
+		finally {
+			running.set(0);
+		}
+	}
+
+	/** Fails any run a stopped server left RUNNING; called at module start. */
+	public void failInterruptedRuns() {
+		int failed = store.failInterrupted(new Date());
+		if (failed > 0) {
+			log.warn("{} MFL sync run(s) were left running by a server that stopped; marked FAILED", failed);
+		}
+	}
+
+	private Integer currentRunId() {
+		int id = running.get();
+		if (id > 0) {
+			return id;
+		}
+		Map<String, Object> run = getRunningRun();
+		return run == null ? null : (Integer) run.get("id");
+	}
+
+	private MflSource source() {
+		return sourceOverride != null ? sourceOverride : client();
+	}
+
+	private MflClient client() {
+		return new MflClient(MflSettings.url(Context.getAdministrationService().getGlobalProperty(MflSettings.GP_URL)),
+		        MflCredentials.fromEnvironment(environment), MflEndpointPolicy.fromEnvironment(environment),
+		        MflClient.PAGE_SIZE, 2000);
+	}
+
+	// For tests: the environment, the executor and the MFL itself are the three things a test
+	// cannot let the service reach for real. Public because the bean is a transactional proxy,
+	// which forwards only public methods to the real instance.
+
+	public void setEnvironment(Map<String, String> environment) {
+		this.environment = environment;
+	}
+
+	public void setExecutor(Executor executor) {
+		this.executor = executor;
+	}
+
+	public void setSource(MflSource source) {
+		this.sourceOverride = source;
+	}
+
+	public void reset() {
+		environment = System.getenv();
+		executor = DAEMON;
+		sourceOverride = null;
+		running.set(0);
 	}
 
 	/**

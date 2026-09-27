@@ -206,6 +206,14 @@ public class MflRunStore {
 		return runs.isEmpty() ? null : runs.get(0);
 	}
 
+	/** @return the newest run that has finished, whatever its outcome, or null */
+	@Transactional(readOnly = true)
+	public Map<String, Object> latestFinished() {
+		List<Map<String, Object>> runs = runs("WHERE r.status <> ?", Collections.<Object> singletonList(STATUS_RUNNING), 0,
+		    1);
+		return runs.isEmpty() ? null : runs.get(0);
+	}
+
 	/** @return MflRunPage: results newest first, and totalCount */
 	@Transactional(readOnly = true)
 	public Map<String, Object> page(int startIndex, int limit) {

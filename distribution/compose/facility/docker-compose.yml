@@ -87,6 +87,15 @@ services:
       LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
       LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
+      # MOH Master Facility List sync (liberiaemr module, ADR 0009). The credentials are
+      # deployment secrets: mount the password file and leave the plain variable empty. Unset
+      # means the MFL sync is unavailable on this instance and its page hides itself.
+      # LIBERIAEMR_MFL_ALLOWED_HOSTS is where the credentials may be sent; the MFL URL itself
+      # is editable from the page, so this list is what keeps them on the MOH's host.
+      LIBERIAEMR_MFL_USERNAME: ${LIBERIAEMR_MFL_USERNAME:-}
+      LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
+      LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
+      LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
       JAVA_OPTS: >-
         -Xmx${BACKEND_HEAP:-3g}
         -Duser.timezone=Africa/Monrovia
