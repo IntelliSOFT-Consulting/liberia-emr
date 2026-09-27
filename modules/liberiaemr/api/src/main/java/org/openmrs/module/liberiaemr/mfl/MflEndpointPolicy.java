@@ -29,10 +29,14 @@ public final class MflEndpointPolicy {
 	public static final String ENV_ALLOWED_HOSTS = "LIBERIAEMR_MFL_ALLOWED_HOSTS";
 
 	/**
-	 * "true" permits http:// to an allowed host. For a stub MFL in development and CI only; a real
-	 * deployment never sets it, because the credentials would cross the network in clear.
+	 * "true" permits http:// to an allowed host on this machine's loopback interface, for a stub MFL
+	 * in development and the module's own tests. It never permits http:// to any other host, so
+	 * even when set the credentials cannot cross a network in clear.
 	 */
 	public static final String ENV_ALLOW_INSECURE_HTTP = "LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP";
+
+	private static final Set<String> LOOPBACK = new LinkedHashSet<String>(java.util.Arrays.asList("localhost",
+	    "127.0.0.1", "[::1]", "::1"));
 
 	public static final String DEFAULT_HOST = "dhis2.moh.gov.lr";
 
@@ -83,13 +87,13 @@ public final class MflEndpointPolicy {
 			throw new IllegalArgumentException("The MFL URL is not a valid URL");
 		}
 		String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
-		if (!"https".equals(scheme) && !(allowInsecureHttp && "http".equals(scheme))) {
+		String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
+		if (!"https".equals(scheme) && !(allowInsecureHttp && "http".equals(scheme) && LOOPBACK.contains(host))) {
 			throw new IllegalArgumentException("The MFL URL must start with https://");
 		}
 		if (uri.getRawUserInfo() != null) {
 			throw new IllegalArgumentException("The MFL URL must not carry a user name or password");
 		}
-		String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
 		if (!allowedHosts.contains(host)) {
 			throw new IllegalArgumentException("'" + host + "' is not an allowed MFL host. Allowed: " + allowedHosts
 			        + ", set by " + ENV_ALLOWED_HOSTS + " in the deployment environment");

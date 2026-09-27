@@ -36,6 +36,24 @@ variable) are both set. Where it is not available:
   `{"error": "MFL credentials are not configured on this instance"}`.
 - `PUT /config` works, so settings can be staged before the credentials arrive.
 
+### Allowed MFL hosts
+
+`url` is editable over this API, and the sync sends the MFL credentials to it. So the module
+sends them only to a host on an allowlist set in the **deployment environment**, never in a
+global property:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `LIBERIAEMR_MFL_ALLOWED_HOSTS` | `dhis2.moh.gov.lr` | Comma-separated host names the MFL URL may point at. Case-insensitive; an exact host match, not a suffix |
+| `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP` | unset | `true` permits `http://` to an allowed **loopback** host only (`localhost`, `127.0.0.1`), for a stub MFL in development. It never permits `http://` to any other host |
+
+- `PUT /config` rejects a `url` that fails the check with **400** (see below).
+- The module checks the URL again before **every** request, so a `liberiaemr.mfl.url` edited
+  directly in the database cannot redirect the credentials either. Such a run ends `FAILED`,
+  and `POST /test-connection` answers `ok: false`, with the reason in `message`.
+- Redirects are never followed. A `3xx` answer from the MFL fails the run instead.
+- The MFL is called over TLS with the JVM's truststore. Certificate checks are never disabled.
+
 ## Endpoints
 
 | Method | Path | Privilege | Success |
@@ -102,6 +120,10 @@ accepted.
 - **400**: validation errors:
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
     `/api`.
+  - `url`'s host is not in `LIBERIAEMR_MFL_ALLOWED_HOSTS` (see
+    [Allowed MFL hosts](#allowed-mfl-hosts)), or `url` carries a user name or password. The
+    message names the allowed hosts, for example
+    `{"error": "'mfl.example.org' is not an allowed MFL host. Allowed: [dhis2.moh.gov.lr], set by LIBERIAEMR_MFL_ALLOWED_HOSTS in the deployment environment"}`.
   - `schedule.time` is not `HH:MM` in 24-hour time.
   - `username` or any password-like field is present.
 
@@ -215,7 +237,7 @@ and has no warning is **not** recorded. `action` is an optional filter; `limit` 
       "error": "Not retired: this instance's own facility root. Decide by hand (ADR 0009 §5)"
     }
   ],
-  "totalCount": 2
+  "totalCount": 3
 }
 ```
 

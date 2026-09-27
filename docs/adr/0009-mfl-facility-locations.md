@@ -202,6 +202,7 @@ properties are readable over REST.
 | --- | --- | --- |
 | Username | env `LIBERIAEMR_MFL_USERNAME` | no; the UI shows it |
 | Password | env `LIBERIAEMR_MFL_PASSWORD_FILE` (a path, read verbatim, preferred), else `LIBERIAEMR_MFL_PASSWORD` | no; never returned by any endpoint, never logged |
+| Allowed MFL hosts | env `LIBERIAEMR_MFL_ALLOWED_HOSTS`, default `dhis2.moh.gov.lr` | no. The base URL is editable, so the credentials go only to a host on this list, checked on save and before every request ([API](../architecture/mfl-sync-api.md#allowed-mfl-hosts)) |
 | Base URL | GP `liberiaemr.mfl.url`, default `https://dhis2.moh.gov.lr/mfl` | yes |
 
 `distribution/compose/{central,facility}/docker-compose.yml`, under `backend.environment`:

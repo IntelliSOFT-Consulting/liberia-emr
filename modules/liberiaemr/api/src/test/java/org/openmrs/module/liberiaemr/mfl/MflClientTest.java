@@ -198,6 +198,22 @@ public class MflClientTest {
 	}
 
 	@Test
+	public void policy_shouldNeverAllowPlainHttpOffThisMachine() {
+		Map<String, String> env = new HashMap<String, String>();
+		env.put(MflEndpointPolicy.ENV_ALLOWED_HOSTS, "dhis2.moh.gov.lr,localhost");
+		env.put(MflEndpointPolicy.ENV_ALLOW_INSECURE_HTTP, "true");
+		MflEndpointPolicy policy = MflEndpointPolicy.fromEnvironment(env);
+		policy.check("http://localhost:8080/mfl");
+		try {
+			policy.check("http://dhis2.moh.gov.lr/mfl");
+			fail("plain http to a remote host must be refused even with the flag");
+		}
+		catch (IllegalArgumentException e) {
+			assertThat(e.getMessage(), containsString("https://"));
+		}
+	}
+
+	@Test
 	public void policy_shouldReadTheAllowlistCaseInsensitively() {
 		Map<String, String> env = new HashMap<String, String>();
 		env.put(MflEndpointPolicy.ENV_ALLOWED_HOSTS, " DHIS2.moh.gov.lr , mfl-mirror.moh.gov.lr ");
