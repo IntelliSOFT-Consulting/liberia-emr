@@ -14,7 +14,8 @@ Where the types and this document disagree, this document wins.
   `SyncConflictController`, not a REST module resource.
 - JSON only. Timestamps are **epoch milliseconds**, like the sync conflicts API. Dates without
   a time (`openingDate`, `closedDate`) are `yyyy-mm-dd` strings.
-- Every error body is `{"error": "<message>"}`.
+- Every error body has a required `error` message: `{"error": "<message>"}`. Some add fields,
+  such as the 409 on `POST /runs`, which also carries `runId`.
 - Privileges, created by `content-liberia-national` (LE-320) and granted to the Sync
   Administrator role:
   - **`View MFL Sync`** for every `GET`.
@@ -124,7 +125,8 @@ accepted.
   immediately.
 - **400**: validation errors:
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
-    `/api`.
+    `/api`. The one exception to `https://` is `http://localhost` or `http://127.0.0.1` when
+    `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP=true` (see [Allowed MFL hosts](#allowed-mfl-hosts)).
   - `url`'s host is not in `LIBERIAEMR_MFL_ALLOWED_HOSTS` (see
     [Allowed MFL hosts](#allowed-mfl-hosts)), or `url` carries a user name or password. The
     message names the allowed hosts, for example
