@@ -121,6 +121,10 @@ instance's non-MFL locations.
 - When several MFL units share a name, **every one of them** gets the suffix. That keeps the
   outcome the same on every instance and independent of processing order.
 - When an MFL name clashes only with a local location, the MFL row gets the suffix.
+- A **closed** unit is suffixed whenever anything else shares its name, open or closed.
+  OpenMRS refuses to save even a retired location under an active one's name. So of *Jamaica
+  Rd Clinic* (closed, Bushrod) and its reopened namesake (Somalia Drive), only the closed one
+  becomes *Jamaica Rd Clinic (Bushrod District)*.
 - The suffix goes as soon as the clash does.
 - Today five active pairs need it, for example *Agape Clinic (Suakoko)* and *Agape Clinic
   (Gar-Bain District)*. No MFL name collides with a content-package location.
@@ -188,7 +192,11 @@ their `Attribute|MFL UID` column resolves.
 
 ### 6. Tags: the switcher at central filters on `Health Facility`
 
-MFL facilities get `Health Facility` and **not** `Login Location`. LE-324 replaces the
+Facilities the sync **creates** get `Health Facility` and **not** `Login Location`. An
+**adopted** site root keeps the `Login Location` tag its site CSV gives it, because the sync only
+adds tags and never removes one (decision 4). The site's own staff log in there, so the tag has
+to stay. The central switcher does not depend on `Login Location` either way: it filters on
+`Health Facility`, which adopted and created facilities both carry. LE-324 replaces the
 login app's boolean `chooseLocation.useLoginLocationTag` with a string,
 `chooseLocation.locationTag` (default `Login Location`). Central's frontend config sets it to
 `Health Facility`. The switcher shows the MFL code and district next to each name.
@@ -202,6 +210,7 @@ properties are readable over REST.
 | --- | --- | --- |
 | Username | env `LIBERIAEMR_MFL_USERNAME` | no; the UI shows it |
 | Password | env `LIBERIAEMR_MFL_PASSWORD_FILE` (a path, read verbatim, preferred), else `LIBERIAEMR_MFL_PASSWORD` | no; never returned by any endpoint, never logged |
+| Allowed MFL hosts | env `LIBERIAEMR_MFL_ALLOWED_HOSTS`, default `dhis2.moh.gov.lr` | no. The base URL is editable, so the credentials go only to a host on this list, checked on save and before every request ([API](../architecture/mfl-sync-api.md#allowed-mfl-hosts)) |
 | Base URL | GP `liberiaemr.mfl.url`, default `https://dhis2.moh.gov.lr/mfl` | yes |
 
 `distribution/compose/{central,facility}/docker-compose.yml`, under `backend.environment`:
