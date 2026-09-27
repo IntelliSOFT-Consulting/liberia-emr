@@ -107,12 +107,17 @@ public final class MflMapper {
 			}
 		});
 
-		// A name is shared when two kept units hold it, closed ones included (OpenMRS refuses to save
-		// even a retired location under an active one's name), or a local location already does.
-		Map<String, Integer> nameCounts = new HashMap<String, Integer>();
+		// An active unit clashes with another active unit or a local location (ADR 0009 decision
+		// 3). A closed unit clashes with anything that shares its name: OpenMRS refuses to save even
+		// a retired location under an active one's name, so the closed one takes the suffix.
+		Map<String, Integer> activeCounts = new HashMap<String, Integer>();
+		Map<String, Integer> allCounts = new HashMap<String, Integer>();
 		for (MflUnit unit : kept) {
 			String key = key(normalise(unit.getName()));
-			nameCounts.put(key, nameCounts.containsKey(key) ? nameCounts.get(key) + 1 : 1);
+			allCounts.put(key, allCounts.containsKey(key) ? allCounts.get(key) + 1 : 1);
+			if (unit.getClosedDate() == null) {
+				activeCounts.put(key, activeCounts.containsKey(key) ? activeCounts.get(key) + 1 : 1);
+			}
 		}
 		Set<String> localKeys = new HashSet<String>();
 		for (String name : localNames) {
@@ -121,11 +126,12 @@ public final class MflMapper {
 
 		List<MflLocationSpec> specs = new ArrayList<MflLocationSpec>();
 		for (MflUnit unit : kept) {
-			specs.add(spec(unit, byUid, nameCounts, localKeys));
+			specs.add(spec(unit, byUid, unit.getClosedDate() == null ? activeCounts : allCounts, localKeys));
 		}
 		return specs;
 	}
 
+	/** @param nameCounts how many units a unit of this kind clashes with, by name */
 	private static MflLocationSpec spec(MflUnit unit, Map<String, MflUnit> byUid, Map<String, Integer> nameCounts,
 	        Set<String> localKeys) {
 		MflLevel level = MflLevel.ofDhis2Level(unit.getLevel());
@@ -134,7 +140,7 @@ public final class MflMapper {
 
 		String name = normalise(unit.getName());
 		String key = key(name);
-		if (nameCounts.get(key) > 1 || localKeys.contains(key)) {
+		if (nameCounts.containsKey(key) && nameCounts.get(key) > 1 || localKeys.contains(key)) {
 			if (parent == null) {
 				warnings.add("Name: another location is also called '" + name + "'; left as is, a county has no parent to tell it apart");
 			} else {
