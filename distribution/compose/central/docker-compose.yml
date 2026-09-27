@@ -10,10 +10,17 @@ services:
   db:
     image: mariadb:10.11
     restart: unless-stopped
+    # The last two serve the reporting ETL, which runs as a user without SUPER (ADR 0010
+    # decision 3): event-scheduler replaces core's own SET GLOBAL, which the build strips, and
+    # performance-schema lets core's stuck-run check see a running ETL. Central has no
+    # binlog, so the facility's binlog-ignore-db and log-bin-trust-function-creators do not
+    # apply here; if a binlog is ever enabled, both must be added with it.
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
       --max_allowed_packet=1G
+      --event-scheduler=ON
+      --performance-schema=ON
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
       MARIADB_USER: ${MYSQL_USER}
@@ -24,6 +31,9 @@ services:
       SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       SYNC_MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
       SYNC_MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:-}
+      # For initdb/30-etl-db-user.sh (first boot only); an unset password skips it.
+      ETL_DB_USER: ${ETL_DB_USER:-mambaetl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
     volumes:
       - db-data:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d:ro
@@ -75,6 +85,18 @@ services:
       # Read by the Sync conflicts page; empty turns it off. The window is for display only.
       LIBERIAEMR_SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       LIBERIAEMR_SYNC_CONFLICT_WINDOW: ${SYNC_CONFLICT_WINDOW-01:00-05:00}
+      # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4); see the facility stack.
+      # Central flattens the whole national replica, so its interval is longer; both the
+      # interval and the width are provisional until central's first full build is timed.
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_OPENMRS__DATABASE: ${MYSQL_DATABASE}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_ETL__DATABASE: liberiaemr_etl
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_USERNAME: ${ETL_DB_USER:-mambaetl}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_LOCALE: en
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_COLUMNS: "40"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_INCREMENTAL__MODE: "1"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_AUTOMATED__FLATTENING: "0"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_ETL__INTERVAL: ${ETL_INTERVAL_SECONDS:-3600}
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
