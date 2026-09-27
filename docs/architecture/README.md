@@ -54,7 +54,7 @@ Decisions: [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md) (id
 [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md) (module selection).
 
 Facility locations come from the MOH Master Facility List: [ADR 0009](../adr/0009-mfl-facility-locations.md)
-(UUID derivation, ownership, cadence, credentials) and the [MFL sync REST API](mfl-sync-api.md).
+(match key, field ownership, attribute types, cadence, credentials) and the [MFL sync REST API](mfl-sync-api.md).
 
 ## Components
 

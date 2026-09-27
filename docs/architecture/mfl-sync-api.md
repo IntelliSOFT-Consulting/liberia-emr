@@ -60,20 +60,19 @@ resource that call creates.
     "enabled": true,
     "url": "https://dhis2.moh.gov.lr/mfl",
     "username": "an-api-user",
-    "schedule": { "time": "02:00", "fullEveryDays": 7 }
+    "schedule": { "time": "02:00" }
   },
   "nextRun": 1790560800000,
   "running": null,
   "lastRun": {
     "id": 42,
-    "mode": "INCREMENTAL",
     "dryRun": false,
     "trigger": "SCHEDULE",
     "status": "SUCCEEDED",
     "startedBy": null,
     "started": 1790474400000,
     "finished": 1790474431000,
-    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1115, "failed": 0 },
+    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1107, "failed": 0, "warnings": 11 },
     "message": null
   },
   "lastSuccessfulRun": { "id": 42, "...": "same shape as lastRun" },
@@ -95,7 +94,7 @@ The request is a **partial** `config`. Omitted fields are unchanged; `username` 
 accepted.
 
 ```json
-{ "enabled": true, "url": "https://dhis2.moh.gov.lr/mfl", "schedule": { "time": "03:30", "fullEveryDays": 7 } }
+{ "enabled": true, "url": "https://dhis2.moh.gov.lr/mfl", "schedule": { "time": "03:30" } }
 ```
 
 - **200**: the full `MflStatus` after the change. A schedule change reschedules the task
@@ -104,7 +103,6 @@ accepted.
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
     `/api`.
   - `schedule.time` is not `HH:MM` in 24-hour time.
-  - `schedule.fullEveryDays` is not an integer from 1 to 31.
   - `username` or any password-like field is present.
 
 ### `POST /test-connection`
@@ -127,11 +125,10 @@ request's credentials or an `Authorization` header.
 ### `POST /runs`
 
 ```json
-{ "mode": "FULL", "dryRun": true }
+{ "dryRun": true }
 ```
 
-- `mode`: `FULL` or `INCREMENTAL`, default `INCREMENTAL`. On an instance with no successful
-  run, the module runs `FULL` whatever was asked, and the returned `mode` says so.
+- Every run is a **full** pull of the MFL, diffed locally (ADR 0009 §8). There is no mode.
 - `dryRun`: default `false`. A dry run fetches from the MFL, computes every change and records
   the items, but writes no location.
 - **202**: the new run in status `RUNNING`, with a `Location: /ws/rest/v1/liberiaemr/mfl/runs/{id}`
@@ -152,14 +149,13 @@ This returns newest first. `limit` defaults to 20, with a maximum of 100.
 ```json
 {
   "id": 43,
-  "mode": "FULL",
   "dryRun": true,
   "trigger": "MANUAL",
   "status": "SUCCEEDED",
   "startedBy": "admin",
   "started": 1790505989000,
   "finished": 1790506040000,
-  "counts": { "created": 12, "updated": 40, "retired": 1, "unretired": 0, "unchanged": 1065, "failed": 0 },
+  "counts": { "created": 12, "updated": 40, "retired": 1, "unretired": 0, "unchanged": 1057, "failed": 0, "warnings": 11 },
   "message": null
 }
 ```
@@ -167,9 +163,11 @@ This returns newest first. `limit` defaults to 20, with a maximum of 100.
 - `status` is one of:
   - `RUNNING`.
   - `SUCCEEDED`: every item applied, or computed on a dry run.
-  - `PARTIAL`: the run finished, and `counts.failed` > 0.
-  - `FAILED`: the run stopped. `message` says why: the MFL was unreachable, authentication
-    was refused, or the mass-retirement guard tripped (ADR 0009 §5).
+  - `PARTIAL`: the run finished, but either `counts.failed` > 0 or the completeness guard
+    skipped retirement (a page failed, or the pull held under 90% of the active MFL
+    locations; ADR 0009 §5). `message` says which.
+  - `FAILED`: the run stopped. `message` says why: the MFL was unreachable, or
+    authentication was refused.
 - `trigger`: `SCHEDULE` or `MANUAL`.
 - `startedBy` is the username for a manual run, or `null` for a scheduled one.
 - On a dry run, `counts` are what *would* happen.
@@ -177,8 +175,8 @@ This returns newest first. `limit` defaults to 20, with a maximum of 100.
 
 ### `GET /runs/{id}/items?action=UPDATE&startIndex=0&limit=50`
 
-These are the per-location changes and errors of a run. Unchanged locations are **not**
-recorded. `action` is an optional filter; `limit` defaults to 50, with a maximum of 200.
+These are the per-location changes, warnings and errors of a run. A location that is unchanged
+and has no warning is **not** recorded. `action` is an optional filter; `limit` defaults to 50, with a maximum of 200.
 
 ```json
 {
@@ -191,6 +189,18 @@ recorded. `action` is an optional filter; `limit` defaults to 50, with a maximum
       "locationUuid": "7dd5a981-7e3a-59fa-b1fa-e1474e299da8",
       "name": "Jah Clinic",
       "changes": [ { "field": "name", "from": " Jah Clinic", "to": "Jah Clinic" } ],
+      "warnings": [],
+      "error": null
+    },
+    {
+      "action": "WARNING",
+      "level": "FACILITY",
+      "mflUid": "…",
+      "mflCode": "…",
+      "locationUuid": "…",
+      "name": "Kesselee Memorial Health Center",
+      "changes": [],
+      "warnings": [ "Facility Type: in Clinic and Health Center; Health Center wins" ],
       "error": null
     },
     {
@@ -201,6 +211,7 @@ recorded. `action` is an optional filter; `limit` defaults to 50, with a maximum
       "locationUuid": "…",
       "name": "Careysburg Health Center",
       "changes": [],
+      "warnings": [],
       "error": "Not retired: this instance's own facility root. Decide by hand (ADR 0009 §5)"
     }
   ],
@@ -208,7 +219,11 @@ recorded. `action` is an optional filter; `limit` defaults to 50, with a maximum
 }
 ```
 
-- `action` is one of `CREATE`, `UPDATE`, `RETIRE`, `UNRETIRE` or `ERROR`.
+- `action` is one of `CREATE`, `UPDATE`, `RETIRE`, `UNRETIRE`, `WARNING` or `ERROR`.
+  `WARNING` means the location is unchanged but has warnings.
+- `warnings` holds every group tie-break, out-of-bounds point and name disambiguation for
+  that location (ADR 0009 §3), on any action. `counts.warnings` is the number of items with
+  at least one warning.
 - `level` is one of `COUNTY`, `DISTRICT` or `FACILITY`.
 - `changes[].field` names what changed: `name`, `parent`, `latitude`, `longitude`,
   `stateProvince`, `countyDistrict`, a tag as `tag:<name>`, or an attribute as

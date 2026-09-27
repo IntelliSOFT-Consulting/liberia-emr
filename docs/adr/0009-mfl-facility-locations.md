@@ -1,6 +1,7 @@
 # 0009: The Master Facility List is the source of truth for facility locations
 
-**Status:** Proposed
+**Status:** Accepted (27 September 2026). Decision 1 is the user's reversal of the first
+draft; the rest was confirmed as proposed or settled by the MFL exploration.
 **Date:** 27 September 2026 · **Ticket:** LE-319 (parent LE-317)
 
 ## Context
@@ -12,199 +13,197 @@ only what one site package seeds: central is built with a single `SITE_PACKAGE` 
 Careysburg, `distribution/backend/Dockerfile`). So central holds one facility root and none of
 the other ~995.
 
-The MFL was probed read-only on 27 September 2026 (LE-317):
+The MFL API and data are profiled in
+[`integration/dhis2/mfl/README.md`](../../integration/dhis2/mfl/README.md) (LE-318, read-only
+probe on 27 September 2026). The facts this ADR relies on:
 
-- DHIS2 **2.40.4.1**. Four org unit levels: Country (1), County (2, 15 units),
-  District (3, 106 units) and Facility (4, 996 units).
-- A facility carries a DHIS2 UID (`id`, 11 characters), an MOH `code` (`LBR-06-0624-06`), a
-  `name` (some with leading whitespace), `openingDate`, `lastUpdated`, `path`, `parent` and
-  point `geometry` in `[longitude, latitude]` order.
-- `/api/attributes` is **empty**. Facility type, ownership, EmONC level and services are
-  expressed only as **org unit group sets and groups**: Hospital / Health Center / Clinic;
-  Public / Private / Faith Based / Concession; BemONC / CEmONC; about 40 "Facilities Rendering X
-  Services" groups.
+- DHIS2 **2.40.4.1**. Four levels: Country (1), County (2, 15 units), District (3, 106 units,
+  of which 8 are not districts and hold no facilities) and Facility (4, 996 units).
+- There are no DHIS2 attributes. Type, ownership, EmONC level and setting are **org unit
+  groups**, and not all of them are exclusive: 6 facilities are both Clinic and Health Center,
+  3 pair Private with another ownership, and 1 is both Rural and Urban. Group names carry
+  typos and trailing spaces.
+- **Only the DHIS2 UID is a reliable key.** Seven facilities have no code, five code pairs
+  collide once trimmed, and six names occur twice nationally. OpenMRS 2.6.9 rejects a second
+  active location with the same name, case-insensitively and regardless of parent.
+- **There is no deletion signal** for this account (`/api/deletedObjects` returns 403). A move
+  is recorded as a close plus a new UID, not as a reparent.
+- 914 of the 996 `openingDate` values are `2000-*` placeholders.
+- A full pull takes about 5 s and 775 KB.
 
 Three existing rules constrain the design:
 
 1. **Metadata is not synced** ([entity coverage](../architecture/sync-entity-coverage.md) §3).
-   Facility and central must already hold every referenced location under the **same UUID**. A
-   location UUID that a facility references and central lacks is a sync failure at the receiver.
+   A location UUID that a facility references must already exist at central.
 2. **Central is read-only for clinical data** ([sync-eip.md](../architecture/sync-eip.md) §1.8c).
-   Its database is written by the dbsync receiver and by nothing else clinical. Locations are
-   metadata, so a job writing them does not break this rule. It must still never touch a row the
-   receiver applies.
+   Locations are metadata, so a job writing them does not break this rule. It must still
+   never touch a row the dbsync receiver applies.
 3. **Initializer reapplies its files on every boot** (see `EmailService.resolveSecret`). A
-   global property that an operator is expected to edit must therefore not be seeded from
-   content, or each restart silently reverts the edit.
-
-Some facts are still being established by the exploration subtask (LE-318). They are marked
-**pending LE-318** below; each has a default that holds until LE-318 reports.
+   global property an operator is meant to edit must not be seeded from content.
 
 ## Decision
 
-### 1. Location UUIDs are derived from the DHIS2 UID
+### 1. Location UUIDs are never rewritten; the `MFL UID` attribute is the match key
 
-Each MFL org unit's location UUID is a **name-based UUID, version 5** (RFC 4122 §4.3):
+An existing location keeps its UUID for life. A location's MFL identity is held **only** in its
+**`MFL UID`** attribute (decision 4), and the sync matches on that attribute alone. It never
+matches on name, code or UUID.
 
-```
-namespace = e0b0fbf7-045c-437a-8e7c-4504984c5e1a   # LiberiaEMR MFL namespace, fixed forever
-name      = the DHIS2 UID, exactly as DHIS2 returns it (UTF-8, case-sensitive, no prefix)
-uuid      = UUIDv5(namespace, name)
-```
+- **Site roots are adopted by attribute.** Each site package declares its root's MFL UID in its
+  locations CSV, in an Initializer `Attribute|MFL UID` column. When the sync meets that UID, it
+  updates the existing row in place: same UUID, so facility-scoped identifiers (MOH HRN,
+  uniqueness `LOCATION`) keep pointing where they did.
+- **Matches, both pending MOH/site confirmation:**
 
-Worked examples for the unit tests:
+  | Site package root | MFL unit | MFL name | Note |
+  | --- | --- | --- | --- |
+  | Barnersville Health Center | `kueVlXwUXiI` | Barnersville HC (`LBR-30-3014-03`) | |
+  | Careysburg Health Center | `jbGSiLCEFKJ` | Careysburg Clinic (`LBR-30-3002-05`) | the MFL types it a **Clinic** (Public) |
 
-| DHIS2 UID | Level | UUID |
-| --- | --- | --- |
-| `nY6mPgT0Kc6` | Facility (Jah Clinic) | `7dd5a981-7e3a-59fa-b1fa-e1474e299da8` |
-| `TSrmxt9mnrS` | District (Kpaai) | `44a79c82-0b97-5487-8057-19ad9616f10e` |
-| `LHNiyIWuLdc` | Country (not created) | `2e40b99d-8da4-50c7-a678-ab5702058bd7` |
+- **The site root is renamed to the MFL name.** The MFL owns `name` (decision 4), and
+  Initializer reapplies the site CSV on every boot. So once a match is confirmed, the CSV's root
+  name must equal the MFL name exactly: *Careysburg Clinic* and *Barnersville HC*. Otherwise the
+  CSV and the sync overwrite each other on every boot and every run. Child location names
+  ("Careysburg OPD", …) are local and unaffected. Until a match is confirmed, the site CSV
+  carries no `MFL UID`, and the sync creates a separate row for that facility (see
+  Consequences).
+- **A row the sync creates gets `UUIDv5(namespace, MFL UID)`** under the fixed namespace
+  `e0b0fbf7-045c-437a-8e7c-4504984c5e1a`. The name is the DHIS2 UID exactly as returned
+  (UTF-8, case-sensitive). This is an internal detail, not an identity: nothing matches on it,
+  and it is never applied to an existing row. It exists so that central, and any facility that
+  runs the sync, create *the same* row for the same facility. Worked examples:
+  `nY6mPgT0Kc6` → `7dd5a981-7e3a-59fa-b1fa-e1474e299da8`, `TSrmxt9mnrS` →
+  `44a79c82-0b97-5487-8057-19ad9616f10e`. **The user may veto this** (see Consequences), in
+  which case created rows take random UUIDs and nothing else in this ADR changes.
 
-Every instance that syncs the MFL computes the same UUID independently. No location row ever has
-to travel over sync, which rule 1 forbids.
+The first draft rewrote site-root UUIDs to the derived value, enforced that with a
+`validate-content.sh` check, and adopted live roots through a `liberiaemr.mfl.uuidOverrides`
+global property. **All three are withdrawn.** They traded a one-time UUID change for
+consistency, and the user chose to keep internal UUIDs stable instead.
 
-The namespace is declared once, as a constant in the liberiaemr module. It is **not** a global
-property: changing it would re-key every facility in the country.
-
-The only exception is a **UUID override** for a facility whose root location already exists in
-a live database under another UUID (decision 2). Overrides live in the national layer, so every
-instance applies the same ones.
-
-### 2. Site roots take the derived UUID; existing live roots are adopted by override
-
-A site package's facility root **is** that facility's MFL location. It is never a second row
-beside it.
-
-- Each site package declares its MFL UID as `var.site.mfl-uid`. It sets
-  `var.location.facility-root.uuid` to `UUIDv5(namespace, var.site.mfl-uid)`, written out as a
-  literal because Initializer cannot compute it. The root row in the site's location CSV carries
-  the `MFL UID` attribute (decision 4).
-- `scripts/validate/validate-content.sh` checks that, for every site package, the root UUID
-  equals the v5 derivation of its MFL UID. A mistyped literal then fails CI instead of creating
-  a facility that central cannot match.
-- **Careysburg and Barnersville are not live** (the go-live checklist is open), so their root
-  UUIDs change now, while IMPLEMENTATION.md §9's append-only rule does not yet bind them. Their
-  MFL UIDs are **pending LE-318**. Existing dev and demo databases get a second root row after
-  the change and must be rebuilt rather than migrated.
-- **A facility adopted from a pre-existing production database** (IMPLEMENTATION.md §7) keeps
-  its live root UUID. The national global property `liberiaemr.mfl.uuidOverrides` maps its MFL
-  UID to that UUID, as a JSON object `{"<DHIS2 UID>": "<existing location UUID>"}`. It is
-  empty today and seeded from `content-liberia-national`. This one global property **is**
-  content-owned, so reapplying it on every boot is exactly what we want.
-
-The sync then finds the root by UUID. It updates only the fields the MFL owns (decision 4) and
-never changes the UUID. Facility-scoped identifiers issued against the root (MOH HRN,
-uniqueness `LOCATION`) keep pointing at the same row. Their location is unchanged; only its
-parent and MFL fields are filled in.
-
-Rejected alternatives:
-
-- **Keep the site UUIDs and adopt by an `MFL UID` attribute lookup.** This works where the site
-  package is loaded. Central is built with one site package, though, so for every other facility
-  it would create the derived UUID while the facility uses the site UUID. That is exactly the
-  rule 1 failure.
-- **Load every site package at central.** This solves roots but not the other ~990 facilities,
-  and it makes central's build depend on the list of facilities that have gone live.
-
-### 3. Central always runs the sync; a facility runs it only if given credentials
+### 2. Central-only by default
 
 The same module code runs everywhere. It is **available** only where MFL credentials are
-configured (decision 7), and **enabled** by a global property that the admin UI edits. The
-admin UI hides itself where it is unavailable, as the sync status page already does at a
-facility.
+configured (decision 6), and **enabled** by `liberiaemr.mfl.enabled`. Central gets the
+credentials at deployment; facilities do not, so the sync is off at a facility and its admin
+page hides itself. A facility that later needs other facilities as locations (referral or
+transfer destinations) is given credentials. It then adopts its own root by `MFL UID` and
+creates the rest with the same UUIDs as central.
 
-- **Central:** credentials are set in `central.env`, and the sync is enabled at first
-  deployment (runbook, LE-325).
-- **Facility:** no credentials by default, so the sync is off. The facility has its own root
-  (decision 2) and needs nothing else to operate. If it later needs other facilities (referral
-  or transfer destinations), it is given credentials. Decision 1 then yields the same UUIDs
-  central holds.
+### 3. What the sync writes, and to which rows
 
-A consequence: at a facility that does not sync, the root has **no parent**. At central, the
-same row sits under its MFL district. This difference in location metadata is harmless, because
-location rows never travel over sync.
+The sync pulls levels 2–4 and writes only to rows that carry an `MFL UID` attribute, or that
+it creates.
 
-### 4. Ownership: the MFL owns a fixed set of fields; everything else is local
-
-The sync writes only these fields, and only on rows that carry an `MFL UID` attribute or match a
-derived or overridden UUID:
-
-| MFL source | OpenMRS target | Notes |
+| MFL source | OpenMRS target | Rule |
 | --- | --- | --- |
-| `id` | attribute **`MFL UID`** | the match key; UUID seed |
-| `code` | attribute **`MFL Code`** | |
-| `name` | `Location.name` | trimmed; the MFL wins at central. The site CSV root name must equal the MFL name, or Initializer and the sync overwrite each other |
-| `parent` | `Location.parentLocation` | counties are top-level; the Country level is **not** created |
-| `level` | tag **`County`** / **`District`** / **`Health Facility`** | existing national tags; the sync only **adds** tags, never removes them |
-| `geometry` (Point) | `Location.latitude` / `longitude` | swap from `[lon, lat]` |
-| county and district names | `stateProvince` / `countyDistrict`, `country = Liberia` | address fields; `address1` and `cityVillage` stay local |
-| group set Hospital / Health Center / Clinic | attribute **`Facility Type`** | exclusivity **pending LE-318**; default: first match in that order, conflict logged |
-| group set Public / Private / Faith Based / Concession | attribute **`Facility Ownership`** | same default |
-| BemONC / CEmONC | attribute **`EmONC Level`** | `CEmONC` wins over `BemONC` |
-| `openingDate` | attribute **`MFL Opening Date`** | |
-| `closedDate` | attribute **`MFL Closed Date`** + retire | decision 5 |
-| `lastUpdated` | attribute **`MFL Last Updated`** | drives incremental sync |
+| `id` | attribute **MFL UID** | the match key |
+| `code` | attribute **MFL Code** | trimmed; display and search only; never a key, never parsed; empty when missing |
+| `name` | `Location.name` | collapse runs of whitespace and trim; disambiguate as described below |
+| `parent` | `Location.parentLocation` | **counties are top-level**, and no Country location is created; reparent when it changes |
+| `level` | tag **County** / **District** / **Health Facility** | existing national tags; the sync only adds tags, never removes one |
+| level 3 with no facilities | not created | the 6 `CHT - …` units, *Medicine Stores* and *Pharmacy* |
+| `geometry` Point `[lon, lat]` | `Location.longitude` / `latitude` | level 4 only; empty when missing; the run log warns when a point is outside Liberia |
+| county and district names | `stateProvince` / `countyDistrict`, `country = Liberia` | `address1` and `cityVillage` stay local |
+| type groups | attribute **Facility Type** | tie-break below |
+| ownership groups | attribute **Facility Ownership** | tie-break below |
+| EmONC groups | attribute **EmONC Level** | tie-break below |
+| setting groups | attribute **Facility Setting** | tie-break below |
+| `closedDate` | attribute **MFL Closed Date** + retire | decision 5 |
+| `lastUpdated` | attribute **MFL Last Updated** | diagnostics and change reporting only |
+| `openingDate` | **not mapped** | 914 of 996 are placeholders |
+| `shortName`, `path`, service/programme groups | **not mapped** | the ~36 *Facilities Rendering …* groups, CRDF and EPI OSDV are out of v1 |
 
-The "Facilities Rendering X" service groups are **out of scope for v1**. No consumer needs them
-yet, and 40 multi-valued attributes are cheap to add later but expensive to remove.
+**Name disambiguation.** A name that clashes, case-insensitively, with another *active*
+location gets ` (<District name>)` appended. Clashes are counted against the whole pull plus the
+instance's non-MFL locations.
 
-The following are **local** and never written by the sync: `description`, `address1`,
-`cityVillage`, every other tag (Login, Visit, Queue and so on), every non-MFL attribute, and all
-child locations (wards, OPD, laboratory, …). The receiver never writes location rows, so this
-job and the receiver cannot conflict.
+- When several MFL units share a name, **every one of them** gets the suffix. That keeps the
+  outcome the same on every instance and independent of processing order.
+- When an MFL name clashes only with a local location, the MFL row gets the suffix.
+- The suffix goes as soon as the clash does.
+- Today five active pairs need it, for example *Agape Clinic (Suakoko)* and *Agape Clinic
+  (Gar-Bain District)*. No MFL name collides with a content-package location.
 
-**Name uniqueness is pending LE-318.** The default keeps the MFL name as is. Two facilities with
-the same name in different districts are told apart in the switcher by code and district
-(decision 6), not by renaming.
+**Groups are mapped by group UID, never by name.** The mapping is configuration in the module;
+the UIDs are recorded in the LE-318 mapping table.
+
+| Attribute | Groups (UID) | When a facility is in more than one |
+| --- | --- | --- |
+| Facility Type | Hospital `oj9yiq3uMLI`, Health Center `EltS2EPR5gR`, Clinic `cLPxlR1Brv9` | Hospital > Health Center > Clinic |
+| Facility Ownership | Public `xSUk0MvIAUh`, Private `lIYtHp5tvaG`, Faith Based `h4oGe3jDqml`, Concession `r4GnS2GDzJO` | Private paired with another → the other wins; any other pair → empty, with a warning |
+| EmONC Level | BemONC `lAnbydCDQwW` → `BEmONC`, CEmONC `M8CdHRhgkwW` → `CEmONC` | CEmONC > BemONC |
+| Facility Setting | Rural `W1RG9PaTxzr`, Urban `L7IimdCGSjT` | left empty, with a warning |
+
+Every conflict, whether resolved or left empty, is **logged as a warning on the run item**
+(see the API). An attribute is empty when the facility is in none of its groups.
+
+**Local, never written:** `description`, `address1`, `cityVillage`, every other tag (Login,
+Visit, Queue and so on), every non-MFL attribute, and all child locations (wards, OPD,
+laboratory, …). The receiver never writes location rows, so this job and the receiver cannot
+conflict.
+
+### 4. Location attribute types (canonical)
+
+`content-liberia-national` creates these (LE-320), declared once in `variables.properties`.
+The backend (LE-321) looks them up by these UUIDs.
+
+| Name | UUID | Datatype |
+| --- | --- | --- |
+| MFL UID | `06568ddd-cc3b-4957-ad92-17e7249106c1` | FreeText, 1..1 on MFL rows |
+| MFL Code | `3118cabe-9a5d-420c-8a55-86234deb9b1b` | FreeText |
+| Facility Type | `98dd0863-47bd-4038-9759-16ebe6c9d51b` | SpecifiedTextOptions: Hospital, Health Center, Clinic |
+| Facility Ownership | `a75cb46c-dd20-42eb-abe5-94fed07bc059` | SpecifiedTextOptions: Public, Private, Faith Based, Concession |
+| EmONC Level | `827bd8d1-053e-4441-88aa-fb9cac44a60a` | SpecifiedTextOptions: BEmONC, CEmONC |
+| Facility Setting | `4880dd80-2b53-4dcf-aba9-5be5bd79c981` | SpecifiedTextOptions: Rural, Urban |
+| MFL Closed Date | `7d15cde2-fa20-4b98-acd0-be2dbd3597aa` | Date |
+| MFL Last Updated | `a7c23ee9-dabd-4605-b039-325b2303850f` | FreeText (ISO datetime) |
+
+All are max 1 per location. "1..1 on MFL rows" is enforced by the sync, not by the type:
+`minOccurs` stays 0, because non-MFL locations (wards, departments) have no MFL UID. The
+datatype classes are `FreeTextDatatype`, `SpecifiedTextOptionsDatatype` (config: the
+comma-separated options above) and `DateDatatype`. The site packages load after national, so
+their `Attribute|MFL UID` column resolves.
 
 ### 5. Closure and disappearance retire; nothing is purged
 
-- **`closedDate` set:** retire with reason `MFL: closed <yyyy-mm-dd>`.
-- **Missing from a full pull:** retire with reason `MFL: not in the MFL since <run date>`. This
-  happens only on a **full** run, never on an incremental one. Whether DHIS2 gives a deletion
-  signal is **pending LE-318**; the default is to diff by absence.
-- **Mass-retirement guard:** if a full pull returns fewer than 90% of the MFL locations the
-  instance currently holds, the run makes **no** retirements and ends `FAILED`. That shape is a
-  permissions or paging fault, not the MOH closing a tenth of the country.
-- **Reopening:** a facility that returns is un-retired only if its retire reason starts with
-  `MFL:`. A human retirement is never reversed by the sync.
-- **A facility root that this instance logs in to is never retired automatically.** The sync
-  records an item error instead, and a person decides. Retiring the root would stop the
-  facility's own users from choosing a login location.
+- **`closedDate` set:** set `MFL Closed Date` and retire, with reason
+  `MFL: closed <yyyy-mm-dd>`.
+- **Absent from the pull:** retire, with reason `MFL: not in the MFL since <run date>`. There is
+  no deletion signal, so absence is the only one.
+- **Moves.** The MFL records a move as the old unit closing and a new unit, with a new UID and
+  code, appearing elsewhere (*Jamaica Rd Clinic*, Bushrod → Somalia Drive). We hold that as a
+  retired row plus a new row, and records stay on the old one. We do not try to link the two.
+- **Completeness guard.** Retirement by absence is skipped, and the run ends `PARTIAL` with a
+  message, when:
+  - any page of the pull failed, or
+  - the pull holds fewer than 90% of the active MFL locations this instance already has.
 
-Purging is never done: encounters, identifiers and audit history reference these rows.
+  Creates and updates still apply.
+- **Reopening:** a unit that returns is un-retired only if its retire reason starts with
+  `MFL:`. The sync never reverses a human's retirement.
+- **This instance's own root is never retired automatically.** A row that carries an MFL UID
+  and is the parent of this instance's login locations gets an item error instead, and a person
+  decides.
 
 ### 6. Tags: the switcher at central filters on `Health Facility`
 
-MFL facilities get `Health Facility`, the existing national tag. They do **not** get
-`Login Location`. At a facility that runs the sync, `Login Location` would bury the facility's
-own departments under 996 other facilities.
+MFL facilities get `Health Facility` and **not** `Login Location`. LE-324 replaces the
+login app's boolean `chooseLocation.useLoginLocationTag` with a string,
+`chooseLocation.locationTag` (default `Login Location`). Central's frontend config sets it to
+`Health Facility`. The switcher shows the MFL code and district next to each name.
 
-The login app's location picker hard-codes `_tag=Login Location`
-(`esm-liberia-login-app/src/location-picker/location-picker.resource.ts`). LE-324 replaces the
-boolean `chooseLocation.useLoginLocationTag` with a string, `chooseLocation.locationTag`
-(default `Login Location`). Central's frontend config sets it to `Health Facility`. Facilities
-change nothing. The switcher shows the MFL code and district next to each name.
+### 7. Credentials come from the environment or a password file only
 
-No new tag is introduced. The `MFL UID` attribute already marks a location as MFL-managed.
-
-### 7. Credentials come from the environment, never from a global property
-
-The username and password are **deployment secrets**. They follow the SMTP relay pattern
-(`EmailService`), with one deliberate difference: there is **no** global property fallback,
-because global properties are readable over REST by anyone with Get Global Properties.
+These follow the SMTP relay pattern, without its global-property fallback, because global
+properties are readable over REST.
 
 | Setting | Source | Editable in the UI |
 | --- | --- | --- |
 | Username | env `LIBERIAEMR_MFL_USERNAME` | no; the UI shows it |
 | Password | env `LIBERIAEMR_MFL_PASSWORD_FILE` (a path, read verbatim, preferred), else `LIBERIAEMR_MFL_PASSWORD` | no; never returned by any endpoint, never logged |
-| Base URL | GP `liberiaemr.mfl.url`, module default `https://dhis2.moh.gov.lr/mfl` | yes |
-| Enabled, schedule | GPs, decision 8 | yes |
+| Base URL | GP `liberiaemr.mfl.url`, default `https://dhis2.moh.gov.lr/mfl` | yes |
 
-These are distinct from the existing `DHIS2_*` variables. Those belong to the `dhis2-export`
-service and the national HMIS instance, not to the MFL.
-
-The distribution passes them the same way it passes the SMTP relay. In
 `distribution/compose/{central,facility}/docker-compose.yml`, under `backend.environment`:
 
 ```yaml
@@ -216,87 +215,89 @@ The distribution passes them the same way it passes the SMTP relay. In
       LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
 ```
 
-The matching placeholders go in `distribution/env/*.env.example`, left empty the way the SMTP
-ones are.
+- Empty placeholders go in `distribution/env/*.env.example`.
+- These are separate from the `DHIS2_*` variables, which belong to the HMIS export.
+- `scripts/validate/no-secrets.sh` only flags a value of 12 or more characters from
+  `[A-Za-z0-9/+_-]` after a `password` key. It is a backstop, not a guarantee.
 
-`scripts/validate/no-secrets.sh` looks for a secret-shaped value (12 or more characters from
-`[A-Za-z0-9/+_-]`) after a `password` key. A short password, or one with punctuation, passes
-it. The scanner is a backstop and cannot be relied on to catch a committed MFL password.
+### 8. A full pull on every run, daily
 
-The module-default and UI-edited global properties (`liberiaemr.mfl.url`, `.enabled`,
-`.schedule.*`) are declared in the module's `config.xml` and **not** seeded by Initializer
-(rule 3). Only `liberiaemr.mfl.uuidOverrides`, which is content-owned, is seeded.
-
-### 8. Incremental daily, full weekly, first run full
+Every run pulls the whole MFL (levels 2–4 and the groups) and diffs locally. There is no
+incremental mode. `lastUpdated` filtering exists, but it cannot see deletions or confirm group
+changes, and a full pull costs only about 5 s. The sync pages at `pageSize=500`.
 
 | Global property | Default | Meaning |
 | --- | --- | --- |
 | `liberiaemr.mfl.enabled` | `false` | the schedule runs only when true; manual runs are allowed whenever the sync is available |
+| `liberiaemr.mfl.url` | `https://dhis2.moh.gov.lr/mfl` | the instance root, without `/api` |
 | `liberiaemr.mfl.schedule.time` | `02:00` | local time (`Africa/Monrovia`) of the daily run |
-| `liberiaemr.mfl.schedule.fullEveryDays` | `7` | every Nth scheduled run is full; `1` means always full |
 
-- **Incremental:** org units with `lastUpdated` later than the start of the last successful run,
-  minus one hour of overlap. It creates and updates; it retires only on `closedDate`.
-- **Full:** every org unit at levels 2–4. It also retires by absence (decision 5).
-- The **first run on an instance is always full**, whatever is requested.
-- Whether a change in **group membership** bumps an org unit's `lastUpdated` is **pending
-  LE-318**. If it does not, type and ownership changes wait for the weekly full run, which is
-  acceptable for metadata that changes this rarely.
-- There is one scheduler task, `LiberiaEMR MFL Sync`, registered like the identity task
-  (`IdentitySchedule`). A global property listener reschedules it when the schedule changes.
-  Runs never overlap: a second request while one is running is refused, not queued.
-
-The level/group filters that LE-319 floated are **not** offered. Central must hold the whole
-list, and a partial list at one instance is the start of the UUID drift this ADR exists to
-prevent.
+- These properties are declared in the module's `config.xml` and are **not** seeded by any
+  Initializer file (rule 3).
+- There is one scheduler task, `LiberiaEMR MFL Sync`, registered and rescheduled the way
+  `IdentitySchedule` does it.
+- Runs never overlap: a second request is refused, not queued.
+- Level and group filters are not offered. Central must hold the whole list.
 
 ### 9. The admin UI is a route in `esm-liberia-sync-status-app`
 
-The route is `mfl-sync`, with its own app menu item and a link from the sync status page. The
-page serves the same audience as the other pages in that app: MOH staff administering sync at
-central. It shows no clinical data, and it already follows the hide-when-unavailable pattern
-a new page needs. A separate package would mean another build, another CI job, another distro
-entry and another translation file for one page.
-
-The route must **not** declare a `liberiaemr` `backendDependency`: CI stamps the module
-`0.0.0-ci`, and a pinned floor fails E2E with an alert toast.
+The route is `mfl-sync`, with its own app menu item and a link from the sync status page. It
+serves the same audience as that app, shows no clinical data, and reuses its
+hide-when-unavailable pattern. It must **not** declare a `liberiaemr` `backendDependency`,
+because CI stamps the module `0.0.0-ci`.
 
 ### 10. The REST contract
 
 The contract is [`docs/architecture/mfl-sync-api.md`](../architecture/mfl-sync-api.md). The
-TypeScript types for it are at
-[`packages/esm-liberia-sync-status-app/src/mfl-sync/mfl-sync.types.ts`](../../packages/esm-liberia-sync-status-app/src/mfl-sync/mfl-sync.types.ts),
-where the admin UI (LE-323) imports them and QA (LE-325) can copy them for stubs. The backend
-(LE-321, LE-322) implements the document. **Where the document and the types disagree, the
-document wins,** and the types are fixed.
+TypeScript types are in
+[`packages/esm-liberia-sync-status-app/src/mfl-sync/mfl-sync.types.ts`](../../packages/esm-liberia-sync-status-app/src/mfl-sync/mfl-sync.types.ts).
+Where the two disagree, the document wins.
 
 ## Consequences
 
 - Central gets every MFL facility without depending on which site packages it was built with.
-  This closes the gap in which central held one facility root and no others.
-- **This does not close the gap for child locations.** A Barnersville encounter at
-  "Barnersville OPD" still references a location that central, built with the Careysburg site
-  package, does not hold. The MFL has no departments. This ADR fixes facility roots only;
-  department parity needs its own decision (for example, loading every site's location CSV at
-  central).
-- Site packages gain one variable (`var.site.mfl-uid`) and one validator rule. Their root UUIDs
-  change once, before go-live. Dev databases are rebuilt.
+- **Existing UUIDs are stable.** No site package UUID changes, before or after go-live, and no
+  validator or override mechanism is needed.
+- **Central must hold each live facility's site root *before* its first MFL sync.** A
+  facility's root has a site-package UUID, and records synced from that facility reference it.
+  If central is built without that facility's locations CSV:
+  - the facility's records reference a UUID central lacks, which is the existing gap in
+    [entity coverage](../architecture/sync-entity-coverage.md) §3;
+  - the sync creates a *second* row for the same facility, with a v5 UUID.
+
+  So central needs every live site's location rows, children included; the MFL has no
+  departments. If a root arrives after the sync already created its row, two rows hold one
+  `MFL UID`. The sync must then report an item error, not pick one, and the runbook (LE-325)
+  must describe retiring the sync-created row. How central loads every site's locations needs
+  its own decision; it is out of scope here.
+- **Deriving v5 UUIDs for created rows (decision 1) is open to the user's veto.** With it, central
+  and a facility that runs the sync hold the same row for every non-root facility, so a future
+  referral or transfer location synced from a facility resolves at central. Without it, those
+  rows differ between instances, and any record referencing one fails at central's receiver.
+  Nothing else changes either way.
+- The site roots are renamed to the MFL names (*Careysburg Clinic*, *Barnersville HC*) once the
+  matches are confirmed. This is visible to users at the login screen.
 - The MFL becomes a runtime dependency of central's location metadata. If the MFL is
-  unreachable, runs fail and the cached list stays as it is. Nothing clinical depends on a
-  successful run.
-- A DHIS2 UID is permanent in our data. If the MOH deletes a facility and re-creates it, it
-  gets a new UID. We then hold a retired row and a new one, and records stay on the old one.
-- The MFL's ~1,100 locations make location queries at central larger. LE-324 checks the
-  switcher's performance, and LE-325 checks that the other location-driven apps (queues,
-  appointments, wards) are unaffected, because none of them filters on `Health Facility`.
+  unreachable, runs fail and the cached list stays as it is.
+- A facility the MOH deletes and re-creates, or moves, gets a new UID. We keep a retired row
+  and a new one.
+- The ~1,100 MFL locations enlarge location queries at central. LE-324 checks the switcher's
+  performance, and LE-325 checks that queues, appointments and wards are unaffected (none of
+  them filters on `Health Facility`).
 
-## To confirm before LE-320 to LE-325 start
+## Decision record
 
-1. Rekeying the Careysburg and Barnersville roots to derived UUIDs before go-live (decision 2).
-2. Facilities do not run the sync by default (decision 3).
-3. The switcher at central filters on `Health Facility`, with no `Login Location` on MFL rows
-   (decision 6).
-4. Credentials come from env and password file only, with no global property fallback
-   (decision 7).
-5. The admin UI lives in `esm-liberia-sync-status-app` (decision 9).
-6. The service groups are out of scope for v1 (decision 4).
+| # | Decision | Outcome |
+| --- | --- | --- |
+| 1 | UUIDs kept; `MFL UID` attribute is the match key; site roots adopted by CSV attribute | **Accepted**, reversing the first draft. The v5 UUIDs for created rows are accepted subject to veto |
+| 2 | Central-only by default | **Accepted** |
+| 3 | Field ownership, name disambiguation, group tie-breaks by UID, no `openingDate`, counties top-level | **Accepted** (from LE-318) |
+| 4 | Canonical attribute types | **Accepted** |
+| 5 | Retire on close or absence, guard on a failed page or a pull under 90%, moves as close + new | **Accepted** (from LE-318) |
+| 6 | Switcher filters on `Health Facility`; no `Login Location` | **Accepted** |
+| 7 | Credentials from env or a password file only | **Accepted** |
+| 8 | Full pull on every run; operator settings in `config.xml`, not Initializer | **Accepted** (from LE-318) |
+| 9 | Admin route in `esm-liberia-sync-status-app` | **Accepted** |
+| – | Service and programme groups | **Out of v1** |
+
+**Still pending:** MOH or site confirmation of the two site-root matches in decision 1.

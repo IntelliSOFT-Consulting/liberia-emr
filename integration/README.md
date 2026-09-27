@@ -25,7 +25,7 @@ The sync layer is designed in `docs/`; this directory holds the implementation c
 | [Module evaluation](../docs/architecture/sync-module-evaluation.md) | Why `openmrs-dbsync`; options rejected; versions; compatibility gaps; plan and risks |
 | [Entity coverage and sync order](../docs/architecture/sync-entity-coverage.md) | The 34 synced entities; dependency chain; what needs custom work |
 | [ADR 0008](../docs/adr/0008-adopt-openmrs-dbsync.md) | The module decision |
-| [ADR 0009](../docs/adr/0009-mfl-facility-locations.md) · [MFL sync API](../docs/architecture/mfl-sync-api.md) | Facility locations from the Master Facility List: UUIDs, ownership, cadence, REST contract |
+| [ADR 0009](../docs/adr/0009-mfl-facility-locations.md) · [MFL sync API](../docs/architecture/mfl-sync-api.md) | Facility locations from the Master Facility List: match key, attribute types, ownership, cadence, REST contract |
 
 **Current state:** the push is built. The sender and receiver are openmrs-dbsync, pinned as
 `sync.dbsync` / `sync.eip` in `distribution/distro.properties` and built in

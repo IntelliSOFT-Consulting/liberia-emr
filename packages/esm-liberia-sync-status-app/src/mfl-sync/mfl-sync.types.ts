@@ -6,21 +6,18 @@
  * password field, and none must ever gain one.
  */
 
-export type MflRunMode = 'FULL' | 'INCREMENTAL';
-
 export type MflRunTrigger = 'SCHEDULE' | 'MANUAL';
 
 export type MflRunStatus = 'RUNNING' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED';
 
-export type MflItemAction = 'CREATE' | 'UPDATE' | 'RETIRE' | 'UNRETIRE' | 'ERROR';
+/** WARNING: unchanged, but with warnings. */
+export type MflItemAction = 'CREATE' | 'UPDATE' | 'RETIRE' | 'UNRETIRE' | 'WARNING' | 'ERROR';
 
 export type MflLevel = 'COUNTY' | 'DISTRICT' | 'FACILITY';
 
 export interface MflSchedule {
   /** HH:MM, 24-hour, Africa/Monrovia. */
   time: string;
-  /** Every Nth scheduled run is full; 1 means always full. 1 to 31. */
-  fullEveryDays: number;
 }
 
 export interface MflConfig {
@@ -46,11 +43,13 @@ export interface MflRunCounts {
   unretired: number;
   unchanged: number;
   failed: number;
+  /** Items with at least one warning. */
+  warnings: number;
 }
 
+/** Every run is a full pull (ADR 0009 §8). */
 export interface MflRun {
   id: number;
-  mode: MflRunMode;
   dryRun: boolean;
   trigger: MflRunTrigger;
   status: MflRunStatus;
@@ -60,7 +59,7 @@ export interface MflRun {
   finished: number | null;
   /** On a dry run, what would have happened. */
   counts: MflRunCounts;
-  /** Why a run FAILED; null otherwise. */
+  /** Why a run FAILED or is PARTIAL; null otherwise. */
   message: string | null;
 }
 
@@ -94,7 +93,6 @@ export interface MflConnectionTest {
 
 /** POST /runs body. */
 export interface MflRunRequest {
-  mode?: MflRunMode;
   dryRun?: boolean;
 }
 
@@ -119,6 +117,8 @@ export interface MflRunItem {
   locationUuid: string;
   name: string;
   changes: Array<MflFieldChange>;
+  /** Group tie-breaks, out-of-bounds points, name disambiguation. */
+  warnings: Array<string>;
   error: string | null;
 }
 
