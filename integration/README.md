@@ -10,6 +10,7 @@ into one makes both impossible to version or roll back independently.
 | --- | --- | --- |
 | [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; sender and receiver built on openmrs-dbsync (`distribution/sync/`), ActiveMQ Artemis broker built separately (`distribution/broker/`); reconciliation outstanding |
 | [`dhis2/`](dhis2/) | Aggregate export + data-element mappings | Blocked on MOH mapping delivery |
+| [`dhis2/mfl/`](dhis2/mfl/) | Master Facility List → OpenMRS locations: API behaviour, data profile, field mapping, test fixture | Explored; mapping proposed, sync not built |
 | [`cross-facility/`](cross-facility/) | Cross-facility patient query | Sprint 4 |
 | [`msupply/`](msupply/) | Stock integration | Deferred to the support period — spec only |
 | [`fhir/`](fhir/) | FHIR profiles and HL7 resources | Underpins the others |
