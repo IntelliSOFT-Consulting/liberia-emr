@@ -32,7 +32,8 @@ get() {
 
 FAC_FIELDS='id,code,name,shortName,level,path,parent[id],openingDate,closedDate,lastUpdated,geometry,organisationUnitGroups[id]'
 ADMIN_FIELDS='id,code,name,shortName,level,path,parent[id],openingDate,closedDate,lastUpdated'
-SINCE="${MFL_SINCE:-$(python3 -c 'import datetime;print((datetime.date.today()-datetime.timedelta(days=120)).isoformat())')}"
+# The README's incremental figure (64 units) is for this fixed date; override with MFL_SINCE.
+SINCE="${MFL_SINCE:-2026-06-01}"
 
 echo "== requests"
 get system       "system/info.json?fields=version,revision,serverDate"
@@ -46,6 +47,8 @@ get groupsets    "organisationUnitGroupSets.json?fields=id,name,compulsory,organ
 get incremental  "organisationUnits.json?fields=id,lastUpdated&filter=lastUpdated:ge:$SINCE&paging=false"
 get closed       "organisationUnits.json?fields=id,name,closedDate&filter=closedDate:!null&paging=false"
 get deleted      "deletedObjects.json?klass=OrganisationUnit&pageSize=50"
+get page_default "organisationUnits.json?fields=id"
+get page_500     "organisationUnits.json?fields=id&pageSize=500"
 get page_5000    "organisationUnits.json?fields=id&pageSize=5000"
 
 OUT="$OUT" SINCE="$SINCE" python3 - <<'PY'
@@ -62,6 +65,11 @@ groups = {g['id']: g['name'].strip() for g in load('groups')['organisationUnitGr
 fac = [o for o in ous if o['level'] == 4]
 print('\n== org units per level'); lv = {l['level']: l['name'] for l in load('levels')['organisationUnitLevels']}
 for k, v in sorted(collections.Counter(o['level'] for o in ous).items()): print(f'  {k} {lv.get(k, "?"):10} {v}')
+print('\n== paging (pager metadata)')
+for name in ('page_default', 'page_500', 'page_5000'):
+    r = load(name) or {}
+    p = r.get('pager', {})
+    print(f"  {name:12} pageSize={p.get('pageSize')} pageCount={p.get('pageCount')} total={p.get('total')} rows={len(r.get('organisationUnits', []))}")
 inc = load('incremental')
 print(f"\n== incremental: {len(inc['organisationUnits'])} units with lastUpdated >= {os.environ['SINCE']}")
 print(f"== closed: {[(o['name'], o['closedDate'][:10]) for o in load('closed')['organisationUnits']]}")
