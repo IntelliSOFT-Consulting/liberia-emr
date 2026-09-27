@@ -395,6 +395,21 @@ def status_contract(c):
             all(k in s for k in ("config", "nextRun", "running", "lastRun", "lastSuccessfulRun", "held"))
             and "time" in (s["config"].get("schedule") or {}), s)
 
+    # PUT /config rejects user info, so write the global property directly, as a DB edit would.
+    stub_url = c.args.stub_internal_url
+    scheme, rest = stub_url.split("://", 1)
+    leaky = f"{scheme}://leak-user:leak-s3cret@{rest}"
+    r = c.rest("POST", "/systemsetting/liberiaemr.mfl.url", {"value": leaky})
+    try:
+        R.check("a URL with user info can be written to the global property directly", r.status == 200, r)
+        s = c.status()
+        dumped = json.dumps(s)
+        R.check("GET /status strips user info from a directly edited URL",
+                s["config"].get("url") == stub_url and "leak-s3cret" not in dumped and "leak-user" not in dumped,
+                s["config"])
+    finally:
+        c.rest("POST", "/systemsetting/liberiaemr.mfl.url", {"value": stub_url})
+
 
 def config_validation(c):
     stub_url = c.args.stub_internal_url
