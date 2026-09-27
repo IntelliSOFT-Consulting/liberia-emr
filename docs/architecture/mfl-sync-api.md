@@ -14,7 +14,8 @@ Where the types and this document disagree, this document wins.
   `SyncConflictController`, not a REST module resource.
 - JSON only. Timestamps are **epoch milliseconds**, like the sync conflicts API. Dates without
   a time (`openingDate`, `closedDate`) are `yyyy-mm-dd` strings.
-- Every error body is `{"error": "<message>"}`.
+- Every error body has a required `error` message: `{"error": "<message>"}`. Some add fields,
+  such as the 409 on `POST /runs`, which also carries `runId`.
 - Privileges, created by `content-liberia-national` (LE-320) and granted to the Sync
   Administrator role:
   - **`View MFL Sync`** for every `GET`.
@@ -35,6 +36,24 @@ variable) are both set. Where it is not available:
 - `POST /runs` and `POST /test-connection` return **503**
   `{"error": "MFL credentials are not configured on this instance"}`.
 - `PUT /config` works, so settings can be staged before the credentials arrive.
+
+### Allowed MFL hosts
+
+`url` is editable over this API, and the sync sends the MFL credentials to it. So the module
+sends them only to a host on an allowlist set in the **deployment environment**, never in a
+global property:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `LIBERIAEMR_MFL_ALLOWED_HOSTS` | `dhis2.moh.gov.lr` | Comma-separated host names the MFL URL may point at. Case-insensitive; an exact host match, not a suffix |
+| `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP` | unset | `true` permits `http://` to an allowed **loopback** host only (`localhost`, `127.0.0.1`), for a stub MFL in development. It never permits `http://` to any other host |
+
+- `PUT /config` rejects a `url` that fails the check with **400** (see below).
+- The module checks the URL again before **every** request, so a `liberiaemr.mfl.url` edited
+  directly in the database cannot redirect the credentials either. Such a run ends `FAILED`,
+  and `POST /test-connection` answers `ok: false`, with the reason in `message`.
+- Redirects are never followed. A `3xx` answer from the MFL fails the run instead.
+- The MFL is called over TLS with the JVM's truststore. Certificate checks are never disabled.
 
 ## Endpoints
 
@@ -72,14 +91,19 @@ resource that call creates.
     "startedBy": null,
     "started": 1790474400000,
     "finished": 1790474431000,
-    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1107, "failed": 0, "warnings": 11 },
+    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1106, "failed": 0, "warnings": 11 },
     "message": null
   },
   "lastSuccessfulRun": { "id": 42, "...": "same shape as lastRun" },
-  "held": { "counties": 15, "districts": 106, "facilities": 996, "retired": 2 }
+  "held": { "counties": 15, "districts": 98, "facilities": 996, "retired": 2 }
 }
 ```
 
+- `config.url` never carries user information. `PUT /config` rejects a URL with a user name or
+  password, and `GET /status` strips any `user:password@` from a `liberiaemr.mfl.url` edited
+  directly in the database before returning it.
+- `held` counts what this instance holds after a complete sync: 15 counties, 98 districts (the 8
+  level-3 units with no facilities are not created, ADR 0009 §3) and 996 facilities.
 - `config.username` is shown so an administrator can see *which* account is configured; it is
   `null` when unset. There is **no** password field, masked or otherwise.
 - `nextRun` is `null` when `enabled` is false.
@@ -101,14 +125,21 @@ accepted.
   immediately.
 - **400**: validation errors:
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
-    `/api`.
+    `/api`. The one exception to `https://` is `http://localhost` or `http://127.0.0.1` when
+    `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP=true` (see [Allowed MFL hosts](#allowed-mfl-hosts)).
+  - `url`'s host is not in `LIBERIAEMR_MFL_ALLOWED_HOSTS` (see
+    [Allowed MFL hosts](#allowed-mfl-hosts)), or `url` carries a user name or password. The
+    message names the allowed hosts, for example
+    `{"error": "'mfl.example.org' is not an allowed MFL host. Allowed: [dhis2.moh.gov.lr], set by LIBERIAEMR_MFL_ALLOWED_HOSTS in the deployment environment"}`.
   - `schedule.time` is not `HH:MM` in 24-hour time.
   - `username` or any password-like field is present.
 
 ### `POST /test-connection`
 
-No body. The module calls `GET {url}/api/system/info` and counts the level-4 org units
-(`pageSize=1`), using the configured credentials.
+No body. The module makes two requests with the configured credentials:
+`GET {url}/api/system/info` gives `dhis2Version`, and
+`GET {url}/api/organisationUnits.json?filter=level:eq:4&pageSize=1&fields=id` gives `facilities`
+from `pager.total`.
 
 ```json
 { "ok": true, "dhis2Version": "2.40.4.1", "facilities": 996, "message": null }
@@ -215,7 +246,7 @@ and has no warning is **not** recorded. `action` is an optional filter; `limit` 
       "error": "Not retired: this instance's own facility root. Decide by hand (ADR 0009 §5)"
     }
   ],
-  "totalCount": 2
+  "totalCount": 3
 }
 ```
 

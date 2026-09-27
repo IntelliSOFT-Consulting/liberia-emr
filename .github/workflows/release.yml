@@ -49,7 +49,9 @@ jobs:
     needs: guard
     strategy:
       matrix:
-        site: [careysburg, barnersville]
+        # central builds only liberia-emr-frontend-central; it runs the facility images of
+        # the same version otherwise (docs/adr/0011-central-composition.md).
+        site: [careysburg, barnersville, central]
     # Without this the release images ship without the MOH's curated CIEL
     # collections, and build-distribution.sh only WARNS about that — so the
     # release would build green and fail at the facility instead. Pin
