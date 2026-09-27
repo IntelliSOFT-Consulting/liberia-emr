@@ -103,6 +103,15 @@ these, is a **contract breach** — treat it as the top finding regardless of in
 - Content strategy and review sit with the **senior engineer**; test strategy and QA sign-off
   with the **QA Engineer**. Flag a change that has a junior/support role owning strategy or
   QA rather than executing against it.
+- **Jira key** (CONTRIBUTING "Branches", "Jira board"): the PR's branch and title carry the
+  uppercase `LE-<n>` of one issue, and so do commit subjects — `… [LE-<n>]`, or the older
+  `feat(LE-<n>): …`, which links just as well. Read the branch from `$GITHUB_HEAD_REF` in CI
+  (the checkout there is a detached HEAD) or `git branch --show-current` locally, and the
+  title from `gh pr view --json title`. If you cannot read one, report the key as
+  **unchecked** — never as missing. A lowercase `le-<n>` or a missing key stops the board
+  moving; two keys move two issues, and so does another issue's key in a commit body.
+  A keyless `chore/` or `ci/` branch with no issue is fine. Report it as a finding,
+  not a blocker — it breaks tracking, not the product.
 
 ## Output
 

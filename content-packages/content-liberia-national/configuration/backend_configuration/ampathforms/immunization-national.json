@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
-  "uuid": "72af7bb9-3863-4209-926d-4c14b6229246",
-  "version": "1.0",
+  "uuid": "${var.form.immunization.uuid}",
+  "version": "1.1",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -44,6 +44,22 @@
                 "concept": "${var.concept.national.parent-caregiver.uuid}",
                 "rendering": "text"
               }
+            },
+            {
+              "label": "Caregiver Phone Number",
+              "type": "obs",
+              "id": "caregiver_phone_number",
+              "questionOptions": {
+                "concept": "${var.concept.national.caregiver-phone-number.uuid}",
+                "rendering": "text"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && doesNotMatchExpression('^\\\\+?(?=(?:[ ()\\\\-]*\\\\d){7,15}[ ()\\\\-]*$)[\\\\d ()\\\\-]+$', myValue)",
+                  "message": "Enter a valid phone number."
+                }
+              ]
             },
             {
               "label": "Vaccine Name",

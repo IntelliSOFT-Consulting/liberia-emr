@@ -24,6 +24,12 @@ CREATE DATABASE IF NOT EXISTS \`${MGMT_DB}\`
 CREATE USER IF NOT EXISTS '${MGMT_USER}'@'%' IDENTIFIED BY '${MGMT_PW}';
 GRANT ALL PRIVILEGES ON \`${MGMT_DB}\`.* TO '${MGMT_USER}'@'%';
 SQL
+  # The EMR reads the conflict queue for its Sync conflicts page, and never writes to it.
+  if [ -n "${MARIADB_USER:-}" ]; then
+    mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
+GRANT SELECT ON \`${MGMT_DB}\`.* TO '$(esc "${MARIADB_USER}")'@'%';
+SQL
+  fi
   echo "initdb: created sync management schema '${MGMT_DB}'"
 else
   echo "initdb: SYNC_MGMT_DB_PASSWORD unset; skipping the management schema"

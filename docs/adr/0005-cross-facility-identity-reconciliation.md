@@ -1,6 +1,6 @@
 # 0005: Cross-facility identity reconciliation: link, never merge
 
-**Status:** Proposed, awaiting MOH ICT agreement (LE-22, target 21 August 2026)
+**Status:** Accepted by MOH ICT (LE-22). First built as the CPI service in the liberiaemr module: minting and the National ID rule (LE-35); scoring, the review queue and its owner follow.
 
 ## Context
 

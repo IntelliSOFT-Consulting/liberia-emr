@@ -15,22 +15,67 @@ this wrong is the most common way this kind of project decays.
 | **Custom Build** | Greenfield component with no community equivalent | `packages/esm-*`, pinned in `distro.properties` |
 | **External** | Integration with a system outside O3 | `integration/**` |
 
+The backend Custom Build, [`modules/liberiaemr/`](modules/liberiaemr/), is not pinned in
+`distro.properties`: the backend image builds it from source (IMPLEMENTATION.md §3 and
+Appendix item 3).
+
 Ask in order: can this be **configuration**? If not, can it be a **new extension** in a
 Custom Build ESM? Only then reach for a patch — and open the upstream PR the same week.
 
 ## Branches
 
 ```
-main                        always releasable
-feat/<scope>-<summary>      new content or feature
-fix/<scope>-<summary>       corrections
-chore/<summary>             build, CI, docs
+main                               always releasable
+feat/LE-<n>-<scope>-<summary>      new content or feature
+fix/LE-<n>-<scope>-<summary>       corrections
+chore/LE-<n>-<summary>             build, CI, docs
+chore/<summary>, ci/<summary>      work with no Jira issue — nothing moves on the board
 ```
 
-`<scope>` names the layer or component: `mch`, `national`, `site-careysburg`, `epartograph`,
-`eip`, `distro`.
+`LE-<n>` is the Jira issue the branch implements, in **uppercase** — `feat/le-224-…`, the
+older habit, does not link to Jira. One branch per issue. `<scope>` names the layer or
+component: `mch`, `national`, `site-careysburg`, `epartograph`, `eip`, `distro`.
 
-Every change goes through a pull request. `main` is protected; CI must pass.
+Every change goes through a pull request. `main` is protected; CI must pass. The required
+check is the **CI gate** job in `.github/workflows/ci.yml`, which fails unless every job it
+depends on succeeded (only the clean-database and sync-hardening jobs may be skipped).
+`ci.yml` runs on the pull request; of pushes, only a push to `main` triggers it, so a branch
+gets no CI until a PR exists — run the workflow by hand (`gh workflow run ci.yml --ref
+<branch>`), or open a draft PR, which moves the Jira issue to In Review, so do that only once
+the work is ready to be looked at. The review posted by `claude-review.yml` is advisory and
+never blocks a merge.
+
+## Jira board
+
+Branches, commits, PRs and the dev deploy move the issue across the
+[LE board](https://intellisoftkenya.atlassian.net/jira/software/projects/LE/boards/497)
+through Jira Automation. Name things as above and in [Commits](#commits) and you do not drag
+cards; QA drags the rest.
+
+| From → To | Moved by | When |
+| --- | --- | --- |
+| To Do, Reopened (Failed QA) → **In Development** | Automation | You **push** the branch, or a commit with the key. A local checkout is invisible to Jira |
+| → **In Review** | Automation | You open the PR — **draft PRs count** |
+| → **Ready for Testing** | Automation | The merge is deployed to dev **and** its smoke test passes. A merge alone moves nothing |
+| → **Testing** | QA | QA picks it up on dev |
+| → **Done** / **Reopened (Failed QA)** | QA | Passed / failed. Your next push after a reopen moves it back to In Development |
+| → Issues/Bugs, Cancelled | Anyone | By hand; not git-driven |
+
+**One key per branch, PR title and commit.** Two keys move two issues — and a key anywhere in
+a commit message counts, body included, so refer to other issues by title or link, not by
+key. A PR closed without merging moves nothing — whoever closes it moves the card.
+
+### If a card does not move
+
+| Symptom | Fix |
+| --- | --- |
+| Still To Do after pushing | Key missing or lowercase in the branch — push a commit whose subject ends `[LE-n]` |
+| Still In Review after merging | The `main` pipeline has not finished, or the dev deploy or smoke test failed. The next green deploy carries it (seen in a simulation); if it doesn't, move it by hand |
+| Still In Review after a green deploy | Key missing from the PR title — move it by hand and say so in the PR |
+
+Moving a card by hand is the fallback, not a workaround; do not change `ci.yml` or the Jira
+rules to force one. Rules and troubleshooting:
+[docs/runbooks/jira-automation.md](docs/runbooks/jira-automation.md).
 
 ## Running it locally
 
@@ -45,6 +90,15 @@ work locally yet (the frontend module dev server, `mvn verify` on Apple Silicon,
 ./scripts/validate/no-secrets.sh
 ./scripts/build/lift-demo-content.sh --check   # content-demo unchanged from upstream
 mvn -B clean verify                      # Initializer schema validation
+```
+
+The root reactor builds the content packages only. If you touched the backend module or an
+ESM, build it too — CI does:
+
+```bash
+(cd modules/liberiaemr && mvn -B clean package)            # backend module
+(cd packages/esm-liberia-<name> && yarn install --frozen-lockfile \
+   && yarn lint && yarn typescript && yarn build)          # each ESM you changed
 ```
 
 ## Review
@@ -111,10 +165,12 @@ CI enforces all of these. If a check blocks you, the check is usually right.
 
 ## Commits
 
-Imperative subject, scope prefix, and the *why* in the body:
+Imperative subject, scope prefix, the Jira key in square brackets at the end, and the *why*
+in the body. Give the PR title the same form — GitHub copies it into the merge commit, which
+is what links the dev deploy back to the issue:
 
 ```
-mch: add ANC workflow states
+mch: add ANC workflow states [LE-224]
 
 The ANC programme needs explicit terminal states so that lost-to-follow-up
 is computable for reporting. Delivered and Transferred Out are terminal;

@@ -74,7 +74,14 @@ LABEL org.opencontainers.image.title="LiberiaEMR Sync Receiver" \
       org.opencontainers.image.vendor="Ministry of Health, Republic of Liberia" \
       lr.gov.moh.liberiaemr.dbsync.version="${DBSYNC_VERSION}"
 
+# The MariaDB client applies conflict decisions recorded in the EMR (conflict-decisions.sh).
+USER root
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends mariadb-client-core \
+    && rm -rf /var/lib/apt/lists/*
+USER eip
+
 COPY --from=build --chown=eip:eip /src/receiver-app/target/dbsync-receiver-*-exe.jar /app/receiver.jar
 COPY --chown=eip:eip receiver-application.properties.template docker-entrypoint-receiver.sh sync-security.sh /app/
+COPY --chown=eip:eip conflict-decisions.sh /app/
 
 ENTRYPOINT ["/app/docker-entrypoint-receiver.sh"]

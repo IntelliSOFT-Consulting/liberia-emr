@@ -18,6 +18,9 @@ export const importTranslation = require.context('../translations', false, /.jso
 
 export const root = getAsyncLifecycle(() => import('./sync-status/sync-status.component'), options);
 
+// Reviewing sync conflicts, reached from the status page's conflicts tile.
+export const syncConflicts = getAsyncLifecycle(() => import('./sync-conflicts/sync-conflicts.component'), options);
+
 export const syncStatusAppMenuItem = getAsyncLifecycle(
   () => import('./sync-status/sync-status-app-menu-item.component'),
   options,

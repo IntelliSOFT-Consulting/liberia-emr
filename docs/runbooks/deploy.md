@@ -12,11 +12,20 @@
 ## Facility deployment
 
 ```bash
-cd distribution/compose/facility
-cp ../../env/facility.env.example facility.env    # first time only; then fill it in
-docker compose --env-file facility.env pull
-docker compose --env-file facility.env up -d
+cp distribution/env/facility.env.example distribution/env/facility.env   # first time only; then fill it in
+./scripts/deploy/deploy-facility.sh --env distribution/env/facility.env
 ```
+
+The script asks you to confirm the preconditions above, then pulls and starts the stack. It
+does **not** take the backup and does not start sync. By hand, it is:
+
+```bash
+cd distribution/compose/facility
+docker compose --env-file ../../env/facility.env pull
+docker compose --env-file ../../env/facility.env up -d
+```
+
+The facility commands in the rest of this runbook run from `distribution/compose/facility`.
 
 First boot on an **empty database only**: set `OMRS_CREATE_TABLES=true` in `facility.env`,
 start, wait for the health check, then set it back to `false`. Leaving it true is how a
@@ -25,11 +34,39 @@ later restart surprises you.
 Watch Initializer complete before declaring success:
 
 ```bash
-docker compose --env-file facility.env logs -f backend | grep -i initializer
+docker compose --env-file ../../env/facility.env logs -f backend | grep -i initializer
 ```
 
-The backend runs with `continue_on_error=false`, so a metadata error stops the boot. That
-is intended: a half-loaded configuration is far harder to diagnose than a refused startup.
+The backend runs with `initializer.startup.load=continue_on_error`, so a metadata error does
+**not** stop the boot and `/openmrs/health/started` answers healthy regardless. Read
+`/openmrs/data/initializer.log` inside the backend container before declaring success. The
+setting is deliberate — `fail_on_error` skips every domain after the first error; see
+[demo-stack.md](demo-stack.md) "Known gaps".
+
+### Password reset email
+
+The `liberiaemr` module mails password reset links through an SMTP relay configured in the
+env file — deployment state, never content. Set, in `facility.env` (or `central.env`):
+
+| Variable | Value |
+| --- | --- |
+| `LIBERIAEMR_SMTP_HOST`, `LIBERIAEMR_SMTP_PORT` | the relay; `587` is STARTTLS, `465` SSL |
+| `LIBERIAEMR_SMTP_USER` | the relay account; see the TLS note below before leaving it empty |
+| `LIBERIAEMR_SMTP_PASSWORD_FILE` | preferred: a path **inside the container**, read verbatim |
+| `LIBERIAEMR_SMTP_PASSWORD` | fallback when no file is mounted |
+| `LIBERIAEMR_SMTP_FROM` | the sender address users see |
+| `LIBERIAEMR_FRONTEND_URL` | the SPA address users' browsers reach, no trailing slash — the reset link is built from it |
+
+**TLS depends on credentials.** The module switches on STARTTLS (587) or SSL (465) only when
+both a user and a password are set. With an empty user it speaks plain SMTP on any port, so
+the reset link crosses the network unencrypted — acceptable only for a relay on the same
+host or a trusted network, and a relay that demands TLS on 587 will refuse it.
+
+Neither compose file mounts a password file for the backend, so `_FILE` needs a read-only
+bind or `secrets:` entry added for it. With no host set in the env file or in the
+`liberiaemr.email.host` global property, no reset mail reaches anyone: acceptable on a dev
+box, never at a facility. A user can reset only if their account carries an email
+address. Details: [modules/liberiaemr/README.md](../../modules/liberiaemr/README.md).
 
 ### Sync to central
 
@@ -45,7 +82,7 @@ Enrol the facility first ([sync operations](sync-operations.md) section 1): that
 from then on, including the upgrade and rollback commands below:
 
 ```bash
-docker compose --env-file facility.env --profile sync up -d
+docker compose --env-file ../../env/facility.env --profile sync up -d
 ```
 
 On its first start the sender sends every record already in this database, one facility at a
@@ -80,8 +117,8 @@ so nothing is backfilled. Send them with section 11 of the sync runbook.
 
 1. Announce the window; stop clinical use.
 2. **Back up the database and verify the backup restores** — not just that the file exists.
-3. `docker compose --env-file facility.env pull`
-4. `docker compose --env-file facility.env up -d`
+3. `docker compose --env-file ../../env/facility.env pull`
+4. `docker compose --env-file ../../env/facility.env up -d`
 5. Watch migrations and Initializer complete.
 6. Run the post-deploy checks below.
 7. Release the instance back to clinical use.
@@ -104,12 +141,12 @@ and accepting the loss of anything recorded since. This is why step 2 is not opt
 
 ```bash
 # set LIBERIAEMR_VERSION to the previous release in facility.env, then:
-docker compose --env-file facility.env up -d
+docker compose --env-file ../../env/facility.env up -d
 ```
 
 On a facility that syncs, stop the sender before restoring (`docker compose --env-file
-facility.env --profile sync stop sync`). Its saved position points past the restored database,
-so after the restore set it aside as in section 11 of the [sync runbook](sync-operations.md)
+../../env/facility.env --profile sync stop sync`). Its saved position points past the restored
+database, so after the restore set it aside as in section 11 of the [sync runbook](sync-operations.md)
 before starting it again. The facility then sends its records again, and central applies the
 ones it already has without conflict, which also means an edit made after the backup is
 replaced at central by the restored version. Records created after the backup stay at central
