@@ -13,6 +13,7 @@ import {
   WarningIcon,
 } from '@openmrs/esm-framework';
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
+import FacilityPicker from './facility-picker.component';
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
 import styles from './location-picker.scss';
@@ -50,7 +51,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     isLoading: isLoadingLocationCount,
     locationCount,
     firstLocation,
-  } = useLocationCount(chooseLocation.useLoginLocationTag);
+  } = useLocationCount(chooseLocation.useLoginLocationTag, chooseLocation.locationTag);
 
   const { user, sessionLocation } = useSession();
   const { currentUser, userProperties } = useMemo(
@@ -170,12 +171,23 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
           </div>
           {!hasNoLocations && (
             <>
-              <LocationPicker
-                selectedLocationUuid={activeLocation}
-                defaultLocationUuid={userProperties.defaultLocation}
-                locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
-                onChange={(locationUuid) => setActiveLocation(locationUuid)}
-              />
+              {chooseLocation.locationTag ? (
+                <FacilityPicker
+                  locationTag={chooseLocation.locationTag}
+                  mflCodeAttributeTypeUuid={chooseLocation.mflCodeAttributeTypeUuid}
+                  maxResults={chooseLocation.locationsPerRequest}
+                  selectedLocationUuid={activeLocation}
+                  defaultLocationUuid={userProperties.defaultLocation}
+                  onChange={setActiveLocation}
+                />
+              ) : (
+                <LocationPicker
+                  selectedLocationUuid={activeLocation}
+                  defaultLocationUuid={userProperties.defaultLocation}
+                  locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
+                  onChange={(locationUuid) => setActiveLocation(locationUuid)}
+                />
+              )}
               <div className={styles.footerContainer}>
                 <Checkbox
                   className={styles.savePreferenceCheckbox}
