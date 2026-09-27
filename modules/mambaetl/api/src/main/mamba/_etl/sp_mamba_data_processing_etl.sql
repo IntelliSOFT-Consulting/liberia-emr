@@ -11,6 +11,8 @@ BEGIN
     -- ---- common (coordinator) ----
     CALL sp_mamba_dim_location_hierarchy();
     CALL sp_mamba_dim_encounter_form();
+    CALL sp_mamba_dim_encounter_location();
+    CALL sp_mamba_dim_person_cpi();
 
     -- ---- rmncah (RPT 6) ----
 

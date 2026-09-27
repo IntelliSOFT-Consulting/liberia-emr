@@ -19,14 +19,16 @@ services:
     # binlog event on disk before its commit returns, so a power cut cannot lose or tear an
     # acknowledged commit before the sender reads it (risk F11).
     #
-    # The last four serve the reporting ETL (ADR 0010 decision 3), which runs as a user
+    # The last five serve the reporting ETL (ADR 0010 decision 3), which runs as a user
     # without SUPER. binlog-ignore-db keeps the ETL schema out of the binlog, and so out of
     # Debezium and the sync volume; it filters on the DEFAULT database, so ETL DDL must never
     # be issued from an openmrs-context session. log-bin-trust-function-creators lets that
     # user create core's DETERMINISTIC functions with the binlog on (ROW format, read only by
     # Debezium). event-scheduler replaces core's own SET GLOBAL, which the build strips.
-    # performance-schema makes core's stuck-run check see a running ETL; OFF, it reads 0 rows
-    # and the next event can start an overlapping run. All four need a db restart.
+    # performance-schema and its events_statements_current consumer (OFF by default in
+    # MariaDB even with performance-schema ON) make core's stuck-run check see a running ETL;
+    # without either it reads 0 rows and the next event can start an overlapping run. That
+    # costs about 95 MiB of resident memory at max_connections=151. All five need a db restart.
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -41,6 +43,7 @@ services:
       --log-bin-trust-function-creators=1
       --event-scheduler=ON
       --performance-schema=ON
+      --performance-schema-consumer-events-statements-current=ON
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
       MARIADB_USER: ${MYSQL_USER}

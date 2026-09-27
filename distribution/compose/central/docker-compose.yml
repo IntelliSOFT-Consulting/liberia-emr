@@ -10,9 +10,10 @@ services:
   db:
     image: mariadb:10.11
     restart: unless-stopped
-    # The last two serve the reporting ETL, which runs as a user without SUPER (ADR 0010
+    # The last three serve the reporting ETL, which runs as a user without SUPER (ADR 0010
     # decision 3): event-scheduler replaces core's own SET GLOBAL, which the build strips, and
-    # performance-schema lets core's stuck-run check see a running ETL. Central has no
+    # performance-schema with its events_statements_current consumer (OFF by default in
+    # MariaDB) lets core's stuck-run check see a running ETL. Central has no
     # binlog, so the facility's binlog-ignore-db and log-bin-trust-function-creators do not
     # apply here; if a binlog is ever enabled, both must be added with it.
     command: >-
@@ -21,6 +22,7 @@ services:
       --max_allowed_packet=1G
       --event-scheduler=ON
       --performance-schema=ON
+      --performance-schema-consumer-events-statements-current=ON
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
       MARIADB_USER: ${MYSQL_USER}

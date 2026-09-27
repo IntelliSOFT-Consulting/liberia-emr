@@ -75,6 +75,8 @@ public class DeployScriptTest {
 	public void createsTheBaseDerivedTablesAndTheCaller() {
 		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_dim_location_hierarchy()"));
 		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_dim_encounter_form()"));
+		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_dim_encounter_location()"));
+		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_dim_person_cpi()"));
 		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_data_processing_etl(IN etl_incremental_mode INT)"));
 	}
 

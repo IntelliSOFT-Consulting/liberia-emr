@@ -12,6 +12,8 @@
 # ---- common (coordinator) ----
 derived/common/sp_mamba_dim_location_hierarchy.sql
 derived/common/sp_mamba_dim_encounter_form.sql
+derived/common/sp_mamba_dim_encounter_location.sql
+derived/common/sp_mamba_dim_person_cpi.sql
 
 # ---- rmncah (RPT 6) ----
 
