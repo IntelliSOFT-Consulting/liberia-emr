@@ -14,6 +14,7 @@ In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 | `OPDConsultation.cy.ts` | OPD consultation form: contract, vitals inputs and validation, BMI, general and systemic examination toggles, follow-up date, referral fields, complete save |
 | `TBScreening.cy.ts` | TB Screening form: required radio groups and score, negative and mixed screenings, previous-treatment date, both saves |
 | `Queue.cy.ts` | Add a patient to the queue from home-page search — **`it.skip`**: the `--demo` Careysburg content has no queue services configured |
+| `IndicatorReports.cy.ts` | Indicator report runner: menu entry, fixed facility location and data freshness, run → completed → figures by disaggregation → CSV download — **all `it.skip` (pending)** until the reports module, its context endpoint and the pinned ESM reach the demo stack (LE-335) |
 
 `Visit`, `OPDConsultation` and `TBScreening` register a new patient in every `beforeEach`.
 
