@@ -1,0 +1,118 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.openmrs.module</groupId>
+		<artifactId>liberiaemrreports</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>liberiaemrreports-api</artifactId>
+	<packaging>jar</packaging>
+	<name>LiberiaEMR Reports API</name>
+	<description>API project for LiberiaEMR Reports</description>
+
+	<!--
+		No dependency on mamba-core-api, and none on the ETL module (ADR 0010 decision 6): this
+		module reads the ETL schema with SQL over the OpenMRS connection and never loads an ETL
+		class. config.xml declares the ETL module as aware_of only.
+	-->
+	<dependencies>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>reporting-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>reportingrest-api</artifactId>
+		</dependency>
+
+		<!--
+			reporting's own required modules. calculation-api is also needed to compile:
+			EvaluationContext extends its PatientCalculationContext.
+		-->
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>serialization.xstream-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>htmlwidgets-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>calculation-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<resources>
+			<!-- Everything except the UUID file is copied verbatim: SQL carries ${etl}-style tokens. -->
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>liberiaemrreports-uuids.properties</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>liberiaemrreports-uuids.properties</include>
+				</includes>
+			</resource>
+		</resources>
+		<!--
+			The UUID file is resolved from the national layer, the same way content-packages/pom.xml
+			resolves ${var.*} (execution filter-configuration): delimiter ${*} only.
+		-->
+		<filters>
+			<filter>${liberiaemr.content.dir}/content-liberia-national/configuration/variables.properties</filter>
+		</filters>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<encoding>UTF-8</encoding>
+					<propertiesEncoding>UTF-8</propertiesEncoding>
+					<useDefaultDelimiters>false</useDefaultDelimiters>
+					<delimiters>
+						<delimiter>${*}</delimiter>
+					</delimiters>
+				</configuration>
+			</plugin>
+			<!--
+				ADR 0010 decision 7, check 3: the build fails if a ${var. token survives filtering.
+				The module would otherwise start and refuse every report at runtime. The substring
+				is "{var." so that neither Maven nor Ant reads it as a property reference.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>no-unresolved-variables</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<fail message="unresolved variable in target/classes/liberiaemrreports-uuids.properties; declare it in content-liberia-national/configuration/variables.properties">
+									<condition>
+										<resourcecontains resource="${project.build.outputDirectory}/liberiaemrreports-uuids.properties" substring="{var."/>
+									</condition>
+								</fail>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

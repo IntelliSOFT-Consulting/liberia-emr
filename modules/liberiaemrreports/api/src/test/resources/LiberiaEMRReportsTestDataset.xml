@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License,
+    v. 2.0. If a copy of the MPL was not distributed with this file, You can
+    obtain one at http://mozilla.org/MPL/2.0/. OpenMRS is also distributed under
+    the terms of the Healthcare Disclaimer located at http://openmrs.org/license.
+
+    Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
+    graphic logo is a trademark of OpenMRS Inc.
+
+-->
+<!--
+	Synthetic test data only: no PHI. A county, a district under it, and two facilities under the
+	district, one with a department. Encounters fall in 2026-07-01..2026-09-30 unless noted.
+
+	  F1 (103): 9001, 9002 at its OPD (104); 9003 at F1 itself; 9005 has no location and falls
+	            back to its visit at F1; 9006 is voided; 9007 is outside the period.
+	  F2 (105): 9004.
+-->
+<dataset>
+	<location location_id="101" name="Test County" creator="1" date_created="2026-01-01 00:00:00.0" retired="false" uuid="13cf7f2f-aa51-4daf-a895-adb964720986"/>
+	<location location_id="102" name="Test District" parent_location="101" creator="1" date_created="2026-01-01 00:00:00.0" retired="false" uuid="ed8cc084-5cb5-46c2-bd13-58889ef22ffd"/>
+	<location location_id="103" name="Test Facility One" parent_location="102" creator="1" date_created="2026-01-01 00:00:00.0" retired="false" uuid="c2a1f754-1594-491a-aff2-6d446c09900f"/>
+	<location location_id="104" name="Test Facility One OPD" parent_location="103" creator="1" date_created="2026-01-01 00:00:00.0" retired="false" uuid="ed80f7c1-dd08-4685-9afc-b18029365609"/>
+	<location location_id="105" name="Test Facility Two" parent_location="102" creator="1" date_created="2026-01-01 00:00:00.0" retired="false" uuid="9fcc83b6-2574-4f8e-ae92-724d7d5eeeb3"/>
+
+	<visit visit_id="9001" patient_id="7" visit_type_id="1" date_started="2026-07-10 00:00:00.0" location_id="103" creator="1" date_created="2026-07-10 00:00:00.0" voided="false" uuid="c99de7cc-ed48-44d3-90c5-2721d3be4228"/>
+
+	<encounter encounter_id="9001" encounter_type="1" patient_id="7" location_id="104" form_id="1" encounter_datetime="2026-07-10 09:00:00.0" creator="1" date_created="2026-07-10 09:00:00.0" voided="false" uuid="e9c73664-0d60-4f2d-a95a-636b6f776e2b"/>
+	<encounter encounter_id="9002" encounter_type="1" patient_id="7" location_id="104" form_id="1" encounter_datetime="2026-08-01 09:00:00.0" creator="1" date_created="2026-08-01 09:00:00.0" voided="false" uuid="cc70b513-b4cc-4560-8804-e6df05d4c3d8"/>
+	<encounter encounter_id="9003" encounter_type="1" patient_id="7" location_id="103" form_id="1" encounter_datetime="2026-09-30 23:30:00.0" creator="1" date_created="2026-09-30 23:30:00.0" voided="false" uuid="ec904ae0-857b-4ecf-815b-b8050d35024e"/>
+	<encounter encounter_id="9004" encounter_type="1" patient_id="7" location_id="105" form_id="1" encounter_datetime="2026-07-01 00:00:00.0" creator="1" date_created="2026-07-01 00:00:00.0" voided="false" uuid="79d4a028-8d8e-4c92-90a7-fa93fc412c98"/>
+	<encounter encounter_id="9005" encounter_type="1" patient_id="7" visit_id="9001" form_id="1" encounter_datetime="2026-07-10 10:00:00.0" creator="1" date_created="2026-07-10 10:00:00.0" voided="false" uuid="72c76c22-4475-4ea5-a8b3-aad3ab0c7839"/>
+	<encounter encounter_id="9006" encounter_type="1" patient_id="7" location_id="103" form_id="1" encounter_datetime="2026-07-11 09:00:00.0" creator="1" date_created="2026-07-11 09:00:00.0" voided="true" voided_by="1" date_voided="2026-07-12 00:00:00.0" void_reason="test" uuid="471b49e9-5d65-406b-a97c-861dcb826766"/>
+	<encounter encounter_id="9007" encounter_type="1" patient_id="7" location_id="103" form_id="1" encounter_datetime="2025-12-31 09:00:00.0" creator="1" date_created="2025-12-31 09:00:00.0" voided="false" uuid="3afdd227-3009-4867-a8ad-ee63b7517053"/>
+</dataset>

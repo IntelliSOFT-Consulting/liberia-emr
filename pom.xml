@@ -37,6 +37,12 @@
 
 	<modules>
 		<module>content-packages</module>
+		<!--
+			The MOH indicator reports OMOD (ADR 0010 decision 6). In the reactor so that `mvn verify`
+			tests it and the dependency and SBOM scans see it; the backend image builds it from
+			source in the Dockerfile module stage, never from this build's output.
+		-->
+		<module>modules/liberiaemrreports</module>
 	</modules>
 
 	<build>

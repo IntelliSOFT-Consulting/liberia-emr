@@ -328,6 +328,25 @@ reportingrest also exposes these resources. The UI must not use them:
 
 Our privilege check (§3.4) applies wherever our own data set evaluators run.
 
+### 4.4 Instance context (`liberiaemrreports`)
+
+`GET /openmrs/ws/rest/v1/liberiaemrreports/context` needs **`Export National Report`** (403
+without it, 401 unauthenticated). It tells the UI what it cannot read itself:
+
+```json
+{
+  "instanceRole": "facility",
+  "facilityLocation": { "uuid": "<location UUID>", "display": "<name>" },
+  "etlSchema": "liberiaemr_etl",
+  "etlLastRun": { "startedAt": "2026-09-27T01:00:00.000+0000", "completedAt": "…", "status": "SUCCESS" }
+}
+```
+
+- `instanceRole` is `facility` or `central`, after the fail-closed check.
+- `facilityLocation` is null at central, and at a facility whose own location does not resolve.
+- `etlLastRun` is the latest row of `<etl schema>._mamba_etl_schedule`, or null before the first
+  run. `status` is `SUCCESS`, `RUNNING`, `INTERRUPTED` (core closed a stuck run) or `ERROR`.
+
 ---
 
 ## 5. Changing these contracts
