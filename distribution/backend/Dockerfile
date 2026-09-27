@@ -129,6 +129,27 @@ RUN set -eu; \
       echo "FAIL: module still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
     fi
 
+# The MOH indicator reports module (ADR 0010 decision 6), built and stamped the same way. Its
+# report and design UUIDs are filtered in from the national layer's variables.properties
+# (decision 7), so that file is copied to the same relative place it has in the repository, and
+# the api build fails if any variable is left unresolved. Kept in its own COPY and RUN so the
+# other in-tree modules' steps stay independent of it.
+COPY modules/liberiaemrreports /build/modules/liberiaemrreports
+COPY content-packages/content-liberia-national/configuration/variables.properties /build/content-packages/content-liberia-national/configuration/variables.properties
+RUN set -eu; \
+    if [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      mvn -B -q -f /build/modules/liberiaemrreports/pom.xml \
+        org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+        -DnewVersion="${LIBERIAEMR_VERSION}" -DgenerateBackupPoms=false; \
+    fi; \
+    mvn -B -q -f /build/modules/liberiaemrreports/pom.xml -DskipTests \
+      -Dliberiaemr.content.dir=/build/content-packages clean package; \
+    ls /build/modules/liberiaemrreports/omod/target/*.omod; \
+    if ls /build/modules/liberiaemrreports/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
+       && [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "FAIL: liberiaemrreports still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
+    fi
+
 # ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
@@ -170,6 +191,7 @@ COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
 # The in-tree module, built in stage 2, lands beside them. Kept as a separate COPY so it is
 # obvious in the layer list that one OMOD here is ours and the rest are resolved pins.
 COPY --from=module /build/liberiaemr/omod/target/liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
+COPY --from=module /build/modules/liberiaemrreports/omod/target/liberiaemrreports-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/
