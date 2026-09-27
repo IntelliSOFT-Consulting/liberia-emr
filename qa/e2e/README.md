@@ -14,8 +14,16 @@ In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 | `OPDConsultation.cy.ts` | OPD consultation form: contract, vitals inputs and validation, BMI, general and systemic examination toggles, follow-up date, referral fields, complete save |
 | `TBScreening.cy.ts` | TB Screening form: required radio groups and score, negative and mixed screenings, previous-treatment date, both saves |
 | `Queue.cy.ts` | Add a patient to the queue from home-page search — **`it.skip`**: the `--demo` Careysburg content has no queue services configured |
+| `MflSync.cy.ts` | MFL sync admin page (`/openmrs/spa/mfl-sync`, LE-323): status with no password field, test connection (ok and refused), dry run, Sync now with counts and run items, schedule save, a URL off the allowlist refused. Syncs from the MFL stub (`qa/api/mfl-stub/`), never the live MFL |
+| `MflFacilitySwitcher.cy.ts` | Central facility switcher (LE-324), with `chooseLocation.locationTag = Health Facility` applied as an O3 temporary config: search by name and by MFL code, district and code shown, duplicate names told apart, retired facilities hidden, the session switched; without the setting the facility picker is unchanged |
 
 `Visit`, `OPDConsultation` and `TBScreening` register a new patient in every `beforeEach`.
+
+The two `Mfl*` specs need the stack started with the MFL stub overlay and its material
+([qa/api/README.md](../api/README.md#mfl-sync-mfl-mfl-stub)); they sync the stub's fixture in
+`before()`. `CYPRESS_MFL_STUB_URL` (default `https://localhost:18443`) is where they switch stub
+scenarios, and `CYPRESS_MFL_STUB_INTERNAL_URL` (default `https://mfl-stub:8443/mfl`) is the MFL
+address the backend is given.
 
 A suspended test uses `it.skip` with a comment saying why. Cypress reports it as pending,
 and the job stays green, so read the `N passing, M pending` tail rather than the check
@@ -53,6 +61,11 @@ and `gateway` and waits up to 2 minutes for `https://localhost/openmrs/spa/`. Cy
 `npm test` with `CYPRESS_BASE_URL=https://localhost` and the demo credentials. Screenshots
 and videos are uploaded as `cypress-artifacts` on failure; the stack is torn down with
 `down -v` either way.
+
+The stack also carries the MFL stub overlay (`qa/api/mfl-stub/docker-compose.mfl-stub.yml`):
+the job runs the MFL API contract tests before Cypress. Cypress runs even when they fail.
+Afterwards the job recreates the backend without MFL credentials and checks that the sync reports
+itself unavailable ([qa/api/README.md](../api/README.md)).
 
 `release.yml`'s `full-stack-tests` job has only a TODO `echo` for Cypress.
 

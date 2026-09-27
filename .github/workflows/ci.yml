@@ -714,6 +714,12 @@ jobs:
             -keyout "$RUNNER_TEMP/e2e-certs/privkey.pem" \
             -out    "$RUNNER_TEMP/e2e-certs/fullchain.pem"
 
+      # The MFL sync (ADR 0009) is tested against a stub MFL, never the MOH's: a throwaway CA,
+      # the stub's certificate, a truststore for the backend and a random stub password, all
+      # under $RUNNER_TEMP and gone with the runner. See qa/api/README.md.
+      - name: Generate the MFL stub material
+        run: qa/api/mfl-stub/gen-material.sh "$RUNNER_TEMP/mfl-stub"
+
       # Ephemeral credentials for a database that lives only as long as this job — never a
       # facility secret. cypress.env.json is for local development only and must never drive
       # a CI run (Cypress base URL comes from CYPRESS_BASE_URL below instead).
@@ -730,11 +736,15 @@ jobs:
           OMRS_CREATE_TABLES=true
           TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
           CENTRAL_URL=http://localhost
+          QA_MFL_DIR=$RUNNER_TEMP/mfl-stub
+          QA_MFL_STUB_DIR=$GITHUB_WORKSPACE/qa/api/mfl-stub
+          QA_MFL_FIXTURES=$GITHUB_WORKSPACE/integration/dhis2/mfl/fixtures
           ENV
           docker compose \
             -f distribution/compose/facility/docker-compose.yml \
             -f distribution/compose/facility/docker-compose.demo.yml \
-            --env-file "$RUNNER_TEMP/e2e.env" up -d db backend
+            -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
+            --env-file "$RUNNER_TEMP/e2e.env" up -d db backend mfl-stub
 
       - name: Wait for the backend to become healthy
         run: |
@@ -742,6 +752,7 @@ jobs:
           until docker compose \
                   -f distribution/compose/facility/docker-compose.yml \
                   -f distribution/compose/facility/docker-compose.demo.yml \
+                  -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
                   --env-file "$RUNNER_TEMP/e2e.env" exec -T backend \
                   curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
             if (( SECONDS > deadline )); then
@@ -749,6 +760,7 @@ jobs:
               docker compose \
                 -f distribution/compose/facility/docker-compose.yml \
                 -f distribution/compose/facility/docker-compose.demo.yml \
+                -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
                 --env-file "$RUNNER_TEMP/e2e.env" logs --tail 200 backend >&2
               exit 1
             fi
@@ -760,6 +772,7 @@ jobs:
           docker compose \
             -f distribution/compose/facility/docker-compose.yml \
             -f distribution/compose/facility/docker-compose.demo.yml \
+            -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
             --env-file "$RUNNER_TEMP/e2e.env" up -d frontend gateway
 
       - name: Wait for the gateway to serve the SPA
@@ -771,11 +784,22 @@ jobs:
               docker compose \
                 -f distribution/compose/facility/docker-compose.yml \
                 -f distribution/compose/facility/docker-compose.demo.yml \
+                -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
                 --env-file "$RUNNER_TEMP/e2e.env" logs --tail 40 gateway >&2
               exit 1
             fi
             sleep 5
           done
+
+      # Before Cypress, on a stack no spec has touched, so the first-sync expectations hold.
+      # The script creates test users and locations and restores the facility root it borrows.
+      - name: MFL sync API tests
+        id: mfl-api
+        run: |
+          python3 qa/api/mfl/verify-mfl-sync.py \
+            --base-url https://localhost \
+            --material-dir "$RUNNER_TEMP/mfl-stub" \
+            --backend-logs-cmd "docker compose -f distribution/compose/facility/docker-compose.yml -f distribution/compose/facility/docker-compose.demo.yml -f qa/api/mfl-stub/docker-compose.mfl-stub.yml --env-file $RUNNER_TEMP/e2e.env logs --no-color backend"
 
       # cypress.config.ts refuses any CYPRESS_BASE_URL host other than localhost unless it
       # is explicitly allowlisted — so this can never resolve to
@@ -784,13 +808,34 @@ jobs:
       # well-known training account (docs/runbooks/demo-stack.md), not a facility credential.
       # RUN_LIVE_REGISTRATION is deliberately left unset: the normal CI run must not create
       # real patient records, and the gated test stays skipped (qa/e2e/README.md Rules).
+      # Runs when the MFL API tests failed too, so one run shows both results.
       - name: Cypress
+        if: ${{ !cancelled() && (success() || steps.mfl-api.outcome == 'failure') }}
         working-directory: qa/e2e
         env:
           CYPRESS_BASE_URL: https://localhost
           CYPRESS_USERNAME: admin
           CYPRESS_PASSWORD: Admin123
         run: npm test
+
+      # Last, because it replaces the backend: the same database, recreated WITHOUT the stub
+      # overlay and so without MFL credentials. The sync must then report itself unavailable
+      # and refuse to run (docs/architecture/mfl-sync-api.md, "Availability").
+      - name: MFL sync is unavailable without credentials
+        if: ${{ !cancelled() && steps.mfl-api.outcome != 'skipped' }}
+        run: |
+          plain="docker compose -f distribution/compose/facility/docker-compose.yml -f distribution/compose/facility/docker-compose.demo.yml --env-file $RUNNER_TEMP/e2e.env"
+          $plain up -d --no-deps --force-recreate backend
+          deadline=$(( SECONDS + 900 ))
+          until $plain exec -T backend curl -fs http://localhost:8080/openmrs/health/started >/dev/null 2>&1; do
+            if (( SECONDS > deadline )); then
+              echo "FAIL: the recreated backend did not become healthy within 15 minutes" >&2
+              $plain logs --tail 200 backend >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          python3 qa/api/mfl/verify-mfl-sync.py --unavailable --base-url https://localhost
 
       - name: Upload Cypress screenshots and videos
         if: failure()
@@ -808,8 +853,9 @@ jobs:
           docker compose \
             -f distribution/compose/facility/docker-compose.yml \
             -f distribution/compose/facility/docker-compose.demo.yml \
+            -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
             --env-file "$RUNNER_TEMP/e2e.env" down -v || true
-          rm -rf "$RUNNER_TEMP/e2e-certs" "$RUNNER_TEMP/e2e.env"
+          rm -rf "$RUNNER_TEMP/e2e-certs" "$RUNNER_TEMP/e2e.env" "$RUNNER_TEMP/mfl-stub"
 
   # ---------------------------------------------------------------------
   # Frontend module build — independent of the Maven reactor, runs in

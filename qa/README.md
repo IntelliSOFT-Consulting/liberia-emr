@@ -2,7 +2,7 @@
 
 | Directory | Type | Who |
 | --- | --- | --- |
-| [`api/`](api/) | Automated API tests | QA Engineer directs; developers contribute |
+| [`api/`](api/) | Automated API tests: so far the MFL sync contract suite and its stub MFL | QA Engineer directs; developers contribute |
 | [`e2e/`](e2e/) | Automated Cypress tests | QA Engineer directs |
 | [`manual/`](manual/) | Manual and exploratory testing | Tester executes against QA Engineer's plan |
 | [`uat/`](uat/) | UAT scripts and sign-off | MOH / UNFPA / facility staff execute |
