@@ -60,13 +60,13 @@ matches on name, code or UUID.
   | Barnersville Health Center | `kueVlXwUXiI` | Barnersville HC (`LBR-30-3014-03`) | |
   | Careysburg Health Center | `jbGSiLCEFKJ` | Careysburg Clinic (`LBR-30-3002-05`) | the MFL types it a **Clinic** (Public) |
 
-- **The site root is renamed to the MFL name.** The MFL owns `name` (decision 4), and
-  Initializer reapplies the site CSV on every boot. So once a match is confirmed, the CSV's root
-  name must equal the MFL name exactly: *Careysburg Clinic* and *Barnersville HC*. Otherwise the
-  CSV and the sync overwrite each other on every boot and every run. Child location names
-  ("Careysburg OPD", …) are local and unaffected. Until a match is confirmed, the site CSV
-  carries no `MFL UID`, and the sync creates a separate row for that facility (see
-  Consequences).
+- **An adopted root keeps its name and parent.** Content owns both, and the sync never renames
+  or reparents an adopted row (decision 3). The site CSV gives each ward its parent **by name**,
+  and Initializer reapplies that CSV. A sync rename would orphan the wards, and a sync reparent
+  would be undone on the next reload. So *Careysburg Health Center* keeps that name and stays
+  top-level. The sync still adds the MFL attributes, the `Health Facility` tag, coordinates and
+  the county/district address fields. Until a match is confirmed, the site CSV carries no
+  `MFL UID`, and the sync creates a separate row for that facility (see Consequences).
 - **A row the sync creates gets `UUIDv5(namespace, MFL UID)`** under the fixed namespace
   `e0b0fbf7-045c-437a-8e7c-4504984c5e1a`. The name is the DHIS2 UID exactly as returned
   (UTF-8, case-sensitive). This is an internal detail, not an identity: nothing matches on it,
@@ -93,14 +93,17 @@ creates the rest with the same UUIDs as central.
 ### 3. What the sync writes, and to which rows
 
 The sync pulls levels 2–4 and writes only to rows that carry an `MFL UID` attribute, or that
-it creates.
+it creates. A row it did not create is **adopted**. The sync recognises a row it created because
+that row's UUID is `UUIDv5(namespace, MFL UID)` (decision 1). On an adopted row the sync never
+writes `name` or `parentLocation`; content owns them (decision 1). Every other rule in the table
+applies to both kinds of row.
 
 | MFL source | OpenMRS target | Rule |
 | --- | --- | --- |
 | `id` | attribute **MFL UID** | the match key |
 | `code` | attribute **MFL Code** | trimmed; display and search only; never a key, never parsed; empty when missing |
-| `name` | `Location.name` | collapse runs of whitespace and trim; disambiguate as described below |
-| `parent` | `Location.parentLocation` | **counties are top-level**, and no Country location is created; reparent when it changes |
+| `name` | `Location.name` | created rows only; collapse runs of whitespace and trim; disambiguate as described below |
+| `parent` | `Location.parentLocation` | created rows only; **counties are top-level**, and no Country location is created; reparent when it changes |
 | `level` | tag **County** / **District** / **Health Facility** | existing national tags; the sync only adds tags, never removes one |
 | level 3 with no facilities | not created | the 6 `CHT - …` units, *Medicine Stores* and *Pharmacy* |
 | `geometry` Point `[lon, lat]` | `Location.longitude` / `latitude` | level 4 only; empty when missing; the run log warns when a point is outside Liberia |
@@ -197,9 +200,12 @@ Facilities the sync **creates** get `Health Facility` and **not** `Login Locatio
 adds tags and never removes one (decision 4). The site's own staff log in there, so the tag has
 to stay. The central switcher does not depend on `Login Location` either way: it filters on
 `Health Facility`, which adopted and created facilities both carry. LE-324 replaces the
-login app's boolean `chooseLocation.useLoginLocationTag` with a string,
-`chooseLocation.locationTag` (default `Login Location`). Central's frontend config sets it to
-`Health Facility`. The switcher shows the MFL code and district next to each name.
+login app gains a string setting, `chooseLocation.locationTag`, alongside the existing boolean
+`chooseLocation.useLoginLocationTag`. It is empty by default, and when empty the boolean applies
+exactly as before, so facilities are unaffected. Central's `config-central.json` (ADR 0011)
+sets it to `Health Facility`. The switcher shows the MFL code and district next to each name.
+For an adopted root, which has no District parent, the district comes from its `countyDistrict`
+address field.
 
 ### 7. Credentials come from the environment or a password file only
 
@@ -283,9 +289,12 @@ Where the two disagree, the document wins.
   and a facility that runs the sync hold the same row for every non-root facility, so a future
   referral or transfer location synced from a facility resolves at central. Without it, those
   rows differ between instances, and any record referencing one fails at central's receiver.
-  Nothing else changes either way.
-- The site roots are renamed to the MFL names (*Careysburg Clinic*, *Barnersville HC*) once the
-  matches are confirmed. This is visible to users at the login screen.
+  The derived UUID is also how the sync tells a row it created from an adopted one (decision 3).
+  A veto would need another marker for that, such as a sync-owned attribute.
+- Adopted site roots keep their local names and stay top-level, so users see no change at the
+  login screen. At central, the switcher lists *Careysburg Health Center* under Careysburg
+  District through its address field, although the MFL calls it *Careysburg Clinic*. Its MFL
+  code is shown next to the name.
 - The MFL becomes a runtime dependency of central's location metadata. If the MFL is
   unreachable, runs fail and the cached list stays as it is.
 - A facility the MOH deletes and re-creates, or moves, gets a new UID. We keep a retired row
@@ -298,12 +307,12 @@ Where the two disagree, the document wins.
 
 | # | Decision | Outcome |
 | --- | --- | --- |
-| 1 | UUIDs kept; `MFL UID` attribute is the match key; site roots adopted by CSV attribute | **Accepted**, reversing the first draft. The v5 UUIDs for created rows are accepted subject to veto |
+| 1 | UUIDs kept; `MFL UID` attribute is the match key; site roots adopted by CSV attribute, keeping their name and parent | **Accepted**, reversing the first draft. The v5 UUIDs for created rows are accepted subject to veto |
 | 2 | Central-only by default | **Accepted** |
 | 3 | Field ownership, name disambiguation, group tie-breaks by UID, no `openingDate`, counties top-level | **Accepted** (from LE-318) |
 | 4 | Canonical attribute types | **Accepted** |
 | 5 | Retire on close or absence, guard on a failed page or a pull under 90%, moves as close + new | **Accepted** (from LE-318) |
-| 6 | Switcher filters on `Health Facility`; no `Login Location` | **Accepted** |
+| 6 | Switcher filters on `Health Facility`; rows the sync creates get no `Login Location`, adopted roots keep theirs | **Accepted** |
 | 7 | Credentials from env or a password file only | **Accepted** |
 | 8 | Full pull on every run; operator settings in `config.xml`, not Initializer | **Accepted** (from LE-318) |
 | 9 | Admin route in `esm-liberia-sync-status-app` | **Accepted** |

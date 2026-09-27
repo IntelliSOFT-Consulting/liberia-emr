@@ -90,8 +90,11 @@ time; section 1 of the sync runbook covers what to check first and how to tell i
 
 ## Central deployment
 
-Central runs the same backend and frontend plus the broker, the sync receiver and their
-monitoring, all in one stack:
+Central runs the same backend as a facility, its own frontend image
+(`liberia-emr-frontend-central`, built by `build-distribution.sh --site central`; see
+[ADR 0011](../adr/0011-central-composition.md)), plus the broker, the sync receiver and their
+monitoring, all in one stack. Both frontend images carry the release version, so the pull
+below needs that release's central build to have been published as well as its facility build:
 
 ```bash
 cd distribution/compose/central

@@ -61,6 +61,7 @@ differences stay isolated. Later layers depend on and can override earlier ones.
 | National | `content-liberia-national` | National identifier types, MOH forms, national reporting mappings, admin hierarchy, terminology, required translations. |
 | Site | `content-site-careysburg` | Facility locations, departments/wards, local roles, branding, local lab catalogue, formulary overrides. |
 | Site | `content-site-barnersville` | Same, for Barnersville. |
+| Central | `content-central` | Takes the site layer's place in the central build only (`--site central`, [ADR 0011](docs/adr/0011-central-composition.md)). Central-only frontend config today. |
 | Demo | `content-demo` | Training metadata, lifted verbatim from `openmrs-content-referenceapplication-demo` 1.9.2 (`scripts/build/lift-demo-content.sh`). **NEVER shipped to production.** |
 
 **Rule:** never include demo patients, test users, or sample observations in any production
@@ -146,6 +147,7 @@ liberia-emr/
 │   ├── content-liberia-national/          # MOH national configuration
 │   ├── content-site-careysburg/           # facility-specific
 │   ├── content-site-barnersville/         # facility-specific
+│   ├── content-central/                   # central build only, in the site layer's place
 │   └── content-demo/                      # NEVER shipped to production
 │       (each package has the same configuration/ skeleton as content-common)
 │

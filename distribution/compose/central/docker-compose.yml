@@ -89,8 +89,12 @@ services:
       start_period: 5400s
     networks: [liberiaemr]
 
+  # The central frontend (build-distribution.sh --site central): the facility layers with
+  # content-central in the site layer's place, so no facility's config-site.json reaches
+  # central and nothing in config-central.json reaches a facility. See
+  # docs/adr/0011-central-composition.md.
   frontend:
-    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    image: ${REGISTRY}/liberia-emr-frontend-central:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       backend:
@@ -98,9 +102,13 @@ services:
     environment:
       SPA_PATH: /openmrs/spa
       API_URL: /openmrs
+      # Baked into the image at build time; this copy is what an operator reads, and
+      # build-distribution.sh --site central fails if the two differ.
       SPA_CONFIG_URLS: >-
         /openmrs/spa/config/config-core.json,
         /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-opd.json,
         /openmrs/spa/config/config-central.json
     networks: [liberiaemr]
 

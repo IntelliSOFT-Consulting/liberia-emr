@@ -14,6 +14,12 @@ set -euo pipefail
 : "${MFL_PASSWORD:?set MFL_PASSWORD}"
 command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
 
+# Basic auth goes to whatever URL this is, so refuse cleartext except to a local stub.
+case "$MFL_BASE_URL" in
+  https://*) ;;
+  http://localhost[:/]*|http://localhost|http://127.0.0.1[:/]*|http://127.0.0.1) ;;
+  *) echo "MFL_BASE_URL must be https:// (http:// only for localhost or 127.0.0.1)" >&2; exit 1 ;;
+esac
 API="${MFL_BASE_URL%/}/api"
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
@@ -21,6 +27,8 @@ trap 'rm -rf "$OUT"' EXIT
 # curl config on stdin: escape backslashes and double quotes for curl's quoted-string syntax.
 esc() { local s=${1//\\/\\\\}; printf '%s' "${s//\"/\\\"}"; }
 CURL_AUTH="user = \"$(esc "$MFL_USERNAME"):$(esc "$MFL_PASSWORD")\""
+# Keep them out of every child's environment (ps e, /proc/<pid>/environ) from here on.
+unset MFL_USERNAME MFL_PASSWORD
 
 # get <name> <path?query>  — saves $OUT/<name>.json, prints status, bytes and seconds.
 # -g stops curl globbing the [ ] in DHIS2 field selectors (without it curl exits 3).
@@ -39,6 +47,7 @@ echo "== requests"
 get system       "system/info.json?fields=version,revision,serverDate"
 get me           "me.json?fields=username,userRoles[name],organisationUnits[id,name,level]"
 get levels       "organisationUnitLevels.json?fields=level,name&paging=false"
+get attributes   "attributes.json?fields=id,name,organisationUnitAttribute&paging=false"
 get all_geo      "organisationUnits.json?fields=$FAC_FIELDS&paging=false"
 get facilities   "organisationUnits.json?fields=$FAC_FIELDS&filter=level:eq:4&paging=false"
 get admin        "organisationUnits.json?fields=$ADMIN_FIELDS&filter=level:le:3&paging=false"
@@ -92,6 +101,14 @@ rows = [
     ('non-level-4 unit in a group', [n(o) for o in load('all_geo')['organisationUnits'] if o['level'] != 4 and o.get('organisationUnitGroups')]),
 ]
 for label, items in rows: print(f'  {len(items):4d}  {label}  {items[:4]}')
+print(f"  {sum(1 for o in fac if o.get('shortName') and o['shortName'] != n(o)):4d}  shortName differs from name")
+print(f"  {max(len(n(o).strip()) for o in fac):4d}  longest name (chars)")
+cc = {o['id']: (o.get('code') or '').strip() for o in ous if o['level'] == 2}
+wf = [o for o in fac if o.get('code') and re.fullmatch(r'LBR-\d\d-\d{4}-\d\d', o['code'].strip())]
+print(f"  {sum(1 for o in wf if o['code'].strip()[4:6] != cc.get(o['path'].split('/')[2])):4d}  well-formed codes whose CC differs from the county code (of {len(wf)})")
+print(f"  {len([o for o in ous if o['level'] == 3 and not o.get('code')]):4d}  level-3 units with no code")
+attrs = (load('attributes') or {}).get('attributes', [])
+print(f"== custom attributes: {len(attrs)} ({sum(1 for a in attrs if a.get('organisationUnitAttribute'))} on org units)")
 key = lambda o: re.sub(r'\s+', ' ', n(o)).strip().lower()
 def dup(k):
     c = collections.defaultdict(list)
