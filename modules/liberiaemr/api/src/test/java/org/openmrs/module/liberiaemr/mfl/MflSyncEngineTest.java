@@ -426,6 +426,37 @@ public class MflSyncEngineTest extends BaseModuleContextSensitiveTest {
 		assertEquals(0, result.getCounts().getUpdated());
 	}
 
+	/** The real MFL's size: 15 counties, 105 districts, 1,050 facilities. */
+	@Test
+	public void run_shouldSyncAnMflOfTheRealSizeInReasonableTime() throws Exception {
+		List<MflUnit> units = new ArrayList<MflUnit>();
+		for (int c = 0; c < 15; c++) {
+			String county = "C" + c;
+			units.add(new MflUnit(county, null, "County " + c, 2, "LHNiyIWuLdc", null, null, null, null,
+			        Collections.<String> emptySet()));
+			for (int d = 0; d < 7; d++) {
+				String district = county + "D" + d;
+				units.add(new MflUnit(district, null, "District " + c + "." + d, 3, county, null, null, null, null,
+				        Collections.<String> emptySet()));
+				for (int f = 0; f < 10; f++) {
+					units.add(MflFixture.facility(district + "F" + f, "Facility " + c + "." + d + "." + f, district,
+					    MflConstants.GROUP_CLINIC, MflConstants.GROUP_PUBLIC));
+				}
+			}
+		}
+		long started = System.currentTimeMillis();
+		MflSyncEngine.Result first = run(units, false);
+		long firstMs = System.currentTimeMillis() - started;
+		started = System.currentTimeMillis();
+		MflSyncEngine.Result second = run(units, false);
+		long secondMs = System.currentTimeMillis() - started;
+		System.out.println("MFL scale: first run " + firstMs + " ms, second run " + secondMs + " ms");
+		assertEquals(1170, first.getCounts().getCreated());
+		assertEquals(0, first.getCounts().getFailed());
+		assertEquals(1170, second.getCounts().getUnchanged());
+		assertTrue("first run took " + firstMs + " ms", firstMs < 120000);
+	}
+
 	@Test
 	public void run_shouldFailWhenTheContentMetadataIsMissing() {
 		LocationAttributeType code = locations.getLocationAttributeTypeByUuid(MflConstants.ATTR_MFL_CODE);
