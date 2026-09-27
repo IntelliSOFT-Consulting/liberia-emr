@@ -35,8 +35,8 @@ name: Modules CI / CD
 on:
   # No `paths` filter here, and there cannot be one: `paths` applies to the whole push
   # event, and a tag push reports no changed files — so a paths filter beside the tags
-  # filter below would stop module releases firing at all (the same trap described for
-  # the `release:` trigger). scripts/ci/module-publish-decision.sh filters main pushes
+  # filter below would stop module releases firing at all (the reason module releases
+  # hung off a GitHub `release:` event before). scripts/ci/module-publish-decision.sh filters main pushes
   # by path instead, which also puts the whole publish decision in one place.
   push:
     branches: [main]

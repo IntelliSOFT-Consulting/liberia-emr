@@ -103,12 +103,12 @@ one place:
 
 | Where | What | How it ships |
 | --- | --- | --- |
-| [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots and opt-in releases go to Repsy |
+| [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots, and releases cut from `liberiaemr-x.y.z` tags, go to Repsy |
 | [`packages/esm-liberia-*`](packages/) | O3 frontend modules | Published to npm; an app reaches the image only when pinned in `distro.properties` |
 | [`packages/modify-pr/`](packages/modify-pr/) | Patches to community code | Only with an open or merged upstream PR — otherwise it is a fork |
 
 See [modules/liberiaemr/README.md](modules/liberiaemr/README.md) for the module's
-endpoints, SMTP configuration and the release opt-in rule.
+endpoints, SMTP configuration and how a module release is cut.
 
 ## Continuous integration
 

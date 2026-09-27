@@ -294,7 +294,7 @@ Where each stage runs today (`.github/workflows/`):
 | --- | --- | --- |
 | `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment; a passing smoke test there records a `dev` deployment that Jira reads. |
 | `release.yml` | `x.y.z` tag | Release guards → build (both sites) → full stack → **upgrade test** → publish images (`ghcr.io/intellisoft-consulting`) → staging → production approval. The full-stack, image-push and staging steps are still `TODO` stubs. |
-| `modules.yml` | `modules/**` changes; GitHub release | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release only when its tag matches the pom's base version. |
+| `modules.yml` | `modules/**` changes; a pushed `liberiaemr-x.y.z` tag | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release from its `liberiaemr-x.y.z` tag, cut with `mvn release:prepare` ([release-module.md](docs/runbooks/release-module.md)). A GitHub release publishes nothing here. |
 | `packages.yml` | `packages/**` changes; GitHub release | Builds the ESMs; publishes `-pre.<run>` versions (npm tag `next`) from `main`, and every ESM at the release tag's version on a release. |
 | `claude-review.yml` | PR to `main`/`develop` | Advisory guardrail review; never blocks a merge. |
 
