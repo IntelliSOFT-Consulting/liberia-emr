@@ -14,6 +14,7 @@ import {
 } from '@openmrs/esm-framework';
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import FacilityPicker from './facility-picker.component';
+import { useFacilities } from './facility-picker.resource';
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
 import styles from './location-picker.scss';
@@ -64,6 +65,21 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   const hasNoLocations = !isLoadingLocationCount && locationCount === 0;
 
+  // With a locationTag, only a tagged facility may be chosen: a saved default or a session
+  // location outside that list is ignored rather than logged into or submitted. Without one,
+  // useFacilities fetches nothing and the saved default is used as before.
+  const { facilities, isLoading: isLoadingFacilities } = useFacilities(
+    chooseLocation.locationTag,
+    chooseLocation.mflCodeAttributeTypeUuid,
+  );
+  const isChoosable = useCallback(
+    (locationUuid?: string) =>
+      !chooseLocation.locationTag || facilities.some((facility) => facility.uuid === locationUuid),
+    [chooseLocation.locationTag, facilities],
+  );
+  const usableDefaultLocation =
+    chooseLocation.locationTag && (isLoadingFacilities || !isChoosable(defaultLocation)) ? null : defaultLocation;
+
   const [activeLocation, setActiveLocation] = useState(() => {
     if (currentLocationUuid && hideWelcomeMessage) {
       return currentLocationUuid;
@@ -72,6 +88,12 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (chooseLocation.locationTag && !isLoadingFacilities && activeLocation && !isChoosable(activeLocation)) {
+      setActiveLocation(undefined);
+    }
+  }, [chooseLocation.locationTag, isLoadingFacilities, activeLocation, isChoosable]);
 
   const { state } = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -120,11 +142,11 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     if (isUpdateFlow) {
       return;
     }
-    if (defaultLocation && !isSubmitting) {
-      setActiveLocation(defaultLocation);
-      changeLocation(defaultLocation, true);
+    if (usableDefaultLocation && !isSubmitting) {
+      setActiveLocation(usableDefaultLocation);
+      changeLocation(usableDefaultLocation, true);
     }
-  }, [changeLocation, isSubmitting, defaultLocation, isUpdateFlow]);
+  }, [changeLocation, isSubmitting, usableDefaultLocation, isUpdateFlow]);
 
   const handleSubmit = useCallback(
     (evt: React.FormEvent<HTMLFormElement>) => {

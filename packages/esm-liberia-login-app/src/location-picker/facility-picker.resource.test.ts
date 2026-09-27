@@ -6,6 +6,7 @@ import {
   facilityPageUrl,
   fetchFacilities,
   filterFacilities,
+  resolveAddressAreas,
   toFacilityOption,
   type FacilityOption,
 } from './facility-picker.resource';
@@ -81,6 +82,67 @@ describe('toFacilityOption', () => {
   it('leaves the code empty when the facility has none', () => {
     expect(toFacilityOption(restFacility('f', 'JFK Medical Center'), CODE).code).toBe('');
   });
+
+  it('takes the district and county of a top-level (adopted) root from its address', () => {
+    const root = {
+      uuid: 'root',
+      display: 'Careysburg Health Center',
+      parentLocation: null,
+      countyDistrict: ' Careysburg ',
+      stateProvince: 'Montserrado',
+    };
+    expect(toFacilityOption(root, CODE)).toMatchObject({
+      district: 'Careysburg',
+      districtUuid: '',
+      county: 'Montserrado',
+      countyUuid: '',
+    });
+  });
+
+  it('prefers the parent chain over the address when the facility has one', () => {
+    const option = toFacilityOption(
+      { ...restFacility('f', 'X'), countyDistrict: 'Elsewhere', stateProvince: 'Bong' },
+      CODE,
+    );
+    expect(option).toMatchObject({ district: 'Careysburg', districtUuid: 'district-1', county: 'Montserrado' });
+  });
+});
+
+describe('resolveAddressAreas', () => {
+  const adopted: FacilityOption = {
+    uuid: 'root',
+    name: 'Careysburg Health Center',
+    code: 'LBR-30-3002-05',
+    district: 'careysburg',
+    districtUuid: '',
+    county: 'MONTSERRADO',
+    countyUuid: '',
+  };
+
+  it('gives an address-only facility the uuids of the county and district with those names', () => {
+    const [root] = resolveAddressAreas([adopted, facilities[0]]).filter((f) => f.uuid === 'root');
+    expect(root).toMatchObject({ countyUuid: 'c1', districtUuid: 'd1', county: 'Montserrado', district: 'Careysburg' });
+    expect(filterFacilities(resolveAddressAreas([adopted, facilities[0]]), {
+      query: '',
+      countyUuid: 'c1',
+      districtUuid: 'd1',
+    }).map((f) => f.uuid)).toEqual(['root', 'f1']);
+  });
+
+  it('keys an area no other facility names, so it can still be narrowed to', () => {
+    const lone = { ...adopted, district: 'Todee', county: 'Montserrado' };
+    const [root] = resolveAddressAreas([lone, facilities[0]]).filter((f) => f.uuid === 'root');
+    expect(root.countyUuid).toBe('c1');
+    expect(root.districtUuid).toBe('address:montserrado/todee');
+    expect(facilityAreas(resolveAddressAreas([lone, facilities[0]]), 'c1').districts.map((d) => d.name)).toEqual([
+      'Careysburg',
+      'Todee',
+    ]);
+  });
+
+  it('leaves facilities with a parent chain untouched', () => {
+    expect(resolveAddressAreas(facilities)).toEqual(facilities);
+  });
 });
 
 describe('filterFacilities', () => {
@@ -130,6 +192,7 @@ describe('fetchFacilities', () => {
     expect(first.searchParams.get('limit')).toBe(String(FACILITY_PAGE_SIZE));
     expect(first.searchParams.get('totalCount')).toBe('true');
     expect(first.searchParams.get('v')).toContain('attributes:(value,attributeType:(uuid))');
+    expect(first.searchParams.get('v')).toContain('stateProvince,countyDistrict');
     expect(new URL(facilityPageUrl('Health Facility', 100), 'http://x').searchParams.has('totalCount')).toBe(false);
   });
 

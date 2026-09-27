@@ -1,11 +1,12 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import {
   LocationPicker,
   openmrsFetch,
+  setSessionLocation,
   useConfig,
   useConnectivity,
   useSession,
@@ -24,6 +25,7 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockLocationPicker = vi.mocked(LocationPicker);
+const mockSetSessionLocation = vi.mocked(setSessionLocation);
 
 const montserrado = { uuid: 'c1', display: 'Montserrado' };
 const bong = { uuid: 'c2', display: 'Bong' };
@@ -182,5 +184,66 @@ describe('LocationPickerView facility switcher wiring', () => {
     const countUrl = mockOpenmrsFetch.mock.calls.map(([url]) => String(url)).find((url) => url.includes('_count=1'));
     expect(countUrl).toContain('_tag=Health+Facility');
     expect(countUrl).not.toContain('Login');
+  });
+
+  describe('a saved default location', () => {
+    const tagged = {
+      ...mockConfig,
+      chooseLocation: { ...mockConfig.chooseLocation, locationTag: 'Health Facility' },
+    };
+
+    function withSavedDefault(uuid: string) {
+      mockUseSession.mockReturnValue({
+        user: { display: 'Testy', uuid: 'u1', userProperties: { defaultLocation: uuid } } as LoggedInUser,
+      } as Session);
+      const base = mockOpenmrsFetch.getMockImplementation();
+      mockOpenmrsFetch.mockImplementation(async (url: string, init?: unknown) => {
+        if (url.includes(`Location?_id=${uuid}`)) {
+          // A real, valid location: useDefaultLocation accepts it.
+          return { ok: true, data: { total: 1, entry: [{ resource: { id: uuid } }] } } as FetchResponse<unknown>;
+        }
+        return base(url, init as never);
+      });
+    }
+
+    beforeEach(() => {
+      mockSetSessionLocation.mockReset();
+      mockSetSessionLocation.mockResolvedValue(undefined);
+      mockUseConfig.mockReturnValue(tagged);
+    });
+
+    it('logs straight in when the saved default is one of the tagged facilities', async () => {
+      withSavedDefault('f1');
+      renderWithRouter(LocationPickerView, {});
+
+      await waitFor(() => expect(mockSetSessionLocation).toHaveBeenCalledWith('f1', expect.anything()));
+    });
+
+    it('ignores a saved default that is not one of the tagged facilities', async () => {
+      withSavedDefault('login-only');
+      renderWithRouter(LocationPickerView, {});
+
+      await screen.findAllByRole('radio', { name: /jah clinic/i });
+      expect(mockSetSessionLocation).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+    });
+
+    it('does not preselect an untagged saved default when updating the preference', async () => {
+      withSavedDefault('login-only');
+      renderWithRouter(LocationPickerView, {}, { routes: ['?update=true'] });
+
+      const radios = await screen.findAllByRole('radio');
+      expect(radios.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
+      expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled();
+      expect(mockSetSessionLocation).not.toHaveBeenCalled();
+    });
+
+    it('still honours any valid saved default when no locationTag is set', async () => {
+      mockUseConfig.mockReturnValue(mockConfig);
+      withSavedDefault('login-only');
+      renderWithRouter(LocationPickerView, {});
+
+      await waitFor(() => expect(mockSetSessionLocation).toHaveBeenCalledWith('login-only', expect.anything()));
+    });
   });
 });
