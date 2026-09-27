@@ -16,8 +16,15 @@ derived/common/sp_mamba_dim_encounter_location.sql
 derived/common/sp_mamba_dim_person_cpi.sql
 
 # ---- rmncah (RPT 6) ----
+derived/rmncah/sp_mamba_fact_rmncah_anc_visit.sql
+derived/rmncah/sp_mamba_fact_rmncah_family_planning.sql
+derived/rmncah/sp_mamba_fact_rmncah_delivery.sql
+derived/rmncah/sp_mamba_fact_rmncah_mother_pnc.sql
 
 # ---- nutrition (RPT 6) ----
+derived/nutrition/sp_mamba_dim_nutrition_who_wflh.sql
+derived/nutrition/sp_mamba_fact_nutrition_anthropometry.sql
+derived/nutrition/sp_mamba_fact_nutrition_vitamin_a.sql
 
 # ---- malaria (RPT 7) ----
 
