@@ -75,6 +75,43 @@ describe('sync status page', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
+  it('says which facilities have records that never reached central', () => {
+    givenStatus({
+      enabled: true,
+      available: true,
+      facilities: [
+        {
+          code: 'careysburg',
+          recordsReceived: 12,
+          receivedLastDay: 5,
+          silent: false,
+          certificateExpires: null,
+          lastChecked: 1790300000,
+          recordsMissing: 3,
+        },
+        {
+          code: 'barnersville',
+          recordsReceived: 9,
+          receivedLastDay: 2,
+          silent: false,
+          certificateExpires: null,
+          lastChecked: 1790300000,
+          recordsMissing: 0,
+        },
+        { code: 'bong', recordsReceived: 4, receivedLastDay: 0, silent: false, certificateExpires: null },
+      ],
+      central: null,
+      alerts: [],
+    });
+
+    render(<SyncStatus />);
+
+    // The test renderer leaves {{count}} and {{date}} unfilled; the app fills them in.
+    expect(screen.getByText(/missing at central$/)).toBeInTheDocument();
+    expect(screen.getByText(/^All arrived/)).toBeInTheDocument();
+    expect(screen.getByText('Not checked yet')).toBeInTheDocument();
+  });
+
   it('says so on a facility server, where there is no national view', () => {
     givenStatus({ enabled: false });
 

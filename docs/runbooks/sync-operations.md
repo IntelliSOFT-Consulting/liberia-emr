@@ -477,3 +477,44 @@ how many records still wait for a CPI. A record's own links are read at
 privilege because it says which other facilities hold the person; no role carries it until the
 MOH names the review queue's owner. `qa/sync/verify-identity.sh` exercises this section against
 two facility stacks.
+
+## 15. Records missing at central: `SyncRecordsMissing`
+
+Every night each facility's sender sends a digest of its records (table, uuid and creation day,
+nothing clinical) over the broker, and central looks every one up (sync-eip.md 5.5). A record
+central cannot find is a suspicion at first; once it is still absent six hours later, with
+nothing queued for it at the receiver and no backlog on the broker, it is confirmed. The alert
+names the facility, and the Sync status page shows the count in the Records checked column. The
+records are safe at the facility.
+
+1. See what is missing, by table and by the day the records were created; the day shows when a
+   gap started:
+
+   ```bash
+   central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs_mgmt -e "SELECT table_name, day_created, COUNT(*) FROM liberiaemr_recon_missing WHERE facility = '\''<code>'\'' AND confirmed = 1 GROUP BY table_name, day_created ORDER BY day_created"'
+   ```
+
+2. Find the cause before resending: a sender that stopped capturing (`SyncCaptureStalled`), a central
+   restored from an older backup, or a dead letter set aside (section 7).
+3. Send the facility's records again (section 11). The gaps close by themselves as the records
+   arrive, and the alert clears.
+
+A facility enrolled with `SYNC_SNAPSHOT_MODE=schema_only` never sent what it held before
+enrolment. Set `SYNC_RECON_SINCE` in its env file to when it was enrolled (`YYYY-MM-DD`, or
+`YYYY-MM-DDTHH:MM` in UTC to be exact about the day) and apply it with `facility up -d sync`, so
+those records are not reported.
+
+`SyncReconDigestLate`: a facility has sent no digest for three days. Its sender logs each
+attempt under `[recon]`; one refused by the broker means the enrolment predates reconciliation
+(below). `SyncReconDown`: the check at central is not running; it runs inside the
+`sync-receiver` container, which logs it under `[recon]` too, and needs central's monitoring,
+from which it lists the enrolled facilities. A digest central cannot read is logged and
+dropped; one it cannot record is tried again, and after five attempts set aside to `DLQ`
+(`SyncDeadLetters`), where it can be deleted, as the next night's digest replaces it.
+
+On a central enrolled before reconciliation, render the broker configuration again with the same
+facility list (section 1) and restart the broker, so each facility has its `recon.facility.<code>`
+queue. Until then digests are refused and the facilities try again every six hours; a facility
+that cannot reach the broker at all tries every hour, before reading anything. `SYNC_RECON=false` in
+either env file turns reconciliation off. `qa/sync/verify-reconciliation.sh` exercises this
+section.

@@ -241,6 +241,8 @@ services:
       SYNC_OUTPUT_ENDPOINT: ${SYNC_OUTPUT_ENDPOINT:-}
       SYNC_PAYLOAD_ENCRYPTION: ${SYNC_PAYLOAD_ENCRYPTION:-}
       SYNC_SNAPSHOT_MODE: ${SYNC_SNAPSHOT_MODE:-initial}
+      SYNC_RECON: ${SYNC_RECON:-true}
+      SYNC_RECON_SINCE: ${SYNC_RECON_SINCE:-}
       LOG_LEVEL: ${SYNC_LOG_LEVEL:-INFO}
     volumes:
       # Debezium offset and schema history; losing this volume means the sender sends every

@@ -9,8 +9,8 @@ read-only; only the certificate expiry exporter is built into an image.
 | --- | --- |
 | `prometheus-facility.yml` | Scrapes the sender (`sync:8080/actuator/prometheus`) every 30 s and sends alerts to `alertmanager:9093` |
 | `rules-facility.yml` | Facility alert rules, group `sync-sender` |
-| `prometheus-central.yml` | Scrapes the receiver (`sync-receiver:8080/actuator/prometheus`), the broker (`artemis:8161/metrics/`) and the exporter (`cert-expiry:9101`) |
-| `rules-central.yml` | Central alert rules, groups `sync-receiver`, `sync-broker` and `sync-certificates` |
+| `prometheus-central.yml` | Scrapes the receiver (`sync-receiver:8080/actuator/prometheus`), reconciliation beside it (`sync-receiver:9103`), the broker (`artemis:8161/metrics/`) and the exporter (`cert-expiry:9101`) |
+| `rules-central.yml` | Central alert rules, groups `sync-receiver`, `sync-broker`, `sync-certificates` and `sync-reconciliation` |
 | `alertmanager-entrypoint.sh` | Renders Alertmanager's configuration from `ALERT_*` and starts it |
 | `cert-expiry/` | `liberia-emr-cert-expiry`: certificate and revocation list expiry as metrics |
 | `tests/rules-central-test.yml` | promtool unit tests for `rules-central.yml` |
@@ -62,6 +62,9 @@ Central (`rules-central.yml`):
 | `SyncCrlInvalid` | the revocation list in place does not verify against the CA | critical |
 | `SyncCertExpiryBlind` | the exporter read no certificate, hit a read error, or found no revocation list | warning |
 | `SyncCertExpiryExporterDown` | the exporter is down, or has not refreshed for 3 hours | warning |
+| `SyncRecordsMissing` | a facility's reconciliation digest lists records central confirmed missing | critical |
+| `SyncReconDigestLate` | a facility has sent no reconciliation digest for three days | warning |
+| `SyncReconDown` | reconciliation at central is not running, or has not run for an hour | warning |
 
 Operating procedures for the sync alerts are in
 [docs/runbooks/sync-operations.md](../../docs/runbooks/sync-operations.md) and
@@ -100,6 +103,18 @@ every `REFRESH_SECONDS` (3600 by default). `--once` prints the metrics and exits
 | `sync_cert_files_read`, `sync_cert_read_errors` | What the last run read, and failed to |
 | `sync_cert_expiry_last_run_seconds` | When it last ran |
 
+## Reconciliation metrics
+
+Served on `sync-receiver:9103/metrics` by reconciliation at central (`distribution/sync/recon/`,
+sync-eip.md 5.5), one series per facility that has sent a digest.
+
+| Metric | Meaning |
+| --- | --- |
+| `sync_recon_missing_records{facility}` | Records in its digests confirmed missing at central |
+| `sync_recon_suspected_records{facility}` | Records not found yet, inside the confirm window or while something could still deliver them |
+| `sync_recon_digest_records{facility}`, `sync_recon_digest_taken_seconds{facility}` | The size of its last digest, and when it was taken |
+| `sync_recon_last_run_seconds` | When the check last ran |
+
 ## Testing
 
 ```bash
@@ -107,7 +122,7 @@ docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
   prom/prometheus:v2.53.4 test rules /m/tests/rules-central-test.yml
 ```
 
-The tests cover the broker and certificate rules; the receiver group, `SyncBrokerDown` and
+The tests cover the broker, certificate and reconciliation rules; the receiver group, `SyncBrokerDown` and
 the facility rules have none. CI's `sync-hardening` job runs them, together with
 `qa/sync/verify-alert-delivery.sh` (email over STARTTLS and webhook, and the entrypoint's
 refusals) and the exporter against freshly issued material, whenever anything under

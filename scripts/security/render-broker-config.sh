@@ -100,6 +100,11 @@ for entry in "${FACILITIES[@]}"; do
   addresses+="
   <address name=\"sync.facility.$code\">
     <multicast/>
+  </address>
+  <address name=\"recon.facility.$code\">
+    <anycast>
+      <queue name=\"recon.facility.$code\"/>
+    </anycast>
   </address>"
   diverts+="
   <divert name=\"sync-facility-$code\">
@@ -110,6 +115,12 @@ for entry in "${FACILITIES[@]}"; do
   security+="
   <security-setting match=\"sync.facility.$code\">
     <permission type=\"send\" roles=\"facility-$code\"/>
+  </security-setting>
+  <security-setting match=\"recon.facility.$code\">
+    <permission type=\"send\" roles=\"facility-$code\"/>
+    <permission type=\"consume\" roles=\"receiver,amq\"/>
+    <permission type=\"browse\" roles=\"receiver,amq\"/>
+    <permission type=\"manage\" roles=\"amq\"/>
   </security-setting>"
 done
 
@@ -140,7 +151,8 @@ cat > "$OUT/sync-diverts.xml" <<EOF
 </diverts>
 EOF
 
-# Facilities: send to their own address, nothing else. Receiver: consume its subscription.
+# Facilities: send to their own addresses, nothing else: sync records, and the nightly
+# reconciliation digest (sync-eip.md 5.5). Receiver: consume its subscription and the digests.
 # Operators (amq, admin acceptor only): everything, including exporting a revoked facility's
 # queued messages and replaying a dead letter to the topic once its cause is fixed. amq could
 # already purge any queue through management. The most specific match wins, so amq is repeated.
