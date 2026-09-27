@@ -29,6 +29,9 @@ public class MflSettingsTest {
 	private static final MflEndpointPolicy POLICY = MflEndpointPolicy.fromEnvironment(new HashMap<String, String>());
 
 	private static Map<String, Object> body(Object... pairs) {
+		if (pairs.length % 2 != 0) {
+			throw new IllegalArgumentException("pairs must be key, value, key, value, …");
+		}
 		Map<String, Object> body = new LinkedHashMap<String, Object>();
 		for (int i = 0; i < pairs.length; i += 2) {
 			body.put((String) pairs[i], pairs[i + 1]);

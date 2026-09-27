@@ -71,6 +71,9 @@ public class MflSyncControllerTest {
 	}
 
 	private static Map<String, Object> map(Object... pairs) {
+		if (pairs.length % 2 != 0) {
+			throw new IllegalArgumentException("pairs must be key, value, key, value, …");
+		}
 		Map<String, Object> map = new LinkedHashMap<String, Object>();
 		for (int i = 0; i < pairs.length; i += 2) {
 			map.put((String) pairs[i], pairs[i + 1]);
