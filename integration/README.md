@@ -10,6 +10,7 @@ into one makes both impossible to version or roll back independently.
 | --- | --- | --- |
 | [`eip/`](eip/) | Facility → central unidirectional push | **Core MOH scope, highest engineering risk**; sender and receiver built on openmrs-dbsync (`distribution/sync/`), ActiveMQ Artemis broker built separately (`distribution/broker/`); reconciliation outstanding |
 | [`dhis2/`](dhis2/) | Aggregate export + data-element mappings | Blocked on MOH mapping delivery |
+| MFL sync | MOH Master Facility List (DHIS2) → OpenMRS locations, pulled by the liberiaemr module | Designed ([ADR 0009](../docs/adr/0009-mfl-facility-locations.md)); build tracked in LE-317 |
 | [`cross-facility/`](cross-facility/) | Cross-facility patient query | Sprint 4 |
 | [`msupply/`](msupply/) | Stock integration | Deferred to the support period — spec only |
 | [`fhir/`](fhir/) | FHIR profiles and HL7 resources | Underpins the others |
@@ -24,6 +25,7 @@ The sync layer is designed in `docs/`; this directory holds the implementation c
 | [Module evaluation](../docs/architecture/sync-module-evaluation.md) | Why `openmrs-dbsync`; options rejected; versions; compatibility gaps; plan and risks |
 | [Entity coverage and sync order](../docs/architecture/sync-entity-coverage.md) | The 34 synced entities; dependency chain; what needs custom work |
 | [ADR 0008](../docs/adr/0008-adopt-openmrs-dbsync.md) | The module decision |
+| [ADR 0009](../docs/adr/0009-mfl-facility-locations.md) · [MFL sync API](../docs/architecture/mfl-sync-api.md) | Facility locations from the Master Facility List: UUIDs, ownership, cadence, REST contract |
 
 **Current state:** the push is built. The sender and receiver are openmrs-dbsync, pinned as
 `sync.dbsync` / `sync.eip` in `distribution/distro.properties` and built in
