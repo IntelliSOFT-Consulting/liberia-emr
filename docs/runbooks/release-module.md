@@ -19,11 +19,11 @@ published module version at all. Repsy serves consumers outside this repository.
   consulted with pushChanges=false.
 - You do **not** need Repsy credentials. They stay in the `repsy-publish` GitHub
   environment; CI does the deploy.
-- The `repsy-publish` GitHub environment currently has no deployment branch/tag policy and no
-  required reviewers (`protection_rules: []`, `deployment_branch_policy: null`), so a
-  `liberiaemr-x.y.z` tag push is free to deploy to it today. If a branch/tag policy is ever
-  added to that environment, it must include `liberiaemr-*`, or a release will fail at the
-  environment gate after the tag has already been pushed and the version burned.
+- The `repsy-publish` GitHub environment deploys only from the `main` branch and from
+  `liberiaemr-*` tags (custom deployment policies, set 2026-09-27); it has no required
+  reviewers. Any other branch or tag that reaches the publish job is refused at the
+  environment gate. The tag policy must stay: without it, a release fails at that gate after
+  the tag has already been pushed and the version burned.
 - Start from a clean tree on a branch cut from an up-to-date `main`.
 
 ## Cut the release
