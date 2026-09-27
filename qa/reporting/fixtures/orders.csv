@@ -1,0 +1,34 @@
+key,encounter,type,concept,drug,voided,purpose
+C-DIA1-ORS,C-DIA1-2,drug,${var.concept.national.item-98764756.uuid},${var.drug.pharmacy.item-98764756.uuid},,ORS in the diagnosis visit
+C-DIA5-ORS,C-DIA5-3,drug,${var.concept.national.item-98764756.uuid},${var.drug.pharmacy.item-98764756.uuid},,ORS in the Q2 visit only
+C-DIA7-ORS,C-DIA7-2,drug,${var.concept.national.item-98764756.uuid},${var.drug.pharmacy.item-98764756.uuid},,ORS in a later visit
+B-DIA1-ORS,B-DIA1-2,drug,${var.concept.national.item-98764756.uuid},${var.drug.pharmacy.item-98764756.uuid},,
+B-DIA2-ORS,B-DIA2-2,drug,${var.concept.national.item-98764756.uuid},${var.drug.pharmacy.item-98764756.uuid},,
+C-PNE1-AMOX,C-PNE1-2,drug,${var.concept.ciel.71160.uuid},${var.drug.pharmacy.ciel-71160-capsule-250mg.uuid},,
+C-PNE3-AMOX,C-PNE3-2,drug,${var.concept.ciel.71160.uuid},${var.drug.pharmacy.ciel-71160-capsule-250mg.uuid},,
+B-PNE1-AMOX,B-PNE1-2,drug,${var.concept.ciel.71160.uuid},${var.drug.pharmacy.ciel-71160-capsule-250mg.uuid},,
+B-PNE2-AMOX,B-PNE2-2,drug,${var.concept.ciel.71160.uuid},${var.drug.pharmacy.ciel-71160-capsule-250mg.uuid},,
+C-VITA4-VITA,C-VITA4-1,drug,${var.concept.ciel.86339.uuid},${var.drug.pharmacy.ciel-86339-capsule-100000iu.uuid},,Vitamin A 100000 IU (Blue)
+C-VITA5-VITA,C-VITA5-1,drug,${var.concept.ciel.86339.uuid},${var.drug.pharmacy.ciel-86339-capsule-200000iu.uuid},,Vitamin A 200000 IU (Red; not NUT-005)
+B-VITA2-VITA,B-VITA2-1,drug,${var.concept.ciel.86339.uuid},${var.drug.pharmacy.ciel-86339-capsule-100000iu.uuid},,Vitamin A 100000 IU (Blue)
+C-MAL1-RDT,C-MAL1-1,test,CIEL:1643,,,
+C-MAL2-RDT,C-MAL2-1,test,CIEL:1643,,,
+C-MAL3-RDT,C-MAL3-1,test,CIEL:1643,,,
+C-MAL3-SMEAR,C-MAL3-2,test,CIEL:32,,,
+C-MAL4-RDT,C-MAL4-1,test,CIEL:1643,,,
+C-MAL5-RDT,C-MAL5-1,test,CIEL:1643,,,
+B-MAL1-RDT,B-MAL1-1,test,CIEL:1643,,,
+B-MAL2-RDT,B-MAL2-1,test,CIEL:1643,,,
+B-MAL3-RDT,B-MAL3-1,test,CIEL:1643,,,
+C-BP1-CHOL,C-BP1-2,test,${var.concept.ciel.1006.uuid},,,
+C-CHOL2-CHOL,C-CHOL2-1,test,${var.concept.ciel.1006.uuid},,,
+C-CHOL3-CHOL,C-CHOL3-1,test,${var.concept.ciel.1006.uuid},,,
+C-CHOL4-CHOL1,C-CHOL4-1,test,${var.concept.ciel.1006.uuid},,,
+C-CHOL4-CHOL2,C-CHOL4-2,test,${var.concept.ciel.1006.uuid},,,
+B-CHOL1-CHOL,B-CHOL1-1,test,${var.concept.ciel.1006.uuid},,,
+C-REN1-CREAT,C-REN1-1,test,${var.concept.ciel.790.uuid},,,
+C-REN2-UREA,C-REN2-1,test,${var.concept.ciel.857.uuid},,,
+C-REN4-CREAT,C-REN4-1,test,${var.concept.ciel.790.uuid},,,
+C-REN5-CREAT,C-REN5-1,test,${var.concept.ciel.790.uuid},,,
+C-REN6-EGFR,C-REN6-1,test,CIEL:161132,,,
+B-REN1-CREAT,B-REN1-1,test,${var.concept.ciel.790.uuid},,,
