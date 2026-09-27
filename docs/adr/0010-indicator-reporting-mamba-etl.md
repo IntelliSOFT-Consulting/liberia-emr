@@ -406,6 +406,60 @@ restart. A variable that is *removed* leaves its last value in the file.
 reportingrest 2.0.0 serves list, run, poll and download. The verified resource names and
 request shapes are in [`docs/reporting/README.md`](../reporting/README.md) §4.
 
+#### 8a. The report UI is a new Custom Build ESM (addendum, LE-335, 27 September 2026)
+
+**Decision: build `packages/esm-liberia-reports-app`**, not reuse or configure a community
+reports app. The candidates were read from their published npm tarballs:
+
+| Candidate | Why it does not fit |
+| --- | --- |
+| `@openmrs/esm-reports-app` 4.4.0 (openmrs-esm-admin-tools; **already pinned** in `distro.properties`, part of RefApp 3.7.1) | Lists **every** report definition; its only config key is `webPreviewViewReportUrl`, so it cannot be limited to the MOH reports. Its location parameter is a flat `Select` over `location?tag=Login+Location`: no county/district/facility hierarchy, no fixed facility. Its on-screen view calls `reportingrest/reportdata`, and its scheduled view `reportDefinitionsWithScheduledRequests`, both excluded by README §4.3. Admin actions are gated on `System Developer`, not `Export National Report`; its entry is a System Administration card. No ETL freshness, no disaggregation grouping, no month/quarter presets. |
+| `@kenyaemr/esm-reports-app` | Calls `kenyaemr/reports` and `kenyaemr/reportRequests`; `backendDependencies` `kenyaemr ^19.0.0`. Framework 9.x. |
+| `@palladium-ethiopia/esm-reports-app` | Requires the `ethiopiaemrreports` module; uses `reportdata`; framework 8.x. |
+| `@nmrs-community/esm-reports-app` | A fork of the upstream app plus `nmrsreports/*` endpoints; same gaps as the upstream app. |
+| `@openmrs/esm-report-builder`, `@epcare/esm-report-builder` | Report *authoring*, pre-release; not a runner. |
+
+Wrapping the upstream app with configuration was not possible: none of the missing behaviour
+is configurable, and patching it (Modify + PR) would add Liberia-specific rules (the instance
+role, the MFL hierarchy, the ETL freshness endpoint) that upstream would not take. The
+upstream app stays pinned for administrators; the new ESM mounts at `indicator-reports` so
+the two routes do not collide.
+
+**How the UI learns the instance role and the facility location.** Not from frontend config:
+the frontend image, and the `SPA_CONFIG_URLS` baked into it, are identical at a facility and
+at central (decision 0; `distribution/frontend/Dockerfile`), so config cannot differ by role.
+Not from `systemsetting` either: reading a global property needs *Get Global Properties*,
+which *National Reporting Officer* does not hold, and a writable role property would be a
+second source of truth beside `LIBERIAEMR_INSTANCE_ROLE`. **The UI reads one small endpoint
+served by `liberiaemrreports`**, proposed as `GET /ws/rest/v1/liberiaemrreports/context`:
+
+```json
+{
+  "instanceRole": "facility",
+  "facilityLocation": { "uuid": "…", "display": "Careysburg Health Center" },
+  "etlLastRun": { "startedAt": "…", "completedAt": "…", "status": "…" }
+}
+```
+
+- `instanceRole` is the backend's own fail-closed reading of `LIBERIAEMR_INSTANCE_ROLE`.
+- `facilityLocation` is `liberiaemr.facility.locationUuid` resolved to a location, null at
+  central.
+- `etlLastRun` is the latest row of `_mamba_etl_schedule`, null before the first run.
+- The endpoint requires `Export National Report`.
+
+**The UI fails closed too.** Anything but `central`, including no answer, is a facility. The
+location is then fixed. If the facility's UUID is unknown, `location` is left out, which the
+backend defaults and clamps to the facility (§5). The endpoint path and field names are
+isolated in `src/context/reporting-context.resource.ts`, and settle with the reports-module
+subtask.
+
+**Viewing and exporting.** "Run" submits a `reportRequest` with the CSV design and polls it.
+When it completes, the on-screen table evaluates the `indicators` data set once more through
+`reportDataSet`, with the same parameters. The CSV renderer writes column *labels* (the DHIS2
+short names), which lose the `<CODE>_<part>` names the view groups by. "Download CSV" fetches
+the completed request; "Download Excel" submits a second request with the Excel design. All
+of this is §4 of the contract; nothing in §4.3 is used.
+
 ## Consequences
 
 - **Two new in-tree OMODs ship in every image.** Neither is in `distro.properties`.
@@ -468,3 +522,4 @@ request shapes are in [`docs/reporting/README.md`](../reporting/README.md) §4.
 | 6 | `liberiaemrreports`: fixed UUIDs, runtime schema, `aware_of` ETL, privilege in evaluators | Proposed |
 | 7 | UUIDs via filtered `variables.properties`; checks extended to modules and CIEL-shape UUIDs | Proposed |
 | 8 | reportingrest 2.0.0 contract in `docs/reporting/README.md` | Proposed |
+| 8a | New `esm-liberia-reports-app`; role, facility and ETL freshness from a `liberiaemrreports` context endpoint; UI fails closed to facility | Proposed (LE-335) |
