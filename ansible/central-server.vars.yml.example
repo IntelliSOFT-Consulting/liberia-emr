@@ -1,0 +1,13 @@
+# central-server.vars.yml — TEMPLATE ONLY.
+#
+# Copy to central-server.vars.yml and fill in real values:
+#   cp central-server.vars.yml.example central-server.vars.yml
+#
+# central-server.vars.yml is git-ignored and MUST NOT be committed — it's what
+# keeps a specific server hostname and repo location out of the (public) repo.
+
+repo_url: <repo_url>
+repo_dest: <add_repo_dir>
+certbot_domain: <add_the_cert_bot_domain>
+certbot_email: <admin_email>
+tls_cert_dir: <add_the_cert_bot_dir>
