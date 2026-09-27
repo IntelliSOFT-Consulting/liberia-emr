@@ -53,6 +53,13 @@ services:
       # facility stack: central holds the national data set and has no dev/staging
       # deployment of its own, so there is no environment that should ever unblock it.
       OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
+      # Indicator report scope (ADR 0010 decision 5). Hard-coded, never from .env, and the ONLY
+      # thing that makes this a central instance to the reports module: central has no site
+      # package of its own and runs the facility image, whose site layer seeds a facility's
+      # location. With this set, that location is ignored and a report may cover any MFL node,
+      # rolled up through the ETL location hierarchy; without it the module fails closed to
+      # facility.
+      LIBERIAEMR_INSTANCE_ROLE: central
       # One of continue_on_error, fail_on_error, disabled. The previous
       # 'continue_on_error=false' was none of them and fell through to continuing anyway;
       # this is the same behaviour spelled validly. See distribution/backend/Dockerfile for

@@ -1,0 +1,9 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>liberiaemr.facility.locationUuid</property>
+      <value>${var.location.facility-root.uuid}</value>
+      <description>This facility's root location. Indicator reports default to it and are clamped to it and its sub-locations (ADR 0010 decision 5). Seeded from this site package on every start; ignored on a central instance.</description>
+    </globalProperty>
+  </globalProperties>
+</config>
