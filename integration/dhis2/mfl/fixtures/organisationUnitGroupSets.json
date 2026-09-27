@@ -1,0 +1,141 @@
+{
+  "organisationUnitGroupSets": [
+    {
+      "name": "BemONC Facilities",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "RjYL4u63IQU",
+      "organisationUnitGroups": [
+        {
+          "name": "BemONC Facilities",
+          "id": "lAnbydCDQwW"
+        }
+      ]
+    },
+    {
+      "name": "CEmONC Facilities",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "gwEDFtSUz1T",
+      "organisationUnitGroups": [
+        {
+          "code": "001",
+          "name": "CEmONC Facilities",
+          "id": "M8CdHRhgkwW"
+        }
+      ]
+    },
+    {
+      "name": "Clinic",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "hKtAxC2ekfq",
+      "organisationUnitGroups": [
+        {
+          "name": "Clinic",
+          "id": "cLPxlR1Brv9"
+        }
+      ]
+    },
+    {
+      "name": "Facilities Rendering ANC Services",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "DxoJq3Jbj3p",
+      "organisationUnitGroups": [
+        {
+          "name": "Facilities Rendering ANC Services",
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "name": "BemONC Facilities",
+          "id": "lAnbydCDQwW"
+        }
+      ]
+    },
+    {
+      "name": "Health Center",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "qMtS8VEiytW",
+      "organisationUnitGroups": [
+        {
+          "name": "Health Center",
+          "id": "EltS2EPR5gR"
+        }
+      ]
+    },
+    {
+      "name": "Hospital",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "IEDYbGLdbM2",
+      "organisationUnitGroups": [
+        {
+          "name": "Hospital",
+          "id": "oj9yiq3uMLI"
+        }
+      ]
+    },
+    {
+      "name": "Private Facilities",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "xMwnNH7DytG",
+      "organisationUnitGroups": [
+        {
+          "name": "Private Facilities",
+          "id": "lIYtHp5tvaG"
+        }
+      ]
+    },
+    {
+      "name": "Public Clinics",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "wHzZu2RIy56",
+      "organisationUnitGroups": [
+        {
+          "name": "Public Clinics",
+          "id": "H8VAlGrfIjv"
+        }
+      ]
+    },
+    {
+      "name": "Public Facilities",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "vwdkPgshrvK",
+      "organisationUnitGroups": [
+        {
+          "name": "Public Facilities",
+          "id": "xSUk0MvIAUh"
+        }
+      ]
+    },
+    {
+      "name": "Public Health Centers",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "jZSI2W7JZG5",
+      "organisationUnitGroups": [
+        {
+          "name": "Public Health Centers",
+          "id": "NKnctMq2GCq"
+        }
+      ]
+    },
+    {
+      "name": "Public Hospitals",
+      "dataDimension": true,
+      "compulsory": false,
+      "id": "OeRf5n3mwlP",
+      "organisationUnitGroups": [
+        {
+          "name": "Public Hospitals",
+          "id": "k4ivoIo8PfS"
+        }
+      ]
+    }
+  ]
+}
