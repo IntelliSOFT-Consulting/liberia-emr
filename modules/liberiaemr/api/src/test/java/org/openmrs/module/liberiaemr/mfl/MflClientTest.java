@@ -147,6 +147,21 @@ public class MflClientTest {
 	}
 
 	@Test
+	public void fetch_shouldRefuseARootWithAQueryOrFragmentBeforeSendingAnything() {
+		for (String root : new String[] { server.url() + "?x=1", server.url() + "#frag" }) {
+			MflClient client = new MflClient(root, new MflCredentials(USER, PASSWORD), localhostPolicy(), 500, 0);
+			try {
+				client.fetch();
+				fail("expected an MflException for " + root);
+			}
+			catch (MflException e) {
+				assertThat(e.getMessage(), containsString("query or fragment"));
+			}
+		}
+		assertEquals(0, server.hits.get());
+	}
+
+	@Test
 	public void fetch_shouldRefusePlainHttpUnlessAllowedByTheEnvironment() {
 		Map<String, String> env = new HashMap<String, String>();
 		env.put(MflEndpointPolicy.ENV_ALLOWED_HOSTS, "localhost");

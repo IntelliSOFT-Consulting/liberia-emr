@@ -28,7 +28,10 @@ Where the types and this document disagree, this document wins.
 ### Availability
 
 The sync is **available** when `LIBERIAEMR_MFL_USERNAME` and a password (from the file or the
-variable) are both set. Where it is not available:
+variable) are both set. The compose files mount the password file read-only at
+`/run/secrets/mfl-password` and set `LIBERIAEMR_MFL_PASSWORD_FILE=/run/secrets/mfl-password`.
+On the host the file is mode `0400` and owned by uid `1001`, the backend's user
+(`docs/runbooks/mfl-sync.md`). Where it is not available:
 
 - `GET /status` still returns **200**, with `"available": false`. The page uses this to hide
   itself.
@@ -127,6 +130,9 @@ accepted.
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
     `/api`. The one exception to `https://` is `http://localhost` or `http://127.0.0.1` when
     `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP=true` (see [Allowed MFL hosts](#allowed-mfl-hosts)).
+  - `url` carries a query (`?…`) or fragment (`#…`). The module appends `/api/…` to the root,
+    so the root must end at its path. A root edited directly in the database with one fails
+    the run the same way.
   - `url`'s host is not in `LIBERIAEMR_MFL_ALLOWED_HOSTS` (see
     [Allowed MFL hosts](#allowed-mfl-hosts)), or `url` carries a user name or password. The
     message names the allowed hosts, for example

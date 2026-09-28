@@ -16,6 +16,9 @@ import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
 import org.openmrs.module.liberiaemr.identity.IdentitySchedule;
+import org.openmrs.module.liberiaemr.mfl.MflSchedule;
+import org.openmrs.module.liberiaemr.mfl.MflSettings;
+import org.openmrs.module.liberiaemr.mfl.MflSyncService;
 
 /**
  * This class contains the logic that is run every time this module is either started or shutdown
@@ -27,6 +30,8 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	private static DaemonToken daemonToken;
 
 	private IdentitySchedule identitySchedule;
+
+	private MflSchedule mflSchedule;
 
 	/**
 	 * Called by OpenMRS to supply a daemon token that allows event listeners to run privileged
@@ -58,6 +63,7 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 			log.error("Failed to subscribe to Obs CREATED event", e);
 		}
 		scheduleIdentityTask();
+		scheduleMflTask();
 	}
 
 	/**
@@ -69,6 +75,24 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		IdentitySchedule.apply(Context.getAdministrationService().getGlobalProperty(IdentitySchedule.GP_INTERVAL_SECONDS));
 		identitySchedule = new IdentitySchedule(daemonToken);
 		Context.getAdministrationService().addGlobalPropertyListener(identitySchedule);
+	}
+
+	/**
+	 * Schedules the daily MFL sync at liberiaemr.mfl.schedule.time and follows later changes to it
+	 * (ADR 0009). The task does nothing where the sync is disabled or has no credentials, so every
+	 * instance carries it harmlessly. A run a stopped server left RUNNING is failed first, so it
+	 * cannot block the next.
+	 */
+	private void scheduleMflTask() {
+		try {
+			Context.getRegisteredComponent("liberiaemr.MflSyncService", MflSyncService.class).failInterruptedRuns();
+		}
+		catch (Exception e) {
+			log.error("Failed to close MFL sync runs a stopped server left running", e);
+		}
+		MflSchedule.apply(Context.getAdministrationService().getGlobalProperty(MflSettings.GP_SCHEDULE_TIME));
+		mflSchedule = new MflSchedule(daemonToken);
+		Context.getAdministrationService().addGlobalPropertyListener(mflSchedule);
 	}
 
 	/**
@@ -88,6 +112,9 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		if (identitySchedule != null) {
 			Context.getAdministrationService().removeGlobalPropertyListener(identitySchedule);
+		}
+		if (mflSchedule != null) {
+			Context.getAdministrationService().removeGlobalPropertyListener(mflSchedule);
 		}
 	}
 
