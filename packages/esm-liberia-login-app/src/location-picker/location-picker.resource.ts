@@ -92,9 +92,11 @@ export function useDefaultLocation(isUpdateFlow: boolean) {
   };
 }
 
-export function useLocationCount(useLoginLocationTag: boolean) {
+export function useLocationCount(useLoginLocationTag: boolean, locationTag?: string) {
   const urlParams = new URLSearchParams({ _count: '1' });
-  if (useLoginLocationTag) {
+  if (locationTag) {
+    urlParams.append('_tag', locationTag);
+  } else if (useLoginLocationTag) {
     urlParams.append('_tag', 'Login Location');
   }
   const url = `${fhirBaseUrl}/Location?${urlParams}`;

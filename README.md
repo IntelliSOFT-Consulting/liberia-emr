@@ -103,19 +103,19 @@ one place:
 
 | Where | What | How it ships |
 | --- | --- | --- |
-| [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots and opt-in releases go to Repsy |
+| [`modules/liberiaemr/`](modules/liberiaemr/) | Backend module: rules-based form visibility (`/ws/rest/v1/liberiaemr/forms`), password-reset flow | Built from source **inside** the backend image; not pinned in `distro.properties`. Snapshots, and releases cut from `liberiaemr-x.y.z` tags, go to Repsy |
 | [`packages/esm-liberia-*`](packages/) | O3 frontend modules | Published to npm; an app reaches the image only when pinned in `distro.properties` |
 | [`packages/modify-pr/`](packages/modify-pr/) | Patches to community code | Only with an open or merged upstream PR — otherwise it is a fork |
 
 See [modules/liberiaemr/README.md](modules/liberiaemr/README.md) for the module's
-endpoints, SMTP configuration and the release opt-in rule.
+endpoints, SMTP configuration and how a module release is cut.
 
 ## Continuous integration
 
 | Workflow | Runs on | Does |
 | --- | --- | --- |
 | `ci.yml` | PRs to `main`/`develop`, pushes to `main`, manual runs | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
-| `modules.yml` | changes under `modules/**`, releases, manual runs | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
+| `modules.yml` | every push to `main`, `liberiaemr-x.y.z` tags, PRs touching `modules/**` or the workflow, manual runs | Builds and tests the module; publishes the SNAPSHOT from a `main` push that touched `modules/`, and a release from its `liberiaemr-x.y.z` tag ([release-module.md](docs/runbooks/release-module.md)). A GitHub release publishes nothing |
 | `packages.yml` | changes under `packages/**`, releases, manual runs | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here, and only for the login and sync-status apps |
 | `release.yml` | `x.y.z` tags, manual runs | Upgrade test from the previous release and production approval. Full-stack API/Cypress, image push and staging deploy are still `echo "TODO"` stubs |
 

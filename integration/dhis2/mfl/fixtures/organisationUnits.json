@@ -1,0 +1,1228 @@
+{
+  "organisationUnits": [
+    {
+      "name": "Liberia",
+      "created": "2013-06-25T16:45:13.000",
+      "lastUpdated": "2026-03-27T09:13:32.301",
+      "shortName": "Liberia",
+      "path": "/LHNiyIWuLdc",
+      "openingDate": "2000-01-01T00:00:00.000",
+      "id": "LHNiyIWuLdc",
+      "organisationUnitGroups": [],
+      "level": 1
+    },
+    {
+      "code": "06",
+      "name": "Bong",
+      "created": "2013-06-25T16:45:13.000",
+      "lastUpdated": "2025-08-15T10:32:19.752",
+      "shortName": "Bong",
+      "parent": {
+        "id": "LHNiyIWuLdc"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa",
+      "openingDate": "2011-02-01T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "EriWrruEGwa",
+      "organisationUnitGroups": [],
+      "level": 2
+    },
+    {
+      "code": "30",
+      "name": "Montserrado",
+      "created": "2013-06-25T16:45:13.000",
+      "lastUpdated": "2025-10-30T13:16:01.152",
+      "shortName": "Montserrado",
+      "parent": {
+        "id": "LHNiyIWuLdc"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV",
+      "openingDate": "2011-02-01T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "pqX9sGzFbDV",
+      "organisationUnitGroups": [],
+      "level": 2
+    },
+    {
+      "name": "Bushrod District",
+      "created": "2015-08-30T14:45:58.272",
+      "lastUpdated": "2026-01-08T21:31:55.496",
+      "shortName": "Bushrod District",
+      "parent": {
+        "id": "pqX9sGzFbDV"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/Aoq6H9sPvlW",
+      "openingDate": "2015-08-30T00:00:00.000",
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "Aoq6H9sPvlW",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "code": "3007",
+      "name": "Somalia Drive District",
+      "created": "2015-08-30T14:45:25.791",
+      "lastUpdated": "2025-08-15T10:32:43.013",
+      "shortName": "Somalia Drive District",
+      "parent": {
+        "id": "pqX9sGzFbDV"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/E57DkQD0HC4",
+      "openingDate": "2015-08-30T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "E57DkQD0HC4",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "code": "0624",
+      "name": "Kpaai",
+      "created": "2017-10-10T12:38:22.217",
+      "lastUpdated": "2025-08-15T10:32:43.010",
+      "shortName": "Kpaai",
+      "parent": {
+        "id": "EriWrruEGwa"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/TSrmxt9mnrS",
+      "openingDate": "2016-01-01T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "TSrmxt9mnrS",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "name": "CHT - Bong",
+      "created": "2018-05-04T10:03:20.792",
+      "lastUpdated": "2025-08-15T10:32:43.002",
+      "shortName": "CHT - Bong",
+      "parent": {
+        "id": "EriWrruEGwa"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/UkXuMDgeakb",
+      "openingDate": "2015-11-30T00:00:00.000",
+      "id": "UkXuMDgeakb",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "code": "0602",
+      "name": "Fuamah",
+      "created": "2013-06-25T16:45:13.000",
+      "lastUpdated": "2025-08-15T10:32:43.006",
+      "shortName": "Fuamah",
+      "parent": {
+        "id": "EriWrruEGwa"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/eDCCmFPNWZo",
+      "openingDate": "1970-01-01T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "eDCCmFPNWZo",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "code": "3002",
+      "name": "Careysburg District",
+      "created": "2013-06-25T16:45:13.000",
+      "lastUpdated": "2025-08-15T10:32:43.003",
+      "shortName": "Careysburg District",
+      "parent": {
+        "id": "pqX9sGzFbDV"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq",
+      "openingDate": "1912-01-01T00:00:00.000",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": "<<polygon omitted from fixture>>"
+      },
+      "id": "rQkEaYe4NCq",
+      "organisationUnitGroups": [],
+      "level": 3
+    },
+    {
+      "code": "LBR-30-3002-03",
+      "name": "A Refuge Place int'l,",
+      "created": "2025-10-26T12:33:23.950",
+      "lastUpdated": "2025-10-27T22:18:40.005",
+      "shortName": "A Refuge Place int'l,",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/PJbJHw1srOd",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.529593,
+          6.465385
+        ]
+      },
+      "id": "PJbJHw1srOd",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "L3x7R2Wby6j"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "W9GY46skFN5"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "WgzubPbqwv5"
+        },
+        {
+          "id": "gUNck6SJpF1"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3014-03",
+      "name": "Barnersville HC",
+      "created": "2025-10-27T11:27:19.747",
+      "lastUpdated": "2025-10-27T11:27:19.791",
+      "shortName": "Barnersville HC",
+      "parent": {
+        "id": "E57DkQD0HC4"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/E57DkQD0HC4/kueVlXwUXiI",
+      "openingDate": "2000-01-07T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.73333,
+          6.36667
+        ]
+      },
+      "id": "kueVlXwUXiI",
+      "organisationUnitGroups": [
+        {
+          "id": "E7zZZpJ9LG0"
+        },
+        {
+          "id": "L3x7R2Wby6j"
+        },
+        {
+          "id": "mjKZDFsmw5l"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "COPQ24T1NzB"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "W9GY46skFN5"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "deZS1ei3SWW"
+        },
+        {
+          "id": "gUNck6SJpF1"
+        },
+        {
+          "id": "xBzWXZm1uFs"
+        },
+        {
+          "id": "eDmKJOUBo82"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "EltS2EPR5gR"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "P15Mo3k17qA"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "lAnbydCDQwW"
+        },
+        {
+          "id": "nmA02QR2BgC"
+        },
+        {
+          "id": "L7IimdCGSjT"
+        },
+        {
+          "id": "NKnctMq2GCq"
+        },
+        {
+          "id": "zRG0DMq36ft"
+        },
+        {
+          "id": "GCYuqwIqHz1"
+        },
+        {
+          "id": "yIClkBhD2ia"
+        },
+        {
+          "id": "uwSP8pwfNBO"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "mFn5xxJ34eM"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3002-01",
+      "name": "Bensonville Hospital",
+      "created": "2025-10-25T18:06:10.684",
+      "lastUpdated": "2025-10-25T18:06:10.708",
+      "shortName": "Bensonville Hospital",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/nKYHK0QO2K7",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.614329,
+          6.447189
+        ]
+      },
+      "id": "nKYHK0QO2K7",
+      "organisationUnitGroups": [
+        {
+          "id": "ZPt6BbJwmMg"
+        },
+        {
+          "id": "M8CdHRhgkwW"
+        },
+        {
+          "id": "E7zZZpJ9LG0"
+        },
+        {
+          "id": "L3x7R2Wby6j"
+        },
+        {
+          "id": "mjKZDFsmw5l"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "COPQ24T1NzB"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "W9GY46skFN5"
+        },
+        {
+          "id": "k4ivoIo8PfS"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "gUNck6SJpF1"
+        },
+        {
+          "id": "xBzWXZm1uFs"
+        },
+        {
+          "id": "eDmKJOUBo82"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "P15Mo3k17qA"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "nmA02QR2BgC"
+        },
+        {
+          "id": "L7IimdCGSjT"
+        },
+        {
+          "id": "oj9yiq3uMLI"
+        },
+        {
+          "id": "zRG0DMq36ft"
+        },
+        {
+          "id": "yIClkBhD2ia"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "mFn5xxJ34eM"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3002-05",
+      "name": "Careysburg Clinic",
+      "created": "2025-10-26T12:46:02.712",
+      "lastUpdated": "2025-10-27T22:18:40.643",
+      "shortName": "Careysburg Clinic",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/jbGSiLCEFKJ",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.54767,
+          6.402257
+        ]
+      },
+      "id": "jbGSiLCEFKJ",
+      "organisationUnitGroups": [
+        {
+          "id": "E7zZZpJ9LG0"
+        },
+        {
+          "id": "L3x7R2Wby6j"
+        },
+        {
+          "id": "mjKZDFsmw5l"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "H8VAlGrfIjv"
+        },
+        {
+          "id": "COPQ24T1NzB"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "W9GY46skFN5"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "deZS1ei3SWW"
+        },
+        {
+          "id": "xBzWXZm1uFs"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "P15Mo3k17qA"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "lAnbydCDQwW"
+        },
+        {
+          "id": "zRG0DMq36ft"
+        },
+        {
+          "id": "GCYuqwIqHz1"
+        },
+        {
+          "id": "yIClkBhD2ia"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "mFn5xxJ34eM"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "name": "City Lab Clinic",
+      "created": "2025-10-30T15:04:52.626",
+      "lastUpdated": "2025-10-30T15:04:52.681",
+      "shortName": "City Lab Clinic",
+      "parent": {
+        "id": "Aoq6H9sPvlW"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/Aoq6H9sPvlW/LDoJbUPbnU4",
+      "openingDate": "2000-03-01T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.809953,
+          6.316578
+        ]
+      },
+      "id": "LDoJbUPbnU4",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "lAnbydCDQwW"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3002-06",
+      "name": "Come & See Clinic",
+      "created": "2025-10-26T12:48:49.396",
+      "lastUpdated": "2025-10-27T22:18:40.721",
+      "shortName": "Come & See Clinic",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/bP0PeqBGKgB",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "id": "bP0PeqBGKgB",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-06-0602-02 ",
+      "name": "Degei Clinic",
+      "created": "2025-10-16T10:27:15.637",
+      "lastUpdated": "2025-10-27T22:18:39.867",
+      "shortName": "Degei Clinic",
+      "parent": {
+        "id": "eDCCmFPNWZo"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/eDCCmFPNWZo/FNSAES9Meck",
+      "openingDate": "2000-10-05T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.16333,
+          7.0975
+        ]
+      },
+      "id": "FNSAES9Meck",
+      "organisationUnitGroups": [
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "wacJM9bjnQX"
+        },
+        {
+          "id": "H8VAlGrfIjv"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "deZS1ei3SWW"
+        },
+        {
+          "id": "eDmKJOUBo82"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "TH2Gokoa8mG"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "P15Mo3k17qA"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "nmA02QR2BgC"
+        },
+        {
+          "id": "B5Bl9ZVR0DC"
+        },
+        {
+          "id": "zRG0DMq36ft"
+        },
+        {
+          "id": "GCYuqwIqHz1"
+        },
+        {
+          "id": "yIClkBhD2ia"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3014-30",
+      "name": "FREDAI Medical Clinic",
+      "created": "2025-10-29T14:01:40.219",
+      "lastUpdated": "2025-10-29T14:01:40.238",
+      "shortName": "FREDAI Medical Clinic",
+      "parent": {
+        "id": "E57DkQD0HC4"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/E57DkQD0HC4/jKkdlhkGyr9",
+      "openingDate": "2000-01-07T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.69235,
+          6.28102
+        ]
+      },
+      "id": "jKkdlhkGyr9",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "lAnbydCDQwW"
+        },
+        {
+          "id": "L7IimdCGSjT"
+        },
+        {
+          "id": "WgzubPbqwv5"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3002-11",
+      "name": "Fredai Medical Clinic",
+      "created": "2025-10-26T13:10:24.904",
+      "lastUpdated": "2025-10-27T22:18:39.762",
+      "shortName": "Fredai Medical Clinic",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/ND0PnHCbt8t",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.592625,
+          6.388035
+        ]
+      },
+      "id": "ND0PnHCbt8t",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "MhLUluy3Lpt"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "WgzubPbqwv5"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-06-0602-02",
+      "name": "Haindi Clinic",
+      "created": "2025-10-16T10:02:29.198",
+      "lastUpdated": "2025-10-27T22:18:40.748",
+      "shortName": "Haindi Clinic",
+      "parent": {
+        "id": "eDCCmFPNWZo"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/eDCCmFPNWZo/VpmUeg12TcM",
+      "openingDate": "2000-10-05T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.38912,
+          6.89026
+        ]
+      },
+      "id": "VpmUeg12TcM",
+      "organisationUnitGroups": [
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "wacJM9bjnQX"
+        },
+        {
+          "id": "H8VAlGrfIjv"
+        },
+        {
+          "id": "COPQ24T1NzB"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "deZS1ei3SWW"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "TH2Gokoa8mG"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "B5Bl9ZVR0DC"
+        },
+        {
+          "id": "GCYuqwIqHz1"
+        },
+        {
+          "id": "yIClkBhD2ia"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3014-02",
+      "name": "JAHMALE Medical Solutions",
+      "created": "2025-10-27T11:17:13.424",
+      "lastUpdated": "2025-10-27T22:18:39.951",
+      "shortName": "JAHMALE Medical Solutions",
+      "parent": {
+        "id": "E57DkQD0HC4"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/E57DkQD0HC4/P0jgbuLDFwb",
+      "openingDate": "2000-02-01T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.703825,
+          6.265417
+        ]
+      },
+      "id": "P0jgbuLDFwb",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "EltS2EPR5gR"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "D7MrIYc49qL"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "qZ8HyoEKQhT"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-06-0624-06",
+      "name": " Jah Clinic",
+      "created": "2026-06-20T21:48:12.916",
+      "lastUpdated": "2026-06-20T21:48:12.934",
+      "shortName": " Jah Clinic",
+      "parent": {
+        "id": "TSrmxt9mnrS"
+      },
+      "path": "/LHNiyIWuLdc/EriWrruEGwa/TSrmxt9mnrS/nY6mPgT0Kc6",
+      "openingDate": "2026-05-01T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.186944,
+          6.814444
+        ]
+      },
+      "id": "nY6mPgT0Kc6",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "wacJM9bjnQX"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "K8caJyu8U7o"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "I7r8aBcZN8W"
+        },
+        {
+          "id": "B5Bl9ZVR0DC"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "WgzubPbqwv5"
+        },
+        {
+          "id": "deZS1ei3SWW"
+        },
+        {
+          "id": "gFzMYAdUU5w"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3014-94",
+      "name": "Jamaica Rd Clinic",
+      "created": "2026-04-14T12:42:41.191",
+      "lastUpdated": "2026-04-14T12:42:41.212",
+      "shortName": "Jamaica Rd Clinic",
+      "parent": {
+        "id": "E57DkQD0HC4"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/E57DkQD0HC4/ZktsAIReh6z",
+      "openingDate": "2026-01-01T00:00:00.000",
+      "id": "ZktsAIReh6z",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "GCYuqwIqHz1"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "H8VAlGrfIjv"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        },
+        {
+          "id": "L7IimdCGSjT"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3010-37",
+      "name": "Jamaica Rd Clinic",
+      "created": "2025-10-30T21:46:24.612",
+      "lastUpdated": "2026-04-14T12:40:39.012",
+      "shortName": "Jamaica Rd Clinic",
+      "parent": {
+        "id": "Aoq6H9sPvlW"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/Aoq6H9sPvlW/ucTzZhF5okn",
+      "openingDate": "2000-03-01T00:00:00.000",
+      "closedDate": "2026-04-01T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.788251,
+          6.34359
+        ]
+      },
+      "id": "ucTzZhF5okn",
+      "organisationUnitGroups": [
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "lAnbydCDQwW"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3002-02",
+      "name": "Kesselee Memorial Health Center",
+      "created": "2025-10-25T18:10:25.660",
+      "lastUpdated": "2026-06-15T14:01:25.168",
+      "shortName": "Kesselee Memorial Health Center",
+      "parent": {
+        "id": "rQkEaYe4NCq"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/rQkEaYe4NCq/VxgfT09KRV4",
+      "openingDate": "2000-10-19T00:00:00.000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -10.498323,
+          6.398062
+        ]
+      },
+      "id": "VxgfT09KRV4",
+      "organisationUnitGroups": [
+        {
+          "id": "XyAQuudmIzF"
+        },
+        {
+          "id": "cLPxlR1Brv9"
+        },
+        {
+          "id": "lIYtHp5tvaG"
+        },
+        {
+          "id": "c0Fn4QW0e91"
+        },
+        {
+          "id": "EltS2EPR5gR"
+        },
+        {
+          "id": "Ahry7V2iv0v"
+        },
+        {
+          "id": "SLA18lfFUWw"
+        },
+        {
+          "id": "FfsbfazfmED"
+        },
+        {
+          "id": "D7MrIYc49qL"
+        },
+        {
+          "id": "W1RG9PaTxzr"
+        },
+        {
+          "id": "UhXPQmivkB8"
+        },
+        {
+          "id": "ltr5bUlCMHz"
+        },
+        {
+          "id": "V1dv0uqqZft"
+        }
+      ],
+      "level": 4
+    },
+    {
+      "code": "LBR-30-3010-14",
+      "name": "Liberia Center for Infectious Disease ",
+      "created": "2026-06-18T00:25:51.363",
+      "lastUpdated": "2026-06-22T10:47:27.200",
+      "shortName": "Liberia Center for Infectious Disease Clinic",
+      "parent": {
+        "id": "Aoq6H9sPvlW"
+      },
+      "path": "/LHNiyIWuLdc/pqX9sGzFbDV/Aoq6H9sPvlW/WjPvpeQkiC6",
+      "openingDate": "2000-06-01T00:00:00.000",
+      "id": "WjPvpeQkiC6",
+      "organisationUnitGroups": [
+        {
+          "id": "xSUk0MvIAUh"
+        },
+        {
+          "id": "oj9yiq3uMLI"
+        },
+        {
+          "id": "k4ivoIo8PfS"
+        },
+        {
+          "id": "L7IimdCGSjT"
+        }
+      ],
+      "level": 4
+    }
+  ]
+}

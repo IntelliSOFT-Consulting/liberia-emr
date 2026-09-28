@@ -46,6 +46,30 @@ set, `available: false` when monitoring cannot be reached (4-second timeout), ot
 `central` (`recordsWaiting`, `recordsRetrying`, `conflicts`, `deadLetters`, `receiverUp`,
 `brokerUp`) and the firing `alerts`.
 
+### MOH Master Facility List sync
+Caches the MOH Master Facility List (a DHIS2 instance) as OpenMRS locations: counties,
+districts and facilities, matched on the `MFL UID` location attribute. The design is
+[ADR 0009](../../docs/adr/0009-mfl-facility-locations.md); the REST contract is
+[`docs/architecture/mfl-sync-api.md`](../../docs/architecture/mfl-sync-api.md), served
+under `/ws/rest/v1/liberiaemr/mfl`. Reads need `View MFL Sync` and changes `Manage MFL Sync`,
+both from `content-liberia-national`, which also creates the location attribute types the
+sync writes.
+
+The task `LiberiaEMR MFL Sync` pulls the whole MFL daily at `liberiaemr.mfl.schedule.time`
+(default `02:00`, Africa/Monrovia), while `liberiaemr.mfl.enabled` is true. Every run is
+recorded, with its per-location changes, in `liberiaemr_mfl_sync_run` and
+`liberiaemr_mfl_sync_run_item`.
+
+| Variable | Meaning |
+|---|---|
+| `LIBERIAEMR_MFL_USERNAME` | The MFL account. Unset, or without a password, means the sync is unavailable on this instance. |
+| `LIBERIAEMR_MFL_PASSWORD_FILE` | A path read verbatim for the password; preferred. |
+| `LIBERIAEMR_MFL_PASSWORD` | The password, when no file is used. |
+| `LIBERIAEMR_MFL_ALLOWED_HOSTS` | Comma-separated hosts the credentials may be sent to; default `dhis2.moh.gov.lr`. `liberiaemr.mfl.url` is editable over REST, so this list is checked when it is saved and before every request. |
+
+There is no global property for the credentials or the allowed hosts: global properties are
+readable over REST.
+
 ### Password Reset Flow
 The module introduces a secure, automated password reset flow for users. It integrates with an external SMTP server (e.g., Gmail) to send time-limited password reset tokens to registered users.
 
@@ -133,7 +157,7 @@ they take three different versions on purpose:
 | Where | Version | When |
 |---|---|---|
 | Repsy, snapshot | `1.0.0-SNAPSHOT` | every merge to `main` that touches `modules/**`, re-deployed over itself |
-| Repsy, release | the release tag, e.g. `1.2.0` | a published GitHub release **whose tag matches the pom's base version**; `versions:set` stamps it |
+| Repsy, release | the tag, e.g. `1.2.0` | a pushed `liberiaemr-x.y.z` tag; the pom already carries the version |
 | The backend image | the distribution version being built | every image build; `distribution/backend/Dockerfile` stamps it |
 
 The image stamp is what keeps a release image from shipping a `-SNAPSHOT` omod, which
@@ -164,36 +188,25 @@ build depends on that attachment, so a reordered plugin or a changed `finalName`
 quietly go back to publishing one artifact — hence the `Check the .omod was published` step
 in `modules.yml`, which fails the publish if no `.omod` was uploaded.
 
-### Releasing the module is opt-in
+### Cutting a release
 
-A distribution release is cut far more often than this module changes, so a release does
-**not** publish it by default. The opt-in signal is the pom's own version:
+The module has its own version line and its own tags. A distribution release does **not**
+publish it, and it does not need one:
 
-> **Before cutting release `x.y.z`, set the pom to `x.y.z-SNAPSHOT` on `main` if the module
-> should ship with it.**
+```bash
+./scripts/release/prepare-module.sh 1.1.0
+```
 
-The `decide` job in `modules.yml` compares the pom's base version — the `<version>` minus
-`-SNAPSHOT` — against the tag. They match, it publishes; they do not, the `publish` job is
-skipped and release `x.y.z` simply carries whichever module version was published before it.
-Either way the run summary says which way it went and why, so a skipped publish is never
-silent.
+That runs `mvn release:prepare` locally — version commits plus a `liberiaemr-1.1.0` tag,
+none of it pushed. Open a PR for the commits, **merge it with a merge commit — not a squash,
+and not a rebase**, then push the tag; the tag push is what publishes to Repsy.
 
-**The bump has to be in the commit the tag points at.** A release build checks out the tag,
-not `main`, so bumping the pom after the tag exists does nothing for that release — you
-would have to move the tag onto the bumped commit and publish the release again. Unless the
-module genuinely has to ship under that exact number, it is usually cleaner to leave the tag
-alone and let the module go out with the next release.
+Squashing or rebasing would rewrite the commit the tag points at, so CI refuses to publish from a tag
+that is not reachable from `main`. The full sequence, the failure table and the abort path
+are in [docs/runbooks/release-module.md](../../docs/runbooks/release-module.md).
 
-This is a **pre-release** act. It used to be a post-release one — "after a release, bump to
-the next `-SNAPSHOT`" — and the difference matters, because bumping afterwards now means the
-release you just cut published nothing.
-
-Nothing in this repository is blocked by a skipped publish: the backend image builds the
-module from source (`distribution/backend/Dockerfile` copies `modules/liberiaemr` in), so
-Repsy only serves consumers outside this repository.
-
-The publish job also refuses to deploy a non-SNAPSHOT version from `main`, so a released
-version cannot be silently re-deployed over by a later merge.
+Repsy credentials never leave the `repsy-publish` GitHub environment — `release:perform` is
+not used, and no maintainer needs them locally.
 
 ## How it reaches production
 
