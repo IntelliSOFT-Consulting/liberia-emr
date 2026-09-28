@@ -8,6 +8,7 @@
 | [`uat/`](uat/) | UAT scripts and sign-off | MOH / UNFPA / facility staff execute |
 | [`upgrade/`](upgrade/) | Clean-install and upgrade harness | **Runs on every release** |
 | [`sync/`](sync/) | Facility→central sync checks and drills | CI runs three; the rest run against staging stacks |
+| [`reporting/`](reporting/) | Indicator-report fixtures and hand-computed expected values (LE-336) | Loaded onto staging or throwaway stacks; the report tests follow |
 
 Test **strategy and review** sit with the QA Engineer. Support and junior roles execute
 against that strategy and do not own it (IMPLEMENTATION.md §11).
