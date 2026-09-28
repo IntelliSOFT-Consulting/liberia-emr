@@ -1497,6 +1497,14 @@ jobs:
             set -e
             cd '$CENTRAL_DEV_COMPOSE_DIR'
             top=\$(git rev-parse --show-toplevel)
+            # Checked BEFORE moving anything: a fast-forward keeps a hand edit to any tracked file
+            # the target commit does not touch, and HEAD matching says nothing about the files.
+            # Untracked files are fine (central.env is git-ignored).
+            if [ -n \"\$(git -C \"\$top\" status --porcelain --untracked-files=no)\" ]; then
+              echo \"checkout at \$top has local changes to tracked files; not starting this run's images under a compose file that differs from ${{ github.sha }}. Commit or discard them by hand:\" >&2
+              git -C \"\$top\" status --short --untracked-files=no >&2
+              exit 1
+            fi
             git -C \"\$top\" fetch -q origin main
             git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
               || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }

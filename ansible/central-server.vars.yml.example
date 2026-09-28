@@ -18,3 +18,9 @@ tls_cert_dir: <add_the_cert_bot_dir>
 # replaces the old key, so a rotation revokes it; unsetting it removes the key. Leave it unset
 # on a server CI must not deploy to. A plain key line only, with no options before it.
 # ci_deploy_public_key: "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"
+#
+# Optional. Public keys that must no longer log in, removed whatever comment they carry.
+# Needed once on a server whose CI key was added before the playbook marked it: when that
+# key is rotated, list the OLD key here, or its unmarked line stays authorized.
+# ci_deploy_revoked_keys:
+#   - "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"
