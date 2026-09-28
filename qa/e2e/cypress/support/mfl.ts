@@ -16,7 +16,8 @@ const credentials = () =>
     if (!USERNAME || !PASSWORD) {
       throw new Error('Missing Cypress credentials: set CYPRESS_USERNAME/CYPRESS_PASSWORD');
     }
-    return { user: USERNAME, pass: PASSWORD };
+    // cy.request's auth takes username/password; any other keys send no Authorization header.
+    return { username: USERNAME, password: PASSWORD };
   });
 
 // The MFL URL as the backend reaches the stub, and where the tests reach the stub's control API.

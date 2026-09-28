@@ -614,10 +614,11 @@ def first_sync(c, exp):
     c.stub("DELETE", "requests")
     dry = c.run(dry_run=True, label="dry run")
     R.check("dry run: SUCCEEDED and flagged dryRun", dry["status"] == "SUCCEEDED" and dry["dryRun"] is True, dry)
-    n_managed = len(exp.counties) + len(exp.districts) + len(exp.active_facilities)
-    R.check("dry run: would create every county, district and active facility but the adopted one",
-            dry["counts"]["created"] in (n_managed - 1, n_managed), dry["counts"],
-            f"expected {n_managed - 1} (or {n_managed} if the closed facility is created retired)")
+    # The closed facility is created too, already retired (ADR 0009 §3/§5).
+    n_managed = len(exp.counties) + len(exp.districts) + len(exp.facilities)
+    R.check("dry run: would create every county, district and facility (the closed one included) "
+            "but the adopted one", dry["counts"]["created"] == n_managed - 1, dry["counts"],
+            f"expected {n_managed - 1}")
     dry_items = c.items(dry["id"])
     adopt = find_items(dry_items, ADOPTED)
     R.check("dry run: the adopted facility is an UPDATE of the existing row, not a CREATE",
@@ -659,7 +660,7 @@ def check_first_sync_rows(c, exp, adopt_uuid):
             rows[u["id"]] = c.location(adopt_uuid)
         else:
             rows[u["id"]] = c.location(v5(u["id"]))
-    missing = [uid for uid, loc in rows.items() if loc is None and uid != CLOSED]
+    missing = [uid for uid, loc in rows.items() if loc is None]
     R.check("every created row sits at UUIDv5(namespace, MFL UID)", not missing, missing)
     R.check("the adopted row kept its UUID; no second row was created for it",
             rows[ADOPTED] is not None and c.location(v5(ADOPTED)) is None)
@@ -723,17 +724,17 @@ def check_first_sync_rows(c, exp, adopt_uuid):
     R.check("the fixture's national duplicate names are both suffixed",
             len(exp.clashing) == 2 and all("(" in rows[i]["name"] for i in exp.clashing), exp.clashing)
 
-    closed = rows.get(CLOSED)
-    if closed is not None:
-        R.check("the closed facility shares its name with an active one, so it is suffixed: "
-                "'Jamaica Rd Clinic (Bushrod District)'",
-                closed["name"] == "Jamaica Rd Clinic (Bushrod District)"
-                and want_names[CLOSED] == closed["name"], closed["name"], want_names[CLOSED])
-        R.check("the closed facility is retired with reason 'MFL: closed 2026-04-01' and MFL Closed Date",
-                closed["retired"] and retire_reason(closed).startswith("MFL: closed 2026-04-01")
-                and str(attr(closed, "MFL Closed Date") or "").startswith("2026-04-01"),
-                closed.get("retired"), retire_reason(closed), attr(closed, "MFL Closed Date"))
-    R.check("no active location holds the closed facility's MFL UID", closed is None or closed["retired"])
+    # ADR 0009 §3/§5: the closed facility is created, at its UUIDv5, already retired.
+    closed = rows.get(CLOSED) or {}
+    R.check("the closed facility exists at UUIDv5(namespace, MFL UID)", bool(closed), v5(CLOSED))
+    R.check("the closed facility shares its name with an active one, so it is suffixed: "
+            "'Jamaica Rd Clinic (Bushrod District)'",
+            closed.get("name") == "Jamaica Rd Clinic (Bushrod District)"
+            and want_names[CLOSED] == closed.get("name"), closed.get("name"), want_names[CLOSED])
+    R.check("the closed facility is retired with reason 'MFL: closed 2026-04-01' and MFL Closed Date",
+            closed.get("retired") is True and retire_reason(closed).startswith("MFL: closed 2026-04-01")
+            and str(attr(closed, "MFL Closed Date") or "").startswith("2026-04-01"),
+            closed.get("retired"), closed and retire_reason(closed), closed and attr(closed, "MFL Closed Date"))
 
 
 def check_warnings(c, exp, run, items):
