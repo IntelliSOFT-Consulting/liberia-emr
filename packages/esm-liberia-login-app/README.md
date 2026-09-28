@@ -62,6 +62,8 @@ both site `config-site.json` files), which this module does not read.
 | `chooseLocation.numberToShow` | `8` | |
 | `chooseLocation.locationsPerRequest` | `50` | |
 | `chooseLocation.useLoginLocationTag` | `true` | Only `Login Location`-tagged locations |
+| `chooseLocation.locationTag` | `''` | Non-empty turns the picker into the **facility switcher** (below) over this tag. Overrides `useLoginLocationTag` |
+| `chooseLocation.mflCodeAttributeTypeUuid` | `3118cabe-…-86234deb9b1b` | The `MFL Code` location attribute type (ADR 0009) |
 | `links.loginSuccess` | `${openmrsSpaBase}/home` | |
 | `logo.src` / `logo.alt` | `''` / `Logo` | Empty `src` uses the OpenMRS logo |
 | `footer.additionalLogos` | `[]` | `{src, alt}` entries |
@@ -70,6 +72,36 @@ both site `config-site.json` files), which this module does not read.
 | `announcements` | `[]` | `{title, text, kind}` banners above the form |
 | `twoFactorAuth.enabled` | `false` | Shows the two-factor link |
 | `twoFactorAuth.dashboardTitle` | `{key: twoFactorAuth, value: Two-Factor Authentication}` | |
+
+### Facility switcher (central)
+
+At central, users move between about 1,000 MFL facilities (ADR 0009 decision 6, LE-324). With
+`chooseLocation.locationTag` set to `Health Facility`, the picker:
+
+- lists every location with that tag;
+- searches the name **or the MFL code**;
+- narrows by county, then district;
+- shows each facility's district and code, so facilities that share a name can be told apart.
+
+MFL facilities carry no `Login Location` tag, so the stock picker cannot list them.
+
+Neither the REST nor the FHIR location search matches on an attribute. So the switcher fetches
+the tagged list once per session and filters it in the browser:
+- it uses a slim REST representation (the name, the parent and grandparent names, and the
+  attribute values);
+- it fetches pages of 100, the REST maximum: the first page asks for `totalCount`, and the
+  remaining pages are fetched in parallel;
+- the list is sorted by name and cached with SWR.
+
+The list shows at most `locationsPerRequest` rows and asks the user to refine the search to see
+more.
+
+It is off by default. With `locationTag` empty, the picker is the framework `LocationPicker`
+exactly as before. It belongs only in central's frontend configuration, which now exists: the
+`content-central` package and its `config-central.json` (ADR 0011, LE-359). The switcher is
+deliberately not enabled there yet. Once this change is merged, it is enabled by adding
+`"locationTag": "Health Facility"` under `@liberiaemr/esm-liberia-login-app` → `chooseLocation` in
+`content-packages/content-central/configuration/frontend_configuration/config-central.json`.
 
 ## Development
 
