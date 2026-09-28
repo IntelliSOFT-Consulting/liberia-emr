@@ -1,19 +1,18 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ConfigurableLink, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
-import { type ReportsConfig } from '../config-schema';
+import { ConfigurableLink, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { EXPORT_PRIVILEGE } from '../privileges';
 
 /**
- * The app menu entry, for holders of Export National Report only. routes.json declares the same
- * privilege, so the app shell does not mount it otherwise; this check keeps the rule when the
- * privilege is re-configured, and in tests.
+ * The app menu entry, for holders of Export National Report only. The app shell already skips it
+ * for anyone else, from the privilege in routes.json; this check reads the same privilege from the
+ * same file (src/privileges.ts), so the two cannot disagree, and keeps the rule in tests.
  */
 const ReportsAppMenuItem: React.FC = () => {
   const { t } = useTranslation();
-  const { exportPrivilege } = useConfig<ReportsConfig>();
   const session = useSession();
 
-  if (!session?.user || !userHasAccess(exportPrivilege, session.user)) {
+  if (!session?.user || !userHasAccess(EXPORT_PRIVILEGE, session.user)) {
     return null;
   }
 

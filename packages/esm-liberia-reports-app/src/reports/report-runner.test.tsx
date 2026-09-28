@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { SWRConfig } from 'swr';
 import { getDefaultsFromConfigSchema, openmrsFetch, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { configSchema } from '../config-schema';
+import { EXPORT_PRIVILEGE } from '../privileges';
+import routes from '../routes.json';
 import ReportRunner from './report-runner.component';
 import ReportsAppMenuItem from './reports-app-menu-item.component';
 import { createMockBackend, CSV_DESIGN, MALARIA, RMNCAH, XLSX_DESIGN } from '../testing/mock-backend';
@@ -202,6 +204,23 @@ describe('report runner at central', () => {
 });
 
 describe('access', () => {
+  it('reads the privilege from routes.json, the one place it is written, and it is not a config key', () => {
+    expect(EXPORT_PRIVILEGE).toBe('Export National Report');
+    expect(routes.extensions.find((e) => e.name === 'indicator-reports-app-menu-item').privileges).toEqual([
+      EXPORT_PRIVILEGE,
+    ]);
+    expect(configSchema).not.toHaveProperty('exportPrivilege');
+  });
+
+  it('ignores a privilege set in config', async () => {
+    given({ context: facilityContext });
+    mockUseConfig.mockReturnValue({ ...mockUseConfig(), exportPrivilege: 'Some Other Privilege' });
+    renderWithSwr(<ReportRunner />);
+    expect(await screen.findByRole('button', { name: 'Run report' })).toBeInTheDocument();
+    expect(mockUserHasAccess).toHaveBeenCalledWith('Export National Report', expect.anything());
+    expect(mockUserHasAccess).not.toHaveBeenCalledWith('Some Other Privilege', expect.anything());
+  });
+
   it('shows the page only to holders of Export National Report', async () => {
     const backend = given({ context: facilityContext }, false);
     renderWithSwr(<ReportRunner />);

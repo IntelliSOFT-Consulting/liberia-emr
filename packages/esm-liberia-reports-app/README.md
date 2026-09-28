@@ -47,8 +47,11 @@ does not exist yet** (ADR 0010 decision 8a). The page fails closed:
 
 ## What it shows
 
-- **Access.** Only users holding **Export National Report** see the menu item (`privileges`
-  in `routes.json` and in the component) and the page. Everyone else sees a notice.
+- **Access.** Only users holding **Export National Report** see the menu item and the page.
+  Everyone else sees a notice. The privilege is written once, in `routes.json`: the app shell
+  reads it there for the menu item, and `src/privileges.ts` reads it from there for the
+  components. It is not a config key, because the app shell cannot read config and the reports
+  module enforces the same fixed privilege on the server.
 - **Report data freshness.** When the ETL last completed. At central, a second notice says
   that figures lag the facilities' own reports until sync catches up.
 - **Location.**
@@ -83,7 +86,6 @@ omits `liberiaemr`.
 | --- | --- | --- |
 | `reportUuids` | `[]` | The MOH reports, as `${var.report.<sheet>.uuid}` in `config-national.json` once the reports module declares them. Empty: the page says no reports are available |
 | `dataSetKey` | `indicators` | The data set shown on screen |
-| `exportPrivilege` | `Export National Report` | |
 | `facilityLocationTag` | `Health Facility` | The central picker's facility list |
 | `mflCodeAttributeTypeUuid` | `''` | Set to `${var.…}` to search by MFL code |
 | `maxFacilitiesShown` | `8` | |

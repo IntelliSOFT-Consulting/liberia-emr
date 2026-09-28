@@ -13,6 +13,7 @@ import {
 } from '@carbon/react';
 import { useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type ReportsConfig } from '../config-schema';
+import { EXPORT_PRIVILEGE } from '../privileges';
 import { useReportingContext } from '../context/reporting-context.resource';
 import Freshness from '../context/freshness.component';
 import LocationPicker, { type ReportLocation } from '../location/location-picker.component';
@@ -50,7 +51,7 @@ const ReportRunner: React.FC = () => {
   const { t } = useTranslation();
   const config = useConfig<ReportsConfig>();
   const session = useSession();
-  const permitted = !!session?.user && userHasAccess(config.exportPrivilege, session.user);
+  const permitted = !!session?.user && userHasAccess(EXPORT_PRIVILEGE, session.user);
 
   if (!permitted) {
     return (

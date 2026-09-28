@@ -15,11 +15,6 @@ export const configSchema = {
     _default: 'indicators',
     _description: 'The data set shown on screen. Every MOH report keys its indicators data set "indicators".',
   },
-  exportPrivilege: {
-    _type: Type.String,
-    _default: 'Export National Report',
-    _description: 'The privilege that shows the menu entry and the page. The backend enforces it as well.',
-  },
   facilityLocationTag: {
     _type: Type.String,
     _default: 'Health Facility',
@@ -58,7 +53,6 @@ export const configSchema = {
 export interface ReportsConfig {
   reportUuids: Array<string>;
   dataSetKey: string;
-  exportPrivilege: string;
   facilityLocationTag: string;
   mflCodeAttributeTypeUuid: string;
   maxFacilitiesShown: number;
