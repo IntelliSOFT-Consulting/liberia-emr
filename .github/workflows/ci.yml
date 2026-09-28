@@ -1113,13 +1113,39 @@ jobs:
             docker push "${image}:latest"
           done
 
-      # LE-368: central's frontend for the central dev deploy below. A central build makes only
-      # liberia-emr-frontend-central; central runs the backend and gateway pushed above
-      # (ADR 0011, until LE-339 gives it its own backend layer).
-      - name: Build and push the central frontend
+
+  # LE-368: central's frontend, for deploy-central-dev. Its own job, so a failed central build
+  # never stops publish-latest and the dev deploy. A central build makes only
+  # liberia-emr-frontend-central; central runs the backend and gateway publish-latest pushes
+  # (ADR 0011, until LE-339 gives central its own backend layer).
+  publish-central-latest:
+    name: Publish :latest central frontend
+    runs-on: ubuntu-latest
+    needs: gate
+    if: >
+      !cancelled() &&
+      needs.gate.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    env:
+      OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build the central frontend
         run: |
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site central
+      - name: Tag and push :latest alongside :${{ github.sha }}
+        run: |
           image="${REGISTRY}/liberia-emr-frontend-central"
           docker tag "${image}:${{ github.sha }}" "${image}:latest"
           docker push "${image}:${{ github.sha }}"
@@ -1361,10 +1387,11 @@ jobs:
   deploy-central-dev:
     name: Update central dev environment
     runs-on: ubuntu-latest
-    needs: publish-latest
+    needs: [publish-latest, publish-central-latest]
     if: >
       !cancelled() &&
       needs.publish-latest.result == 'success' &&
+      needs.publish-central-latest.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
     env:
