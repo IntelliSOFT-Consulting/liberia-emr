@@ -30,16 +30,17 @@ const facilityContext = {
 
 const saved: Array<{ name: string; blob: Blob }> = [];
 
+/** Lets the promises an event started settle, so their state updates land inside act. */
+const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
 async function click(element: HTMLElement) {
-  await act(async () => {
-    fireEvent.click(element);
-  });
+  fireEvent.click(element);
+  await settle();
 }
 
 async function select(element: HTMLElement, value: string) {
-  await act(async () => {
-    fireEvent.change(element, { target: { value } });
-  });
+  fireEvent.change(element, { target: { value } });
+  await settle();
 }
 
 function renderWithSwr(ui: React.ReactElement) {
@@ -199,11 +200,12 @@ describe('report runner safeguards', () => {
     await runToCompletion();
 
     const excel = screen.getByRole('button', { name: 'Download Excel' });
-    // Both clicks land before React re-renders the button as disabled.
+    // Every click lands before React re-renders the button as disabled: native clicks inside one
+    // act are not flushed between them, as fireEvent's own act would do.
     await act(async () => {
-      fireEvent.click(excel);
-      fireEvent.click(excel);
-      fireEvent.click(excel);
+      excel.click();
+      excel.click();
+      excel.click();
     });
 
     await waitFor(() => expect(saved).toHaveLength(1));

@@ -112,7 +112,8 @@ Once the reports module declares its variables, add this to `config-national.jso
 yarn install
 yarn start:local  # openmrs develop on port 8084 against localhost:8085
 yarn test         # jest; the backend is src/testing/mock-backend.ts
-yarn verify       # yarn typescript && yarn test
+yarn lint         # eslint with @openmrs/eslint-config (eslint.config.mjs), as the login app
+yarn verify       # yarn lint && yarn typescript && yarn test
 yarn build
 ```
 
