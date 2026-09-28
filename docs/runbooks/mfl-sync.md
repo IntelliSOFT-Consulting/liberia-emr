@@ -39,16 +39,29 @@ The MOH issues a read-only DHIS2 account on the MFL (role *Integration API Reade
 `Liberia`). Only central gets one (ADR 0009 §2). A facility without it shows *The MFL sync is not
 set up on this server*, and that is the intended state.
 
-1. Write the password to a file on the host, readable by the backend container only:
+1. Write the password to a file on the host, readable only by the backend container's user.
+   The backend image runs as **uid 1001** (`distribution/backend/Dockerfile`), so a root-owned
+   `0600` file would be unreadable inside the container:
 
    ```bash
-   sudo install -d -m 0750 /etc/liberiaemr/secrets
-   sudo sh -c 'umask 077; cat > /etc/liberiaemr/secrets/mfl-password'   # paste, then Ctrl-D
+   sudo install -d -m 0750 -o root -g 1001 /etc/liberiaemr/secrets
+   sudo install -m 0400 -o 1001 -g 1001 /dev/null /etc/liberiaemr/secrets/mfl-password
+   sudo sh -c 'cat > /etc/liberiaemr/secrets/mfl-password'   # paste, then Ctrl-D
+   sudo stat -c '%u:%g %a' /etc/liberiaemr/secrets/mfl-password   # expect 1001:1001 400
    ```
 
-   A trailing newline is ignored; any other whitespace is part of the password.
-2. Mount it into the backend at the path the central compose file reads the secret from (the
-   same pattern as the SMTP password), and name it in the central env file:
+   `install` creates the file with its owner and mode first, so the password never exists in a
+   file anyone else can read. A trailing newline is ignored; any other whitespace is part of the
+   password.
+2. Mount it read-only into the backend at `/run/secrets/mfl-password`, and name that path in the
+   central env file. The compose file forwards the variables below to the backend. If your
+   central compose file does not already mount the file, add the mount under the `backend`
+   service:
+
+   ```yaml
+       volumes:
+         - /etc/liberiaemr/secrets/mfl-password:/run/secrets/mfl-password:ro
+   ```
 
    ```bash
    LIBERIAEMR_MFL_USERNAME=<the MOH-issued account>
@@ -58,7 +71,8 @@ set up on this server*, and that is the intended state.
    ```
 
    Leave `LIBERIAEMR_MFL_PASSWORD` empty. A value there sits in the env file and in
-   `docker inspect`; the file does not.
+   `docker inspect`; the file does not. Check that the backend can read the file:
+   `central exec backend sh -c 'test -r "$LIBERIAEMR_MFL_PASSWORD_FILE" && echo readable'`.
 3. `central up -d backend`, then open the admin page. It should show the account under
    *MFL account* and no warning that the sync is not set up.
 4. Press **Test connection**. Expect *Connected to the MFL: DHIS2 2.40.4.1, 996 facilities.*
@@ -183,7 +197,8 @@ The cached locations stay as they are; nothing is removed because a run failed.
 ## 7. Rotate the credentials
 
 1. The MOH sets the new password, or issues a new account.
-2. Replace the file: `sudo sh -c 'umask 077; cat > /etc/liberiaemr/secrets/mfl-password'`. If the
+2. Replace the file's contents, which keeps its owner (uid 1001) and mode (`0400`):
+   `sudo sh -c 'cat > /etc/liberiaemr/secrets/mfl-password'`. If the
    account changed, update `LIBERIAEMR_MFL_USERNAME` too.
 3. `central up -d backend`. The backend reads the file at start-up.
 4. **Test connection**, then **Sync now**.
