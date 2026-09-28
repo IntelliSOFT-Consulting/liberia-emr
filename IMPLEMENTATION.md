@@ -61,6 +61,7 @@ differences stay isolated. Later layers depend on and can override earlier ones.
 | National | `content-liberia-national` | National identifier types, MOH forms, national reporting mappings, admin hierarchy, terminology, required translations. |
 | Site | `content-site-careysburg` | Facility locations, departments/wards, local roles, branding, local lab catalogue, formulary overrides. |
 | Site | `content-site-barnersville` | Same, for Barnersville. |
+| Central | `content-central` | Takes the site layer's place in the central build only (`--site central`, [ADR 0011](docs/adr/0011-central-composition.md)). Central-only frontend config today. |
 | Demo | `content-demo` | Training metadata, lifted verbatim from `openmrs-content-referenceapplication-demo` 1.9.2 (`scripts/build/lift-demo-content.sh`). **NEVER shipped to production.** |
 
 **Rule:** never include demo patients, test users, or sample observations in any production
@@ -146,6 +147,7 @@ liberia-emr/
 │   ├── content-liberia-national/          # MOH national configuration
 │   ├── content-site-careysburg/           # facility-specific
 │   ├── content-site-barnersville/         # facility-specific
+│   ├── content-central/                   # central build only, in the site layer's place
 │   └── content-demo/                      # NEVER shipped to production
 │       (each package has the same configuration/ skeleton as content-common)
 │
@@ -294,7 +296,7 @@ Where each stage runs today (`.github/workflows/`):
 | --- | --- | --- |
 | `ci.yml` | PR to `main`/`develop`; push to `main` | Validate → build content → clean-database Initializer → images → Cypress, plus builds of the backend module and of the login and sync-status ESMs (the e-partograph step is a `TODO` stub; the patient-chart extension is built only by `packages.yml`). Its **CI gate** job is the required check on `main`. A push to `main` also publishes `:latest` and `:<sha>` images to Docker Hub (`intellisoftdev`) and updates the dev environment; a passing smoke test there records a `dev` deployment that Jira reads. |
 | `release.yml` | `x.y.z` tag | Release guards → build (both sites) → full stack → **upgrade test** → publish images (`ghcr.io/intellisoft-consulting`) → staging → production approval. The full-stack, image-push and staging steps are still `TODO` stubs. |
-| `modules.yml` | `modules/**` changes; GitHub release | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from `main`, and a release only when its tag matches the pom's base version. |
+| `modules.yml` | Every push to `main`; a pushed `liberiaemr-x.y.z` tag; PRs touching `modules/**` or the workflow | Builds `modules/liberiaemr`; publishes it to Repsy — SNAPSHOTs from a `main` push that touched `modules/` (the decision script filters, not the trigger), and a release from its `liberiaemr-x.y.z` tag, cut with `mvn release:prepare` ([release-module.md](docs/runbooks/release-module.md)). A GitHub release publishes nothing here. |
 | `packages.yml` | `packages/**` changes; GitHub release | Builds the ESMs; publishes `-pre.<run>` versions (npm tag `next`) from `main`, and every ESM at the release tag's version on a release. |
 | `claude-review.yml` | PR to `main`/`develop` | Advisory guardrail review; never blocks a merge. |
 

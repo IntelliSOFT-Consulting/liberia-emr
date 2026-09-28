@@ -16,7 +16,9 @@ Format: Context → Decision → Consequences → Status.
 | [0006](0006-pin-o3-refapp-3.7.1.md) | Rebase the distribution on O3 RefApp 3.7.1 | Accepted |
 | [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | **Proposed** |
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
+| [0009](0009-mfl-facility-locations.md) | The Master Facility List is the source of truth for facility locations | Accepted |
 | [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** |
+| [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
 implementation. The number is reserved and has no file until the decision is written; the
@@ -38,6 +40,10 @@ its status line still reads Proposed, and its Context and Decision still say not
 or pinned. Read those as the state when it was written, pending an Accepted status (or a
 superseding ADR) from its owner.
 
-Background for all three: [Sync & EIP architecture](../architecture/sync-eip.md), the
+0009 makes the MOH Master Facility List (a DHIS2 instance) the source of facility locations,
+cached at central by a scheduled sync in the liberiaemr module (LE-317). Accepted on 27 September
+2026. Two site-root matches still await MOH or site confirmation.
+
+Background for 0005, 0007 and 0008: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and
 [entity coverage](../architecture/sync-entity-coverage.md).

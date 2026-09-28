@@ -15,6 +15,7 @@ fails it.
 | [sync-operations.md](sync-operations.md) | Enrol facilities, rotate certificates and keys, handle sync alerts |
 | [jira-automation.md](jira-automation.md) | Jira Automation rules that move LE issues from branch, PR and dev deploy |
 | [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
+| [release-module.md](release-module.md) | Cut and publish a `liberiaemr` module version to Repsy |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
 a document, not a capability. Two procedures here have not been executed end to end, and each

@@ -82,6 +82,15 @@ services:
       LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
       LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
+      # MOH Master Facility List sync (liberiaemr module, ADR 0009). The credentials are
+      # deployment secrets: mount the password file and leave the plain variable empty. Unset
+      # means the MFL sync is unavailable on this instance and its page hides itself.
+      # LIBERIAEMR_MFL_ALLOWED_HOSTS is where the credentials may be sent; the MFL URL itself
+      # is editable from the page, so this list is what keeps them on the MOH's host.
+      LIBERIAEMR_MFL_USERNAME: ${LIBERIAEMR_MFL_USERNAME:-}
+      LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
+      LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
+      LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
       # Empty turns the sync status page off, which is what a facility gets.
       LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
       # Read by the Sync conflicts page; empty turns it off. The window is for display only.
@@ -102,6 +111,11 @@ services:
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
+      # The MFL password (ADR 0009 decision 7): a host file, mode 0400 and owned by uid 1001
+      # (the backend's user), mounted read-only. Set LIBERIAEMR_MFL_PASSWORD_FILE to
+      # /run/secrets/mfl-password to use it. Unset, /dev/null is mounted: an empty password,
+      # so the MFL sync is unavailable. See docs/runbooks/mfl-sync.md.
+      - ${LIBERIAEMR_MFL_PASSWORD_HOST_FILE:-/dev/null}:/run/secrets/mfl-password:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
       interval: 20s
@@ -113,8 +127,12 @@ services:
       start_period: 5400s
     networks: [liberiaemr]
 
+  # The central frontend (build-distribution.sh --site central): the facility layers with
+  # content-central in the site layer's place, so no facility's config-site.json reaches
+  # central and nothing in config-central.json reaches a facility. See
+  # docs/adr/0011-central-composition.md.
   frontend:
-    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    image: ${REGISTRY}/liberia-emr-frontend-central:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       backend:
@@ -122,9 +140,13 @@ services:
     environment:
       SPA_PATH: /openmrs/spa
       API_URL: /openmrs
+      # Baked into the image at build time; this copy is what an operator reads, and
+      # build-distribution.sh --site central fails if the two differ.
       SPA_CONFIG_URLS: >-
         /openmrs/spa/config/config-core.json,
         /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-opd.json,
         /openmrs/spa/config/config-central.json
     networks: [liberiaemr]
 

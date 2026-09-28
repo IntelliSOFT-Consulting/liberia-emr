@@ -11,12 +11,23 @@
     {
       "component": "syncConflicts",
       "route": "sync-conflicts"
+    },
+    {
+      "component": "mflSync",
+      "route": "mfl-sync"
     }
   ],
   "extensions": [
     {
       "name": "sync-status-app-menu-item",
       "component": "syncStatusAppMenuItem",
+      "slot": "app-menu-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "mfl-sync-app-menu-item",
+      "component": "mflSyncAppMenuItem",
       "slot": "app-menu-slot",
       "online": true,
       "offline": false

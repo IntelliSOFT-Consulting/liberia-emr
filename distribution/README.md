@@ -44,14 +44,15 @@ page; at a facility its menu item is hidden and the page shows a not-available n
 
 ## Images
 
-Seven per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`.
+Eight per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`.
 `REGISTRY` defaults to `intellisoftdev` in `scripts/build/build-distribution.sh`; the
 compose files read it from the stack's `.env`.
 
 | Image | Built from | Runs in |
 | --- | --- | --- |
 | `liberia-emr-backend` | `backend/Dockerfile` | facility, central |
-| `liberia-emr-frontend` | `frontend/Dockerfile` | facility, central |
+| `liberia-emr-frontend` | `frontend/Dockerfile` | facility |
+| `liberia-emr-frontend-central` | `frontend/Dockerfile`, `--site central` | central |
 | `liberia-emr-gateway` | `gateway/Dockerfile` | facility, central |
 | `liberia-emr-sync` | `sync/Dockerfile --target sender` | facility (`sync` profile) |
 | `liberia-emr-sync-receiver` | `sync/Dockerfile --target receiver` | central |
@@ -101,6 +102,11 @@ Besides the database, release and sync settings, the facility and central templa
 - `LIBERIAEMR_SMTP_*` and `LIBERIAEMR_FRONTEND_URL`: the password reset relay for the
   `liberiaemr` module, passed through to `backend` by both compose files. Prefer
   `LIBERIAEMR_SMTP_PASSWORD_FILE` to the plain variable. Unset means no reset mail.
+- `LIBERIAEMR_MFL_*`: the MOH Master Facility List account and the hosts it may be sent to
+  (ADR 0009), passed through to `backend` by both compose files. Central sets the account;
+  a facility leaves it empty, and the sync is then unavailable there. Prefer
+  `LIBERIAEMR_MFL_PASSWORD_FILE` to the plain variable. `LIBERIAEMR_MFL_ALLOWED_HOSTS`
+  defaults to `dhis2.moh.gov.lr`.
 - `LIBERIAEMR_SYNC_MONITORING_URL` (central only): the Prometheus the sync status endpoint
   reads, `http://prometheus:9090` by default. Empty turns the page off.
 - `LEGACY_ADMIN_UI` (facility and demo, commented out): one variable drives both the
@@ -124,9 +130,9 @@ it actually used. `build-distribution.sh` bakes that list into the frontend imag
 was built with; the `SPA_CONFIG_URLS` environment variable in a compose file does not change
 what the running image loads. The facility compose value (or the demo overlay's, for
 `--demo`) must still match: the build diffs it against `.config-urls` and fails on drift.
-The central compose file's list is not checked, and changes nothing either: the central
-stack runs the same frontend image, built with a facility site's list. The
-`config-central.json` it names exists in no content package.
+The central compose file's list is held to the central build's order the same way, by
+`--site central` and by a CI step that runs on every change
+(`scripts/validate/spa-config-urls.sh`).
 
 ## Building
 
@@ -145,6 +151,13 @@ asserts nothing about the SPA — leaves it out. A release build must never use 
 carry one version and are meant to ship together.
 
 `--no-sync` skips the sync sender, receiver, broker and certificate expiry images.
+
+`--site central` builds the central composition ([ADR 0011](../docs/adr/0011-central-composition.md)):
+`content-central` takes the site layer's place, so central gets its own last frontend layer,
+`config-central.json`, and no facility's `config-site.json`. Today that yields a single image,
+`liberia-emr-frontend-central`. Central runs the facility release's backend, gateway and sync
+images of the same version, so a release builds a facility site **and** central. `--demo` and
+`--no-frontend` are refused with it.
 
 For a training stack, `--demo` builds `liberia-emr-{backend,frontend}-demo` with
 `content-demo` added as the last content layer (the gateway keeps its normal name, and the

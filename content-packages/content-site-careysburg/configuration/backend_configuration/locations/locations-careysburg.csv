@@ -3,5 +3,5 @@ ${var.location.facility-root.uuid},,Careysburg Health Center,MOH health center s
 ${var.location.opd.uuid},,Careysburg OPD,Outpatient department,Careysburg Health Center,TRUE,TRUE,,,,,,TRUE,TRUE,,,,
 ${var.location.maternity.uuid},,Careysburg Maternity,"Labour, delivery and postnatal unit",Careysburg Health Center,TRUE,TRUE,,,TRUE,TRUE,,TRUE,TRUE,,,,
 ${var.location.ward.uuid},,Careysburg Inpatient Ward,General inpatient ward,Careysburg Health Center,TRUE,,,,TRUE,TRUE,,,,,,,
-${var.location.laboratory.uuid},,Careysburg Laboratory,Facility laboratory,Careysburg Health Center,TRUE,,,,,,,TRUE,,,,,,
+${var.location.laboratory.uuid},,Careysburg Laboratory,Facility laboratory,Careysburg Health Center,TRUE,,,,,,,TRUE,,,,,
 ${var.location.pharmacy.uuid},,Careysburg Pharmacy,Facility pharmacy and dispensing point,Careysburg Health Center,TRUE,,,,,,TRUE,TRUE,,,,,

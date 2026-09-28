@@ -17,10 +17,14 @@
 
 	<url>https://wiki.openmrs.org/x/FQ4z</url>
 
+	<!-- This module lives in the liberia-emr monorepo, not in its own repository. The
+	     OpenMRS module scaffold this was generated from left openmrs/openmrs-module-liberiaemr
+	     here, which would make release:prepare tag an unrelated upstream repo. -->
 	<scm>
-		<connection>scm:git:git@github.com:openmrs/openmrs-module-liberiaemr.git</connection>
-		<developerConnection>scm:git:git@github.com:openmrs/openmrs-module-liberiaemr.git</developerConnection>
-		<url>https://github.com/openmrs/openmrs-module-liberiaemr/</url>
+		<connection>scm:git:https://github.com/IntelliSOFT-Consulting/liberia-emr.git</connection>
+		<developerConnection>scm:git:git@github.com:IntelliSOFT-Consulting/liberia-emr.git</developerConnection>
+		<url>https://github.com/IntelliSOFT-Consulting/liberia-emr/tree/main/modules/liberiaemr</url>
+		<tag>HEAD</tag>
 	</scm>
 
 	<modules>
@@ -106,6 +110,50 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+		<plugins>
+			<!-- Releases are cut LOCALLY: `mvn release:prepare` in this directory, then the
+			     version commits go up as a normal PR and the tag is pushed after it merges.
+			     CI publishes from that tag. See docs/runbooks/release-module.md.
+
+			     This is declared under <build><plugins>, not <pluginManagement>, on purpose:
+			     pushChanges=false is the ONE setting keeping release:prepare's commits off the
+			     protected main branch, and pluginManagement only applies its configuration when
+			     something else invokes the plugin — a bare `mvn release:prepare` on the CLI
+			     would otherwise fall back to the plugin's own default (pushChanges=true) rather
+			     than this one. Declaring it under <plugins> makes this configuration bind
+			     unconditionally, so that safety property does not rest on pluginManagement's
+			     CLI-fallback behaviour.
+
+			     Repository ruleset "Prevent direct push to Main" blocks pushes to main that
+			     arrive without a passing CI gate, which is exactly what release:prepare's two
+			     commits would do. Leaving the push to a PR means no ruleset bypass and no new
+			     privileged credential.
+
+			     tagNameFormat is pinned to the literal `liberiaemr-` rather than derived from
+			     @{project.artifactId}: every consumer of this tag shape — the modules.yml push
+			     trigger's tag glob, module-publish-decision.sh's prefix match,
+			     prepare-module.sh, and the docs — hardcodes that same literal. Deriving it from
+			     artifactId would mean renaming the artifactId silently cuts a tag matching none
+			     of those, a tag push where nothing runs at all. A bare x.y.z tag is also the
+			     DISTRIBUTION release namespace wired to release.yml, so this format must never
+			     drift into matching that either.
+
+			     preparationGoals drops `verify` to `package` — local-development.md §5,
+			     `mvn verify` is fragile on Apple Silicon. CI re-runs the full build on the
+			     tag before publishing, so this local run is a sanity check, not the gate. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<tagNameFormat>liberiaemr-@{project.version}</tagNameFormat>
+					<autoVersionSubmodules>true</autoVersionSubmodules>
+					<pushChanges>false</pushChanges>
+					<localCheckout>true</localCheckout>
+					<preparationGoals>clean package</preparationGoals>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 
 	<dependencyManagement>

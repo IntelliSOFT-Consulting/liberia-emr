@@ -1,0 +1,287 @@
+{
+  "organisationUnitGroups": [
+    {
+      "name": "# EPI OSDV Facility Visited",
+      "groupSets": [],
+      "id": "MhLUluy3Lpt"
+    },
+    {
+      "name": "BemONC Facilities",
+      "groupSets": [
+        {
+          "id": "DxoJq3Jbj3p"
+        },
+        {
+          "id": "RjYL4u63IQU"
+        }
+      ],
+      "id": "lAnbydCDQwW"
+    },
+    {
+      "code": "001",
+      "name": "CEmONC Facilities",
+      "groupSets": [
+        {
+          "id": "gwEDFtSUz1T"
+        }
+      ],
+      "id": "M8CdHRhgkwW"
+    },
+    {
+      "name": "Clinic",
+      "groupSets": [
+        {
+          "id": "hKtAxC2ekfq"
+        }
+      ],
+      "id": "cLPxlR1Brv9"
+    },
+    {
+      "name": "Facilities Rendering ANC Services",
+      "groupSets": [
+        {
+          "id": "DxoJq3Jbj3p"
+        }
+      ],
+      "id": "XyAQuudmIzF"
+    },
+    {
+      "name": "Facilities Rendering All TB Cases Registered ",
+      "groupSets": [],
+      "id": "zRG0DMq36ft"
+    },
+    {
+      "name": "Facilities Rendering Blood Safety Laboratory Report Form",
+      "groupSets": [],
+      "id": "ZPt6BbJwmMg"
+    },
+    {
+      "name": "Facilities Rendering Care & Treatment & Attritio",
+      "groupSets": [],
+      "id": "eDmKJOUBo82"
+    },
+    {
+      "name": "Facilities Rendering Community All TB Cases Registered",
+      "groupSets": [],
+      "id": "xBzWXZm1uFs"
+    },
+    {
+      "name": "Facilities Rendering Community Health (CHSS Monthly Service Report)",
+      "groupSets": [],
+      "id": "TH2Gokoa8mG"
+    },
+    {
+      "name": "Facilities Rendering Comprehensive Abortion Care Services",
+      "groupSets": [],
+      "id": "mFn5xxJ34eM"
+    },
+    {
+      "name": "Facilities Rendering Delivery Services",
+      "groupSets": [],
+      "id": "SLA18lfFUWw"
+    },
+    {
+      "name": "Facilities Rendering Exposed Infants (Not on Treatment (ART)",
+      "groupSets": [],
+      "id": "nmA02QR2BgC"
+    },
+    {
+      "name": "Facilities Rendering Family Planning Services",
+      "groupSets": [],
+      "id": "V1dv0uqqZft"
+    },
+    {
+      "name": "Facilities Rendering HIV Counseling & Testing Services",
+      "groupSets": [],
+      "id": "I7r8aBcZN8W"
+    },
+    {
+      "name": "Facilities Rendering HIV/AIDS- Laboratory Provider Initiative and Others (above 5 years)–non-pregnant women and men",
+      "groupSets": [],
+      "id": "mjKZDFsmw5l"
+    },
+    {
+      "name": "Facilities Rendering HIV/TB Co-Infection ",
+      "groupSets": [],
+      "id": "qZ8HyoEKQhT"
+    },
+    {
+      "name": "Facilities Rendering In-Patient Department Services",
+      "groupSets": [],
+      "id": "gUNck6SJpF1"
+    },
+    {
+      "name": "Facilities Rendering Integrated Management of Neonatal & Childhood Illnesses (IMNCI)",
+      "groupSets": [],
+      "id": "UhXPQmivkB8"
+    },
+    {
+      "name": "Facilities Rendering Malaria Services",
+      "groupSets": [],
+      "id": "FfsbfazfmED"
+    },
+    {
+      "name": "Facilities Rendering Mental Health Services",
+      "groupSets": [],
+      "id": "W9GY46skFN5"
+    },
+    {
+      "name": "Facilities Rendering NTDs Services",
+      "groupSets": [],
+      "id": "deZS1ei3SWW"
+    },
+    {
+      "name": "Facilities Rendering Non-communicable Disease Division (NCDs)",
+      "groupSets": [],
+      "id": "B5Bl9ZVR0DC"
+    },
+    {
+      "name": "Facilities Rendering Number of PLWHA Currently Receiving ART",
+      "groupSets": [],
+      "id": "L3x7R2Wby6j"
+    },
+    {
+      "name": "Facilities Rendering Nutrition Growth Monitoring",
+      "groupSets": [],
+      "id": "K8caJyu8U7o"
+    },
+    {
+      "name": "Facilities Rendering Nutrition In Patient Services ",
+      "groupSets": [],
+      "id": "uwSP8pwfNBO"
+    },
+    {
+      "name": "Facilities Rendering Nutrition OPD Therapeutic Services",
+      "groupSets": [],
+      "id": "COPQ24T1NzB"
+    },
+    {
+      "name": "Facilities Rendering Obstetric Fistula ",
+      "groupSets": [],
+      "id": "GCYuqwIqHz1"
+    },
+    {
+      "name": "Facilities Rendering Out Patient Department Services (OPD)",
+      "groupSets": [],
+      "id": "wacJM9bjnQX"
+    },
+    {
+      "name": "Facilities Rendering Postnatal Care Services",
+      "groupSets": [],
+      "id": "ltr5bUlCMHz"
+    },
+    {
+      "name": "Facilities Rendering SGBV Services",
+      "groupSets": [],
+      "id": "gFzMYAdUU5w"
+    },
+    {
+      "name": "Facilities Rendering TB Cases Registered Services",
+      "groupSets": [],
+      "id": "P15Mo3k17qA"
+    },
+    {
+      "name": "Facilities Rendering TB Laboratory Services",
+      "groupSets": [],
+      "id": "E7zZZpJ9LG0"
+    },
+    {
+      "name": "Facilities' Rendering PMTCT Services",
+      "groupSets": [],
+      "id": "c0Fn4QW0e91"
+    },
+    {
+      "name": "Facliities Immunization Services",
+      "groupSets": [],
+      "id": "Ahry7V2iv0v"
+    },
+    {
+      "name": "Health Center",
+      "groupSets": [
+        {
+          "id": "qMtS8VEiytW"
+        }
+      ],
+      "id": "EltS2EPR5gR"
+    },
+    {
+      "name": "Hospital",
+      "groupSets": [
+        {
+          "id": "IEDYbGLdbM2"
+        }
+      ],
+      "id": "oj9yiq3uMLI"
+    },
+    {
+      "name": "List of CRDF Facilities",
+      "groupSets": [],
+      "id": "yIClkBhD2ia"
+    },
+    {
+      "name": "Private Clinics",
+      "groupSets": [],
+      "id": "WgzubPbqwv5"
+    },
+    {
+      "name": "Private Facilities",
+      "groupSets": [
+        {
+          "id": "xMwnNH7DytG"
+        }
+      ],
+      "id": "lIYtHp5tvaG"
+    },
+    {
+      "name": "Private Health Centers",
+      "groupSets": [],
+      "id": "D7MrIYc49qL"
+    },
+    {
+      "name": "Public Clinics",
+      "groupSets": [
+        {
+          "id": "wHzZu2RIy56"
+        }
+      ],
+      "id": "H8VAlGrfIjv"
+    },
+    {
+      "name": "Public Facilities",
+      "groupSets": [
+        {
+          "id": "vwdkPgshrvK"
+        }
+      ],
+      "id": "xSUk0MvIAUh"
+    },
+    {
+      "name": "Public Health Centers",
+      "groupSets": [
+        {
+          "id": "jZSI2W7JZG5"
+        }
+      ],
+      "id": "NKnctMq2GCq"
+    },
+    {
+      "name": "Public Hospitals",
+      "groupSets": [
+        {
+          "id": "OeRf5n3mwlP"
+        }
+      ],
+      "id": "k4ivoIo8PfS"
+    },
+    {
+      "name": "Rural Facilities",
+      "groupSets": [],
+      "id": "W1RG9PaTxzr"
+    },
+    {
+      "name": "Urban Facilities ",
+      "groupSets": [],
+      "id": "L7IimdCGSjT"
+    }
+  ]
+}

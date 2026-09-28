@@ -106,6 +106,15 @@ services:
       LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
       LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
+      # MOH Master Facility List sync (liberiaemr module, ADR 0009). The credentials are
+      # deployment secrets: mount the password file and leave the plain variable empty. Unset
+      # means the MFL sync is unavailable on this instance and its page hides itself.
+      # LIBERIAEMR_MFL_ALLOWED_HOSTS is where the credentials may be sent; the MFL URL itself
+      # is editable from the page, so this list is what keeps them on the MOH's host.
+      LIBERIAEMR_MFL_USERNAME: ${LIBERIAEMR_MFL_USERNAME:-}
+      LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
+      LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
+      LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
       # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4). startup-init.sh maps
       # OMRS_EXTRA_A_B__C to runtime property a.b_c and re-applies it on every start. The
       # schema name is fixed: binlog-ignore-db above and the initdb grants name it too. The
@@ -124,6 +133,11 @@ services:
         -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
+      # The MFL password (ADR 0009 decision 7): a host file, mode 0400 and owned by uid 1001
+      # (the backend's user), mounted read-only. Set LIBERIAEMR_MFL_PASSWORD_FILE to
+      # /run/secrets/mfl-password to use it. Unset, /dev/null is mounted: an empty password,
+      # so the MFL sync is unavailable. See docs/runbooks/mfl-sync.md.
+      - ${LIBERIAEMR_MFL_PASSWORD_HOST_FILE:-/dev/null}:/run/secrets/mfl-password:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
       interval: 20s
