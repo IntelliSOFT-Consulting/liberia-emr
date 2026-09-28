@@ -68,6 +68,22 @@ class TriageFormPage {
         cy.get('@saveTriage.all').should('have.length', 0);
     }
 
+    verifyChildCategoryOptions() {
+        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+            cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
+                const labels = [...$options]
+                    .map((option) => option.textContent?.trim())
+                    .filter((label) => label !== 'Choose an option');
+                expect(labels).to.deep.equal([
+                    'Non-urgent Priority',
+                    'Urgent Priority',
+                    'Emergency Priority'
+                ]);
+            });
+        });
+    }
+
     verifyTemperatureLimits() {
         cy.get('#temp', { timeout: this.timeout })
             .scrollIntoView()
