@@ -46,4 +46,8 @@ describe('Child Triage Assessment form', () => {
     it('omits previously selected signs after changing the child category', () => {
         triageForm.verifyHiddenSignsAreNotSubmitted();
     });
+
+    it('saves a Non-urgent child assessment with screening and vitals', () => {
+        triageForm.verifySavedAssessment();
+    });
 });

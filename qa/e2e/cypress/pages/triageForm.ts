@@ -242,6 +242,48 @@ class TriageFormPage {
             });
         });
     }
+
+    verifySavedAssessment() {
+        cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
+        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
+            timeout: this.timeout
+        }).click();
+
+        const vitals = [
+            { id: 'temp', value: '37.2' },
+            { id: 'hr', value: '78' },
+            { id: 'rr', value: '18' },
+            { id: 'spo2', value: '98' },
+            { id: 'weight', value: '20.5' },
+            { id: 'height', value: '120.5' },
+            { id: 'wz_score', value: '0' },
+            { id: 'muac', value: '15.5' }
+        ];
+        vitals.forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
+        });
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            const observations = request.body.obs as Array<{ formFieldPath: string; value: string | number }>;
+            expect(observations, 'submitted triage observations').to.be.an('array');
+            const observationFor = (fieldId: string) =>
+                observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`);
+
+            expect(observationFor('ebola_screen')?.value).to.equal('1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+            expect(observationFor('triage_category_child')?.value).to.be.a('string').and.not.be.empty;
+            vitals.forEach(({ id, value }) => {
+                expect(observationFor(id)?.value, `saved ${id}`).to.equal(Number(value));
+            });
+            expect(observationFor('yellow_signs_child')).to.be.undefined;
+            expect(observationFor('red_signs_child')).to.be.undefined;
+        });
+    }
 }
 
 export default TriageFormPage;
