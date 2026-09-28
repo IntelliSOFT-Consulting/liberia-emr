@@ -24,12 +24,12 @@ Every report call is reportingrest 2.0.0, as in
 | --- | --- |
 | List reports | `GET reportingrest/reportDefinition?v=full`, filtered to `reportUuids`, in that order |
 | Formats | `GET reportingrest/reportDesign?reportDefinitionUuid=…`: CSV and Excel told apart by `rendererType` |
-| Run | `POST reportingrest/reportRequest` with the CSV design |
+| Run | `POST reportingrest/reportRequest` with the CSV design. A report with no CSV design cannot be run; no other design stands in for it |
 | Poll | `GET reportingrest/reportRequest/{uuid}` every `pollIntervalMs`, until `COMPLETED`, `FAILED` or `SAVED` |
 | View | `GET reportingrest/reportDataSet/{report}/indicators?startDate&endDate[&location]` |
 | Download CSV | `GET reportingrest/downloadReport?reportRequestUuid=…` of the run |
 | Download Excel | a second `POST reportRequest` with the Excel design, polled, then `downloadReport` |
-| Cancel | `DELETE reportingrest/reportRequest/{uuid}` |
+| Cancel | `DELETE reportingrest/reportRequest/{uuid}`, also sent for a run or export left unfinished when another report is chosen |
 
 - **Why the view evaluates again.** The CSV renderer writes column *labels*, which lose the
   `<CODE>_<part>` names that the view groups by (§3.3).
@@ -122,6 +122,8 @@ They cover:
 - the §4.1 request body and design selection;
 - the role failing closed;
 - the full run → poll → view → CSV/Excel flow;
+- a report with no CSV design, one Excel export per click burst, a run or export dropped when
+  another report is chosen, and an export whose status cannot be read;
 - the facility and central location pickers;
 - privilege gating.
 

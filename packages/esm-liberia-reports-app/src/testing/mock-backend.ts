@@ -27,6 +27,12 @@ export interface MockBackendOptions {
   finalStatus?: 'COMPLETED' | 'FAILED';
   /** How downloadReport encodes fileContent. */
   fileEncoding?: 'base64' | 'bytes';
+  /** Which designs every report has. Default: CSV and Excel. */
+  designs?: 'csv-and-excel' | 'excel-only' | 'none';
+  /** Hold every reportRequest POST until `releasePosts()` is called. */
+  holdPosts?: boolean;
+  /** Request UUIDs whose status reads fail with a server error. */
+  failPolls?: Array<string>;
 }
 
 export const csvBody = 'Indicator,Value\nMAL_004_NUM,12\n';
@@ -35,6 +41,7 @@ export function createMockBackend(options: MockBackendOptions = {}) {
   const calls: Array<Call> = [];
   const polls = new Map<string, number>();
   const designs = new Map<string, string>();
+  const heldPosts: Array<() => void> = [];
   let nextRequest = 1;
 
   const reply = (data: unknown) => Promise.resolve({ ok: true, status: 200, data });
@@ -74,19 +81,19 @@ export function createMockBackend(options: MockBackendOptions = {}) {
     }
 
     if (path.startsWith('reportingrest/reportDesign?reportDefinitionUuid=')) {
+      const excel = {
+        uuid: XLSX_DESIGN,
+        name: 'MOH Malaria Indicators (Excel)',
+        rendererType: 'org.openmrs.module.reporting.report.renderer.ExcelTemplateRenderer',
+      };
+      const csv = {
+        uuid: CSV_DESIGN,
+        name: 'MOH Malaria Indicators (CSV)',
+        rendererType: 'org.openmrs.module.reporting.report.renderer.CsvReportRenderer',
+      };
+      const designsSetUp = options.designs ?? 'csv-and-excel';
       return reply({
-        results: [
-          {
-            uuid: XLSX_DESIGN,
-            name: 'MOH Malaria Indicators (Excel)',
-            rendererType: 'org.openmrs.module.reporting.report.renderer.ExcelTemplateRenderer',
-          },
-          {
-            uuid: CSV_DESIGN,
-            name: 'MOH Malaria Indicators (CSV)',
-            rendererType: 'org.openmrs.module.reporting.report.renderer.CsvReportRenderer',
-          },
-        ],
+        results: designsSetUp === 'none' ? [] : designsSetUp === 'excel-only' ? [excel] : [excel, csv],
       });
     }
 
@@ -94,6 +101,9 @@ export function createMockBackend(options: MockBackendOptions = {}) {
       const uuid = `request-${nextRequest++}`;
       polls.set(uuid, 0);
       designs.set(uuid, init.body?.renderingMode?.argument);
+      if (options.holdPosts) {
+        return new Promise((resolve) => heldPosts.push(() => resolve(reply({ uuid, status: 'REQUESTED' }))));
+      }
       return reply({ uuid, status: 'REQUESTED' });
     }
 
@@ -101,6 +111,9 @@ export function createMockBackend(options: MockBackendOptions = {}) {
     if (request && method === 'DELETE') {
       polls.delete(request[1]);
       return Promise.resolve({ ok: true, status: 204, data: undefined });
+    }
+    if (request && options.failPolls?.includes(request[1])) {
+      return fail(500, 'Status unavailable');
     }
     if (request) {
       const seen = polls.get(request[1]) ?? 0;
@@ -152,5 +165,7 @@ export function createMockBackend(options: MockBackendOptions = {}) {
     return fail(404, `No mock for ${method} ${url}`);
   };
 
-  return { fetch, calls };
+  const releasePosts = () => heldPosts.splice(0).forEach((release) => release());
+
+  return { fetch, calls, releasePosts };
 }

@@ -77,7 +77,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
 
   const [reportUuid, setReportUuid] = useState('');
   const report = reports.find((r) => r.uuid === reportUuid) ?? reports[0];
-  const { designs } = useReportDesigns(report?.uuid);
+  const { designs, isLoading: designsLoading } = useReportDesigns(report?.uuid);
 
   const [periodType, setPeriodType] = useState<PeriodType>('month');
   const periods = useMemo(
@@ -107,25 +107,51 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
   );
 
   const [exporting, setExporting] = useState<{ format: ExportFormat; requestUuid?: string }>();
-  const { request: exportRequest } = useReportRequest(exporting?.requestUuid, config.pollIntervalMs);
+  const { request: exportRequest, error: exportPollError } = useReportRequest(
+    exporting?.requestUuid,
+    config.pollIntervalMs,
+  );
   const [exportError, setExportError] = useState<string>();
 
+  // A run, and every export of it, belongs to one generation. Clearing the run (a new run, a
+  // cancel, or another report) starts the next, so a request that answers late is recognised as
+  // stale and dropped instead of landing on whatever is selected by then.
+  const generation = useRef(0);
+  // Set before anything is awaited: a second click that arrives before React has re-rendered the
+  // disabled buttons must not start a second export.
+  const exportInFlight = useRef(false);
+
+  // Every run is rendered with the CSV design, so "Download CSV" hands back the run's own output.
+  // A report without one cannot be run: no other design is ever used in its place.
   const csvDesign = findDesign(designs, 'csv');
   const xlsxDesign = findDesign(designs, 'xlsx');
 
   const clearRun = () => {
+    generation.current += 1;
+    exportInFlight.current = false;
     setRun(undefined);
     setExporting(undefined);
     setRunError(undefined);
     setExportError(undefined);
   };
 
+  /** Leaves the current run for another report, and stops its work on the server if it is still going. */
+  const abandonRun = () => {
+    if (run && !isFinished(status)) {
+      discardRequest(run.requestUuid);
+    }
+    if (exporting?.requestUuid && !isFinished(exportRequest?.status)) {
+      discardRequest(exporting.requestUuid);
+    }
+    clearRun();
+  };
+
   const runReport = async () => {
-    const design = csvDesign ?? designs[0];
-    if (!report || !period || !location || !design) {
+    if (!report || !period || !location || !csvDesign) {
       return;
     }
     clearRun();
+    const current = generation.current;
     setSubmitting(true);
     const params: RunParameters = {
       startDate: period.startDate,
@@ -133,7 +159,12 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
       locationUuid: location.level === 'national' ? undefined : location.uuid,
     };
     try {
-      const created = await requestReport(report.uuid, design.uuid, params);
+      const created = await requestReport(report.uuid, csvDesign.uuid, params);
+      if (generation.current !== current) {
+        // Another report was chosen while this one was being submitted.
+        discardRequest(created.uuid);
+        return;
+      }
       setRun({
         reportUuid: report.uuid,
         requestUuid: created.uuid,
@@ -142,7 +173,9 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
         periodLabel: period.label,
       });
     } catch (e) {
-      setRunError(errorText(e));
+      if (generation.current === current) {
+        setRunError(errorText(e));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -160,26 +193,48 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
     clearRun();
   };
 
-  const exportAs = async (format: ExportFormat) => {
-    if (!run) {
+  /** Ends an export of the given generation, unless the run it belonged to has been left since. */
+  const finishExport = (current: number, error?: string) => {
+    if (generation.current !== current) {
       return;
     }
+    exportInFlight.current = false;
+    setExporting(undefined);
+    if (error) {
+      setExportError(error);
+    }
+  };
+
+  const exportAs = async (format: ExportFormat) => {
+    const design = format === 'csv' ? csvDesign : xlsxDesign;
+    if (!run || !design || exportInFlight.current) {
+      return;
+    }
+    const current = generation.current;
+    exportInFlight.current = true;
+    setExporting({ format });
     setExportError(undefined);
-    const ranWith = csvDesign ?? designs[0];
-    const design = format === 'csv' ? ranWith : xlsxDesign;
-    try {
-      if (format === 'csv' && design === ranWith) {
-        // The run itself rendered CSV; nothing to evaluate again.
-        setExporting({ format });
+
+    if (format === 'csv') {
+      // The run itself rendered CSV; nothing to evaluate again.
+      try {
         await downloadReport(run.requestUuid);
-        setExporting(undefined);
+        finishExport(current);
+      } catch (e) {
+        finishExport(current, errorText(e));
+      }
+      return;
+    }
+
+    try {
+      const created = await requestReport(run.reportUuid, design.uuid, run.params);
+      if (generation.current !== current) {
+        discardRequest(created.uuid);
         return;
       }
-      const created = await requestReport(run.reportUuid, design.uuid, run.params);
       setExporting({ format, requestUuid: created.uuid });
     } catch (e) {
-      setExporting(undefined);
-      setExportError(errorText(e));
+      finishExport(current, errorText(e));
     }
   };
 
@@ -187,19 +242,30 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
   const downloaded = useRef<string>();
   useEffect(() => {
     const uuid = exporting?.requestUuid;
-    if (!uuid || downloaded.current === uuid || !isFinished(exportRequest?.status)) {
+    if (!uuid || downloaded.current === uuid) {
+      return;
+    }
+    const current = generation.current;
+    if (exportPollError) {
+      // Its status cannot be read, so it may never be seen to finish: stop waiting for it.
+      downloaded.current = uuid;
+      finishExport(current, errorText(exportPollError));
+      return;
+    }
+    if (!isFinished(exportRequest?.status)) {
       return;
     }
     downloaded.current = uuid;
     if (!isSucceeded(exportRequest.status)) {
-      setExportError(t('exportFailed', 'The export could not be produced. Try again.'));
-      setExporting(undefined);
+      finishExport(current, t('exportFailed', 'The export could not be produced. Try again.'));
       return;
     }
-    downloadReport(uuid)
-      .catch((e) => setExportError(errorText(e)))
-      .finally(() => setExporting(undefined));
-  }, [exporting, exportRequest, t]);
+    downloadReport(uuid).then(
+      () => finishExport(current),
+      (e) => finishExport(current, errorText(e)),
+    );
+    // finishExport is left out: it reads only refs and state setters.
+  },[exporting, exportRequest, exportPollError, t]);
 
   if (contextLoading || reportsLoading) {
     return <InlineLoading className={styles.container} description={t('loading', 'Loading reports...')} />;
@@ -240,7 +306,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
             value={report?.uuid ?? ''}
             onChange={(event) => {
               setReportUuid(event.target.value);
-              clearRun();
+              abandonRun();
             }}
           >
             {reports.map((r) => (
@@ -293,7 +359,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
           />
 
           <ButtonSet className={styles.actions}>
-            <Button kind="primary" onClick={runReport} disabled={submitting || running || !designs.length || !location}>
+            <Button kind="primary" onClick={runReport} disabled={submitting || running || !csvDesign || !location}>
               {t('runReport', 'Run report')}
             </Button>
             {running && (
@@ -302,8 +368,18 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
               </Button>
             )}
           </ButtonSet>
-          {report && !designs.length && (
-            <p className={styles.helper}>{t('noDesigns', 'This report has no export formats set up yet.')}</p>
+          {report && !designsLoading && !csvDesign && (
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t('noCsvDesign', 'This report cannot be run yet')}
+              subtitle={
+                designs.length
+                  ? t('noCsvDesignBody', 'It has no CSV format, which every run is rendered in. Ask ICT to add one.')
+                  : t('noDesigns', 'This report has no export formats set up yet.')
+              }
+            />
           )}
         </div>
       )}
@@ -346,7 +422,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
           {succeeded && (
             <>
               <ButtonSet className={styles.actions}>
-                <Button kind="tertiary" size="md" onClick={() => exportAs('csv')} disabled={!!exporting}>
+                <Button kind="tertiary" size="md" onClick={() => exportAs('csv')} disabled={!!exporting || !csvDesign}>
                   {t('downloadCsv', 'Download CSV')}
                 </Button>
                 <Button kind="tertiary" size="md" onClick={() => exportAs('xlsx')} disabled={!!exporting || !xlsxDesign}>
@@ -389,6 +465,11 @@ function statusText(status: string | undefined, t: (key: string, fallback: strin
     default:
       return t('statusRequested', 'Queued');
   }
+}
+
+/** Stops a request no one will read. Best effort: at worst the server finishes a report nobody downloads. */
+function discardRequest(requestUuid: string) {
+  removeReportRequest(requestUuid).catch(() => undefined);
 }
 
 /** openmrsFetch throws an Error carrying the REST error body; show its message. */

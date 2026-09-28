@@ -37,6 +37,8 @@
   "moreFacilities": "{{count}} more; narrow the search to see them.",
   "national": "National (all facilities)",
   "nationalStillAvailable": "National figures can still be run.",
+  "noCsvDesign": "This report cannot be run yet",
+  "noCsvDesignBody": "It has no CSV format, which every run is rendered in. Ask ICT to add one.",
   "noDesigns": "This report has no export formats set up yet.",
   "noFacilitiesFound": "No facilities match your search",
   "noReports": "No MOH reports are available on this server",

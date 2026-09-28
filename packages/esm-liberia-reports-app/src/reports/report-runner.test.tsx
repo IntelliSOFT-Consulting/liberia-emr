@@ -166,6 +166,119 @@ describe('report runner at a facility', () => {
   });
 });
 
+describe('report runner safeguards', () => {
+  const runToCompletion = async () => {
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    await waitFor(() => expect(screen.getByTestId('run-status')).toHaveTextContent('Completed'));
+  };
+
+  it('will not run a report that has no CSV design, rather than render another format as CSV', async () => {
+    const backend = given({ context: facilityContext, designs: 'excel-only' });
+    renderWithSwr(<ReportRunner />);
+
+    expect(await screen.findByText('This report cannot be run yet')).toBeInTheDocument();
+    expect(screen.getByText(/It has no CSV format/)).toBeInTheDocument();
+    const run = screen.getByRole('button', { name: 'Run report' });
+    expect(run).toBeDisabled();
+    await click(run);
+    expect(backend.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
+  });
+
+  it('says a report has no formats at all when it has no designs', async () => {
+    given({ context: facilityContext, designs: 'none' });
+    renderWithSwr(<ReportRunner />);
+
+    expect(await screen.findByText('This report has no export formats set up yet.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run report' })).toBeDisabled();
+  });
+
+  it('starts one Excel export however fast the button is clicked', async () => {
+    const backend = given({ context: facilityContext });
+    renderWithSwr(<ReportRunner />);
+    await runToCompletion();
+
+    const excel = screen.getByRole('button', { name: 'Download Excel' });
+    // Both clicks land before React re-renders the button as disabled.
+    await act(async () => {
+      fireEvent.click(excel);
+      fireEvent.click(excel);
+      fireEvent.click(excel);
+    });
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    const posts = backend.calls.filter((c) => c.method === 'POST');
+    expect(posts.map((p) => p.body.renderingMode.argument)).toEqual([CSV_DESIGN, XLSX_DESIGN]);
+  });
+
+  it('cancels a running report when another report is chosen, and shows nothing of it', async () => {
+    const backend = given({ context: facilityContext, pollsBeforeDone: 1000 });
+    renderWithSwr(<ReportRunner />);
+
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    await waitFor(() => expect(screen.getByTestId('run-status')).toHaveTextContent('Processing'));
+    await select(screen.getByLabelText('Report'), RMNCAH);
+
+    expect(backend.calls).toContainEqual(expect.objectContaining({ method: 'DELETE', url: expect.stringMatching(/reportRequest\/request-1$/) }));
+    expect(screen.queryByTestId('run-status')).not.toBeInTheDocument();
+    const pollsAfter = backend.calls.filter((c) => c.method === 'GET' && c.url.endsWith('/request-1')).length;
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(backend.calls.filter((c) => c.method === 'GET' && c.url.endsWith('/request-1'))).toHaveLength(pollsAfter);
+  });
+
+  it('drops a run that is accepted only after another report was chosen', async () => {
+    const backend = given({ context: facilityContext, holdPosts: true });
+    renderWithSwr(<ReportRunner />);
+
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    await select(screen.getByLabelText('Report'), RMNCAH);
+    await act(async () => backend.releasePosts());
+
+    await waitFor(() =>
+      expect(backend.calls).toContainEqual(expect.objectContaining({ method: 'DELETE', url: expect.stringMatching(/request-1$/) })),
+    );
+    expect(screen.queryByTestId('run-status')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run report' })).toBeEnabled();
+    expect(backend.calls.some((c) => c.url.includes('/reportDataSet/'))).toBe(false);
+  });
+
+  it('drops an Excel export that is accepted only after another report was chosen', async () => {
+    const backend = given({ context: facilityContext, holdPosts: true });
+    renderWithSwr(<ReportRunner />);
+
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    await act(async () => backend.releasePosts());
+    await waitFor(() => expect(screen.getByTestId('run-status')).toHaveTextContent('Completed'));
+
+    await click(screen.getByRole('button', { name: 'Download Excel' }));
+    await select(screen.getByLabelText('Report'), RMNCAH);
+    await act(async () => backend.releasePosts());
+
+    await waitFor(() =>
+      expect(backend.calls).toContainEqual(expect.objectContaining({ method: 'DELETE', url: expect.stringMatching(/request-2$/) })),
+    );
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    expect(saved).toHaveLength(0);
+    expect(backend.calls.some((c) => c.method === 'GET' && c.url.endsWith('/request-2'))).toBe(false);
+    expect(screen.queryByText('Preparing the file...')).not.toBeInTheDocument();
+  });
+
+  it('stops waiting for an Excel export whose status cannot be read, and says why', async () => {
+    given({ context: facilityContext, failPolls: ['request-2'] });
+    renderWithSwr(<ReportRunner />);
+    await runToCompletion();
+
+    await click(screen.getByRole('button', { name: 'Download Excel' }));
+
+    expect(await screen.findByText('Status unavailable')).toBeInTheDocument();
+    expect(screen.getByText('The export could not be produced. Try again.')).toBeInTheDocument();
+    expect(screen.queryByText('Preparing the file...')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download Excel' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download CSV' })).toBeEnabled();
+    expect(saved).toHaveLength(0);
+  });
+});
+
 describe('report runner at central', () => {
   const central = { instanceRole: 'central', facilityLocation: null, etlLastRun: { completedAt: '2026-09-27T10:00:00.000+0000' } };
 
