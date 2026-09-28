@@ -3,10 +3,10 @@ type ChildPriority = 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Prio
 class TriageFormPage {
     constructor(private readonly timeout = 20000) {}
 
-    private readonly categoryValues: Record<ChildPriority, string> = {
-        'Non-urgent Priority': 'd7ebda1c-c764-4e7d-ab10-67a6e1a499d3',
-        'Urgent Priority': 'e37a28e5-3e2b-4e00-8f92-5eb329a28c50',
-        'Emergency Priority': 'c4b18c65-276f-42e7-8b01-e2c342f026a7'
+    private readonly categoryNames: Record<ChildPriority, string> = {
+        'Non-urgent Priority': 'Green',
+        'Urgent Priority': 'Yellow',
+        'Emergency Priority': 'Red'
     };
 
     private readonly normalVitals = [
@@ -36,6 +36,15 @@ class TriageFormPage {
     private submitAssessment() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
+    }
+
+    private assertCodedAnswer(value: string | number | undefined, expectedName: string) {
+        expect(value, `${expectedName} coded answer`).to.be.a('string');
+        cy.request<{ display: string }>(`/openmrs/ws/rest/v1/concept/${value}?v=custom:(display)`)
+            .its('body.display')
+            .should((display) => {
+                expect(display.trim().toLowerCase()).to.equal(expectedName.toLowerCase());
+            });
     }
 
     openClinicalForms() {
@@ -289,20 +298,18 @@ class TriageFormPage {
             const observationFor = (fieldId: string) =>
                 observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`);
 
-            expect(observationFor('ebola_screen')?.value).to.equal(
-                ebolaAnswer === 'Negative' ? '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' : '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-            );
-            expect(observationFor('triage_category_child')?.value).to.equal(this.categoryValues[category]);
+            this.assertCodedAnswer(observationFor('ebola_screen')?.value, ebolaAnswer === 'Negative' ? 'No' : 'Yes');
+            this.assertCodedAnswer(observationFor('triage_category_child')?.value, this.categoryNames[category]);
             this.normalVitals.forEach(({ id, value }) => {
                 expect(observationFor(id)?.value, `saved ${id}`).to.equal(Number(value));
             });
             if (category === 'Urgent Priority') {
-                expect(observationFor('yellow_signs_child')?.value).to.equal('5a8d325c-7f5b-4ffc-a801-628efaec9433');
+                this.assertCodedAnswer(observationFor('yellow_signs_child')?.value, 'Nurse concern');
             } else {
                 expect(observationFor('yellow_signs_child')).to.be.undefined;
             }
             if (category === 'Emergency Priority') {
-                expect(observationFor('red_signs_child')?.value).to.equal('5603b544-cc39-44be-ac4d-8b06cdae78ed');
+                this.assertCodedAnswer(observationFor('red_signs_child')?.value, 'Severe burns');
             } else {
                 expect(observationFor('red_signs_child')).to.be.undefined;
             }
