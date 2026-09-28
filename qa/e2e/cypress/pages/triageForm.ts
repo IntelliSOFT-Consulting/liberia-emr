@@ -1,6 +1,35 @@
 class TriageFormPage {
     constructor(private readonly timeout = 20000) {}
 
+    private readonly normalVitals = [
+        { id: 'temp', value: '37.2' },
+        { id: 'hr', value: '78' },
+        { id: 'rr', value: '18' },
+        { id: 'spo2', value: '98' },
+        { id: 'weight', value: '20.5' },
+        { id: 'height', value: '120.5' },
+        { id: 'wz_score', value: '0' },
+        { id: 'muac', value: '15.5' }
+    ];
+
+    private selectChildCategory(category: 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Priority') {
+        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', category, { timeout: this.timeout }).click();
+    }
+
+    private enterVitals(vitals = this.normalVitals) {
+        vitals.forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
+        });
+    }
+
+    private submitAssessment() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+    }
+
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
@@ -35,15 +64,9 @@ class TriageFormPage {
     }
 
     verifyEbolaScreeningRequired() {
-        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Non-urgent Priority');
 
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        this.submitAssessment();
 
         cy.get('input[name="ebola_screen"]', { timeout: this.timeout })
             .first()
@@ -58,8 +81,7 @@ class TriageFormPage {
             .scrollIntoView()
             .check({ force: true });
 
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        this.submitAssessment();
 
         cy.get('#triage_category_child', { timeout: this.timeout })
             .closest('.cds--dropdown__wrapper')
@@ -137,14 +159,9 @@ class TriageFormPage {
 
     verifyClinicalWarningsAllowSave() {
         cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
-        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Non-urgent Priority');
 
-        [
+        this.enterVitals([
             { id: 'temp', value: '38.1' },
             { id: 'hr', value: '101' },
             { id: 'rr', value: '27' },
@@ -153,9 +170,7 @@ class TriageFormPage {
             { id: 'height', value: '120.5' },
             { id: 'wz_score', value: '0' },
             { id: 'muac', value: '15.5' }
-        ].forEach(({ id, value }) => {
-            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
-        });
+        ]);
 
         [
             'Temperature is outside the normal range (36–38 °C). Please verify the reading.',
@@ -166,19 +181,13 @@ class TriageFormPage {
             cy.contains(warning, { timeout: this.timeout }).scrollIntoView().should('be.visible');
         });
 
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);
     }
 
     verifyHiddenSignsAreNotSubmitted() {
         cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
-        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Urgent Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Urgent Priority');
 
         cy.get('#triage_category_child').should('contain.text', 'Urgent Priority');
         cy.contains('legend', 'Urgent priority signs', { timeout: this.timeout })
@@ -190,12 +199,7 @@ class TriageFormPage {
             .check({ force: true })
             .should('be.checked');
 
-        cy.get('#triage_category_child').scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Emergency Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Emergency Priority');
         cy.contains('legend', 'Urgent priority signs').should('not.exist');
         cy.contains('legend', 'Emergency Signs', { timeout: this.timeout })
             .scrollIntoView()
@@ -206,29 +210,12 @@ class TriageFormPage {
             .check({ force: true })
             .should('be.checked');
 
-        cy.get('#triage_category_child').scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Non-urgent Priority');
         cy.contains('legend', 'Emergency Signs').should('not.exist');
 
-        [
-            { id: 'temp', value: '37.2' },
-            { id: 'hr', value: '78' },
-            { id: 'rr', value: '18' },
-            { id: 'spo2', value: '98' },
-            { id: 'weight', value: '20.5' },
-            { id: 'height', value: '120.5' },
-            { id: 'wz_score', value: '0' },
-            { id: 'muac', value: '15.5' }
-        ].forEach(({ id, value }) => {
-            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
-        });
+        this.enterVitals();
 
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
             expect(response?.statusCode).to.be.oneOf([200, 201]);
             expect(request.body.obs, 'submitted triage observations').to.be.an('array');
@@ -245,29 +232,11 @@ class TriageFormPage {
 
     verifySavedAssessment() {
         cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
-        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
-            cy.get('button[role="combobox"]').click();
-        });
-        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
-            timeout: this.timeout
-        }).click();
+        this.selectChildCategory('Non-urgent Priority');
 
-        const vitals = [
-            { id: 'temp', value: '37.2' },
-            { id: 'hr', value: '78' },
-            { id: 'rr', value: '18' },
-            { id: 'spo2', value: '98' },
-            { id: 'weight', value: '20.5' },
-            { id: 'height', value: '120.5' },
-            { id: 'wz_score', value: '0' },
-            { id: 'muac', value: '15.5' }
-        ];
-        vitals.forEach(({ id, value }) => {
-            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
-        });
+        this.enterVitals();
 
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
             expect(response?.statusCode).to.be.oneOf([200, 201]);
             const observations = request.body.obs as Array<{ formFieldPath: string; value: string | number }>;
@@ -277,7 +246,7 @@ class TriageFormPage {
 
             expect(observationFor('ebola_screen')?.value).to.equal('1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
             expect(observationFor('triage_category_child')?.value).to.be.a('string').and.not.be.empty;
-            vitals.forEach(({ id, value }) => {
+            this.normalVitals.forEach(({ id, value }) => {
                 expect(observationFor(id)?.value, `saved ${id}`).to.equal(Number(value));
             });
             expect(observationFor('yellow_signs_child')).to.be.undefined;
