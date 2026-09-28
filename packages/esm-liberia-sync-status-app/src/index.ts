@@ -21,6 +21,14 @@ export const root = getAsyncLifecycle(() => import('./sync-status/sync-status.co
 // Reviewing sync conflicts, reached from the status page's conflicts tile.
 export const syncConflicts = getAsyncLifecycle(() => import('./sync-conflicts/sync-conflicts.component'), options);
 
+// The Master Facility List sync (ADR 0009 decision 9). It hides itself where no MFL account is set.
+export const mflSync = getAsyncLifecycle(() => import('./mfl-sync/mfl-sync.component'), options);
+
+export const mflSyncAppMenuItem = getAsyncLifecycle(
+  () => import('./mfl-sync/mfl-sync-app-menu-item.component'),
+  options,
+);
+
 export const syncStatusAppMenuItem = getAsyncLifecycle(
   () => import('./sync-status/sync-status-app-menu-item.component'),
   options,
