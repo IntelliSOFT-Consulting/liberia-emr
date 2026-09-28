@@ -9,9 +9,11 @@ Legitimate uses are the few things that have to be true before OpenMRS first con
 session variables, a restored backup when standing a facility back up, a grant the
 application user cannot create for itself.
 
-The one committed script, `10-sync-db-users.sh`, creates the sync layer's database
-principals (a Debezium replication user and the sender's management schema) and does
-nothing unless their passwords are set in the environment. Compose bind-mounts this
+`10-sync-db-users.sh` creates the sync layer's database principals (a Debezium
+replication user and the sender's management schema) and does nothing unless their
+passwords are set in the environment. `20-etl-db-user.sh` creates the reporting ETL schema
+`liberiaemr_etl` and its user, and lets the OpenMRS user read that schema (ADR 0010); it does
+nothing unless `ETL_DB_PASSWORD` is set. Compose bind-mounts this
 directory by relative path, and
 Docker creates a missing bind source as a root-owned directory — so an absent `initdb/`
 does not fail the stack, it silently appears in a working tree owned by root.

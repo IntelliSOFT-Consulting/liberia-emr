@@ -184,8 +184,11 @@ public final class MflMapper {
 			}
 		}
 
-		return new MflLocationSpec(unit.getUid(), level, name, parent == null ? null : parent.getUid(), latitude,
-		        longitude, stateProvince, countyDistrict, unit.getClosedDate(), attributes, warnings);
+		// Keep the source parent UID even when that parent is missing from the pull (a failed page):
+		// the engine then reports an ERROR instead of placing the unit at the top level.
+		String parentUid = level == MflLevel.COUNTY ? null : unit.getParentUid();
+		return new MflLocationSpec(unit.getUid(), level, name, parentUid, latitude, longitude, stateProvince,
+		        countyDistrict, unit.getClosedDate(), attributes, warnings);
 	}
 
 	/** Hospital > Health Center > Clinic, and CEmONC > BemONC: the first in declaration order wins. */

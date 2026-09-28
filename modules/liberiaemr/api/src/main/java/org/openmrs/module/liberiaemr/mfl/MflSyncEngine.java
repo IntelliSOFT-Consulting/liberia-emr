@@ -272,9 +272,11 @@ public class MflSyncEngine {
 		}
 
 		if (!dryRun) {
+			Map<Plan, String> parked = parkRenames(plans);
 			for (Plan plan : plans) {
 				apply(plan);
 			}
+			unparkFailures(parked);
 		}
 		return new Result(items, MflRunCounts.of(items, unchanged), message, message != null);
 	}
@@ -424,6 +426,57 @@ public class MflSyncEngine {
 			    attribute.getValue());
 		}
 		return changes;
+	}
+
+	/**
+	 * Moves every row about to be renamed to a unique temporary name first. A rename can take a name
+	 * another row gives up in the same run (a swap), and LocationValidator rejects a name any other
+	 * active row still holds. The final names stay exactly as the mapper decided them.
+	 *
+	 * @return each parked plan with the row's name before the run
+	 */
+	private Map<Plan, String> parkRenames(List<Plan> plans) {
+		Map<Plan, String> parked = new LinkedHashMap<Plan, String>();
+		for (Plan plan : plans) {
+			if (plan.create || plan.adopted || plan.spec == null) {
+				continue;
+			}
+			Location location = locations.getLocationByUuid(plan.uuid);
+			if (location == null || plan.spec.getName().equals(location.getName())) {
+				continue;
+			}
+			String original = location.getName();
+			location.setName("MFL rename " + location.getUuid());
+			try {
+				locations.saveLocation(location);
+				parked.put(plan, original);
+			}
+			catch (Exception e) {
+				log.warn("MFL sync could not park {} for a rename: {}", plan.item.getMflUid(), e.getMessage());
+				location.setName(original);
+			}
+		}
+		return parked;
+	}
+
+	/** A parked row whose change then failed gets its old name back. */
+	private void unparkFailures(Map<Plan, String> parked) {
+		for (Map.Entry<Plan, String> entry : parked.entrySet()) {
+			if (entry.getKey().item.getAction() != MflAction.ERROR) {
+				continue;
+			}
+			Location location = locations.getLocationByUuid(entry.getKey().uuid);
+			if (location == null) {
+				continue;
+			}
+			location.setName(entry.getValue());
+			try {
+				locations.saveLocation(location);
+			}
+			catch (Exception e) {
+				log.warn("MFL sync could not restore the name of {}: {}", entry.getKey().item.getMflUid(), e.getMessage());
+			}
+		}
 	}
 
 	private void apply(Plan plan) {

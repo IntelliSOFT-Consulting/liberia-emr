@@ -221,6 +221,27 @@ public class MflSyncEngineTest extends BaseModuleContextSensitiveTest {
 	}
 
 	@Test
+	public void run_shouldSwapTheNamesOfTwoCreatedRows() throws Exception {
+		String kesselee = "VxgfT09KRV4";
+		// Kesselee joins the MFL after Jah: its row has the higher id, yet its UID sorts first, so
+		// it is renamed first. LocationValidator checks only the first row with the new name.
+		run(without(MflFixture.units(), kesselee), false);
+		run();
+		String jahName = mfl(JAH).getName();
+		String kesseleeName = mfl(kesselee).getName();
+		List<MflUnit> units = MflFixture.units();
+		MflUnit jah = MflFixture.unit(units, JAH);
+		MflUnit other = MflFixture.unit(units, kesselee);
+		units = replace(units, with(jah, kesseleeName, jah.getParentUid(), null));
+		units = replace(units, with(other, jahName, other.getParentUid(), null));
+		MflSyncEngine.Result result = run(units, false);
+		assertEquals(MflAction.UPDATE, item(result, JAH).getAction());
+		assertEquals(MflAction.UPDATE, item(result, kesselee).getAction());
+		assertEquals(kesseleeName, mfl(JAH).getName());
+		assertEquals(jahName, mfl(kesselee).getName());
+	}
+
+	@Test
 	public void run_shouldReparentALocationAndItsAddress() throws Exception {
 		run();
 		MflUnit jah = MflFixture.unit(MflFixture.units(), JAH);
@@ -305,6 +326,30 @@ public class MflSyncEngineTest extends BaseModuleContextSensitiveTest {
 		assertNull(item(result, JAH));
 		assertThat(result.getMessage(), containsString("facilities page 2: HTTP 500"));
 		assertTrue(result.isRetirementSkipped());
+	}
+
+	@Test
+	public void run_shouldNeverMoveAFacilityToTheTopWhenItsDistrictPageFailed() throws Exception {
+		run();
+		MflSyncEngine.Result result = run(new MflSnapshot(without(MflFixture.units(), KPAAI),
+		        Collections.singletonList("admin page 1: HTTP 500")), false);
+		assertEquals("Jah stays under its district", mfl(KPAAI), mfl(JAH).getParentLocation());
+		assertFalse(mfl(KPAAI).getRetired());
+		MflRunItem item = item(result, JAH);
+		assertEquals(MflAction.ERROR, item.getAction());
+		assertThat(item.getError(), containsString(KPAAI));
+		assertEquals(mfl(JAH).getUuid(), item.getLocationUuid());
+		assertTrue(result.isRetirementSkipped());
+	}
+
+	@Test
+	public void run_shouldNotCreateAFacilityAtTheTopWhenItsDistrictPageFailed() throws Exception {
+		MflSyncEngine.Result result = run(new MflSnapshot(without(MflFixture.units(), KPAAI),
+		        Collections.singletonList("admin page 1: HTTP 500")), false);
+		assertNull("not created without its parent", mfl(JAH));
+		MflRunItem item = item(result, JAH);
+		assertEquals(MflAction.ERROR, item.getAction());
+		assertNull("no row exists yet, so no location UUID", item.getLocationUuid());
 	}
 
 	@Test
