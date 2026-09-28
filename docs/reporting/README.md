@@ -339,7 +339,10 @@ reportingrest also exposes these resources. The UI must not use them:
 - `definitionlibrary`;
 - `reportDefinitionsWithScheduledRequests`.
 
-Our privilege check (§3.4) applies wherever our own data set evaluators run.
+Our privilege check (§3.4) applies wherever our own data set evaluators run. Our ETL evaluator
+also runs only the data sets this module registers, matched by name and exact SQL, so a
+definition POSTed to `reportdata` cannot carry its own SQL through it. reporting's own
+`SqlDataSetDefinition` is outside this module and governed by reporting's privileges.
 
 ### 4.4 Instance context (`liberiaemrreports`)
 

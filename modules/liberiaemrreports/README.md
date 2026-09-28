@@ -21,7 +21,8 @@ instance's own Mamba ETL schema and served through reportingrest 2.0.0. The desi
 | ETL schema | `${etl}` in SQL, from `mambaetl.analysis.db.etl_database`, default `liberiaemr_etl` (`EtlSchema`). |
 | Location | `${scopeLocations}` in SQL: facility clamped to `liberiaemr.facility.locationUuid`, central rolled up through `mamba_dim_location_hierarchy` (`LocationScopeResolver`). The role is `LIBERIAEMR_INSTANCE_ROLE`, failing closed to `facility`. |
 | Privilege | `Export National Report`, in the data set evaluator (every evaluating path) and on stored output (`StoredReportAccessAdvice`, for `downloadReport`). |
-| Aggregates only | The evaluator refuses person- or record-identifying columns and any cell that is not a number, text or date. |
+| Registered SQL only | The evaluator runs a data set only if its name and exact SQL are what one of these managers builds (`RegisteredEtlDataSets`). reportingrest's `reportdata` evaluates POSTed definitions, so an ad-hoc or altered `EtlSqlDataSetDefinition` is refused before any SQL runs. |
+| Aggregates only | The evaluator also refuses person- or record-identifying column names and any cell that is not a number, text or date. That catches a mistake in our own SQL; it is no defence against a hostile alias, which the registration check is. |
 | UI context | `GET /ws/rest/v1/liberiaemrreports/context`: role, own facility, last ETL run. |
 
 ## Adding a sheet's indicators

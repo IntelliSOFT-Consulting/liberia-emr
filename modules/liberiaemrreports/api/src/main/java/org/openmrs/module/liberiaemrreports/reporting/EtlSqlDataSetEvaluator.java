@@ -43,10 +43,14 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Evaluates an {@link EtlSqlDataSetDefinition}. In order:
  * <ol>
  * <li>requires {@value NationalReportPrivilege#PRIVILEGE} ({@link NationalReportPrivilege});</li>
+ * <li>refuses any definition this module did not build, by name and exact SQL
+ * ({@link RegisteredEtlDataSets}): an ad-hoc or altered definition never reaches the database;</li>
  * <li>resolves the location scope for this instance's role, failing on an out-of-scope
  * location;</li>
  * <li>expands {@code ${scopeLocations}} and {@code ${etl}} and binds the period and scope;</li>
- * <li>refuses a result whose columns identify people or records (aggregates only);</li>
+ * <li>refuses a result whose columns identify people or records (aggregates only). This is a
+ * guard against a mistake in this module's own SQL, not against a hostile caller: an alias can
+ * hide anything, which is why the registration check comes first;</li>
  * <li>runs the query read-only through reporting's {@link EvaluationService}.</li>
  * </ol>
  * The data set definition's own parameters are ignored beyond the three standard ones: nothing a
@@ -68,12 +72,16 @@ public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 	@Autowired
 	private LocationScopeResolver locationScopeResolver;
 	
+	@Autowired
+	private RegisteredEtlDataSets registeredEtlDataSets;
+	
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext context) throws EvaluationException {
 		context = ObjectUtil.nvl(context, new EvaluationContext());
 		EtlSqlDataSetDefinition definition = (EtlSqlDataSetDefinition) dataSetDefinition;
 		
 		NationalReportPrivilege.check(context);
+		registeredEtlDataSets.require(definition);
 		
 		Date startDate = (Date) context.getParameterValue(ReportParameters.START_DATE);
 		Date endDate = (Date) context.getParameterValue(ReportParameters.END_DATE);
@@ -146,5 +154,9 @@ public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 	
 	public void setLocationScopeResolver(LocationScopeResolver locationScopeResolver) {
 		this.locationScopeResolver = locationScopeResolver;
+	}
+	
+	public void setRegisteredEtlDataSets(RegisteredEtlDataSets registeredEtlDataSets) {
+		this.registeredEtlDataSets = registeredEtlDataSets;
 	}
 }
