@@ -21,6 +21,7 @@ configs and derived SQL are in [docs/reporting/README.md §2](../../docs/reporti
 ```
 api/src/main/mamba/_etl/
 ├── config/<form>.json                 flat-table configs (one per encounter type); empty for now
+├── core_overrides/sp_*.sql            same-named replacements for core procedures (LE-363)
 ├── derived/<area>/sp_*.sql            derived dimensions and facts
 ├── sp_makefile                        lists every derived SP, in per-owner sections
 └── sp_mamba_data_processing_etl.sql   the caller: CALLs them in the same order
@@ -99,6 +100,54 @@ definer.
 
 The first run is a full drop-and-flatten, and later ones are incremental. Every run calls
 `sp_mamba_data_processing_etl(mode)` last.
+
+## Incremental runs and late-arriving rows (LE-363)
+
+**LE-363 changes:** incremental runs now find new core-dimension rows by key (with a daily
+sweep) and modified ones by value, not by timestamp. No full rebuild is scheduled. The ADR 0010
+amendment (LE-362) is to record this choice.
+
+Core's incremental mode refreshes each `mamba_dim_*` table, and `mamba_z_encounter_obs`,
+through `sp_mamba_etl_incremental_columns_index(<openmrs table>, <etl table>)`. That call
+copies the source table's key and change columns into `mamba_etl_incremental_columns_index_all`,
+then lists the **new** keys (`…_index_new_insert`) and the **modified** keys
+(`…_index_modified_insert`) for the table's own insert and update procedures. Core 3.0.0 lists
+them by timestamp: new when `date_created`, and modified when `date_changed`, `date_voided` or
+`date_retired`, is at or after the start of the last completed run. dbsync keeps a facility's
+original timestamps, so at central a record, a void or an edit that syncs after a run started
+was never flattened. Back-dated data behaves the same way at a facility.
+
+`core_overrides/` replaces four core procedures. They are compiled after core's copies, so
+theirs are the definitions deployed; `DeployScriptTest` fails the build if that stops being
+true.
+
+| Procedure | Change |
+| --- | --- |
+| `sp_mamba_etl_incremental_columns_index_new_insert` | A key is new when it is not in the ETL table and it is above the highest key the table saw on its previous run, less a margin of 10 000. Core's `date_created` test is kept as well. Once a day per table, and on the first incremental run after a full one, a **sweep** drops the key bound, so nothing the margin missed stays out longer than a day. State is kept in `mamba_etl_liberia_incremental_state`. |
+| `sp_mamba_etl_incremental_columns_index_modified_insert` | Core's timestamp test is kept, and a row is also modified when any of `date_changed`, `voided`, `date_voided`, `retired` or `date_retired` differs between the source and the ETL table. Only the columns the ETL table has are compared. |
+| `sp_mamba_dim_patient_identifier_incremental_update` | Core's copy joins the modified `patient_identifier_id` keys to `patient_id`, so it rewrote the wrong patient's identifiers. It now joins on `patient_identifier_id`. |
+| `sp_mamba_dim_encounter_insert` (full runs) | Core's copy keeps only encounter types that have a flat table, so with no configs a full run left `mamba_dim_encounter` empty; its incremental insert keeps every type. Both modes now keep every encounter of a known type. |
+
+`mamba_etl_liberia_incremental_state` shows what the last run did for each table:
+`max_pkey_seen`, `last_sweep_time`, `last_run_sweep` and `last_run_new`, the number of keys
+listed as new. A full run drops it along with every other `mamba_*` table.
+
+**Cost.** Core already copies each source table's key and change columns into
+`…_index_all` on every incremental run. The overrides add two primary-key joins of that copy
+against the ETL table: an anti-join for new rows, and a join over the stored change columns for
+modified ones. Between sweeps, only keys above the bound are examined. In a sweep, every
+source row that the table's insert procedure filters out is examined again and is still not
+inserted. Examples are obs of concepts that no flat table uses, and concept names in other
+locales. For `obs` at central, that is the largest cost, and it is paid once a day.
+
+**Not in scope.** Rows deleted outright in the source stay in the ETL tables, as in core;
+OpenMRS voids rather than deletes. `mamba_obs_group` is only built by a full run, as in core.
+
+**A full rebuild** is still available, and is the recovery path after a restore or a bulk
+correction. Set `incremental_mode_switch = 0` in `_mamba_etl_user_settings` as the ETL user,
+let one run complete, then set it back to `1`. The next backend start rewrites the setting
+from `mambaetl.analysis.incremental_mode` anyway. A full run drops every `mamba_*` table
+first, so reports read empty tables until it completes. That is why no rebuild is scheduled.
 
 **Reading `_mamba_etl_schedule`.** On each tick, core's `sp_mamba_etl_un_stuck_scheduler`
 rewrites the previous row if it ended in `ERROR` or was left `RUNNING`. It sets
