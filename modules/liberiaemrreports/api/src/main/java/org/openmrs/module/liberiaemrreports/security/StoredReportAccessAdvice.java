@@ -80,7 +80,9 @@ public class StoredReportAccessAdvice implements MethodBeforeAdvice {
 		catch (RuntimeException e) {
 			return true;
 		}
-		return definition != null && runsEtlDataSets(definition);
+		// A definition that can no longer be found (deleted after the run) cannot be shown to be
+		// someone else's, so its stored output stays behind the privilege.
+		return definition == null || runsEtlDataSets(definition);
 	}
 	
 	static boolean runsEtlDataSets(ReportDefinition definition) {

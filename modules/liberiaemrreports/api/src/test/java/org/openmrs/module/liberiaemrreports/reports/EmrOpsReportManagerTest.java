@@ -40,6 +40,7 @@ import org.openmrs.module.liberiaemrreports.uuid.ReportSheet;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetRow;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
+import org.openmrs.module.reporting.dataset.definition.SqlDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
 import org.openmrs.module.reporting.report.ReportData;
@@ -269,6 +270,11 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 		ReportRequest theirs = new ReportRequest();
 		ReportDefinition other = new ReportDefinition();
 		other.setUuid("not-a-liberiaemr-report");
+		// A third-party report in hand, with its own (non-ETL) data set. A bare reference to a
+		// definition that cannot be found would be protected: the guard fails closed.
+		SqlDataSetDefinition rows = new SqlDataSetDefinition();
+		rows.setSqlQuery("SELECT 1");
+		other.addDataSetDefinition("rows", Mapped.mapStraightThrough(rows));
 		theirs.setReportDefinition(Mapped.noMappings(other));
 		
 		advice.before(load, new Object[] { ours }, null); // admin may

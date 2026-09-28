@@ -41,6 +41,14 @@ public class StoredReportAccessAdviceTest extends BaseModuleContextSensitiveTest
 	}
 
 	@Test
+	public void shouldProtectARequestWhoseDefinitionCanNoLongerBeFound() {
+		// Only a reference is stored with the request, and no definition with this UUID exists.
+		ReportDefinition deleted = new ReportDefinition();
+		deleted.setUuid("3f1c2b7e-0d4a-4c1e-9f55-2a6b8d0e7c11");
+		assertTrue(StoredReportAccessAdvice.isOurs(requestFor(deleted)));
+	}
+	
+	@Test
 	public void shouldLeaveOtherReportsAlone() {
 		ReportDefinition other = new ReportDefinition();
 		SqlDataSetDefinition sql = new SqlDataSetDefinition();
