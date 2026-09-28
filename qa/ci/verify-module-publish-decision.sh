@@ -138,6 +138,22 @@ run "main push with a well-formed but unresolvable base" true 0 \
   # repo (e.g. a shallow-clone or force-push edge case). Only the all-zeros limb of the
   # "no usable base" check was covered before; this exercises the `git cat-file -e` limb.
 
+# A push whose changed-path list is far past a pipe buffer (~64 KB), with the modules/ path
+# sorting BEFORE the rest. A `git diff --name-only | grep -q` under pipefail misses this:
+# grep exits on the first match, git diff dies of SIGPIPE writing the rest, and the pipeline
+# reports failure -- a silent "nothing published" for a push that changed the module.
+git -C "$repo" checkout -q -b big "$doc_sha"
+mkdir -p "$repo/modules/liberiaemr" "$repo/zz-bulk"
+echo z > "$repo/modules/liberiaemr/g"
+for i in $(seq 1 3000); do : > "$repo/zz-bulk/a-long-enough-file-name-to-fill-the-pipe-$i"; done
+git -C "$repo" add -A
+git -C "$repo" -c user.email=t@t -c user.name=t -c commit.gpgsign=false commit -q -m bulk
+big_sha="$(git -C "$repo" rev-parse HEAD)"
+git -C "$repo" checkout -q main
+run "main push touching modules/ among 3000 paths" true 0 \
+  GITHUB_EVENT_NAME=push GITHUB_REF=refs/heads/main GITHUB_REF_NAME=main \
+  GITHUB_SHA="$big_sha" BEFORE_SHA="$doc_sha" POM="$(make_pom 1.0.0-SNAPSHOT)"
+
 echo "== everything else =="
 run "push to a branch"                      false    0 \
   GITHUB_EVENT_NAME=push GITHUB_REF=refs/heads/feat GITHUB_REF_NAME=feat \

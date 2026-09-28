@@ -115,7 +115,7 @@ endpoints, SMTP configuration and how a module release is cut.
 | Workflow | Runs on | Does |
 | --- | --- | --- |
 | `ci.yml` | PRs to `main`/`develop`, pushes to `main`, manual runs | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
-| `modules.yml` | changes under `modules/**`, releases, manual runs | Builds the module; publishes SNAPSHOTs from `main` and releases whose tag matches the pom |
+| `modules.yml` | every push to `main`, `liberiaemr-x.y.z` tags, PRs touching `modules/**` or the workflow, manual runs | Builds and tests the module; publishes the SNAPSHOT from a `main` push that touched `modules/`, and a release from its `liberiaemr-x.y.z` tag ([release-module.md](docs/runbooks/release-module.md)). A GitHub release publishes nothing |
 | `packages.yml` | changes under `packages/**`, releases, manual runs | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here, and only for the login and sync-status apps |
 | `release.yml` | `x.y.z` tags, manual runs | Upgrade test from the previous release and production approval. Full-stack API/Cypress, image push and staging deploy are still `echo "TODO"` stubs |
 

@@ -81,7 +81,7 @@ if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; t
   # so a paths filter beside the tags filter would stop module releases firing entirely.
   # The filter therefore lives here, but it is narrower than what the trigger used to carry:
   # the old trigger's paths were ['modules/**', '.github/workflows/modules.yml'], while this
-  # greps the diff for `^modules/` only. A workflow-only change (editing modules.yml itself)
+  # checks the diff for `modules/` only. A workflow-only change (editing modules.yml itself)
   # no longer republishes the SNAPSHOT -- matching modules/liberiaemr/README.md, which
   # documents the stream as triggering on changes that touch `modules/**`.
   #
@@ -93,11 +93,17 @@ if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; t
     exit 0
   fi
 
-  if git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | grep -qE '^modules/'; then
-    emit true "main push touched modules/ -> publishing the SNAPSHOT stream."
-  else
-    emit false "main push touched nothing under modules/ -> the SNAPSHOT is unchanged, nothing published."
-  fi
+  # Ask git directly rather than piping `git diff --name-only` into `grep -q`: under
+  # pipefail, grep exiting on the first match kills git diff with SIGPIPE on a large enough
+  # diff, and the pipeline then reads as "no match". --quiet exits 1 on a difference, 0 on
+  # none; anything else is an error, which fails open like the base check above.
+  diff_rc=0
+  git diff --quiet "$BEFORE_SHA" "$GITHUB_SHA" -- ':(top)modules/' || diff_rc=$?
+  case "$diff_rc" in
+    1) emit true "main push touched modules/ -> publishing the SNAPSHOT stream." ;;
+    0) emit false "main push touched nothing under modules/ -> the SNAPSHOT is unchanged, nothing published." ;;
+    *) emit true "main push: git diff failed (rc=${diff_rc}) -> publishing the SNAPSHOT stream rather than guessing." ;;
+  esac
   exit 0
 fi
 

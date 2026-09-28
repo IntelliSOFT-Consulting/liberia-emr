@@ -1,6 +1,6 @@
 # Cutting `modules/liberiaemr` releases with maven-release-plugin
 
-Status: approved, not yet implemented
+Status: approved; implemented by `docs/superpowers/plans/2026-09-23-module-maven-release.md` (LE-338)
 Date: 2026-09-23
 Branch: `feat/module-maven-release`, stacked on `ci/gate-module-release-publish` (PR #112)
 
