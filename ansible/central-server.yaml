@@ -7,7 +7,12 @@
 #   echo -e 'central-server.vars.yml\ninventory.ini' >> .gitignore
 #
 # Usage:
-#   ansible-playbook -i inventory.ini central-server.yml
+#   ansible-playbook -i inventory.ini central-server.yaml
+#
+# CI deploys (LE-368): set ci_deploy_public_key in the vars file to let the "Update central
+# dev environment" job in .github/workflows/ci.yml reach this server as ansible_user. That job
+# fast-forwards the checkout at repo_dest to the commit it deploys, so the compose file always
+# matches the images; leave the checkout clean (central.env is git-ignored).
 #
 
 
@@ -88,6 +93,33 @@
       name: "{{ ansible_user }}"
       groups: docker
       append: true
+
+  # -----------------------------------------------------------------
+  # CI deploy key (LE-368). Only when ci_deploy_public_key is set: the
+  # private half is the CENTRAL_DEV_SSH_PRIVATE_KEY repository secret.
+  # -----------------------------------------------------------------
+  - name: Look up {{ ansible_user }}'s home directory
+    ansible.builtin.getent:
+      database: passwd
+      key: "{{ ansible_user }}"
+    when: ci_deploy_public_key | default('') | length > 0
+
+  - name: Create {{ ansible_user }}'s .ssh directory
+    ansible.builtin.file:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh"
+      state: directory
+      owner: "{{ ansible_user }}"
+      mode: "0700"
+    when: ci_deploy_public_key | default('') | length > 0
+
+  - name: Authorize the CI deploy key
+    ansible.builtin.lineinfile:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+      line: "{{ ci_deploy_public_key }}"
+      create: true
+      owner: "{{ ansible_user }}"
+      mode: "0600"
+    when: ci_deploy_public_key | default('') | length > 0
 
   # -----------------------------------------------------------------
   # Repo
@@ -177,7 +209,7 @@
   - name: Fail here if central.env needs real values filled in
     ansible.builtin.fail:
       msg: >
-        central.env was just created from the example template at {{ central_env_file }}. Edit it with real DB passwords before re-running this playbook — the MYSQL_* placeholders in the example are not safe to run with as-is.
+        central.env was just created from the example template at {{ central_env_file }}. Edit it with real DB passwords before re-running this playbook — the MYSQL_* placeholders in the example are not safe to run with as-is. Also set SYNC_MGMT_DB_PASSWORD, SYNC_REST_USER and SYNC_REST_PASSWORD: the central compose file requires them even when the sync receiver is not started, so without them docker compose refuses to run at all.
     when: not central_env_stat.stat.exists
 
   # sync-receiver and dhis2-export deliberately omitted — see the

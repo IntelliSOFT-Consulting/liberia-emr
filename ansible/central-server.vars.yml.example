@@ -11,3 +11,9 @@ repo_dest: <add_repo_dir>
 certbot_domain: <add_the_cert_bot_domain>
 certbot_email: <admin_email>
 tls_cert_dir: <add_the_cert_bot_dir>
+
+# Optional (LE-368). The PUBLIC half of the CI-only keypair that the "Update central dev
+# environment" job in .github/workflows/ci.yml deploys with; its private half is the
+# CENTRAL_DEV_SSH_PRIVATE_KEY repository secret. Leave it unset on a server CI must not
+# deploy to.
+# ci_deploy_public_key: "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"

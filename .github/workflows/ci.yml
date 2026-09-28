@@ -1451,12 +1451,23 @@ jobs:
           echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+      # The compose file on the server has to match the images being deployed: an old checkout
+      # names the facility frontend, and lacks newer services and settings. When the compose
+      # directory sits in a git checkout (the Ansible playbook clones one), fast-forward it to
+      # this exact commit first. It never rewrites local history: a checkout that cannot
+      # fast-forward stops the deploy for a human.
       - name: Pull and restart backend, frontend and gateway on the central dev server
         if: steps.configured.outputs.configured == 'true'
         run: |
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
             cd '$CENTRAL_DEV_COMPOSE_DIR'
+            if top=\$(git rev-parse --show-toplevel 2>/dev/null); then
+              git -C \"\$top\" fetch -q origin main
+              git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
+                || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
+              echo \"checkout \$top now at \$(git -C \"\$top\" rev-parse --short HEAD)\"
+            fi
             LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' pull backend frontend gateway
             LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
           "
@@ -1483,8 +1494,21 @@ jobs:
             if [ "$code" = "200" ]; then
               echo "ok: $base/ -> 200"
               cfg=$(curl -sk -o /dev/null -w '%{http_code}' "$base/config/config-central.json" || echo 000)
-              [ "$cfg" = "200" ] && { echo "ok: the central build is served (config-central.json -> 200)"; exit 0; }
-              echo "::error::$base/ answers, but config-central.json is $cfg: this is not the central frontend" >&2
+              if [ "$cfg" != "200" ]; then
+                echo "::error::$base/ answers, but config-central.json is $cfg: this is not the central frontend" >&2
+                exit 1
+              fi
+              echo "ok: the central build is served (config-central.json -> 200)"
+              # The frontend serves the SPA even when the backend is down, so check the backend
+              # too. A restart after an upgrade runs migrations and Initializer first: allow 15 min.
+              health="https://${{ secrets.CENTRAL_DEV_HOST }}/openmrs/health/started"
+              for j in $(seq 1 60); do
+                hc=$(curl -sk -o /dev/null -w '%{http_code}' "$health" || echo 000)
+                [ "$hc" = "200" ] && { echo "ok: backend started ($health -> 200)"; exit 0; }
+                echo "backend attempt $j: got $hc, retrying in 15s..."
+                sleep 15
+              done
+              echo "::error::$health never returned 200: the backend did not start" >&2
               exit 1
             fi
             echo "attempt $i: got $code, retrying in 15s..."
