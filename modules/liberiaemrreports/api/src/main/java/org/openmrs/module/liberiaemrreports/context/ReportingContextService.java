@@ -103,7 +103,12 @@ public class ReportingContextService {
 			rows = evaluationService.evaluateToList(query, new EvaluationContext());
 		}
 		catch (RuntimeException e) {
-			log.debug("No ETL schedule to report", e);
+			// Before the ETL's first deploy the table does not exist, which is expected. Anything else
+			// (a missing grant on the ETL schema, a renamed schema) would otherwise look the same to
+			// the UI as "never run", so it is logged where operators will see it.
+			log.warn("Could not read the ETL schedule from " + SCHEDULE_TABLE + "; reporting no last run: "
+			        + e.getMessage());
+			log.debug("ETL schedule read failure", e);
 			return null;
 		}
 		if (rows.isEmpty()) {
@@ -125,7 +130,9 @@ public class ReportingContextService {
 			return "INTERRUPTED";
 		}
 		if ("COMPLETED".equals(transactionStatus) && "SUCCESS".equals(completionStatus)) {
-			return "SUCCESS";
+			// Core writes no message on a genuine success; any other message marks a run core
+			// relabelled, so it must not be reported as a success.
+			return message == null ? "SUCCESS" : "ERROR";
 		}
 		return "RUNNING";
 	}

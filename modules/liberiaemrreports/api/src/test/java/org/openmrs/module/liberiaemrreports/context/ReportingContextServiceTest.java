@@ -101,5 +101,6 @@ public class ReportingContextServiceTest extends BaseModuleContextSensitiveTest 
 		    ReportingContextService.status("COMPLETED", "SUCCESS", ReportingContextService.STUCK_MESSAGE));
 		assertEquals("ERROR", ReportingContextService.status("COMPLETED", "SUCCESS", ReportingContextService.ERROR_MESSAGE));
 		assertEquals("ERROR", ReportingContextService.status("COMPLETED", "ERROR", null));
+		assertEquals("ERROR", ReportingContextService.status("COMPLETED", "SUCCESS", "some other message"));
 	}
 }
