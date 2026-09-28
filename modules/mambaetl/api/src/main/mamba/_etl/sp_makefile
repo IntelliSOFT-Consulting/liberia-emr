@@ -15,6 +15,7 @@
 core_overrides/sp_mamba_etl_incremental_columns_index_new_insert.sql
 core_overrides/sp_mamba_etl_incremental_columns_index_modified_insert.sql
 core_overrides/sp_mamba_dim_patient_identifier_incremental_update.sql
+core_overrides/sp_mamba_dim_encounter_insert.sql
 
 # ---- common (coordinator) ----
 derived/common/sp_mamba_dim_location_hierarchy.sql

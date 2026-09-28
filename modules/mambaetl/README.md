@@ -117,7 +117,7 @@ them by timestamp: new when `date_created`, and modified when `date_changed`, `d
 original timestamps, so at central a record, a void or an edit that syncs after a run started
 was never flattened. Back-dated data behaves the same way at a facility.
 
-`core_overrides/` replaces three core procedures. They are compiled after core's copies, so
+`core_overrides/` replaces four core procedures. They are compiled after core's copies, so
 theirs are the definitions deployed; `DeployScriptTest` fails the build if that stops being
 true.
 
@@ -126,6 +126,7 @@ true.
 | `sp_mamba_etl_incremental_columns_index_new_insert` | A key is new when it is not in the ETL table and it is above the highest key the table saw on its previous run, less a margin of 10 000. Core's `date_created` test is kept as well. Once a day per table, and on the first incremental run after a full one, a **sweep** drops the key bound, so nothing the margin missed stays out longer than a day. State is kept in `mamba_etl_liberia_incremental_state`. |
 | `sp_mamba_etl_incremental_columns_index_modified_insert` | Core's timestamp test is kept, and a row is also modified when any of `date_changed`, `voided`, `date_voided`, `retired` or `date_retired` differs between the source and the ETL table. Only the columns the ETL table has are compared. |
 | `sp_mamba_dim_patient_identifier_incremental_update` | Core's copy joins the modified `patient_identifier_id` keys to `patient_id`, so it rewrote the wrong patient's identifiers. It now joins on `patient_identifier_id`. |
+| `sp_mamba_dim_encounter_insert` (full runs) | Core's copy keeps only encounter types that have a flat table, so with no configs a full run left `mamba_dim_encounter` empty; its incremental insert keeps every type. Both modes now keep every encounter of a known type. |
 
 `mamba_etl_liberia_incremental_state` shows what the last run did for each table:
 `max_pkey_seen`, `last_sweep_time`, `last_run_sweep` and `last_run_new`, the number of keys
