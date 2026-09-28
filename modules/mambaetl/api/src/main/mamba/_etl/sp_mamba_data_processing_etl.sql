@@ -15,8 +15,15 @@ BEGIN
     CALL sp_mamba_dim_person_cpi();
 
     -- ---- rmncah (RPT 6) ----
+    CALL sp_mamba_fact_rmncah_anc_visit();
+    CALL sp_mamba_fact_rmncah_family_planning();
+    CALL sp_mamba_fact_rmncah_delivery();
+    CALL sp_mamba_fact_rmncah_mother_pnc();
 
     -- ---- nutrition (RPT 6) ----
+    CALL sp_mamba_dim_nutrition_who_wflh();
+    CALL sp_mamba_fact_nutrition_anthropometry();
+    CALL sp_mamba_fact_nutrition_vitamin_a();
 
     -- ---- malaria (RPT 7) ----
 
