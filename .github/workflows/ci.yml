@@ -910,6 +910,12 @@ jobs:
       - name: Build and Package
         working-directory: modules/liberiaemr
         run: mvn -B clean package
+      # The reporting ETL module (ADR 0010). Its package compiles the ETL SQL with core's
+      # compile.sh (bash, jq and rsync, all on the runner) and fails on an unresolved ${var.*},
+      # a SET GLOBAL or a DELIMITER; DeployScriptTest then checks the script it ships.
+      - name: Build and test the reporting ETL module
+        working-directory: modules/mambaetl
+        run: mvn -B clean package
 
   # ---------------------------------------------------------------------
   # Soft gate — the single required status check for branch protection.
