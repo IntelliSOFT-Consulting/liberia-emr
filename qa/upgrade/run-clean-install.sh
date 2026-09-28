@@ -87,6 +87,8 @@ MYSQL_DATABASE=openmrs
 MYSQL_USER=openmrs
 MYSQL_PASSWORD=ci-ephemeral
 MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+# LE-367: without it the reporting ETL has no database user and logs a login failure.
+ETL_DB_PASSWORD=ci-ephemeral-etl
 OMRS_CREATE_TABLES=true
 BACKEND_HEAP=2g
 TLS_CERT_DIR=${CERT_DIR}
