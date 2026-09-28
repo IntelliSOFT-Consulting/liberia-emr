@@ -34,4 +34,8 @@ describe('Child Triage Assessment form', () => {
     it('rejects decimals in integer-only vitals and accepts them in decimal vitals', () => {
         triageForm.verifyNumericPrecision();
     });
+
+    it('shows clinical warnings without blocking a complete assessment', () => {
+        triageForm.verifyClinicalWarningsAllowSave();
+    });
 });
