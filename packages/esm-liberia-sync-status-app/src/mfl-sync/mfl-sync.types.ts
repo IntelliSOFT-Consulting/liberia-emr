@@ -115,7 +115,11 @@ export interface MflRunItem {
   level: MflLevel;
   mflUid: string;
   mflCode: string | null;
-  locationUuid: string;
+  /**
+   * The OpenMRS location the item is about. `null` only on an `ERROR` item for a unit that has no
+   * row here yet and could not be created (for example, its parent was missing from the pull).
+   */
+  locationUuid: string | null;
   name: string;
   changes: Array<MflFieldChange>;
   /** Group tie-breaks, out-of-bounds points, name disambiguation. */
