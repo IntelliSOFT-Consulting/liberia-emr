@@ -38,4 +38,42 @@
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
+	<build>
+		<!--
+			The MFL tests read the real fixture from integration/dhis2/mfl/fixtures (LE-318) rather
+			than a copy that could drift from it. A build that has only this module (the backend
+			image's module stage) skips tests, and a missing test resource directory is skipped
+			too, so that build is unaffected.
+		-->
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+			<testResource>
+				<directory>${project.basedir}/../../../integration/dhis2/mfl/fixtures</directory>
+				<targetPath>mfl-fixtures</targetPath>
+			</testResource>
+		</testResources>
+		<plugins>
+			<!--
+				maven-parent-openmrs-module 1.1.1 adds powermock-api-mockito 1.5 to every test
+				classpath. Its jar registers a Mockito 1 MockMaker (CglibMockMaker), which does not
+				exist in the Mockito that openmrs-test 2.6.9 brings, so every context-sensitive test
+				failed in setup before it ran (hence LiberiaEMRDaoTest's @Ignore). No test here uses
+				PowerMock; openmrs-test's own powermock-api-mockito2 stays.
+				The opens are what OpenMRS's Hibernate proxies need on the JDK 17 that CI and the
+				image build use.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.text=ALL-UNNAMED</argLine>
+					<classpathDependencyExcludes>
+						<classpathDependencyExclude>org.powermock:powermock-api-mockito</classpathDependencyExclude>
+					</classpathDependencyExcludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

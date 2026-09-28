@@ -256,6 +256,10 @@ and has no warning is **not** recorded. `action` is an optional filter; `limit` 
   that location (ADR 0009 §3), on any action. `counts.warnings` is the number of items with
   at least one warning.
 - `level` is one of `COUNTY`, `DISTRICT` or `FACILITY`.
+- `locationUuid` is the OpenMRS location the item is about. It is `null` only on an `ERROR`
+  item for a unit that has no row on this instance yet and could not be created: for example,
+  its parent was missing from the pull because a page failed. Such a unit is never placed at
+  the top level instead.
 - `changes[].field` names what changed: `name`, `parent`, `latitude`, `longitude`,
   `stateProvince`, `countyDistrict`, a tag as `tag:<name>`, or an attribute as
   `attribute:<type name>`. `from` and `to` are display strings; `from` is `null` on

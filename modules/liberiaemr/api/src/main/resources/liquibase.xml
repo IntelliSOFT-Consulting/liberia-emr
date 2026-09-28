@@ -211,6 +211,98 @@
 		</createIndex>
 	</changeSet>
 
+	<changeSet id="liberiaemr-2026-09-27-mfl-sync-run" author="liberiaemr">
+		<preConditions onFail="MARK_RAN">
+			<not><tableExists tableName="liberiaemr_mfl_sync_run"/></not>
+		</preConditions>
+		<comment>One row per MFL sync run (ADR 0009, LE-321). The counts on a dry run are what would happen.</comment>
+		<createTable tableName="liberiaemr_mfl_sync_run">
+			<column name="run_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="dry_run" type="boolean">
+				<constraints nullable="false"/>
+			</column>
+			<column name="run_trigger" type="varchar(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="status" type="varchar(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="started_by" type="int"/>
+			<column name="date_started" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_finished" type="datetime"/>
+			<column name="created" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="updated" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="retired" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="unretired" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="unchanged" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="failed" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="warnings" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="message" type="varchar(1000)"/>
+			<column name="uuid" type="char(38)">
+				<constraints nullable="false" unique="true"/>
+			</column>
+		</createTable>
+		<addForeignKeyConstraint constraintName="liberiaemr_mfl_run_started_by_fk"
+			baseTableName="liberiaemr_mfl_sync_run" baseColumnNames="started_by"
+			referencedTableName="users" referencedColumnNames="user_id"/>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-27-mfl-sync-run-item" author="liberiaemr">
+		<preConditions onFail="MARK_RAN">
+			<not><tableExists tableName="liberiaemr_mfl_sync_run_item"/></not>
+		</preConditions>
+		<comment>
+			The per-location changes, warnings and errors of an MFL sync run. A location that is
+			unchanged and has no warning gets no row. changes and warnings hold JSON arrays.
+		</comment>
+		<createTable tableName="liberiaemr_mfl_sync_run_item">
+			<column name="item_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="run_id" type="int">
+				<constraints nullable="false"/>
+			</column>
+			<column name="action" type="varchar(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="location_level" type="varchar(20)"/>
+			<column name="mfl_uid" type="varchar(50)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="mfl_code" type="varchar(100)"/>
+			<column name="location_uuid" type="char(38)"/>
+			<column name="name" type="varchar(255)"/>
+			<column name="changes" type="text"/>
+			<column name="warnings" type="text"/>
+			<column name="error" type="varchar(1000)"/>
+		</createTable>
+		<addForeignKeyConstraint constraintName="liberiaemr_mfl_run_item_run_fk"
+			baseTableName="liberiaemr_mfl_sync_run_item" baseColumnNames="run_id"
+			referencedTableName="liberiaemr_mfl_sync_run" referencedColumnNames="run_id"/>
+		<createIndex indexName="liberiaemr_mfl_run_item_action_idx" tableName="liberiaemr_mfl_sync_run_item">
+			<column name="run_id"/>
+			<column name="action"/>
+		</createIndex>
+	</changeSet>
+
 	<changeSet id="liberiaemr-2026-09-25-identity-link-national-id" author="liberiaemr">
 		<preConditions onFail="CONTINUE">
 			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
