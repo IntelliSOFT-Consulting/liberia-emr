@@ -193,8 +193,8 @@ UIDs in the mapping table below as configuration, not code.
 ## Seeded site roots and their MFL match
 
 The two site packages seed a facility root that facility-scoped identifiers point at. Their
-likely MFL counterparts are listed below. Both matches **need confirmation from the MOH or
-the site team** before the sync adopts them.
+MFL counterparts are listed below. Both matches were **confirmed on 2026-09-28**, and each site
+package declares its root's MFL UID. The roots keep their repo names, not the MFL names.
 
 Adoption never changes a root's UUID: facility-scoped identifiers, child locations and synced
 records all point at it. Each site package declares its root's MFL UID in an

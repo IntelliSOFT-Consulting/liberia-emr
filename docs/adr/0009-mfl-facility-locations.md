@@ -53,7 +53,8 @@ matches on name, code or UUID.
   locations CSV, in an Initializer `Attribute|MFL UID` column. When the sync meets that UID, it
   updates the existing row in place: same UUID, so facility-scoped identifiers (MOH HRN,
   uniqueness `LOCATION`) keep pointing where they did.
-- **Matches, both pending MOH/site confirmation:**
+- **Matches, confirmed by the project on 2026-09-28** (before any live deployment). Each site
+  package declares its root's MFL UID, and the site names below stay as they are:
 
   | Site package root | MFL unit | MFL name | Note |
   | --- | --- | --- | --- |
@@ -318,4 +319,5 @@ Where the two disagree, the document wins.
 | 9 | Admin route in `esm-liberia-sync-status-app` | **Accepted** |
 | – | Service and programme groups | **Out of v1** |
 
-**Still pending:** MOH or site confirmation of the two site-root matches in decision 1.
+**Site-root matches:** both confirmed on 2026-09-28. The site packages declare their MFL UIDs, and
+the roots keep their repo names.
