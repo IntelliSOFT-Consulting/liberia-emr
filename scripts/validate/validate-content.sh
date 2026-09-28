@@ -19,6 +19,19 @@ err() { echo "FAIL: $*" >&2; fail=$((fail+1)); }
 find_src() { find "$PKG_DIR" -path '*/target' -prune -o "$@" -print; }
 grep_src() { grep --exclude-dir=target "$@"; }
 
+# In-tree module sources that carry ${var.*} tokens (ADR 0010 decision 7): the reports module's
+# resources and the ETL module's SQL and configs. A module that does not exist yet contributes
+# nothing. The UUID-literal check further down globs the same directories, plus the reports
+# module's Java; keep the two lists in step.
+module_token_dirs() {
+  local d
+  for d in "$ROOT"/modules/liberiaemrreports/*/src/main/resources \
+           "$ROOT"/modules/mambaetl/*/src/main/mamba; do
+    [[ -d "$d" ]] && echo "$d"
+  done
+  return 0
+}
+
 # Sections report ok only if nothing failed inside them; `section <name>` opens one.
 section_start=0
 section() { echo "== $* =="; section_start=$fail; }
@@ -202,7 +215,12 @@ section "unresolved variables"
 # (content-packages/pom.xml, execution filter-configuration). Strip it to compare.
 declared="$(cat "$PKG_DIR"/*/configuration/variables.properties 2>/dev/null \
   | grep -oE '^var\.[a-z0-9.\-]+' | sed 's/^var\.//' | sort -u)"
-referenced="$(grep_src -rhoE '\$\{var\.[a-z0-9.\-]+\}' "$PKG_DIR" \
+# The in-tree modules' tokens are resolved from the same files (ADR 0010 decision 7), so they
+# are held to the same rule.
+referenced="$( { grep_src -rhoE '\$\{var\.[a-z0-9.\-]+\}' "$PKG_DIR" || true
+                 while IFS= read -r d; do
+                   grep -rhoE '\$\{var\.[a-z0-9.\-]+\}' "$d" || true
+                 done < <(module_token_dirs); } \
   | sed -E 's/^\$\{var\.//; s/\}$//' | sort -u)"
 #missing="$(comm -13 <(echo "$declared") <(echo "$referenced"))"
 missing="$(
@@ -218,6 +236,42 @@ if [[ -n "$missing" ]]; then
   echo "$missing" | sed 's/^/       ${var./; s/$/}/' >&2
 fi
 ok "variable references"
+
+section "hard-coded UUIDs in ETL and report sources"
+# ADR 0010 decision 7. Report Java, report resources and the ETL's SQL and configs hold no UUID
+# of their own: each one is a ${var.*} token resolved at build time, so it is declared once and
+# follows a site's override. Two shapes are caught, because the frontend check above sees only
+# the first: the RFC 4122 dashed form, and the 36-character CIEL form, digits then A's
+# (5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA). Test sources are not scanned: fixtures are data.
+python3 - "$ROOT" <<'PY' || err "hard-coded UUIDs in module sources (see above)"
+import glob, os, re, sys
+
+root = sys.argv[1]
+# module_token_dirs above, plus the reports module's Java.
+dirs = sorted(glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/resources")
+              + glob.glob(f"{root}/modules/mambaetl/*/src/main/mamba")
+              + glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/java"))
+dashed = re.compile(r"(?<![0-9A-Za-z])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![0-9A-Za-z])")
+ciel = re.compile(r"(?<![0-9A-Za-z])[0-9]+A+(?![0-9A-Za-z])")
+problems = []
+for d in dirs:
+    for base, subdirs, files in os.walk(d):
+        subdirs[:] = [s for s in subdirs if s != "target"]
+        for name in sorted(files):
+            path = os.path.join(base, name)
+            try:
+                lines = open(path, encoding="utf-8").read().splitlines()
+            except (UnicodeDecodeError, OSError):
+                continue  # binary resources carry no source text
+            for n, line in enumerate(lines, start=1):
+                hits = dashed.findall(line) + [m for m in ciel.findall(line) if len(m) == 36]
+                for hit in hits:
+                    problems.append(f"{os.path.relpath(path, root)}:{n}: {hit}")
+for p in problems:
+    print(f"       {p} (declare it in variables.properties and use ${{var.*}})", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "no UUID literals in module sources"
 
 section "concept names"
 # Two ways a concept CSV silently becomes unloadable, both of which cost a week of red

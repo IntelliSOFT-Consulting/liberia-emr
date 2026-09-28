@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License,
+    v. 2.0. If a copy of the MPL was not distributed with this file, You can
+    obtain one at http://mozilla.org/MPL/2.0/. OpenMRS is also distributed under
+    the terms of the Healthcare Disclaimer located at http://openmrs.org/license.
+
+    Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
+    graphic logo is a trademark of OpenMRS Inc.
+
+-->
+
+<module configVersion="1.2">
+
+	<!-- Base Module Properties -->
+	<id>${project.parent.artifactId}</id>
+	<name>${project.parent.name}</name>
+	<version>${project.parent.version}</version>
+	<package>org.openmrs.module.liberiaemrreports</package>
+	<author>Ministry of Health, Republic of Liberia</author>
+	<description>
+			${project.parent.description}
+	</description>
+
+	<activator>org.openmrs.module.liberiaemrreports.LiberiaEMRReportsActivator</activator>
+
+	<!-- reporting 2.1.0's own floor; kept equal to openmrsPlatformVersion in the parent pom. -->
+	<require_version>${openmrsPlatformVersion}</require_version>
+
+	<!--
+		The MINIMUM reporting and reportingrest, kept equal to reportingVersion and
+		reportingRestVersion in the parent pom and to the pins in distro.properties.
+	-->
+	<require_modules>
+		<require_module version="${reportingVersion}">
+			org.openmrs.module.reporting
+		</require_module>
+		<require_module version="${reportingRestVersion}">
+			org.openmrs.module.reportingrest
+		</require_module>
+	</require_modules>
+
+	<!--
+		The ETL module (modules/mambaetl, artifactId mamba-etl-liberiaemr) only has to start first
+		where both are present; this module never loads its classes (ADR 0010 decision 6). A
+		missing ETL table fails a report with a clear message instead of stopping this module.
+		OpenMRS matches aware_of_module against the other module's <package>, which is the ETL
+		module's to choose: keep this value equal to it.
+	-->
+	<aware_of_modules>
+		<aware_of_module>${mambaEtlModulePackage}</aware_of_module>
+	</aware_of_modules>
+
+	<!--
+		Enforces Export National Report on stored output of this module's reports. Evaluation is
+		guarded in the data set evaluator; downloadReport returns stored output without
+		evaluating, and reporting's ReportService carries no authorisation of its own.
+	-->
+	<advice>
+		<point>org.openmrs.module.reporting.report.service.ReportService</point>
+		<class>org.openmrs.module.liberiaemrreports.security.StoredReportAccessAdvice</class>
+	</advice>
+
+	<globalProperty>
+		<property>liberiaemr.facility.locationUuid</property>
+		<defaultValue></defaultValue>
+		<description>
+			The UUID of this facility's root location. Seeded by the site content package from
+			its var.location.facility-root.uuid and re-applied by Initializer on every start: it is
+			the build's identity, not an operator setting. On a facility instance every indicator
+			report defaults to this location and is clamped to it and its sub-locations; an empty
+			or unresolvable value fails the report. Ignored on a central instance.
+		</description>
+	</globalProperty>
+
+	<!-- Internationalization -->
+	<messages>
+		<lang>en</lang>
+		<file>messages.properties</file>
+	</messages>
+
+</module>

@@ -93,6 +93,31 @@ jobs:
           path: modules/liberiaemr/*/target/surefire-reports/
           if-no-files-found: ignore
 
+  # modules/liberiaemrreports (ADR 0010 decision 6): build and test only. It is never published
+  # to Repsy; the backend image builds it from source, like liberiaemr. It reads its report UUIDs
+  # from content-packages/content-liberia-national, so a change there is also tested by ci.yml's
+  # reactor build, which includes this module.
+  build-and-test-reports:
+    name: Build and test the reports module
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build and test
+        working-directory: modules/liberiaemrreports
+        run: mvn -B clean package
+      - name: Keep the surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-module-surefire-reports
+          path: modules/liberiaemrreports/*/target/surefire-reports/
+          if-no-files-found: ignore
+
   # Does this event publish anything at all?
   #
   # A separate job rather than an `if:` on a step inside publish, for one reason: GitHub

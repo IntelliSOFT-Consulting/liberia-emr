@@ -1,0 +1,194 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.openmrs.maven.parents</groupId>
+		<artifactId>maven-parent-openmrs-module</artifactId>
+		<!--
+			2.2.0, not liberiaemr's 1.1.1: 1.1.1 adds powermock 1.5 and mockito 1.9.5 to every
+			module, and powermock 1.5's MockMaker cannot load beside the mockito 3 that
+			openmrs-test 2.7.0 brings, so no context-sensitive test could start.
+		-->
+		<version>2.2.0</version>
+	</parent>
+
+	<groupId>org.openmrs.module</groupId>
+	<artifactId>liberiaemrreports</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>LiberiaEMR Reports</name>
+	<description>MOH indicator reports for LiberiaEMR: aggregate report definitions over the local Mamba ETL schema, served through reportingrest (ADR 0010).</description>
+
+	<modules>
+		<module>api</module>
+		<module>omod</module>
+	</modules>
+
+	<repositories>
+		<repository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+		</repository>
+		<repository>
+			<id>central</id>
+			<name>Maven Repository Switchboard</name>
+			<layout>default</layout>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<properties>
+		<!--
+			The platform floor is reporting 2.1.0's own require_version (2.7.0): this module cannot
+			start anywhere reporting cannot. The distribution runs 2.8.8, which clears it.
+		-->
+		<openmrsPlatformVersion>2.7.0</openmrsPlatformVersion>
+		<!--
+			The MINIMUM reporting and reportingrest, equal to the pins in distro.properties
+			(omod.reporting, omod.reportingrest) and to require_modules in omod config.xml. One
+			decision written three times: keep them in step.
+		-->
+		<reportingVersion>2.1.0</reportingVersion>
+		<reportingRestVersion>2.0.0</reportingRestVersion>
+		<!--
+			The <package> of the ETL module (modules/mambaetl, artifactId mamba-etl-liberiaemr),
+			which config.xml names as aware_of. ADR 0010 decision 1 only rules out
+			org.openmrs.module.mambaetl; this must equal whatever that module declares.
+		-->
+		<mambaEtlModulePackage>org.openmrs.module.mambaetlliberiaemr</mambaEtlModulePackage>
+		<!-- reporting 2.1.0's own required modules, needed only to run it in the test context. -->
+		<serializationXstreamVersion>0.3.0</serializationXstreamVersion>
+		<htmlwidgetsVersion>2.0.1</htmlwidgetsVersion>
+		<calculationVersion>1.2</calculationVersion>
+		<!--
+			Where the content layers live, relative to each submodule. The report and design UUIDs
+			are filtered in from the national layer's variables.properties (ADR 0010 decision 7).
+			The backend image's module stage overrides this with -Dliberiaemr.content.dir.
+		-->
+		<liberiaemr.content.dir>${project.basedir}/../../../content-packages</liberiaemr.content.dir>
+		<!--
+			The 2.2.0 parent runs spotless:apply on every build, which provisions an Eclipse
+			formatter from download.eclipse.org: a network dependency in CI and in the image's
+			module stage for a formatting pass that changes nothing once the sources are formatted.
+			liberiaemr does not run it either. Run it by hand with -Dspotless.skip=false.
+		-->
+		<!--
+			Coverage for SonarQube. CI's sonar step runs after `mvn verify` and reads each module's
+			jacoco.xml from here; without it every line this module adds counts as uncovered new code.
+			Scoped to this module: modules/liberiaemr is built on its own and is unaffected.
+		-->
+		<jacocoVersion>0.8.12</jacocoVersion>
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+		<spotless.skip>true</spotless.skip>
+		<spotless.apply.skip>true</spotless.apply.skip>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>reporting-api</artifactId>
+				<version>${reportingVersion}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>reportingrest-api</artifactId>
+				<version>${reportingRestVersion}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>serialization.xstream-api</artifactId>
+				<version>${serializationXstreamVersion}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>htmlwidgets-api</artifactId>
+				<version>${htmlwidgetsVersion}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>calculation-api</artifactId>
+				<version>${calculationVersion}</version>
+				<scope>test</scope>
+			</dependency>
+			<!--
+				openmrs-test 2.7.0 runs mockito 3.12.4 under powermock 2.0.9; without this pin a
+				transitive mockito 5 wins and powermock's MockMaker fails every context test.
+			-->
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>3.12.4</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.11.0</version>
+					<configuration>
+						<source>1.8</source>
+						<target>1.8</target>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<!--
+				prepare-agent sets surefire's argLine (nothing else in this build sets one), and report
+				writes target/site/jacoco/jacoco.xml at the end of `test`, so `package`, `verify` and
+				the reactor build all leave it for the sonar step. A module with no tests (omod) has no
+				execution data and its report is skipped.
+			-->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacocoVersion}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<formats>
+								<format>XML</format>
+								<format>HTML</format>
+							</formats>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

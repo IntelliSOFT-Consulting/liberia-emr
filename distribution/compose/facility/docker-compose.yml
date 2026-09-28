@@ -88,6 +88,10 @@ services:
       # cannot be half-set from separate knobs. Unset means false, so a facility env file
       # that never mentions it stays disabled. Only dev/staging env files set it to true.
       OMRS_CONFIG_MODULE_WEB_ADMIN: "${LEGACY_ADMIN_UI:-false}"
+      # Indicator report scope (ADR 0010 decision 5). Hard-coded, never from .env: a facility
+      # reports on itself only, clamped to liberiaemr.facility.locationUuid. The reports module
+      # also fails closed to facility when this is missing or misspelt.
+      LIBERIAEMR_INSTANCE_ROLE: facility
       # One of three literals: continue_on_error, fail_on_error, disabled. The previous
       # 'continue_on_error=false' was none of them and fell through to continuing, so this
       # is the same behaviour spelled validly — not a change.
