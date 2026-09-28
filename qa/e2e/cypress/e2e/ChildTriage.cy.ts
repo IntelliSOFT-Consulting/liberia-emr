@@ -31,8 +31,8 @@ describe('Child Triage Assessment form', () => {
         triageForm.verifyChildCategoryOptions();
     });
 
-    it('validates temperature limits', () => {
-        triageForm.verifyTemperatureLimits();
+    it('validates the numeric limits of child vitals', () => {
+        triageForm.verifyNumericLimits();
     });
 
     it('rejects decimals in integer-only vitals and accepts them in decimal vitals', () => {
@@ -49,5 +49,13 @@ describe('Child Triage Assessment form', () => {
 
     it('saves a Non-urgent child assessment with screening and vitals', () => {
         triageForm.verifySavedAssessment();
+    });
+
+    it('saves an Urgent child assessment with its selected sign', () => {
+        triageForm.verifySavedAssessment('Urgent Priority');
+    });
+
+    it('saves an Emergency child assessment with Positive screening and its selected sign', () => {
+        triageForm.verifySavedAssessment('Emergency Priority', 'Positive');
     });
 });

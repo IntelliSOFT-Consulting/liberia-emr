@@ -1,5 +1,13 @@
+type ChildPriority = 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Priority';
+
 class TriageFormPage {
     constructor(private readonly timeout = 20000) {}
+
+    private readonly categoryValues: Record<ChildPriority, string> = {
+        'Non-urgent Priority': 'd7ebda1c-c764-4e7d-ab10-67a6e1a499d3',
+        'Urgent Priority': 'e37a28e5-3e2b-4e00-8f92-5eb329a28c50',
+        'Emergency Priority': 'c4b18c65-276f-42e7-8b01-e2c342f026a7'
+    };
 
     private readonly normalVitals = [
         { id: 'temp', value: '37.2' },
@@ -12,7 +20,7 @@ class TriageFormPage {
         { id: 'muac', value: '15.5' }
     ];
 
-    private selectChildCategory(category: 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Priority') {
+    private selectChildCategory(category: ChildPriority) {
         cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
             cy.get('button[role="combobox"]').click();
         });
@@ -106,38 +114,58 @@ class TriageFormPage {
         });
     }
 
-    verifyTemperatureLimits() {
-        cy.get('#temp', { timeout: this.timeout })
-            .scrollIntoView()
-            .should('have.attr', 'min', '20')
-            .and('have.attr', 'max', '45');
+    verifyNumericLimits() {
+        [
+            { id: 'temp', min: '20', max: '45', below: '19.9', above: '45.1' },
+            { id: 'hr', min: '0', max: '300', below: '-1', above: '301' },
+            { id: 'rr', min: '0', max: '80', below: '-1', above: '81' },
+            { id: 'spo2', min: '0', max: '100', below: '-1', above: '101' },
+            { id: 'weight', min: '0', max: '250', below: '-0.1', above: '250.1' },
+            { id: 'height', min: '10', max: '272', below: '9.9', above: '272.1' }
+        ].forEach(({ id, min, max, below, above }) => {
+            cy.get(`#${id}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('have.attr', 'min', min)
+                .and('have.attr', 'max', max);
 
-        ['20', '45'].forEach((value) => {
-            cy.get('#temp').type(`{selectall}${value}`).blur().should('have.value', value);
-        });
+            [min, max].forEach((value) => {
+                cy.get(`#${id}`).type(`{selectall}${value}`).blur().should('have.value', value);
+            });
 
-        ['19.9', '45.1'].forEach((value) => {
-            cy.get('#temp').type(`{selectall}${value}`).blur();
-            cy.contains('button', 'Save', { timeout: this.timeout }).click();
-            cy.get('#temp').should('have.attr', 'aria-invalid', 'true');
+            [below, above].forEach((value) => {
+                cy.get(`#${id}`).type(`{selectall}${value}`).blur();
+                cy.contains('button', 'Save', { timeout: this.timeout }).click();
+                cy.get(`#${id}`).should('have.attr', 'aria-invalid', 'true');
+            });
         });
     }
 
     verifyNumericPrecision() {
+        cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
+        this.selectChildCategory('Non-urgent Priority');
+        this.enterVitals();
+
         [
-            { id: 'hr', value: '78.5' },
-            { id: 'rr', value: '18.5' },
-            { id: 'spo2', value: '97.5' }
-        ].forEach(({ id, value }) => {
+            { id: 'hr', value: '7.5', original: '78' },
+            { id: 'rr', value: '1.5', original: '18' },
+            { id: 'spo2', value: '9.5', original: '98' }
+        ].forEach(({ id, value, original }) => {
             cy.get(`#${id}`, { timeout: this.timeout })
                 .scrollIntoView()
                 .should('have.attr', 'step', '1')
                 .type(`{selectall}${value}`)
                 .blur()
-                .should(($input) => {
+                .then(($input) => {
                     const input = $input[0] as HTMLInputElement;
-                    expect(input.value === value && input.validity.valid, `${id} must not accept decimals`).to.equal(false);
+                    if (input.value === value) {
+                        this.submitAssessment();
+                        cy.get(`#${id}`).should('have.attr', 'aria-invalid', 'true');
+                        cy.get('@saveTriage.all').should('have.length', 0);
+                    } else {
+                        expect(input.value, `${id} must not silently change decimals`).to.equal(original);
+                    }
                 });
+            cy.get(`#${id}`).type(`{selectall}${original}`).blur();
         });
 
         [
@@ -230,9 +258,26 @@ class TriageFormPage {
         });
     }
 
-    verifySavedAssessment() {
-        cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
-        this.selectChildCategory('Non-urgent Priority');
+    verifySavedAssessment(category: ChildPriority = 'Non-urgent Priority', ebolaAnswer: 'Negative' | 'Positive' = 'Negative') {
+        cy.get(`#ebola_screen-${ebolaAnswer}`, { timeout: this.timeout }).scrollIntoView().check({ force: true });
+        this.selectChildCategory(category);
+
+        if (category === 'Urgent Priority') {
+            cy.contains('legend', 'Urgent priority signs', { timeout: this.timeout })
+                .closest('fieldset')
+                .within(() => {
+                    cy.contains('label', 'Nurse concern').click();
+                    cy.get('input[type="checkbox"]:checked').should('have.length', 1);
+                });
+        }
+        if (category === 'Emergency Priority') {
+            cy.contains('legend', 'Emergency Signs', { timeout: this.timeout })
+                .closest('fieldset')
+                .within(() => {
+                    cy.contains('label', 'Severe burns').click();
+                    cy.get('input[type="checkbox"]:checked').should('have.length', 1);
+                });
+        }
 
         this.enterVitals();
 
@@ -244,13 +289,23 @@ class TriageFormPage {
             const observationFor = (fieldId: string) =>
                 observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`);
 
-            expect(observationFor('ebola_screen')?.value).to.equal('1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-            expect(observationFor('triage_category_child')?.value).to.be.a('string').and.not.be.empty;
+            expect(observationFor('ebola_screen')?.value).to.equal(
+                ebolaAnswer === 'Negative' ? '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' : '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            );
+            expect(observationFor('triage_category_child')?.value).to.equal(this.categoryValues[category]);
             this.normalVitals.forEach(({ id, value }) => {
                 expect(observationFor(id)?.value, `saved ${id}`).to.equal(Number(value));
             });
-            expect(observationFor('yellow_signs_child')).to.be.undefined;
-            expect(observationFor('red_signs_child')).to.be.undefined;
+            if (category === 'Urgent Priority') {
+                expect(observationFor('yellow_signs_child')?.value).to.equal('5a8d325c-7f5b-4ffc-a801-628efaec9433');
+            } else {
+                expect(observationFor('yellow_signs_child')).to.be.undefined;
+            }
+            if (category === 'Emergency Priority') {
+                expect(observationFor('red_signs_child')?.value).to.equal('5603b544-cc39-44be-ac4d-8b06cdae78ed');
+            } else {
+                expect(observationFor('red_signs_child')).to.be.undefined;
+            }
         });
     }
 }
