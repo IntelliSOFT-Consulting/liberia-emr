@@ -94,7 +94,7 @@ RUN set -eu; \
 # running container, which §8 forbids, since a mutable checkout never reaches production.
 FROM maven:3.9-eclipse-temurin-17 AS module
 
-# The module's own pom carries 1.0.0-SNAPSHOT: that is its DEVELOPMENT stream, which
+# The module's own pom carries an x.y.z-SNAPSHOT on main: that is its DEVELOPMENT stream, which
 # .github/workflows/modules.yml re-deploys to Repsy on every merge to main. An image must
 # never ship a SNAPSHOT omod (IMPLEMENTATION.md section 6/11), so the version is stamped to
 # the distribution version this image IS, and the module is then traceable to the release

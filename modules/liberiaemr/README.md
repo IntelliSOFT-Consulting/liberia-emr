@@ -151,12 +151,12 @@ job, and again in `.github/workflows/modules.yml`.
 
 ## Versions and publishing
 
-The pom carries `1.0.0-SNAPSHOT` — the **development stream**. Three things consume it, and
+On `main` the pom carries the next `x.y.z-SNAPSHOT` (`release:prepare` sets it after each release) — the **development stream**. Three things consume it, and
 they take three different versions on purpose:
 
 | Where | Version | When |
 |---|---|---|
-| Repsy, snapshot | `1.0.0-SNAPSHOT` | every merge to `main` that touches `modules/**`, re-deployed over itself |
+| Repsy, snapshot | the pom's `-SNAPSHOT`, e.g. `1.0.1-SNAPSHOT` | every merge to `main` that touches `modules/**`, re-deployed over itself |
 | Repsy, release | the tag, e.g. `1.2.0` | a pushed `liberiaemr-x.y.z` tag; the pom already carries the version |
 | The backend image | the distribution version being built | every image build; `distribution/backend/Dockerfile` stamps it |
 
