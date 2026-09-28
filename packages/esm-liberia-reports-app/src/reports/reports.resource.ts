@@ -178,6 +178,12 @@ export function useReportPreview(reportUuid: string | undefined, dataSetKey: str
   return { dataSet: data?.data, error, isLoading };
 }
 
+/**
+ * The privilege check in the components only hides the button. The server enforces it: the
+ * reports module's `StoredReportAccessAdvice` (PR #169) requires Export National Report on
+ * `ReportService.loadRenderedOutput`, `loadReportData` and `loadReport` for requests of its
+ * reports, which is what `downloadReport` goes through, so a request UUID alone reads nothing.
+ */
 export async function downloadReport(requestUuid: string) {
   const { data } = await openmrsFetch<ReportFile>(
     `${reportingrest}/downloadReport?reportRequestUuid=${encodeURIComponent(requestUuid)}`,

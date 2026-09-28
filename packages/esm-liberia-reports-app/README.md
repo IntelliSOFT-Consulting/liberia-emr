@@ -59,8 +59,11 @@ does not exist yet** (ADR 0010 decision 8a). The page fails closed:
   - At central: national by default, then a county, a district, or a facility found by name
     or MFL code. The most specific choice is reported on.
   - The central options come from the same `Health Facility`-tagged location list as the login
-    facility switcher (LE-324). `src/location/mfl-locations.resource.ts` mirrors that app's
-    `facility-picker.resource.ts`; keep the two in step.
+    facility switcher (LE-324), read through `GET /location`, so the user needs **Get
+    Locations**. `src/location/mfl-locations.resource.ts` shares that app's
+    `facility-picker.resource.ts` paging, filter and hierarchy reading, but not its address
+    fallback: a facility with no parent location is found by name or code only. Its header says
+    what to keep in step.
 - **Not-captured notes.** The selected report's `description` is shown as "What this report
   cannot count". The reports module is expected to write each report's not-captured
   disaggregations there.

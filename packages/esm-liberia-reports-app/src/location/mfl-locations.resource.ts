@@ -5,10 +5,20 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 /**
  * The MFL hierarchy for the central location picker.
  *
- * Aligned with the login app's facility switcher (LE-324, esm-liberia-login-app
- * `location-picker/facility-picker.resource.ts`): the same tag, the same slim representation and
- * paging, and the same facility → district → county reading of parentLocation. Kept as a copy
- * rather than a shared package until a third module needs it; keep the two in step.
+ * What it reads: every location carrying `facilityLocationTag` (default `Health Facility`),
+ * from `GET /ws/rest/v1/location`, 100 per page, once per session, filtered in the browser. The
+ * caller needs **Get Locations** for that call, and the MFL code is read from the location's
+ * attributes. Counties and districts are not fetched on their own: they are the parent and
+ * grandparent of those facilities, so an area with no tagged facility is not offered.
+ *
+ * What it shares with the login app's facility switcher (esm-liberia-login-app
+ * `location-picker/facility-picker.resource.ts`): the tag, the paging, the name-or-code filter
+ * and the facility → district → county reading of parentLocation.
+ *
+ * Where it differs: the switcher also reads each facility's address (`stateProvince`,
+ * `countyDistrict`) to place a facility with no parent location. This picker does not, so such a
+ * facility is found by name or code but not under any county or district. Keep the shared parts
+ * in step; it is a copy rather than a shared package until a third module needs it.
  */
 
 export interface FacilityOption {
