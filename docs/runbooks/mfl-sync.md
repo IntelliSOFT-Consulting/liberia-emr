@@ -54,18 +54,14 @@ set up on this server*, and that is the intended state.
    `install` creates the file with its owner and mode first, so the password never exists in a
    file anyone else can read. A trailing newline is ignored; any other whitespace is part of the
    password.
-2. Mount it read-only into the backend at `/run/secrets/mfl-password`, and name that path in the
-   central env file. The compose file forwards the variables below to the backend. If your
-   central compose file does not already mount the file, add the mount under the `backend`
-   service:
-
-   ```yaml
-       volumes:
-         - /etc/liberiaemr/secrets/mfl-password:/run/secrets/mfl-password:ro
-   ```
+2. Point the central env file at it. The central compose file mounts
+   `LIBERIAEMR_MFL_PASSWORD_HOST_FILE` (a path on the host) read-only into the backend at
+   `/run/secrets/mfl-password`. Left unset, it mounts `/dev/null`: an empty password, so the
+   sync is unavailable. Name the in-container path as the backend's password file:
 
    ```bash
    LIBERIAEMR_MFL_USERNAME=<the MOH-issued account>
+   LIBERIAEMR_MFL_PASSWORD_HOST_FILE=/etc/liberiaemr/secrets/mfl-password
    LIBERIAEMR_MFL_PASSWORD_FILE=/run/secrets/mfl-password
    LIBERIAEMR_MFL_PASSWORD=
    # LIBERIAEMR_MFL_ALLOWED_HOSTS=dhis2.moh.gov.lr   (the default; see section 1a)

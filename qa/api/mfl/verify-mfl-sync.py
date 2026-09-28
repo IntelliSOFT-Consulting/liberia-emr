@@ -458,6 +458,8 @@ def config_validation(c):
         ("a look-alike host that only starts with an allowed name",
          {"url": "https://mfl-stub.attacker.example/mfl"}),
         ("userinfo smuggled into the URL", {"url": stub_url.replace("https://", "https://user@")}),
+        ("a root with a query", {"url": stub_url + "?x=1"}),
+        ("a root with a fragment", {"url": stub_url + "#frag"}),
         ("schedule.time 24:00", {"schedule": {"time": "24:00"}}),
         ("schedule.time without a leading zero", {"schedule": {"time": "2:00"}}),
         ("schedule.time that is not a time", {"schedule": {"time": "soon"}}),
@@ -481,6 +483,20 @@ def config_validation(c):
     r = c.mfl("PUT", "/config", {"enabled": False})
     R.check("PUT /config: disabling answers 200 and clears nextRun",
             r.status == 200 and r.json["config"]["enabled"] is False and r.json.get("nextRun") is None, r)
+
+    # PUT /config refuses a query, so write one straight to the global property, as a DB edit
+    # would. The client must still refuse that root (contract: test-connection answers ok false).
+    # Test-connection rather than a run, so no FAILED run lands in the history the later
+    # sections count.
+    r = c.rest("POST", "/systemsetting/liberiaemr.mfl.url", {"value": stub_url + "?x=1"})
+    try:
+        R.check("a root with a query can be written to the global property directly", r.status == 200, r)
+        r = c.mfl("POST", "/test-connection")
+        R.check("test-connection with a DB-edited root carrying a query: 200, ok false, with a message",
+                r.status == 200 and (r.json or {}).get("ok") is False and (r.json or {}).get("message"), r)
+    finally:
+        c.rest("POST", "/systemsetting/liberiaemr.mfl.url", {"value": stub_url})
+    R.check("the stub URL is restored after the DB-edited root", c.status()["config"]["url"] == stub_url)
 
 
 def make_user(c, label, roles):
