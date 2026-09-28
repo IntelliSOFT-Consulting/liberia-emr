@@ -11,6 +11,7 @@ package org.openmrs.module.liberiaemrreports.reports;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -194,13 +195,8 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
 		facilityIs(FACILITY_ONE);
 		for (String outside : new String[] { FACILITY_TWO, DISTRICT, COUNTY }) {
-			try {
-				count(period(outside));
-				fail("facility one reported on " + outside);
-			}
-			catch (Exception e) {
-				causedBy(e, ReportScopeException.class);
-			}
+			EvaluationContext context = period(outside);
+			causedBy(assertThrows(Exception.class, () -> count(context)), ReportScopeException.class);
 		}
 	}
 	
@@ -208,13 +204,8 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 	public void facility_shouldFailWithoutItsOwnLocation() throws Exception {
 		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
 		facilityIs("");
-		try {
-			count(period(null));
-			fail("a facility without a location ran a report");
-		}
-		catch (Exception e) {
-			causedBy(e, ReportScopeException.class);
-		}
+		EvaluationContext context = period(null);
+		causedBy(assertThrows(Exception.class, () -> count(context)), ReportScopeException.class);
 	}
 	
 	// ---- central ----

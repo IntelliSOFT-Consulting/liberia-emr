@@ -47,6 +47,8 @@ public class ReportingContextService {
 	/** What the same procedure writes over a run that ended in ERROR. */
 	static final String ERROR_MESSAGE = "Error schedule updated";
 	
+	private static final String STATUS_ERROR = "ERROR";
+	
 	@Autowired
 	private LocationScopeResolver locationScopeResolver;
 	
@@ -123,8 +125,8 @@ public class ReportingContextService {
 	}
 	
 	static String status(String transactionStatus, String completionStatus, String message) {
-		if ("ERROR".equals(completionStatus) || ERROR_MESSAGE.equals(message)) {
-			return "ERROR";
+		if (STATUS_ERROR.equals(completionStatus) || ERROR_MESSAGE.equals(message)) {
+			return STATUS_ERROR;
 		}
 		if (STUCK_MESSAGE.equals(message)) {
 			return "INTERRUPTED";
@@ -132,7 +134,7 @@ public class ReportingContextService {
 		if ("COMPLETED".equals(transactionStatus) && "SUCCESS".equals(completionStatus)) {
 			// Core writes no message on a genuine success; any other message marks a run core
 			// relabelled, so it must not be reported as a success.
-			return message == null ? "SUCCESS" : "ERROR";
+			return message == null ? "SUCCESS" : STATUS_ERROR;
 		}
 		return "RUNNING";
 	}

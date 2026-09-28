@@ -44,7 +44,7 @@ public final class ReportParameters {
 		return new Parameter(END_DATE, "End Date", Date.class);
 	}
 	
-	public static Parameter location() {
+	public static Parameter locationParameter() {
 		Parameter p = new Parameter(LOCATION, "Location", Location.class);
 		p.setRequired(false);
 		return p;
@@ -54,6 +54,6 @@ public final class ReportParameters {
 	public static List<Parameter> all() {
 		// A real ArrayList: the definition is serialised with XStream, which cannot reflect into
 		// Arrays$ArrayList on Java 17 without --add-opens.
-		return new ArrayList<Parameter>(Arrays.asList(startDate(), endDate(), location()));
+		return new ArrayList<Parameter>(Arrays.asList(startDate(), endDate(), locationParameter()));
 	}
 }

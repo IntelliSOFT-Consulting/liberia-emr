@@ -13,8 +13,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -82,13 +82,10 @@ public class LocationScopeResolverTest {
 	@Test
 	public void facility_shouldRefuseAnotherFacilityAndItsOwnAncestors() {
 		for (Location outside : new Location[] { otherFacility, district, county }) {
-			try {
-				LocationScopeResolver.resolve(InstanceRole.FACILITY, outside, facility.getUuid(), lookup);
-				fail("a facility reported on " + outside.getName());
-			}
-			catch (ReportScopeException expected) {
-				assertTrue(expected.getMessage().contains(outside.getName()));
-			}
+			String facilityUuid = facility.getUuid();
+			ReportScopeException expected = assertThrows(ReportScopeException.class,
+			    () -> LocationScopeResolver.resolve(InstanceRole.FACILITY, outside, facilityUuid, lookup));
+			assertTrue(expected.getMessage().contains(outside.getName()));
 		}
 	}
 	

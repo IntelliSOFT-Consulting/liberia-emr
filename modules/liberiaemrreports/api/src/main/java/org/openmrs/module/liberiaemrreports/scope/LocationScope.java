@@ -53,9 +53,12 @@ public final class LocationScope {
 	
 	/** What {@value #TOKEN} expands to, before {@code ${etl}} is qualified. */
 	public static final String SUBQUERY = "(SELECT lh." + COL_LOCATION_ID + " FROM ${etl}." + HIERARCHY_TABLE + " lh"
-	        + " WHERE :" + PARAM_NATIONAL + " = 1" + " OR lh." + COL_LOCATION_ID + " = :" + PARAM_LOCATION_ID + " OR lh."
-	        + COL_FACILITY_ID + " = :" + PARAM_LOCATION_ID + " OR lh." + COL_DISTRICT_ID + " = :" + PARAM_LOCATION_ID
-	        + " OR lh." + COL_COUNTY_ID + " = :" + PARAM_LOCATION_ID + ")";
+	        + " WHERE :" + PARAM_NATIONAL + " = 1" + matches(COL_LOCATION_ID) + matches(COL_FACILITY_ID)
+	        + matches(COL_DISTRICT_ID) + matches(COL_COUNTY_ID) + ")";
+	
+	private static String matches(String column) {
+		return " OR lh." + column + " = :" + PARAM_LOCATION_ID;
+	}
 	
 	private final InstanceRole role;
 	

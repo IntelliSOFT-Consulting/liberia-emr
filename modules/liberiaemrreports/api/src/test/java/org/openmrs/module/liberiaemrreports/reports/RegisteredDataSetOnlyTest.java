@@ -11,8 +11,8 @@ package org.openmrs.module.liberiaemrreports.reports;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -120,25 +120,17 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 	@Test
 	public void shouldRefuseAnAdHocDefinitionWithPatientLevelSql() throws Exception {
 		EtlSqlDataSetDefinition adHoc = new EtlSqlDataSetDefinition("anything", PATIENT_LEVEL_SQL);
-		try {
-			Context.getService(DataSetDefinitionService.class).evaluate(adHoc, period());
-			fail("an ad-hoc definition returned patient ids");
-		}
-		catch (Exception e) {
-			assertRefused(e);
-		}
+		EvaluationContext context = period();
+		DataSetDefinitionService service = Context.getService(DataSetDefinitionService.class);
+		assertRefused(assertThrows(Exception.class, () -> service.evaluate(adHoc, context)));
 	}
 
 	@Test
 	public void shouldRefusePatientLevelSqlUnderTheRegisteredName() throws Exception {
 		EtlSqlDataSetDefinition adHoc = new EtlSqlDataSetDefinition(REGISTERED_NAME, PATIENT_LEVEL_SQL);
-		try {
-			Context.getService(DataSetDefinitionService.class).evaluate(adHoc, period());
-			fail("a definition borrowing the registered name returned patient ids");
-		}
-		catch (Exception e) {
-			assertRefused(e);
-		}
+		EvaluationContext context = period();
+		DataSetDefinitionService service = Context.getService(DataSetDefinitionService.class);
+		assertRefused(assertThrows(Exception.class, () -> service.evaluate(adHoc, context)));
 	}
 
 	/** What reportingrest's {@code reportdata} does with a POSTed report definition. */
@@ -149,13 +141,9 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 		adHoc.setParameters(ReportParameters.all());
 		adHoc.addDataSetDefinition(LiberiaReportManager.INDICATORS,
 		    Mapped.mapStraightThrough(new EtlSqlDataSetDefinition(REGISTERED_NAME, PATIENT_LEVEL_SQL)));
-		try {
-			Context.getService(ReportDefinitionService.class).evaluate(adHoc, period());
-			fail("an ad-hoc report returned patient ids");
-		}
-		catch (Exception e) {
-			assertRefused(e);
-		}
+		EvaluationContext context = period();
+		ReportDefinitionService service = Context.getService(ReportDefinitionService.class);
+		assertRefused(assertThrows(Exception.class, () -> service.evaluate(adHoc, context)));
 	}
 
 	/** The copy in the database is not trusted either: the SQL must be what this module's code builds. */
@@ -166,13 +154,10 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 		        .get(LiberiaReportManager.INDICATORS).getParameterizable();
 		stored.setSqlQuery(PATIENT_LEVEL_SQL);
 		Context.getService(ReportDefinitionService.class).saveDefinition(rd);
-		try {
-			Context.getService(ReportDefinitionService.class).evaluate(registered(), period());
-			fail("an altered stored definition returned patient ids");
-		}
-		catch (Exception e) {
-			assertRefused(e);
-		}
+		ReportDefinition reloaded = registered();
+		EvaluationContext context = period();
+		ReportDefinitionService service = Context.getService(ReportDefinitionService.class);
+		assertRefused(assertThrows(Exception.class, () -> service.evaluate(reloaded, context)));
 	}
 
 	// ---- still runs ----

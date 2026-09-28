@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import org.openmrs.api.APIException;
@@ -34,7 +35,7 @@ public final class ReportUuids {
 	private static final Pattern UUID = Pattern
 	        .compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 	
-	private static volatile Properties loaded;
+	private static final AtomicReference<Properties> LOADED = new AtomicReference<>();
 	
 	private ReportUuids() {
 	}
@@ -68,7 +69,7 @@ public final class ReportUuids {
 	}
 	
 	private static Properties properties() {
-		Properties p = loaded;
+		Properties p = LOADED.get();
 		if (p == null) {
 			p = new Properties();
 			InputStream in = ReportUuids.class.getClassLoader().getResourceAsStream(RESOURCE);
@@ -89,7 +90,9 @@ public final class ReportUuids {
 					// nothing to recover
 				}
 			}
-			loaded = p;
+			// Two threads may both load it the first time; the file is identical, so either wins.
+			LOADED.compareAndSet(null, p);
+			p = LOADED.get();
 		}
 		return p;
 	}
