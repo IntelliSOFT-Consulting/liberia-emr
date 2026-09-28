@@ -84,6 +84,19 @@ MFL = API + "/liberiaemr/mfl"
 # Results
 # --------------------------------------------------------------------------------------------
 
+# Values that must never reach CI output: the stub's MFL password and its basic-auth token. A
+# regression that echoes them would otherwise be printed by an earlier failing check, before
+# no_leaks reports it. Redact before truncating, so a cut can never leave part of one.
+SECRETS = []
+
+
+def redact(text):
+    for secret in SECRETS:
+        if secret:
+            text = text.replace(secret, "<redacted>")
+    return text
+
+
 class Results:
     def __init__(self):
         self.passed, self.failed = [], []
@@ -94,9 +107,9 @@ class Results:
             print(f"PASS [{name}]", flush=True)
         else:
             self.failed.append(name)
-            print(f"FAIL [{name}]", file=sys.stderr, flush=True)
+            print(f"FAIL [{redact(name)}]", file=sys.stderr, flush=True)
             for d in detail:
-                print(f"    {str(d)[:600]}", file=sys.stderr, flush=True)
+                print(f"    {redact(str(d))[:600]}", file=sys.stderr, flush=True)
         return ok
 
     def section(self, title, fn, *args):
@@ -130,7 +143,7 @@ class Response:
             self.json = None
 
     def __repr__(self):
-        return f"<{self.status} {self.text[:300]}>"
+        return f"<{self.status} {redact(self.text)[:300]}>"
 
 
 class Http:
@@ -173,6 +186,8 @@ class Ctx:
         if self.material:
             self.stub_password = (self.material / "password").read_text().rstrip("\n")
             self.stub_user = (self.material / "username").read_text().strip()
+            SECRETS.extend([self.stub_password,
+                            base64.b64encode(f"{self.stub_user}:{self.stub_password}".encode()).decode()])
         self.users = {}
         self.cleanup = []
 
