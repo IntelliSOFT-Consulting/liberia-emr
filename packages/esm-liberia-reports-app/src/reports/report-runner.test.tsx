@@ -129,6 +129,28 @@ describe('report runner at a facility', () => {
     expect(backend.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
   });
 
+  it('fetches fresh figures for every run, even of the same report, period and location', async () => {
+    const backend = given({ context: facilityContext });
+    renderWithSwr(<ReportRunner />);
+    const previews = () => backend.calls.filter((c) => c.url.includes('/reportDataSet/'));
+
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    expect(within(await screen.findByTestId('cell-MAL_004_NUM')).getByText('12')).toBeInTheDocument();
+    expect(previews()).toHaveLength(1);
+
+    // The ETL refreshes between the two runs.
+    backend.figures.MAL_004_NUM = 20;
+    await click(screen.getByRole('button', { name: 'Run report' }));
+    await waitFor(() => expect(screen.getByTestId('run-status')).toHaveTextContent('Completed'));
+
+    await waitFor(() => expect(within(screen.getByTestId('cell-MAL_004_NUM')).getByText('20')).toBeInTheDocument());
+    expect(previews()).toHaveLength(2);
+    expect(previews()[1].url).toBe(previews()[0].url);
+    const posts = backend.calls.filter((c) => c.method === 'POST');
+    expect(posts).toHaveLength(2);
+    expect(posts[1].body.reportDefinition.parameterMappings).toEqual(posts[0].body.reportDefinition.parameterMappings);
+  });
+
   it('exports Excel as a second request with the Excel design, then downloads it', async () => {
     const backend = given({ context: facilityContext, fileEncoding: 'bytes' });
     renderWithSwr(<ReportRunner />);

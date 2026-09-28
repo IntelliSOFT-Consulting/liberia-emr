@@ -169,11 +169,18 @@ export function previewUrl(reportUuid: string, dataSetKey: string, params: RunPa
  * The on-screen view of a finished run. The CSV reportingrest renders carries column labels,
  * not the `<CODE>_<part>` names the view groups by, so the view evaluates the data set once more
  * through `reportDataSet`, with the same parameters.
+ *
+ * Keyed on the run's request UUID as well as the URL. The same report, period and location run
+ * again after an ETL refresh must count again, not show the first run's figures. Within one
+ * run it is immutable, so the figures stay those of that run.
  */
-export function useReportPreview(reportUuid: string | undefined, dataSetKey: string, params?: RunParameters) {
-  const { data, error, isLoading } = useSWRImmutable<{ data: EvaluatedDataSet }>(
-    reportUuid && params ? previewUrl(reportUuid, dataSetKey, params) : null,
-    openmrsFetch,
+export function useReportPreview(
+  run: { reportUuid: string; requestUuid: string; params: RunParameters } | undefined,
+  dataSetKey: string,
+) {
+  const { data, error, isLoading } = useSWRImmutable<{ data: EvaluatedDataSet }, Error, [string, string] | null>(
+    run ? [previewUrl(run.reportUuid, dataSetKey, run.params), run.requestUuid] : null,
+    ([url]) => openmrsFetch<EvaluatedDataSet>(url),
   );
   return { dataSet: data?.data, error, isLoading };
 }

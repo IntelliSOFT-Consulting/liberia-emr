@@ -32,7 +32,9 @@ Every report call is reportingrest 2.0.0, as in
 | Cancel | `DELETE reportingrest/reportRequest/{uuid}`, also sent for a run or export left unfinished when another report is chosen |
 
 - **Why the view evaluates again.** The CSV renderer writes column *labels*, which lose the
-  `<CODE>_<part>` names that the view groups by (§3.3).
+  `<CODE>_<part>` names that the view groups by (§3.3). The view is cached per run (its
+  request UUID), so running the same report, period and location again, for example after an
+  ETL refresh, fetches fresh figures.
 - **How `fileContent` is decoded.** `src/reports/report-file.ts` is the one place. It accepts
   base64 (Jackson's encoding of `byte[]`, and what the upstream reports app assumes), a byte
   array, or plain text, until LE-335 confirms the encoding on a real stack.
@@ -133,7 +135,7 @@ They cover:
 - every `fileContent` shape;
 - the §4.1 request body and design selection;
 - the role failing closed, and no run at all when the context is unavailable or has no facility location;
-- the full run → poll → view → CSV/Excel flow;
+- the full run → poll → view → CSV/Excel flow, and fresh figures when the same run is repeated;
 - a report with no CSV design, one Excel export per click burst, a run or export dropped when
   another report is chosen, and an export whose status cannot be read;
 - the facility and central location pickers;

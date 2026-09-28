@@ -103,9 +103,8 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
   const status = request?.status;
   const succeeded = isSucceeded(status);
   const { dataSet, error: previewError, isLoading: previewLoading } = useReportPreview(
-    succeeded ? run?.reportUuid : undefined,
+    succeeded ? run : undefined,
     config.dataSetKey,
-    run?.params,
   );
 
   const [exporting, setExporting] = useState<{ format: ExportFormat; requestUuid?: string }>();

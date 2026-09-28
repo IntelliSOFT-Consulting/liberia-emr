@@ -44,6 +44,8 @@ export function createMockBackend(initialOptions: MockBackendOptions = {}) {
   const designs = new Map<string, string>();
   const heldPosts: Array<() => void> = [];
   let nextRequest = 1;
+  /** What reportDataSet counts. Change it to stand in for an ETL refresh between runs. */
+  const figures = { MAL_004_NUM: 12, MAL_004_F: 7, MAL_004_LT1: 2, MAL_004_15_49: 5, NCD_007_PCT: 33.333 };
 
   const reply = (data: unknown) => Promise.resolve({ ok: true, status: 200, data });
   const fail = (status: number, message: string) =>
@@ -134,7 +136,7 @@ export function createMockBackend(initialOptions: MockBackendOptions = {}) {
             { name: 'NCD_007_PCT', label: 'Raised blood pressure', datatype: 'java.lang.Double' },
           ],
         },
-        rows: [{ MAL_004_NUM: 12, MAL_004_F: 7, MAL_004_LT1: 2, MAL_004_15_49: 5, NCD_007_PCT: 33.333 }],
+        rows: [{ ...figures }],
       });
     }
 
@@ -172,5 +174,5 @@ export function createMockBackend(initialOptions: MockBackendOptions = {}) {
     options.context = context;
   };
 
-  return { fetch, calls, releasePosts, setContext };
+  return { fetch, calls, releasePosts, setContext, figures };
 }
