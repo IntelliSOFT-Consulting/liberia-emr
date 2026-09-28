@@ -26,10 +26,16 @@ BEGIN
     CALL sp_mamba_fact_nutrition_vitamin_a();
 
     -- ---- malaria (RPT 7) ----
+    CALL sp_mamba_fact_malaria_diagnosis();
+    CALL sp_mamba_fact_malaria_lab_result();
+    CALL sp_mamba_fact_malaria_drug();
 
     -- ---- ncd (RPT 7) ----
+    CALL sp_mamba_fact_ncd_death();
+    CALL sp_mamba_fact_ncd_blood_pressure();
 
     -- ---- emr_ops (RPT 7) ----
+    CALL sp_mamba_fact_emr_ops_visit();
 
 END //
 

@@ -35,10 +35,16 @@ derived/nutrition/sp_mamba_fact_nutrition_anthropometry.sql
 derived/nutrition/sp_mamba_fact_nutrition_vitamin_a.sql
 
 # ---- malaria (RPT 7) ----
+derived/malaria/sp_mamba_fact_malaria_diagnosis.sql
+derived/malaria/sp_mamba_fact_malaria_lab_result.sql
+derived/malaria/sp_mamba_fact_malaria_drug.sql
 
 # ---- ncd (RPT 7) ----
+derived/ncd/sp_mamba_fact_ncd_death.sql
+derived/ncd/sp_mamba_fact_ncd_blood_pressure.sql
 
 # ---- emr_ops (RPT 7) ----
+derived/emr_ops/sp_mamba_fact_emr_ops_visit.sql
 
 # ---- caller (coordinator): calls everything above, in this order ----
 sp_mamba_data_processing_etl.sql
