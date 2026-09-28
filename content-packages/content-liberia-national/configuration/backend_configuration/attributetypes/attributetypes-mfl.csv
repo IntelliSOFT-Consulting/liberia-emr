@@ -1,0 +1,9 @@
+Uuid,Void/Retire,Entity name,Name,Description,Min occurs,Max occurs,Datatype classname,Datatype config,Preferred handler classname,Handler config,_order:1000
+${var.locationattributetype.mfl-uid.uuid},,Location,MFL UID,DHIS2 organisation unit UID of this location in the MOH Master Facility List. The key the MFL sync matches on,0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.locationattributetype.mfl-code.uuid},,Location,MFL Code,MOH facility code from the Master Facility List. Informational; never a key,0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
+${var.locationattributetype.facility-type.uuid},,Location,Facility Type,Facility type from the Master Facility List,0,1,org.openmrs.customdatatype.datatype.SpecifiedTextOptionsDatatype,"Hospital,Health Center,Clinic",,,
+${var.locationattributetype.facility-ownership.uuid},,Location,Facility Ownership,Facility ownership from the Master Facility List,0,1,org.openmrs.customdatatype.datatype.SpecifiedTextOptionsDatatype,"Public,Private,Faith Based,Concession",,,
+${var.locationattributetype.emonc-level.uuid},,Location,EmONC Level,Emergency obstetric and newborn care level from the Master Facility List,0,1,org.openmrs.customdatatype.datatype.SpecifiedTextOptionsDatatype,"BEmONC,CEmONC",,,
+${var.locationattributetype.facility-setting.uuid},,Location,Facility Setting,Rural or urban setting from the Master Facility List,0,1,org.openmrs.customdatatype.datatype.SpecifiedTextOptionsDatatype,"Rural,Urban",,,
+${var.locationattributetype.mfl-closed-date.uuid},,Location,MFL Closed Date,Date the Master Facility List records this facility as closed,0,1,org.openmrs.customdatatype.datatype.DateDatatype,,,,
+${var.locationattributetype.mfl-last-updated.uuid},,Location,MFL Last Updated,ISO-8601 lastUpdated of the MFL organisation unit at the last sync. Diagnostics only,0,1,org.openmrs.customdatatype.datatype.FreeTextDatatype,,,,
