@@ -1,0 +1,128 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!--
+		LiberiaEMR's MambaETL module (ADR 0010 decision 1). It bundles mamba-core-api as a
+		library, adds our flat-table configs and derived SQL under api/src/main/mamba/_etl, and
+		compiles both into the deploy script the core runs on module start.
+
+		Built from source by distribution/backend/Dockerfile's `module` stage, like
+		modules/liberiaemr, and therefore NOT in distribution/distro.properties. Neither is
+		mamba-core-api: it is a library inside this OMOD, never a module of its own.
+	-->
+	<parent>
+		<groupId>org.openmrs.maven.parents</groupId>
+		<artifactId>maven-parent-openmrs-module</artifactId>
+		<version>1.1.1</version>
+	</parent>
+
+	<groupId>org.openmrs.module</groupId>
+	<artifactId>mamba-etl-liberiaemr</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>LiberiaEMR MambaETL</name>
+	<description>Builds LiberiaEMR's local ETL schema (flat encounter tables and derived indicator facts) with MambaETL core, for the indicator reports.</description>
+
+	<url>https://github.com/IntelliSOFT-Consulting/liberia-emr</url>
+
+	<scm>
+		<connection>scm:git:git@github.com:IntelliSOFT-Consulting/liberia-emr.git</connection>
+		<developerConnection>scm:git:git@github.com:IntelliSOFT-Consulting/liberia-emr.git</developerConnection>
+		<url>https://github.com/IntelliSOFT-Consulting/liberia-emr</url>
+	</scm>
+
+	<modules>
+		<module>api</module>
+		<module>omod</module>
+	</modules>
+
+	<properties>
+		<!--
+			The platform mamba-core-api 3.0.0 is built against, and the floor config.xml
+			declares. The distribution runs 2.8.8.
+		-->
+		<openmrsPlatformVersion>2.8.0</openmrsPlatformVersion>
+		<!--
+			Only a RELEASED core version (ADR 0010 decision 1). To upgrade: change this, read the
+			new jar's JdbcFlattenDatabaseDao and compile-mysql.sh for changes to the deploy
+			statements (api/src/main/sh/finalize-jdbc-sql.sh depends on them), rebuild, and rerun
+			the setupEtl() smoke test on a facility stack and a central stack.
+		-->
+		<mambaCoreVersion>3.0.0</mambaCoreVersion>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!--
+				Compile scope, so maven-openmrs-plugin bundles it in the OMOD's lib/, with
+				commons-dbcp2 and commons-pool2, which its connection pool needs.
+
+				The exclusion is load-bearing. Core's pom declares openmrs-web:tests with no scope
+				(only the plain jar and the test-jar type are managed as provided/test), so without
+				it the tests jar and ~50 webapp libraries (Spring, Liquibase, Struts, servlet-api)
+				are bundled into lib/ and shadow the platform's own copies.
+			-->
+			<dependency>
+				<groupId>org.openmrs.module</groupId>
+				<artifactId>mamba-core-api</artifactId>
+				<version>${mambaCoreVersion}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.openmrs.web</groupId>
+						<artifactId>openmrs-web</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.13.2</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.11.0</version>
+					<configuration>
+						<source>1.8</source>
+						<target>1.8</target>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+		</repository>
+		<repository>
+			<id>central</id>
+			<name>Maven Repository Switchboard</name>
+			<layout>default</layout>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>openmrs-repo</id>
+			<name>OpenMRS Nexus Repository</name>
+			<url>https://mavenrepo.openmrs.org/public</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+</project>
