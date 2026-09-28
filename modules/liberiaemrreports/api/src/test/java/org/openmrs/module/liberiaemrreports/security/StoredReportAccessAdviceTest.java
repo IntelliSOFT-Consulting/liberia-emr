@@ -49,6 +49,11 @@ public class StoredReportAccessAdviceTest extends BaseModuleContextSensitiveTest
 	}
 	
 	@Test
+	public void shouldProtectARequestWithNoDefinitionReference() {
+		assertTrue(StoredReportAccessAdvice.isOurs(new ReportRequest()));
+	}
+	
+	@Test
 	public void shouldLeaveOtherReportsAlone() {
 		ReportDefinition other = new ReportDefinition();
 		SqlDataSetDefinition sql = new SqlDataSetDefinition();

@@ -65,7 +65,8 @@ public class StoredReportAccessAdvice implements MethodBeforeAdvice {
 	static boolean isOurs(ReportRequest request) {
 		Mapped<?> mapped = request.getReportDefinition();
 		if (mapped == null || mapped.getParameterizable() == null) {
-			return false;
+			// Nothing to show the output is someone else's: fail closed.
+			return true;
 		}
 		String uuid = mapped.getParameterizable().getUuid();
 		for (ReportSheet sheet : ReportSheet.values()) {
