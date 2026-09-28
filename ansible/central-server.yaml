@@ -128,8 +128,10 @@
   # Before these tasks managed the key by marker, it was appended as-is, and that line is not
   # recognisable later. Two ways it goes: the unmarked copy of the CURRENT key is dropped just
   # below (the marked line replaces it), and any key listed in ci_deploy_revoked_keys is
-  # removed whatever its comment or marker. A server whose key is rotated in the same run as
-  # this upgrade must list the old key there, or it stays authorized.
+  # removed whatever its comment or marker. A server whose key is rotated, or whose
+  # ci_deploy_public_key is unset, in the same run as this upgrade must list the old key
+  # there, or its unmarked line stays authorized: the marker-based revocation below cannot
+  # see it.
   # Every entry is checked before ANY is removed. A partial entry would be a pattern, not a
   # key: a bare "ssh-ed25519" would match, and remove, every Ed25519 key in the file,
   # operators' included. So each must be a whole plain key line, body and all.
