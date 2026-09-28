@@ -80,6 +80,28 @@ public class DeployScriptTest {
 		assertTrue(script.contains("CREATE PROCEDURE sp_mamba_data_processing_etl(IN etl_incremental_mode INT)"));
 	}
 
+	/**
+	 * LE-363: the Liberia overrides replace core's procedures only because the script runs
+	 * statements in order and ours come later. Each procedure's LAST definition must be ours.
+	 */
+	@Test
+	public void deploysTheLiberiaOverrides_afterCoresOwnDefinitions() {
+		assertLastDefinitionContains("sp_mamba_etl_incremental_columns_index_new_insert(",
+		    "mamba_etl_liberia_incremental_state");
+		assertLastDefinitionContains("sp_mamba_etl_incremental_columns_index_modified_insert(", "<=> t.");
+		assertLastDefinitionContains("sp_mamba_dim_patient_identifier_incremental_update()",
+		    "mpi.patient_identifier_id = im.incremental_table_pkey");
+	}
+
+	private static void assertLastDefinitionContains(String signature, String marker) {
+		String create = "CREATE PROCEDURE " + signature;
+		int start = script.lastIndexOf(create);
+		assertTrue(create + " is not in the script", start >= 0);
+		int end = script.indexOf("~-~-", start);
+		String body = end < 0 ? script.substring(start) : script.substring(start, end);
+		assertTrue("the deployed " + signature + " is core's, not the LE-363 override", body.contains(marker));
+	}
+
 	@Test
 	public void stillSchedulesTheEtl() {
 		assertTrue(script.contains("CREATE EVENT IF NOT EXISTS _mamba_etl_scheduler_event"));

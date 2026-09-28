@@ -9,6 +9,13 @@
 # compiled after core's. The caller must stay LAST.
 #############################################################################################
 
+# ---- core overrides (coordinator) ----
+# Same-named replacements for core procedures (LE-363). Compiled after core's copies, so
+# these are the definitions deployed. Core calls them; the caller below does not.
+core_overrides/sp_mamba_etl_incremental_columns_index_new_insert.sql
+core_overrides/sp_mamba_etl_incremental_columns_index_modified_insert.sql
+core_overrides/sp_mamba_dim_patient_identifier_incremental_update.sql
+
 # ---- common (coordinator) ----
 derived/common/sp_mamba_dim_location_hierarchy.sql
 derived/common/sp_mamba_dim_encounter_form.sql
