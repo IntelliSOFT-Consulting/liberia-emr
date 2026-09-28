@@ -1,0 +1,53 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.facilityPicker {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.areaFilters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: layout.$spacing-04;
+  padding: 0 layout.$spacing-06;
+}
+
+.results {
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 0 layout.$spacing-06;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.facility {
+  padding: layout.$spacing-03 0;
+}
+
+.facilityLabel {
+  display: flex;
+  flex-direction: column;
+}
+
+.facilityName {
+  @include type.type-style('body-compact-01');
+}
+
+.facilityMeta {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+}
+
+.emptyResults,
+.truncated {
+  @include type.type-style('helper-text-01');
+  color: $text-02;
+  padding: layout.$spacing-03 0;
+}

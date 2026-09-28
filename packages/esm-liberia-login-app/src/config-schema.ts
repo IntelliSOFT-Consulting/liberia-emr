@@ -59,6 +59,21 @@ export const configSchema = {
       _description:
         "Whether to display only locations with the 'Login Location' tag. If false, all locations are shown.",
     },
+    locationTag: {
+      _type: Type.String,
+      _default: '',
+      _description:
+        'When set, the location picker becomes the facility switcher: it lists every location with this tag ' +
+        '(e.g. "Health Facility"), searchable by name or MFL code and narrowed by county and district. ' +
+        "Takes precedence over 'useLoginLocationTag'. Meant for the central instance (ADR 0009); " +
+        'leave empty on a facility.',
+    },
+    mflCodeAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: '3118cabe-9a5d-420c-8a55-86234deb9b1b',
+      _description:
+        "UUID of the 'MFL Code' location attribute type, searched and shown by the facility switcher.",
+    },
   },
   links: {
     loginSuccess: {
@@ -177,6 +192,8 @@ export interface ConfigSchema {
     locationsPerRequest: number;
     numberToShow: number;
     useLoginLocationTag: boolean;
+    locationTag: string;
+    mflCodeAttributeTypeUuid: string;
   };
   footer: {
     additionalLogos: Array<{

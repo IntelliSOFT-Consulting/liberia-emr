@@ -160,6 +160,39 @@
 		</description>
 	</globalProperty>
 
+	<!--
+		MOH Master Facility List sync (ADR 0009). Operator settings, edited from the MFL sync page.
+		Declared here and never seeded by Initializer, which would undo an edit on every boot.
+		The credentials and the allowed MFL hosts are NOT global properties: they come from
+		LIBERIAEMR_MFL_USERNAME, LIBERIAEMR_MFL_PASSWORD_FILE (or LIBERIAEMR_MFL_PASSWORD) and
+		LIBERIAEMR_MFL_ALLOWED_HOSTS in the deployment environment.
+	-->
+	<globalProperty>
+		<property>liberiaemr.mfl.enabled</property>
+		<defaultValue>false</defaultValue>
+		<description>
+			Whether the daily MFL sync runs. Manual runs from the MFL sync page are allowed whenever
+			MFL credentials are configured, whatever this says.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.mfl.url</property>
+		<defaultValue>https://dhis2.moh.gov.lr/mfl</defaultValue>
+		<description>
+			The MFL's DHIS2 instance root, without /api. Its host must be one of
+			LIBERIAEMR_MFL_ALLOWED_HOSTS (default dhis2.moh.gov.lr), or no request is sent: the MFL
+			credentials go only to an allowed host.
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>liberiaemr.mfl.schedule.time</property>
+		<defaultValue>02:00</defaultValue>
+		<description>
+			The daily MFL sync's time of day, HH:MM in 24-hour time, Africa/Monrovia. A change
+			takes effect without a restart.
+		</description>
+	</globalProperty>
+
 	<!-- Future SMS MFA Provisions (not yet implemented) -->
 	<globalProperty>
 		<property>liberiaemr.sms.provider.url</property>

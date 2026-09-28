@@ -16,6 +16,7 @@ fails it.
 | [mfl-sync.md](mfl-sync.md) | Provision the MFL account, run the first facility-list sync at central, read runs, rotate credentials — ⚠ not yet rehearsed against the live MFL |
 | [jira-automation.md](jira-automation.md) | Jira Automation rules that move LE issues from branch, PR and dev deploy |
 | [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
+| [release-module.md](release-module.md) | Cut and publish a `liberiaemr` module version to Repsy |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
 a document, not a capability. Three procedures here have not been executed end to end, and each
