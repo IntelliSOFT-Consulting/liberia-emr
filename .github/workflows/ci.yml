@@ -1202,12 +1202,11 @@ jobs:
         run: |
           output=$(ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
             for service in backend frontend gateway; do
-              # RepoDigests belongs to the IMAGE, not the container: asking the container fails
-              # the template and, with the fallback, printed an empty digest (then "unknown" on
-              # a line of its own), so the rollback always found nothing to roll back to.
-              img=$(docker inspect --format="{{.Image}}" "liberiaemr-facility-${service}-1" 2>/dev/null) || img=
-              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$img" 2>/dev/null) || digest=
-              case "$digest" in *@sha256:*) ;; *) digest=unknown ;; esac
+              # A container has no RepoDigests; its image does. Ask the container for its image
+              # ID, then that image for the registry digest a rollback can pull.
+              image=$(docker inspect --format="{{.Image}}" "liberiaemr-facility-${service}-1" 2>/dev/null || true)
+              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$image" 2>/dev/null || true)
+              [ -n "$digest" ] || digest=unknown
               echo "${service}: ${digest}"
             done
           ')
@@ -1447,12 +1446,11 @@ jobs:
               exit 0
             fi
             for service in backend frontend gateway; do
-              # RepoDigests belongs to the IMAGE, not the container: asking the container fails
-              # the template and, with the fallback, printed an empty digest (then "unknown" on
-              # a line of its own), so the rollback always found nothing to roll back to.
-              img=$(docker inspect --format="{{.Image}}" "liberiaemr-central-${service}-1" 2>/dev/null) || img=
-              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$img" 2>/dev/null) || digest=
-              case "$digest" in *@sha256:*) ;; *) digest=unknown ;; esac
+              # A container has no RepoDigests; its image does. Ask the container for its image
+              # ID, then that image for the registry digest a rollback can pull.
+              image=$(docker inspect --format="{{.Image}}" "liberiaemr-central-${service}-1" 2>/dev/null || true)
+              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$image" 2>/dev/null || true)
+              [ -n "$digest" ] || digest=unknown
               echo "${service}: ${digest}"
             done
           ')
