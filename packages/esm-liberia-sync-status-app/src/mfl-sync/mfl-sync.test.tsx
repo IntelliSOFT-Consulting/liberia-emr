@@ -351,6 +351,83 @@ describe('MFL sync page', () => {
     expect(screen.getByText(/Liberia/)).toBeInTheDocument();
   });
 
+  it('says run history is unreadable when GET /runs fails, not that the MFL was never synced', () => {
+    given('/status', { data: { data: status() } });
+    given('/runs', { error: refusal(500) });
+
+    render(<MflSync />);
+
+    expect(screen.getByText('The run history cannot be read')).toBeInTheDocument();
+    expect(screen.queryByText('The MFL has not been synced yet.')).not.toBeInTheDocument();
+  });
+
+  it("says a run's changes are unreadable when GET /runs/{id}/items fails, not that nothing changed", () => {
+    given('/status', { data: { data: status() } });
+    given('/runs/42', { data: { data: run() } });
+    given('/runs/42/items', { error: refusal(500) });
+
+    render(<MflSync />);
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    expect(screen.getByText("This run's changes cannot be read")).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to show: every location was unchanged.')).not.toBeInTheDocument();
+  });
+
+  it('renders an ERROR item that has no location', () => {
+    given('/status', { data: { data: status() } });
+    given('/runs/42', { data: { data: run() } });
+    given('/runs/42/items', {
+      data: {
+        data: {
+          results: [{ ...items.results[2], locationUuid: null as unknown as string, name: 'Orphan Clinic', error: 'No parent to place it under' }],
+          totalCount: 1,
+        },
+      },
+    });
+
+    render(<MflSync />);
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    expect(screen.getByText('Orphan Clinic')).toBeInTheDocument();
+    expect(screen.getByText('No parent to place it under')).toBeInTheDocument();
+  });
+
+  it('takes a server-side settings change into an untouched form', () => {
+    given('/status', { data: { data: status() } });
+    const { rerender } = render(<MflSync />);
+
+    given('/status', { data: { data: status({ config: { ...status().config, schedule: { time: '04:15' } } }) } });
+    rerender(<MflSync />);
+
+    expect(screen.getByLabelText('Daily run time (HH:MM, Monrovia time)')).toHaveValue('04:15');
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
+  });
+
+  it('keeps an edit, takes untouched fields from the server, and warns when the server changed an edited field', async () => {
+    given('/status', { data: { data: status() } });
+    mockOpenmrsFetch.mockResolvedValue({ data: status() });
+    const { rerender } = render(<MflSync />);
+    fireEvent.change(screen.getByLabelText('Daily run time (HH:MM, Monrovia time)'), { target: { value: '03:30' } });
+
+    // Another administrator changes the time and turns the schedule off.
+    given('/status', {
+      data: { data: status({ config: { ...status().config, enabled: false, schedule: { time: '04:15' } } }) },
+    });
+    rerender(<MflSync />);
+
+    expect(screen.getByLabelText('Daily run time (HH:MM, Monrovia time)')).toHaveValue('03:30');
+    expect(screen.getByText(/changed on the server while you were editing/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+
+    // Only the edited field is sent; the untouched schedule switch keeps the server's newer value.
+    await waitFor(() =>
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+        `${base}/config`,
+        expect.objectContaining({ method: 'PUT', body: { schedule: { time: '03:30' } } }),
+      ),
+    );
+  });
+
   it("opens a run's changes, warnings and errors", () => {
     given('/status', { data: { data: status() } });
     given('/runs/42', { data: { data: run() } });

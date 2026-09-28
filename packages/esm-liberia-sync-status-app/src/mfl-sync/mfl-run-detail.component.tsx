@@ -34,7 +34,7 @@ const MflRunDetail: React.FC<MflRunDetailProps> = ({ runId, onClose }) => {
   const { run, error, isLoading } = useMflRun(runId);
   const [action, setAction] = useState<MflItemAction | null>(null);
   const [start, setStart] = useState(0);
-  const { items, isLoading: itemsLoading } = useMflRunItems(runId, action, start);
+  const { items, error: itemsError, isLoading: itemsLoading } = useMflRunItems(runId, action, start);
 
   if (isLoading) {
     return <InlineLoading description={t('loadingRun', 'Loading the run...')} />;
@@ -107,6 +107,18 @@ const MflRunDetail: React.FC<MflRunDetailProps> = ({ runId, onClose }) => {
               <TableRow>
                 <TableCell colSpan={4}>
                   <InlineLoading description={t('loadingItems', 'Loading changes...')} />
+                </TableCell>
+              </TableRow>
+            ) : itemsError ? (
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <InlineNotification
+                    kind="error"
+                    lowContrast
+                    hideCloseButton
+                    title={t('itemsUnreadable', "This run's changes cannot be read")}
+                    subtitle={t('tryAgainLater', 'The server did not answer. Try again shortly.')}
+                  />
                 </TableCell>
               </TableRow>
             ) : results.length === 0 ? (

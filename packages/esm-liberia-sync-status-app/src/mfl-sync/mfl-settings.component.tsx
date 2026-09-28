@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, InlineNotification, TextInput, Tile, Toggle } from '@carbon/react';
 import { isAboutUrl, isValidTime, isValidUrl, messageOf, statusOf, updateMflConfig } from './mfl-sync.resource';
@@ -21,6 +21,46 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
   const [enabled, setEnabled] = useState(config.enabled);
   const [url, setUrl] = useState(config.url);
   const [time, setTime] = useState(config.schedule.time);
+  // The server values the draft was last aligned with. Status refreshes every minute, so another
+  // administrator's change can arrive while this form is open.
+  const [baseline, setBaseline] = useState({ enabled: config.enabled, url: config.url, time: config.schedule.time });
+  // Fields the server changed underneath an edit the user has not saved yet.
+  const [conflicts, setConflicts] = useState<Array<string>>([]);
+
+  useEffect(() => {
+    const server = { enabled: config.enabled, url: config.url, time: config.schedule.time };
+    if (server.enabled === baseline.enabled && server.url === baseline.url && server.time === baseline.time) {
+      return;
+    }
+    // An untouched field follows the server; an edited one keeps the user's value, with a warning
+    // if the server moved it too.
+    const moved: Array<string> = [];
+    if (server.enabled !== baseline.enabled) {
+      if (enabled === baseline.enabled) {
+        setEnabled(server.enabled);
+      } else {
+        moved.push(t('scheduledSync', 'Scheduled sync'));
+      }
+    }
+    if (server.url !== baseline.url) {
+      if (url.trim() === baseline.url) {
+        setUrl(server.url);
+      } else {
+        moved.push(t('mflUrl', 'MFL address'));
+      }
+    }
+    if (server.time !== baseline.time) {
+      if (time.trim() === baseline.time) {
+        setTime(server.time);
+      } else {
+        moved.push(t('dailyRunTime', 'Daily run time (HH:MM, Monrovia time)'));
+      }
+    }
+    setBaseline(server);
+    setConflicts((previous) => Array.from(new Set([...previous, ...moved])));
+    // Only a change on the server re-runs this; the draft is read as it stands at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.enabled, config.url, config.schedule.time]);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: 'success' | 'error'; title: string } | null>(null);
   // The server's reason for refusing the address, such as a host outside the deployment's allowlist.
@@ -49,6 +89,7 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
     try {
       const response = await updateMflConfig(changes);
       onSaved(response.data);
+      setConflicts([]);
       setResult({ kind: 'success', title: t('settingsSaved', 'Settings saved') });
     } catch (e) {
       const message = messageOf(e);
@@ -115,6 +156,21 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
             }}
           />
         </div>
+        {conflicts.length > 0 && (
+          <InlineNotification
+            className={styles.notice}
+            kind="warning"
+            lowContrast
+            onClose={() => setConflicts([])}
+            title={t('settingsChangedOnServer', 'These settings were changed on the server while you were editing: {{fields}}.', {
+              fields: conflicts.join(', '),
+            })}
+            subtitle={t(
+              'settingsChangedOnServerBody',
+              'Saving replaces them with the values shown here. Settings you did not edit already show the newer values.',
+            )}
+          />
+        )}
         {result && (
           <InlineNotification
             className={styles.notice}

@@ -44,7 +44,7 @@ const MflSync: React.FC = () => {
   const canManage = userHasAccess(managePrivilege, session?.user);
   const { status, error, isLoading, mutate } = useMflStatus();
   const [runsStart, setRunsStart] = useState(0);
-  const { runs, mutate: mutateRuns } = useMflRuns(runsStart, Boolean(status?.running));
+  const { runs, error: runsError, mutate: mutateRuns } = useMflRuns(runsStart, Boolean(status?.running));
   const [selectedRun, setSelectedRun] = useState<number | null>(null);
 
   if (isLoading) {
@@ -116,6 +116,7 @@ const MflSync: React.FC = () => {
 
       <RunHistory
         runs={runs?.results ?? []}
+        unreadable={Boolean(runsError)}
         totalCount={runs?.totalCount ?? 0}
         startIndex={runsStart}
         onPage={setRunsStart}
@@ -305,6 +306,8 @@ const Actions: React.FC<{ status: MflStatus; onStarted: () => void }> = ({ statu
 
 interface RunHistoryProps {
   runs: Array<MflRun>;
+  /** GET /runs failed, which is not the same as an empty history. */
+  unreadable: boolean;
   totalCount: number;
   startIndex: number;
   onPage: (startIndex: number) => void;
@@ -312,7 +315,7 @@ interface RunHistoryProps {
   onSelect: (id: number) => void;
 }
 
-const RunHistory: React.FC<RunHistoryProps> = ({ runs, totalCount, startIndex, onPage, selected, onSelect }) => {
+const RunHistory: React.FC<RunHistoryProps> = ({ runs, unreadable, totalCount, startIndex, onPage, selected, onSelect }) => {
   const { t } = useTranslation();
   return (
     <TableContainer className={styles.section} title={t('runHistory', 'Run history')}>
@@ -328,7 +331,19 @@ const RunHistory: React.FC<RunHistoryProps> = ({ runs, totalCount, startIndex, o
           </TableRow>
         </TableHead>
         <TableBody>
-          {runs.length === 0 ? (
+          {unreadable ? (
+            <TableRow>
+              <TableCell colSpan={6}>
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('runsUnreadable', 'The run history cannot be read')}
+                  subtitle={t('tryAgainLater', 'The server did not answer. Try again shortly.')}
+                />
+              </TableCell>
+            </TableRow>
+          ) : runs.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6}>{t('noRuns', 'The MFL has not been synced yet.')}</TableCell>
             </TableRow>
