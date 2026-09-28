@@ -10,7 +10,7 @@
 #
 # Two version streams, and they are the whole design:
 #
-#   push to main              ->  1.0.0-SNAPSHOT   re-deployed over itself on every merge
+#   push to main              ->  x.y.z-SNAPSHOT   the pom's version, re-deployed over itself
 #   push liberiaemr-x.y.z     ->  x.y.z            immutable, cut by maven-release-plugin
 #
 # A GitHub release publishes NOTHING here. The bare x.y.z tags are the distribution's

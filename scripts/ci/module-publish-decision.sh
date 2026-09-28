@@ -14,7 +14,7 @@
 #
 # Two streams publish, and nothing else does:
 #
-#   push to main              ->  1.0.0-SNAPSHOT, re-deployed over itself
+#   push to main              ->  x.y.z-SNAPSHOT (the pom's), re-deployed over itself
 #   push liberiaemr-x.y.z     ->  x.y.z, immutable, cut by maven-release-plugin
 #
 # A GitHub release does NOT publish the module. The distribution's x.y.z tags are its own
