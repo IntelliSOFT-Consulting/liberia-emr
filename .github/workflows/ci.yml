@@ -244,11 +244,39 @@ jobs:
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.qualitygate.wait=true
 
+      # The gate's verdict alone says nothing about *which* condition failed, and the Sonar server
+      # is not visible to most contributors. On failure, print the failing conditions, the new
+      # issues and the unreviewed hotspots, so the fix can be read from the run log.
+      - name: Explain a failed SonarQube quality gate
+        if: ${{ failure() && env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        run: |
+          task_file=target/sonar/report-task.txt
+          if [ ! -f "$task_file" ]; then echo "No Sonar report-task.txt; the analysis did not run."; exit 0; fi
+          api() { curl -sf -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/$1"; }
+          task=$(sed -n 's/^ceTaskId=//p' "$task_file")
+          analysis=$(api "ce/task?id=${task}" | jq -r '.task.analysisId // empty')
+          echo "::group::Failing quality gate conditions"
+          api "qualitygates/project_status?analysisId=${analysis}" \
+            | jq -r '.projectStatus.conditions[] | select(.status != "OK")
+                     | "\(.metricKey): actual=\(.actualValue) \(.comparator) threshold=\(.errorThreshold)"'
+          echo "::endgroup::"
+          echo "::group::New issues (first 100)"
+          api "issues/search?componentKeys=liberia-emr&inNewCodePeriod=true&resolved=false&ps=100" \
+            | jq -r '.issues[] | "\(.severity) \(.type) \(.rule) \(.component | sub("^liberia-emr:"; "")):\(.line // 0) \(.message)"'
+          echo "::endgroup::"
+          echo "::group::New security hotspots to review"
+          api "hotspots/search?projectKey=liberia-emr&inNewCodePeriod=true&status=TO_REVIEW&ps=100" \
+            | jq -r '.hotspots[] | "\(.vulnerabilityProbability) \(.securityCategory) \(.component | sub("^liberia-emr:"; "")):\(.line // 0) \(.message)"'
+          echo "::endgroup::"
+
       - name: Upload JUnit Results
         uses: actions/upload-artifact@v4
         with:
           name: junit-results
-          path: target/surefire-reports/
+          # The reactor's in-tree modules write their own reports; the root has none of its own.
+          path: |
+            target/surefire-reports/
+            modules/*/*/target/surefire-reports/
           if-no-files-found: warn
 
       - name: Upload JaCoCo Report
