@@ -39,6 +39,15 @@ public final class EtlTestSupport {
 			s.execute("CREATE TABLE " + SCHEMA + ".mamba_dim_location_hierarchy (location_id INT PRIMARY KEY,"
 			        + " uuid CHAR(38), name VARCHAR(255), parent_location_id INT, facility_location_id INT,"
 			        + " district_location_id INT, county_location_id INT, tags VARCHAR(255))");
+			s.execute("DROP TABLE IF EXISTS " + SCHEMA + ".mamba_dim_location_ancestor");
+			s.execute("CREATE TABLE " + SCHEMA + ".mamba_dim_location_ancestor (location_id INT NOT NULL,"
+			        + " ancestor_location_id INT NOT NULL, depth INT NOT NULL, PRIMARY KEY (location_id, ancestor_location_id))");
+			s.execute("DROP TABLE IF EXISTS " + SCHEMA + ".mamba_dim_encounter");
+			s.execute("CREATE TABLE " + SCHEMA + ".mamba_dim_encounter (encounter_id INT PRIMARY KEY,"
+			        + " encounter_datetime TIMESTAMP, voided BOOLEAN)");
+			s.execute("DROP TABLE IF EXISTS " + SCHEMA + ".mamba_dim_encounter_location");
+			s.execute("CREATE TABLE " + SCHEMA + ".mamba_dim_encounter_location (encounter_id INT PRIMARY KEY,"
+			        + " visit_id INT, encounter_location_id INT, visit_location_id INT, location_id INT NOT NULL)");
 			s.execute("DROP TABLE IF EXISTS " + SCHEMA + "._mamba_etl_schedule");
 			s.execute("CREATE TABLE " + SCHEMA + "._mamba_etl_schedule (id INT AUTO_INCREMENT PRIMARY KEY,"
 			        + " start_time TIMESTAMP NOT NULL, end_time TIMESTAMP, next_schedule TIMESTAMP,"
@@ -61,6 +70,20 @@ public final class EtlTestSupport {
 			s.execute(t + "(103, 'Test Facility One', 102, 103, 102, 101, 'Health Facility')");
 			s.execute(t + "(104, 'Test Facility One OPD', 103, 103, 102, 101, NULL)");
 			s.execute(t + "(105, 'Test Facility Two', 102, 105, 102, 101, 'Health Facility')");
+			// Closure rows, self included, as the ETL builds them.
+			String a = "INSERT INTO " + SCHEMA + ".mamba_dim_location_ancestor (location_id, ancestor_location_id, depth) VALUES ";
+			s.execute(a + "(101, 101, 0), (102, 102, 0), (102, 101, 1), (103, 103, 0), (103, 102, 1), (103, 101, 2),"
+			        + " (104, 104, 0), (104, 103, 1), (104, 102, 2), (104, 101, 3), (105, 105, 0), (105, 102, 1), (105, 101, 2)");
+			// The live encounters of LiberiaEMRReportsTestDataset.xml as the ETL flattens them: voided
+			// 9006 is absent, and 9005 (no encounter location) takes its visit's location, 103.
+			String e = "INSERT INTO " + SCHEMA + ".mamba_dim_encounter (encounter_id, encounter_datetime, voided) VALUES ";
+			s.execute(e + "(9001, '2026-07-10 09:00:00', FALSE), (9002, '2026-08-01 09:00:00', FALSE),"
+			        + " (9003, '2026-09-30 23:30:00', FALSE), (9004, '2026-07-01 00:00:00', FALSE),"
+			        + " (9005, '2026-07-10 10:00:00', FALSE), (9007, '2025-12-31 09:00:00', FALSE)");
+			String l = "INSERT INTO " + SCHEMA + ".mamba_dim_encounter_location (encounter_id, visit_id,"
+			        + " encounter_location_id, visit_location_id, location_id) VALUES ";
+			s.execute(l + "(9001, NULL, 104, NULL, 104), (9002, NULL, 104, NULL, 104), (9003, NULL, 103, NULL, 103),"
+			        + " (9004, NULL, 105, NULL, 105), (9005, 9001, NULL, 103, 103), (9007, NULL, 103, NULL, 103)");
 		}
 		finally {
 			s.close();

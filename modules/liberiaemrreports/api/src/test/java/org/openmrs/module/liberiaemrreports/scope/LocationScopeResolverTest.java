@@ -143,11 +143,9 @@ public class LocationScopeResolverTest {
 	public void expand_shouldRollUpThroughEveryHierarchyLevel() {
 		String sql = LocationScope.expand("SELECT 1 FROM f WHERE f.location_id IN ${scopeLocations}");
 		assertFalse(sql.contains(LocationScope.TOKEN));
-		for (String column : new String[] { "lh.location_id", "lh.facility_location_id", "lh.district_location_id",
-		        "lh.county_location_id" }) {
-			assertTrue(column, sql.contains(column + " = :scopeLocationId"));
-		}
-		assertTrue(sql.contains("FROM ${etl}.mamba_dim_location_hierarchy lh"));
+		// Every descendant of the chosen node, at any level, through the ETL's closure table.
+		assertTrue(sql.contains("SELECT la.location_id FROM ${etl}.mamba_dim_location_ancestor la"));
+		assertTrue(sql.contains("la.ancestor_location_id = :scopeLocationId"));
 		assertTrue(sql.contains(":scopeNational = 1"));
 	}
 }

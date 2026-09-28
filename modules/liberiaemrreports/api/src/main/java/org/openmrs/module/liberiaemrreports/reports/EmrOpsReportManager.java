@@ -33,11 +33,13 @@ public class EmrOpsReportManager extends LiberiaReportManager {
 	
 	static final String PLACEHOLDER_SQL = IndicatorSql
 	        .select(Collections.singletonList(IndicatorSql.count(PLACEHOLDER_COLUMN, "e.encounter_id IS NOT NULL")),
-	            "FROM encounter e\n" //
-	                    + "LEFT JOIN visit v ON v.visit_id = e.visit_id\n" //
-	                    + "WHERE e.voided = false\n" //
-	                    + "  AND e.encounter_datetime BETWEEN :startDate AND :endDate\n" //
-	                    + "  AND COALESCE(e.location_id, v.location_id) IN ${scopeLocations}");
+	            // Only the local ETL schema (ADR 0010 decision 6): mamba_dim_encounter_location holds
+	            // every live encounter with its attribution location already resolved (encounter,
+	            // else visit), and core's mamba_dim_encounter supplies the date.
+	            "FROM ${etl}.mamba_dim_encounter_location el\n" //
+	                    + "JOIN ${etl}.mamba_dim_encounter e ON e.encounter_id = el.encounter_id\n" //
+	                    + "WHERE e.encounter_datetime BETWEEN :startDate AND :endDate\n" //
+	                    + "  AND el.location_id IN ${scopeLocations}");
 	
 	@Override
 	public ReportSheet getSheet() {

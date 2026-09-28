@@ -17,9 +17,13 @@ import java.util.Set;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
+import org.openmrs.module.liberiaemrreports.reporting.EtlSqlDataSetDefinition;
 import org.openmrs.module.liberiaemrreports.uuid.ReportSheet;
+import org.openmrs.module.reporting.dataset.definition.DataSetDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.report.ReportRequest;
+import org.openmrs.module.reporting.report.definition.ReportDefinition;
+import org.openmrs.module.reporting.report.definition.service.ReportDefinitionService;
 import org.springframework.aop.MethodBeforeAdvice;
 
 /**
@@ -51,6 +55,13 @@ public class StoredReportAccessAdvice implements MethodBeforeAdvice {
 		NationalReportPrivilege.requireHeldBy(Context.getAuthenticatedUser(), "the current user");
 	}
 	
+	/**
+	 * A request is ours when its report is one of the module's sheets, <b>or</b> when its report runs
+	 * any of this module's ETL data sets under another UUID. The UUID alone is not enough: a
+	 * definition carrying the registered SQL can be saved under a new UUID and evaluated by a user
+	 * with the privilege, and its stored output must stay behind the privilege too. If the stored
+	 * definition cannot be inspected, the request is treated as ours (fail closed).
+	 */
 	static boolean isOurs(ReportRequest request) {
 		Mapped<?> mapped = request.getReportDefinition();
 		if (mapped == null || mapped.getParameterizable() == null) {
@@ -62,6 +73,38 @@ public class StoredReportAccessAdvice implements MethodBeforeAdvice {
 				return true;
 			}
 		}
+		ReportDefinition definition;
+		try {
+			definition = definitionOf(mapped, uuid);
+		}
+		catch (RuntimeException e) {
+			return true;
+		}
+		return definition != null && runsEtlDataSets(definition);
+	}
+	
+	static boolean runsEtlDataSets(ReportDefinition definition) {
+		if (definition.getDataSetDefinitions() == null) {
+			return false;
+		}
+		for (Mapped<? extends DataSetDefinition> dataSet : definition.getDataSetDefinitions().values()) {
+			if (dataSet != null && dataSet.getParameterizable() instanceof EtlSqlDataSetDefinition) {
+				return true;
+			}
+		}
 		return false;
+	}
+	
+	private static ReportDefinition definitionOf(Mapped<?> mapped, String uuid) {
+		if (mapped.getParameterizable() instanceof ReportDefinition
+		        && ((ReportDefinition) mapped.getParameterizable()).getDataSetDefinitions() != null
+		        && !((ReportDefinition) mapped.getParameterizable()).getDataSetDefinitions().isEmpty()) {
+			return (ReportDefinition) mapped.getParameterizable();
+		}
+		if (uuid == null) {
+			return null;
+		}
+		// Runs as the requesting user; if the lookup is refused, isOurs fails closed.
+		return Context.getService(ReportDefinitionService.class).getDefinitionByUuid(uuid);
 	}
 }
