@@ -84,6 +84,13 @@
 			module stage for a formatting pass that changes nothing once the sources are formatted.
 			liberiaemr does not run it either. Run it by hand with -Dspotless.skip=false.
 		-->
+		<!--
+			Coverage for SonarQube. CI's sonar step runs after `mvn verify` and reads each module's
+			jacoco.xml from here; without it every line this module adds counts as uncovered new code.
+			Scoped to this module: modules/liberiaemr is built on its own and is unaffected.
+		-->
+		<jacocoVersion>0.8.12</jacocoVersion>
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 		<spotless.skip>true</spotless.skip>
 		<spotless.apply.skip>true</spotless.apply.skip>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -149,5 +156,39 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+		<plugins>
+			<!--
+				prepare-agent sets surefire's argLine (nothing else in this build sets one), and report
+				writes target/site/jacoco/jacoco.xml at the end of `test`, so `package`, `verify` and
+				the reactor build all leave it for the sonar step. A module with no tests (omod) has no
+				execution data and its report is skipped.
+			-->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacocoVersion}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<formats>
+								<format>XML</format>
+								<format>HTML</format>
+							</formats>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 </project>

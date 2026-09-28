@@ -255,7 +255,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: target/site/jacoco
+          # Only modules/liberiaemrreports runs JaCoCo in this reactor; its per-module jacoco.xml
+          # is also what the sonar step reads (sonar.coverage.jacoco.xmlReportPaths in its pom).
+          path: modules/liberiaemrreports/*/target/site/jacoco
           if-no-files-found: warn
 
       - name: Upload Content Packages

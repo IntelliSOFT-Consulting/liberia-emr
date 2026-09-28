@@ -27,6 +27,7 @@ import org.openmrs.Location;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemrreports.EtlTestSupport;
+import org.openmrs.module.liberiaemrreports.LiberiaEMRReportsActivator;
 import org.openmrs.module.liberiaemrreports.reporting.LiberiaReportManager;
 import org.openmrs.module.liberiaemrreports.reporting.ReportParameters;
 import org.openmrs.module.liberiaemrreports.reporting.ReportRegistrar;
@@ -164,6 +165,15 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 		ReportDefinition rd = registered();
 		assertEquals(id, rd.getId());
 		assertEquals(2, Context.getService(ReportService.class).getReportDesigns(rd, null, true).size());
+	}
+	
+	@Test
+	public void shouldRegisterOnModuleStart() {
+		Integer id = registered().getId();
+		LiberiaEMRReportsActivator activator = new LiberiaEMRReportsActivator();
+		activator.started();
+		assertEquals(id, registered().getId());
+		activator.stopped();
 	}
 	
 	// ---- facility ----
