@@ -31,7 +31,7 @@ public class ReportUuidsTest {
 			seen.add(sheet.getCsvDesignUuid());
 			seen.add(sheet.getExcelDesignUuid());
 		}
-		assertEquals(3 * ReportSheet.values().length, seen.size());
+		assertEquals(3L * ReportSheet.values().length, (long) seen.size());
 	}
 	
 	@Test
