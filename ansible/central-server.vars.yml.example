@@ -14,6 +14,7 @@ tls_cert_dir: <add_the_cert_bot_dir>
 
 # Optional (LE-368). The PUBLIC half of the CI-only keypair that the "Update central dev
 # environment" job in .github/workflows/ci.yml deploys with; its private half is the
-# CENTRAL_DEV_SSH_PRIVATE_KEY repository secret. Leave it unset on a server CI must not
-# deploy to.
+# CENTRAL_DEV_SSH_PRIVATE_KEY repository secret. Changing it and re-running the playbook
+# replaces the old key, so a rotation revokes it; unsetting it removes the key. Leave it unset
+# on a server CI must not deploy to. A plain key line only, with no options before it.
 # ci_deploy_public_key: "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"

@@ -1380,8 +1380,10 @@ jobs:
   #   - it skips cleanly until its secrets exist. Create, under Settings > Secrets and
   #     variables > Actions: CENTRAL_DEV_SSH_PRIVATE_KEY (a CI-only deploy key),
   #     CENTRAL_DEV_HOST (liberiaemrcentraldev.intellisoftkenya.com), CENTRAL_DEV_USER,
-  #     CENTRAL_DEV_COMPOSE_DIR (the directory holding the central docker-compose.yml), and
-  #     optionally CENTRAL_DEV_ENV_FILE (the env file there; default central.env).
+  #     CENTRAL_DEV_COMPOSE_DIR (distribution/compose/central inside a git checkout of this
+  #     repo, owned by CENTRAL_DEV_USER), and optionally CENTRAL_DEV_ENV_FILE (relative to
+  #     that directory; default ../../env/central.env, where ansible/central-server.yaml and
+  #     docs/runbooks/deploy.md put it).
   # No LEGACY_ADMIN_UI: the central compose file has no such switch.
   # ---------------------------------------------------------------------
   deploy-central-dev:
@@ -1405,6 +1407,7 @@ jobs:
       backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
       frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
       gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
+      checkout_sha: ${{ steps.previous-checkout.outputs.checkout_sha }}
     steps:
       - name: Check the central dev secrets exist
         id: configured
@@ -1452,24 +1455,49 @@ jobs:
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
       # The compose file on the server has to match the images being deployed: an old checkout
-      # names the facility frontend, and lacks newer services and settings. When the compose
-      # directory sits in a git checkout (the Ansible playbook clones one), fast-forward it to
-      # this exact commit first. It never rewrites local history: a checkout that cannot
-      # fast-forward stops the deploy for a human.
+      # names the facility frontend, and lacks newer services and settings. So the compose
+      # directory MUST sit in a git checkout (the Ansible playbook clones one); anything else
+      # stops here, before the server is touched, rather than deploying against a compose
+      # file nobody can identify. The commit is recorded so a rollback can restore it.
+      - name: Record the checkout the compose file comes from
+        if: steps.configured.outputs.configured == 'true'
+        id: previous-checkout
+        run: |
+          sha=$(ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "git -C '$CENTRAL_DEV_COMPOSE_DIR' rev-parse HEAD" 2>&1) || true
+          if ! echo "$sha" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "::error::$CENTRAL_DEV_COMPOSE_DIR on the central dev server is not a readable git checkout, so CI cannot keep its compose file in step with the images: $sha. Clone the repository there as $CENTRAL_DEV_USER (ansible/central-server.yaml does)."
+            exit 1
+          fi
+          echo "checkout at $sha"
+          echo "checkout_sha=$sha" >> "$GITHUB_OUTPUT"
+      # Fast-forward the checkout to this exact commit. It never rewrites local history: a
+      # checkout that cannot fast-forward, or that is already past this commit (a newer deploy
+      # or a manual change got there first), stops the deploy for a human rather than start
+      # this run's images under a different compose file.
+      #
+      # REGISTRY is passed explicitly, as rollback-central-dev's retags already assume: the
+      # images come from where this workflow published them, not from whatever central.env
+      # says (central.env.example still names ghcr.io). Shell variables win over --env-file.
+      # The env file defaults to where the playbook and deploy.md put it, relative to the
+      # compose directory.
       - name: Pull and restart backend, frontend and gateway on the central dev server
         if: steps.configured.outputs.configured == 'true'
         run: |
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
             cd '$CENTRAL_DEV_COMPOSE_DIR'
-            if top=\$(git rev-parse --show-toplevel 2>/dev/null); then
-              git -C \"\$top\" fetch -q origin main
-              git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
-                || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
-              echo \"checkout \$top now at \$(git -C \"\$top\" rev-parse --short HEAD)\"
+            top=\$(git rev-parse --show-toplevel)
+            git -C \"\$top\" fetch -q origin main
+            git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
+              || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
+            head=\$(git -C \"\$top\" rev-parse HEAD)
+            if [ \"\$head\" != '${{ github.sha }}' ]; then
+              echo \"checkout at \$top is at \$head, past ${{ github.sha }}; not starting this run's images under a newer compose file. Fix it by hand\" >&2
+              exit 1
             fi
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' pull backend frontend gateway
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+            echo \"checkout \$top now at \$head\"
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
@@ -1542,16 +1570,20 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$CENTRAL_DEV_HOST" >> ~/.ssh/known_hosts
       # As rollback-dev: pull each previous image by digest, re-tag it as :latest locally,
-      # and restart WITHOUT pulling, so compose uses the known-good images.
-      - name: Roll back to the previously-running images
+      # and restart WITHOUT pulling, so compose uses the known-good images. The checkout goes
+      # back too, so those images start under the compose file they ran with, not the one
+      # this deploy fast-forwarded to. `reset --keep` only moves the branch back to a commit
+      # it already contains, and refuses rather than discard a local change.
+      - name: Roll back to the previously-running images and compose file
         run: |
           backend="${{ needs.deploy-central-dev.outputs.backend_digest }}"
           frontend="${{ needs.deploy-central-dev.outputs.frontend_digest }}"
           gateway="${{ needs.deploy-central-dev.outputs.gateway_digest }}"
-          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway"; do
+          checkout="${{ needs.deploy-central-dev.outputs.checkout_sha }}"
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "checkout:$checkout"; do
             svc="${pair%%:*}"; digest="${pair#*:}"
             if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
-              echo "::error::No previous digest captured for ${svc}; cannot roll back automatically. Manual intervention required on the central dev server."
+              echo "::error::No previous ${svc} captured; cannot roll back automatically. Manual intervention required on the central dev server."
               exit 1
             fi
           done
@@ -1559,6 +1591,7 @@ jobs:
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
           echo "  gateway:  $gateway"
+          echo "  checkout: $checkout"
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
             docker pull '$backend'
@@ -1568,14 +1601,29 @@ jobs:
             docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend-central:latest'
             docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
             cd '$CENTRAL_DEV_COMPOSE_DIR'
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+            git reset -q --keep '$checkout'
+            echo \"checkout back at \$(git rev-parse HEAD)\"
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
           "
+      # Same bar as the smoke test: the SPA answering is not enough, since the frontend serves
+      # it with the backend down. A rollback that leaves the backend unhealthy fails here.
       - name: Verify the rollback came back up
         run: |
           url="https://$CENTRAL_DEV_HOST/openmrs/spa/"
           for i in $(seq 1 20); do
             code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
-            [ "$code" = "200" ] && { echo "ok: rollback restored service ($url -> 200)"; exit 0; }
+            if [ "$code" = "200" ]; then
+              echo "ok: rollback restored the SPA ($url -> 200)"
+              health="https://$CENTRAL_DEV_HOST/openmrs/health/started"
+              for j in $(seq 1 60); do
+                hc=$(curl -sk -o /dev/null -w '%{http_code}' "$health" || echo 000)
+                [ "$hc" = "200" ] && { echo "ok: rollback restored the backend ($health -> 200)"; exit 0; }
+                echo "backend attempt $j: got $hc, retrying in 15s..."
+                sleep 15
+              done
+              echo "::error::Rollback brought the SPA back but $health never returned 200; the central backend is still down and needs a human now." >&2
+              exit 1
+            fi
             echo "attempt $i: got $code, retrying in 15s..."
             sleep 15
           done
