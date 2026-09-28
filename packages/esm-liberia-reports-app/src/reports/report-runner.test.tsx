@@ -312,6 +312,21 @@ describe('report runner safeguards', () => {
     expect(backend.calls.some((c) => c.url.includes('/reportDataSet/'))).toBe(false);
   });
 
+  it('keeps Run disabled while an Excel export is in flight', async () => {
+    const backend = given({ context: facilityContext, holdPosts: true });
+    renderWithSwr(<ReportRunner />);
+
+    await click(await screen.findByRole('button', { name: 'Run report' }));
+    await act(async () => backend.releasePosts());
+    await waitFor(() => expect(screen.getByTestId('run-status')).toHaveTextContent('Completed'));
+
+    await click(screen.getByRole('button', { name: 'Download Excel' }));
+    expect(screen.getByRole('button', { name: 'Run report' })).toBeDisabled();
+    await click(screen.getByRole('button', { name: 'Run report' }));
+    expect(backend.calls.filter((c) => c.method === 'DELETE')).toHaveLength(0);
+    expect(screen.getByTestId('run-status')).toHaveTextContent('Completed');
+  });
+
   it('drops an Excel export that is accepted only after another report was chosen', async () => {
     const backend = given({ context: facilityContext, holdPosts: true });
     renderWithSwr(<ReportRunner />);

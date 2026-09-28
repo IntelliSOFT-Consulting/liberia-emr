@@ -148,7 +148,9 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
   };
 
   const runReport = async () => {
-    if (!report || !period || !location || !csvDesign || !locationKnown) {
+    // Starting a run clears the current one; while its export is still in flight that would orphan
+    // the export on the server and let a late file land for a run no longer shown.
+    if (!report || !period || !location || !csvDesign || !locationKnown || exportInFlight.current) {
       return;
     }
     // A run without `location` is national at central. Send one only when the context says
@@ -387,7 +389,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
             <Button
               kind="primary"
               onClick={runReport}
-              disabled={submitting || running || !csvDesign || !location || !locationKnown}
+              disabled={submitting || running || !!exporting || !csvDesign || !location || !locationKnown}
             >
               {t('runReport', 'Run report')}
             </Button>
