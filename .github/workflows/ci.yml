@@ -375,15 +375,15 @@ jobs:
       # Get a free key at https://nvd.nist.gov/developers/request-an-api-key
       # and add it as the NVD_API_KEY repo secret; this step just uses it
       # if present and warns (without failing) if it's missing.
-      # `compile` runs first so the reactor can resolve in-tree module dependencies: the reports
-      # omod depends on its sibling api jar, which exists only once the reactor has built it.
+      # `package` runs first so the reactor can resolve in-tree module dependencies: the reports
+      # omod depends on, and unpacks (MDEP-98), its sibling api jar, which must be packaged first.
       - name: Run OWASP Dependency Check
         run: |
           if [ -n "$NVD_API_KEY" ]; then
-            mvn -B -DskipTests compile org.owasp:dependency-check-maven:12.1.8:check -Dnvd.api.key="$NVD_API_KEY"
+            mvn -B -DskipTests package org.owasp:dependency-check-maven:12.1.8:check -Dnvd.api.key="$NVD_API_KEY"
           else
             echo "::warning::NVD_API_KEY not set — NVD updates will be rate-limited and slow. See https://nvd.nist.gov/developers/request-an-api-key"
-            mvn -B -DskipTests compile org.owasp:dependency-check-maven:12.1.8:check
+            mvn -B -DskipTests package org.owasp:dependency-check-maven:12.1.8:check
           fi
       - name: Upload Dependency Check Reports
         uses: actions/upload-artifact@v4
