@@ -1,0 +1,29 @@
+#############################################################################################
+# LiberiaEMR derived ETL procedures (docs/reporting/README.md §2.4).
+#
+# One section per owner, in this order. A workstream edits ONLY its own section, and adds the
+# matching CALL to the same section of sp_mamba_data_processing_etl.sql. Paths are relative to
+# this directory; each file's base name is the procedure it defines.
+#
+# Core appends these entries to its own sp_makefile at build time, so every procedure below is
+# compiled after core's. The caller must stay LAST.
+#############################################################################################
+
+# ---- common (coordinator) ----
+derived/common/sp_mamba_dim_location_hierarchy.sql
+derived/common/sp_mamba_dim_encounter_form.sql
+derived/common/sp_mamba_dim_encounter_location.sql
+derived/common/sp_mamba_dim_person_cpi.sql
+
+# ---- rmncah (RPT 6) ----
+
+# ---- nutrition (RPT 6) ----
+
+# ---- malaria (RPT 7) ----
+
+# ---- ncd (RPT 7) ----
+
+# ---- emr_ops (RPT 7) ----
+
+# ---- caller (coordinator): calls everything above, in this order ----
+sp_mamba_data_processing_etl.sql

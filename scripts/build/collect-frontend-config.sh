@@ -2,6 +2,10 @@
 # Collects frontend runtime configuration from the content packages, in LAYER ORDER.
 #
 #   scripts/build/collect-frontend-config.sh --site careysburg --demo false --out <dir>
+#   scripts/build/collect-frontend-config.sh --site central --out <dir>
+#
+# --site central puts content-central where a facility build has its site layer, so central
+# gets its own last layer and no facility's (docs/adr/0011-central-composition.md).
 #
 # Order matters twice over: the files are copied here, and the SAME order must appear in
 # SPA_CONFIG_URLS in the compose file. A config listed out of order overrides the wrong
@@ -23,6 +27,13 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$OUT" ]] || { echo "--out <dir> is required" >&2; exit 2; }
 
+if [[ "$SITE" == "central" ]]; then
+  [[ "$DEMO" == "false" ]] || { echo "there is no demo build of central" >&2; exit 2; }
+  last_layer="content-central"
+else
+  last_layer="content-site-${SITE}"
+fi
+
 layers=(
   content-common
   content-liberia-national
@@ -30,7 +41,7 @@ layers=(
   content-liberia-lab
   content-liberia-pharmacy
   content-liberia-opd-ipd
-  "content-site-${SITE}"
+  "$last_layer"
 )
 [[ "$DEMO" == "true" ]] && layers+=(content-demo)
 

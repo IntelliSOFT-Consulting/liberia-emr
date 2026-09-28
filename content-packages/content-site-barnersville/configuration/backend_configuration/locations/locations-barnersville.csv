@@ -3,5 +3,5 @@ ${var.location.facility-root.uuid},,Barnersville Health Center,MOH health center
 ${var.location.opd.uuid},,Barnersville OPD,Outpatient department,Barnersville Health Center,TRUE,TRUE,,,,,,TRUE,TRUE,,,,
 ${var.location.maternity.uuid},,Barnersville Maternity,"Labour, delivery and postnatal unit",Barnersville Health Center,TRUE,TRUE,,,TRUE,TRUE,,TRUE,TRUE,,,,
 ${var.location.ward.uuid},,Barnersville Inpatient Ward,General inpatient ward,Barnersville Health Center,TRUE,,,,TRUE,TRUE,,,,,,,
-${var.location.laboratory.uuid},,Barnersville Laboratory,Facility laboratory,Barnersville Health Center,TRUE,,,,,,,TRUE,,,,,,
+${var.location.laboratory.uuid},,Barnersville Laboratory,Facility laboratory,Barnersville Health Center,TRUE,,,,,,,TRUE,,,,,
 ${var.location.pharmacy.uuid},,Barnersville Pharmacy,Facility pharmacy and dispensing point,Barnersville Health Center,TRUE,,,,,,TRUE,TRUE,,,,,

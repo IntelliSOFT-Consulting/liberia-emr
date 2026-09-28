@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<module configVersion="1.2">
+
+	<id>${project.parent.artifactId}</id>
+	<name>${project.parent.name}</name>
+	<version>${project.parent.version}</version>
+	<!--
+		Not org.openmrs.module.mambaetl, which an upstream mamba-etl module could also claim
+		(ADR 0010 decision 1).
+	-->
+	<package>org.openmrs.module.mambaetlliberiaemr</package>
+	<author>IntelliSOFT Consulting for the Ministry of Health, Republic of Liberia</author>
+	<description>
+			${project.parent.description}
+	</description>
+
+	<activator>org.openmrs.module.mambaetlliberiaemr.MambaEtlLiberiaEmrActivator</activator>
+
+	<!-- mamba-core-api 3.0.0 is built against 2.8.0; the distribution runs 2.8.8. -->
+	<require_version>${openmrsPlatformVersion}</require_version>
+
+	<!--
+		The bundled core component-scans a REST controller and a resource extending
+		webservices.rest classes, so it must load after webservices.rest where that is present.
+		Core's own /ws/rest/v1/mamba/report surface is unused: it is guarded by a privilege
+		("View MambaReport") that only core's own config.xml declares, and that file is never
+		read when core is bundled. Reports go through reportingrest (ADR 0010 decision 6).
+	-->
+	<aware_of_modules>
+		<aware_of_module>org.openmrs.module.webservices.rest</aware_of_module>
+	</aware_of_modules>
+
+	<messages>
+		<lang>en</lang>
+		<file>messages.properties</file>
+	</messages>
+
+</module>
