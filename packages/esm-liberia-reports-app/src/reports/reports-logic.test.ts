@@ -2,7 +2,7 @@ import { monthlyPeriods, quarterlyPeriods } from './periods';
 import { describePart, formatValue, groupByIndicator, parseColumnName } from './disaggregation';
 import { toReportBlob } from './report-file';
 import { buildReportRequest, findDesign, isFinished, previewUrl } from './reports.resource';
-import { toReportingContext } from '../context/reporting-context.resource';
+import { isLocationKnown, toReportingContext } from '../context/reporting-context.resource';
 
 const t = (_key: string, fallback: string, options?: Record<string, unknown>) =>
   fallback.replace(/{{(\w+)}}/g, (_m, name) => String(options?.[name]));
@@ -156,6 +156,16 @@ describe('instance role', () => {
     expect(
       toReportingContext({ instanceRole: 'CENTRAL', facilityLocation: { uuid: 'f' } }),
     ).toMatchObject({ role: 'central', roleUnknown: false, facilityLocation: undefined });
+  });
+
+  it('knows the location only from an answered context: central, or a facility with its UUID', () => {
+    expect(isLocationKnown(toReportingContext(undefined))).toBe(false);
+    expect(isLocationKnown(toReportingContext({}))).toBe(false);
+    expect(isLocationKnown(toReportingContext({ instanceRole: 'facility', facilityLocation: null }))).toBe(false);
+    expect(isLocationKnown(toReportingContext({ instanceRole: 'facility', facilityLocation: { uuid: 'f' } }))).toBe(true);
+    // Role missing: a facility, which the backend clamps to; its own UUID is still sent.
+    expect(isLocationKnown(toReportingContext({ facilityLocation: { uuid: 'f' } }))).toBe(true);
+    expect(isLocationKnown(toReportingContext({ instanceRole: 'central', facilityLocation: null }))).toBe(true);
   });
 
   it('carries the facility location and the last ETL run at a facility', () => {

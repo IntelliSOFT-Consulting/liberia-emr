@@ -18,7 +18,7 @@ export type LocationLevel = 'national' | 'county' | 'district' | 'facility';
 
 export interface ReportLocation {
   level: LocationLevel;
-  /** Absent for national, and at a facility whose location UUID the backend did not report. */
+  /** Absent for national only, which only central offers. */
   uuid?: string;
   name: string;
 }
@@ -32,6 +32,8 @@ interface LocationPickerProps {
 }
 
 /**
+ * Render only when `isLocationKnown(context)`.
+ *
  * At a facility: the facility itself, fixed. The backend clamps to it anyway (ADR 0010 decision 5).
  * At central: national, or any county, district or facility of the MFL hierarchy. The most
  * specific choice wins, so narrowing to a county and stopping there reports on the county.
@@ -44,9 +46,16 @@ const FacilityLocation: React.FC<LocationPickerProps> = ({ context, onChange }) 
   const facility = context.facilityLocation;
   const name = facility?.display || t('thisFacility', 'This facility');
 
+  // Without its UUID nothing is reported: a run must never go out without a location here.
   useEffect(() => {
-    onChange({ level: 'facility', uuid: facility?.uuid, name });
+    if (facility?.uuid) {
+      onChange({ level: 'facility', uuid: facility.uuid, name });
+    }
   }, [facility?.uuid, name, onChange]);
+
+  if (!facility?.uuid) {
+    return null;
+  }
 
   return (
     <div className={styles.fixedLocation} data-testid="fixed-location">

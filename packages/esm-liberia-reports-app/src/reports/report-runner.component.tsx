@@ -14,7 +14,7 @@ import {
 import { useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type ReportsConfig } from '../config-schema';
 import { EXPORT_PRIVILEGE } from '../privileges';
-import { useReportingContext } from '../context/reporting-context.resource';
+import { isLocationKnown, useReportingContext } from '../context/reporting-context.resource';
 import Freshness from '../context/freshness.component';
 import LocationPicker, { type ReportLocation } from '../location/location-picker.component';
 import { monthlyPeriods, quarterlyPeriods, type PeriodType } from './periods';
@@ -72,7 +72,9 @@ const ReportRunner: React.FC = () => {
 
 const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) => {
   const { t } = useTranslation();
-  const { context, error: contextError, isLoading: contextLoading } = useReportingContext();
+  const { context, isLoading: contextLoading, retry: retryContext } = useReportingContext();
+  // Fail closed: without this, nothing is run or exported (isLocationKnown).
+  const locationKnown = isLocationKnown(context);
   const { reports, error: reportsError, isLoading: reportsLoading } = useLiberiaReports(config.reportUuids);
 
   const [reportUuid, setReportUuid] = useState('');
@@ -147,7 +149,13 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
   };
 
   const runReport = async () => {
-    if (!report || !period || !location || !csvDesign) {
+    if (!report || !period || !location || !csvDesign || !locationKnown) {
+      return;
+    }
+    // A run without `location` is national at central. Send one only when the context says
+    // central and the user chose national; every other run names its location.
+    const national = location.level === 'national';
+    if (national ? context.role !== 'central' : !location.uuid) {
       return;
     }
     clearRun();
@@ -156,7 +164,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
     const params: RunParameters = {
       startDate: period.startDate,
       endDate: period.endDate,
-      locationUuid: location.level === 'national' ? undefined : location.uuid,
+      locationUuid: national ? undefined : location.uuid,
     };
     try {
       const created = await requestReport(report.uuid, csvDesign.uuid, params);
@@ -207,7 +215,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
 
   const exportAs = async (format: ExportFormat) => {
     const design = format === 'csv' ? csvDesign : xlsxDesign;
-    if (!run || !design || exportInFlight.current) {
+    if (!run || !design || !locationKnown || exportInFlight.current) {
       return;
     }
     const current = generation.current;
@@ -280,7 +288,7 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
         {t('explainer', 'MOH indicator reports, counted from this server’s report data. Aggregates only, no patient details.')}
       </p>
 
-      <Freshness context={context} unavailable={!!contextError} />
+      <Freshness context={context} unavailable={!context.available} />
 
       {reportsError ? (
         <InlineNotification
@@ -350,16 +358,38 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
             ))}
           </Select>
 
-          <LocationPicker
-            context={context}
-            facilityLocationTag={config.facilityLocationTag}
-            mflCodeAttributeTypeUuid={config.mflCodeAttributeTypeUuid}
-            maxFacilitiesShown={config.maxFacilitiesShown}
-            onChange={onLocationChange}
-          />
+          {locationKnown ? (
+            <LocationPicker
+              context={context}
+              facilityLocationTag={config.facilityLocationTag}
+              mflCodeAttributeTypeUuid={config.mflCodeAttributeTypeUuid}
+              maxFacilitiesShown={config.maxFacilitiesShown}
+              onChange={onLocationChange}
+            />
+          ) : (
+            <div data-testid="context-unavailable">
+              <InlineNotification
+                kind="error"
+                lowContrast
+                hideCloseButton
+                title={t('cannotRun', 'Reports cannot be run')}
+                subtitle={t(
+                  'contextUnavailable',
+                  "Reporting context unavailable; cannot determine this site's location. Try again or contact ICT.",
+                )}
+              />
+              <Button kind="ghost" size="sm" onClick={() => retryContext()}>
+                {t('tryAgain', 'Try again')}
+              </Button>
+            </div>
+          )}
 
           <ButtonSet className={styles.actions}>
-            <Button kind="primary" onClick={runReport} disabled={submitting || running || !csvDesign || !location}>
+            <Button
+              kind="primary"
+              onClick={runReport}
+              disabled={submitting || running || !csvDesign || !location || !locationKnown}
+            >
               {t('runReport', 'Run report')}
             </Button>
             {running && (
@@ -422,10 +452,10 @@ const PermittedReportRunner: React.FC<{ config: ReportsConfig }> = ({ config }) 
           {succeeded && (
             <>
               <ButtonSet className={styles.actions}>
-                <Button kind="tertiary" size="md" onClick={() => exportAs('csv')} disabled={!!exporting || !csvDesign}>
+                <Button kind="tertiary" size="md" onClick={() => exportAs('csv')} disabled={!!exporting || !csvDesign || !locationKnown}>
                   {t('downloadCsv', 'Download CSV')}
                 </Button>
-                <Button kind="tertiary" size="md" onClick={() => exportAs('xlsx')} disabled={!!exporting || !xlsxDesign}>
+                <Button kind="tertiary" size="md" onClick={() => exportAs('xlsx')} disabled={!!exporting || !xlsxDesign || !locationKnown}>
                   {t('downloadExcel', 'Download Excel')}
                 </Button>
               </ButtonSet>

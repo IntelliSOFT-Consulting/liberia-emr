@@ -47,7 +47,7 @@ const Freshness: React.FC<FreshnessProps> = ({ context, unavailable }) => {
           )}
         />
       )}
-      {context.roleUnknown && (
+      {context.available && context.roleUnknown && (
         <InlineNotification
           kind="warning"
           lowContrast

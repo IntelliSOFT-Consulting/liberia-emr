@@ -447,11 +447,20 @@ served by `liberiaemrreports`**, proposed as `GET /ws/rest/v1/liberiaemrreports/
 - `etlLastRun` is the latest row of `_mamba_etl_schedule`, null before the first run.
 - The endpoint requires `Export National Report`.
 
-**The UI fails closed too.** Anything but `central`, including no answer, is a facility. The
-location is then fixed. If the facility's UUID is unknown, `location` is left out, which the
-backend defaults and clamps to the facility (§5). The endpoint path and field names are
-isolated in `src/context/reporting-context.resource.ts`, and settle with the reports-module
-subtask.
+**The UI fails closed too.**
+
+- **Role.** Anything but `central` is a facility, whose location is fixed.
+- **When the UI runs nothing.** It runs and exports nothing when the endpoint does not answer,
+  or when it answers without a facility UUID for a facility. It shows "Reporting context
+  unavailable" instead.
+- **Why it does not leave `location` out.** At central, an absent `location` means national.
+  A context outage would then run a national report under a "This facility" label, and the
+  backend's clamp (§5) cannot catch that.
+- **Every run names its location** except national, which is sent only when the context says
+  `central`.
+
+The endpoint path and field names are isolated in `src/context/reporting-context.resource.ts`,
+and settle with the reports-module subtask.
 
 **Viewing and exporting.** "Run" submits a `reportRequest` with the CSV design and polls it.
 When it completes, the on-screen table evaluates the `indicators` data set once more through

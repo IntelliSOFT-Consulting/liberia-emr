@@ -4,9 +4,11 @@
   "ageUnder": "Under {{age}}",
   "askForPrivilege": "Ask ICT for the National Reporting Officer role.",
   "cancel": "Cancel",
+  "cannotRun": "Reports cannot be run",
   "centralLag": "Central figures lag the facilities",
   "centralLagBody": "A facility's own report can be ahead of this one until its records have synced to central and the next refresh has run. For the latest figures for one facility, run the report at that facility.",
   "clearFacility": "Report on the whole area instead",
+  "contextUnavailable": "Reporting context unavailable; cannot determine this site's location. Try again or contact ICT.",
   "county": "County",
   "dataElement": "Data element",
   "dataFreshness": "Report data",
@@ -75,6 +77,7 @@
   "statusUnknown": "The report status could not be read",
   "thisFacility": "This facility",
   "total": "Total",
+  "tryAgain": "Try again",
   "value": "Value",
   "wholeCounty": "Whole county"
 }

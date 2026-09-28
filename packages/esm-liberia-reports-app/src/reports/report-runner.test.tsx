@@ -153,17 +153,63 @@ describe('report runner at a facility', () => {
     expect(screen.queryByRole('button', { name: 'Download CSV' })).not.toBeInTheDocument();
   });
 
-  it('fails closed to this facility, leaving location to the backend, when the role cannot be read', async () => {
+  it('runs nothing when the reporting context cannot be read, and says why', async () => {
     const backend = given({ context: 'missing' });
     renderWithSwr(<ReportRunner />);
 
-    expect(await screen.findByTestId('fixed-location')).toHaveTextContent('This facility');
-    expect(screen.getByText("This server's role is not known")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Reporting context unavailable; cannot determine this site's location. Try again or contact ICT.",
+      ),
+    ).toBeInTheDocument();
+    // Neither location is claimed: the server could be central, where no location means national.
+    expect(screen.queryByTestId('fixed-location')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('selected-location')).not.toBeInTheDocument();
+    expect(screen.queryByText('This facility')).not.toBeInTheDocument();
+    expect(screen.queryByText("This server's role is not known")).not.toBeInTheDocument();
     expect(screen.getByText(/last refreshed is not known/)).toBeInTheDocument();
+
+    const run = screen.getByRole('button', { name: 'Run report' });
+    expect(run).toBeDisabled();
+    await click(run);
+    expect(backend.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
+  });
+
+  it('runs nothing at a facility whose own location is not reported', async () => {
+    const backend = given({ context: { ...facilityContext, facilityLocation: null } });
+    renderWithSwr(<ReportRunner />);
+
+    expect(await screen.findByTestId('context-unavailable')).toHaveTextContent(/cannot determine this site's location/);
+    expect(screen.queryByTestId('fixed-location')).not.toBeInTheDocument();
+    await click(screen.getByRole('button', { name: 'Run report' }));
+    expect(backend.calls.filter((c) => c.method === 'POST')).toHaveLength(0);
+  });
+
+  it('names the facility in the run when the role is missing but the facility location is reported', async () => {
+    const backend = given({ context: { facilityLocation: facilityContext.facilityLocation } });
+    renderWithSwr(<ReportRunner />);
+
+    expect(await screen.findByTestId('fixed-location')).toHaveTextContent('Careysburg Health Center');
+    expect(screen.getByText("This server's role is not known")).toBeInTheDocument();
 
     await click(screen.getByRole('button', { name: 'Run report' }));
     const post = backend.calls.find((c) => c.method === 'POST');
-    expect(post.body.reportDefinition.parameterMappings).not.toHaveProperty('location');
+    expect(post.body.reportDefinition.parameterMappings.location).toBe('facility-careysburg');
+  });
+
+  it('runs once the reporting context answers again after "Try again"', async () => {
+    const backend = given({ context: 'missing' });
+    renderWithSwr(<ReportRunner />);
+
+    await screen.findByTestId('context-unavailable');
+    backend.setContext(facilityContext);
+    await click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByTestId('fixed-location')).toHaveTextContent('Careysburg Health Center');
+    expect(screen.queryByTestId('context-unavailable')).not.toBeInTheDocument();
+    await click(screen.getByRole('button', { name: 'Run report' }));
+    const post = backend.calls.find((c) => c.method === 'POST');
+    expect(post.body.reportDefinition.parameterMappings.location).toBe('facility-careysburg');
   });
 });
 

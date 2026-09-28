@@ -41,9 +41,17 @@ Instance role, facility location and ETL freshness come from
 `GET /ws/rest/v1/liberiaemrreports/context`. This is **a proposal to the reports module; it
 does not exist yet** (ADR 0010 decision 8a). The page fails closed:
 
-- if that endpoint does not answer, the page treats the server as a facility;
-- it then fixes the location to "This facility" and leaves `location` out of the request;
-- the backend defaults and clamps that to the facility.
+- **Runs only when the location is known.** That means the endpoint answered, and either said
+  `central` or gave the facility's location UUID.
+- **Otherwise it runs nothing.** Run and the downloads are disabled, and the page says
+  "Reporting context unavailable; cannot determine this site's location. Try again or contact
+  ICT.", with a Try again button.
+- **Why it does not assume a facility.** Leaving `location` out means national at central. A
+  context outage at central would then run a national report under a "This facility" label.
+- **An unknown role** in an answer that carries the facility's UUID is still a facility. The
+  run names that UUID, and the backend clamps to it (§3.2).
+- **Every run names its location** except national, which is sent only when the context says
+  `central` and the user chose it.
 
 ## What it shows
 
@@ -124,7 +132,7 @@ They cover:
 - periods, column-name parsing and disaggregation wording;
 - every `fileContent` shape;
 - the §4.1 request body and design selection;
-- the role failing closed;
+- the role failing closed, and no run at all when the context is unavailable or has no facility location;
 - the full run → poll → view → CSV/Excel flow;
 - a report with no CSV design, one Excel export per click burst, a run or export dropped when
   another report is chosen, and an export whose status cannot be read;

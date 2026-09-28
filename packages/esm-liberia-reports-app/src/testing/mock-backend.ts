@@ -37,7 +37,8 @@ export interface MockBackendOptions {
 
 export const csvBody = 'Indicator,Value\nMAL_004_NUM,12\n';
 
-export function createMockBackend(options: MockBackendOptions = {}) {
+export function createMockBackend(initialOptions: MockBackendOptions = {}) {
+  const options = { ...initialOptions };
   const calls: Array<Call> = [];
   const polls = new Map<string, number>();
   const designs = new Map<string, string>();
@@ -166,6 +167,10 @@ export function createMockBackend(options: MockBackendOptions = {}) {
   };
 
   const releasePosts = () => heldPosts.splice(0).forEach((release) => release());
+  /** What the context endpoint answers from now on, e.g. after an outage ends. */
+  const setContext = (context: MockBackendOptions['context']) => {
+    options.context = context;
+  };
 
-  return { fetch, calls, releasePosts };
+  return { fetch, calls, releasePosts, setContext };
 }
