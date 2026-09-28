@@ -1113,6 +1113,18 @@ jobs:
             docker push "${image}:latest"
           done
 
+      # LE-368: central's frontend for the central dev deploy below. A central build makes only
+      # liberia-emr-frontend-central; central runs the backend and gateway pushed above
+      # (ADR 0011, until LE-339 gives it its own backend layer).
+      - name: Build and push the central frontend
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site central
+          image="${REGISTRY}/liberia-emr-frontend-central"
+          docker tag "${image}:${{ github.sha }}" "${image}:latest"
+          docker push "${image}:${{ github.sha }}"
+          docker push "${image}:latest"
+
   deploy-dev:
     name: Update dev environment
     runs-on: ubuntu-latest
@@ -1328,6 +1340,195 @@ jobs:
             sleep 15
           done
           echo "::error::Rollback itself did not bring the SPA back up — this needs a human now." >&2
+          exit 1
+
+  # ---------------------------------------------------------------------
+  # Central dev (LE-368): https://liberiaemrcentraldev.intellisoftkenya.com, a separate
+  # server running the CENTRAL composition (distribution/compose/central, ADR 0011). Same
+  # shape as deploy-dev / smoke-test / rollback-dev, with three differences:
+  #   - it updates only backend, frontend (the -central image) and gateway, with --no-deps.
+  #     The broker, sync receiver and monitoring images are not published as :latest, so
+  #     they stay at whatever the server runs;
+  #   - it refuses to deploy unless the server runs the liberiaemr-central compose project,
+  #     so CI never starts a second stack beside a facility one;
+  #   - it skips cleanly until its secrets exist. Create, under Settings > Secrets and
+  #     variables > Actions: CENTRAL_DEV_SSH_PRIVATE_KEY (a CI-only deploy key),
+  #     CENTRAL_DEV_HOST (liberiaemrcentraldev.intellisoftkenya.com), CENTRAL_DEV_USER,
+  #     CENTRAL_DEV_COMPOSE_DIR (the directory holding the central docker-compose.yml), and
+  #     optionally CENTRAL_DEV_ENV_FILE (the env file there; default central.env).
+  # No LEGACY_ADMIN_UI: the central compose file has no such switch.
+  # ---------------------------------------------------------------------
+  deploy-central-dev:
+    name: Update central dev environment
+    runs-on: ubuntu-latest
+    needs: publish-latest
+    if: >
+      !cancelled() &&
+      needs.publish-latest.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    env:
+      CENTRAL_DEV_HOST: ${{ secrets.CENTRAL_DEV_HOST }}
+      CENTRAL_DEV_USER: ${{ secrets.CENTRAL_DEV_USER }}
+      CENTRAL_DEV_COMPOSE_DIR: ${{ secrets.CENTRAL_DEV_COMPOSE_DIR }}
+      CENTRAL_DEV_ENV_FILE: ${{ secrets.CENTRAL_DEV_ENV_FILE }}
+      HAS_KEY: ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY != '' }}
+    outputs:
+      configured: ${{ steps.configured.outputs.configured }}
+      backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
+      frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
+      gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
+    steps:
+      - name: Check the central dev secrets exist
+        id: configured
+        run: |
+          if [ -z "$CENTRAL_DEV_HOST" ] || [ -z "$CENTRAL_DEV_USER" ] || [ -z "$CENTRAL_DEV_COMPOSE_DIR" ] || [ "$HAS_KEY" != "true" ]; then
+            echo "::notice::Central dev deploy skipped: set the CENTRAL_DEV_* secrets to enable it (LE-368)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up SSH agent
+        if: steps.configured.outputs.configured == 'true'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY }}
+      - name: Trust the central dev host key
+        if: steps.configured.outputs.configured == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$CENTRAL_DEV_HOST" >> ~/.ssh/known_hosts
+      # Refuses a server that is not running the central project: pulling and starting it
+      # there would put a second stack beside whatever runs, fighting it for ports. Then
+      # records the running digests, as deploy-dev does, for a rollback.
+      - name: Check the server runs central, and capture the running image digests
+        if: steps.configured.outputs.configured == 'true'
+        id: previous-version
+        run: |
+          output=$(ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" '
+            if ! docker ps --format "{{.Names}}" | grep -qx "liberiaemr-central-backend-1"; then
+              echo "NOT-CENTRAL"
+              docker ps --format "{{.Names}}" | sed "s/^/running: /"
+              exit 0
+            fi
+            for service in backend frontend gateway; do
+              digest=$(docker inspect --format="{{index .RepoDigests 0}}" "liberiaemr-central-${service}-1" 2>/dev/null || echo unknown)
+              echo "${service}: ${digest}"
+            done
+          ')
+          echo "$output"
+          if echo "$output" | grep -qx "NOT-CENTRAL"; then
+            echo "::error::The central dev server is not running the liberiaemr-central compose project. Switch it once by hand (docs/runbooks/deploy.md, Central deployment); CI will not start a second stack beside it."
+            exit 1
+          fi
+          echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+      - name: Pull and restart backend, frontend and gateway on the central dev server
+        if: steps.configured.outputs.configured == 'true'
+        run: |
+          ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
+            set -e
+            cd '$CENTRAL_DEV_COMPOSE_DIR'
+            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' pull backend frontend gateway
+            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+          "
+
+  # A central deploy is healthy only if the SPA answers AND it is the central build: a
+  # facility frontend there would answer 200 too, but serve config-site.json instead.
+  smoke-test-central-dev:
+    name: Smoke test (central dev)
+    runs-on: ubuntu-latest
+    needs: deploy-central-dev
+    environment: central-dev
+    if: >
+      !cancelled() &&
+      needs.deploy-central-dev.result == 'success' &&
+      needs.deploy-central-dev.outputs.configured == 'true' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    steps:
+      - name: Wait for the central SPA to respond
+        run: |
+          base="https://${{ secrets.CENTRAL_DEV_HOST }}/openmrs/spa"
+          for i in $(seq 1 20); do
+            code=$(curl -sk -o /dev/null -w '%{http_code}' "$base/" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "ok: $base/ -> 200"
+              cfg=$(curl -sk -o /dev/null -w '%{http_code}' "$base/config/config-central.json" || echo 000)
+              [ "$cfg" = "200" ] && { echo "ok: the central build is served (config-central.json -> 200)"; exit 0; }
+              echo "::error::$base/ answers, but config-central.json is $cfg: this is not the central frontend" >&2
+              exit 1
+            fi
+            echo "attempt $i: got $code, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::$base/ never returned 200 after restart" >&2
+          exit 1
+
+  rollback-central-dev:
+    name: Roll back central dev environment
+    runs-on: ubuntu-latest
+    needs: [deploy-central-dev, smoke-test-central-dev]
+    if: >
+      always() &&
+      needs.deploy-central-dev.result == 'success' &&
+      needs.deploy-central-dev.outputs.configured == 'true' &&
+      needs.smoke-test-central-dev.result == 'failure' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      CENTRAL_DEV_HOST: ${{ secrets.CENTRAL_DEV_HOST }}
+      CENTRAL_DEV_USER: ${{ secrets.CENTRAL_DEV_USER }}
+      CENTRAL_DEV_COMPOSE_DIR: ${{ secrets.CENTRAL_DEV_COMPOSE_DIR }}
+      CENTRAL_DEV_ENV_FILE: ${{ secrets.CENTRAL_DEV_ENV_FILE }}
+    steps:
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY }}
+      - name: Trust the central dev host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$CENTRAL_DEV_HOST" >> ~/.ssh/known_hosts
+      # As rollback-dev: pull each previous image by digest, re-tag it as :latest locally,
+      # and restart WITHOUT pulling, so compose uses the known-good images.
+      - name: Roll back to the previously-running images
+        run: |
+          backend="${{ needs.deploy-central-dev.outputs.backend_digest }}"
+          frontend="${{ needs.deploy-central-dev.outputs.frontend_digest }}"
+          gateway="${{ needs.deploy-central-dev.outputs.gateway_digest }}"
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway"; do
+            svc="${pair%%:*}"; digest="${pair#*:}"
+            if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
+              echo "::error::No previous digest captured for ${svc}; cannot roll back automatically. Manual intervention required on the central dev server."
+              exit 1
+            fi
+          done
+          echo "rolling back to:"
+          echo "  backend:  $backend"
+          echo "  frontend: $frontend"
+          echo "  gateway:  $gateway"
+          ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
+            set -e
+            docker pull '$backend'
+            docker pull '$frontend'
+            docker pull '$gateway'
+            docker tag '$backend'  '${{ env.REGISTRY }}/liberia-emr-backend:latest'
+            docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend-central:latest'
+            docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
+            cd '$CENTRAL_DEV_COMPOSE_DIR'
+            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+          "
+      - name: Verify the rollback came back up
+        run: |
+          url="https://$CENTRAL_DEV_HOST/openmrs/spa/"
+          for i in $(seq 1 20); do
+            code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
+            [ "$code" = "200" ] && { echo "ok: rollback restored service ($url -> 200)"; exit 0; }
+            echo "attempt $i: got $code, retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::Rollback itself did not bring the central SPA back up; this needs a human now." >&2
           exit 1
 
   # ---------------------------------------------------------------------
