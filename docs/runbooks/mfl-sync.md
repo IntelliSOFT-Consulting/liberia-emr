@@ -6,10 +6,11 @@ Operating the Master Facility List (MFL) sync: the liberiaemr module job that co
 [mfl-sync-api.md](../architecture/mfl-sync-api.md), and the MFL itself is profiled in
 [integration/dhis2/mfl/](../../integration/dhis2/mfl/README.md).
 
-**Rehearsal status:** none of this has run against the live MFL. Sections 2 to 7 are exercised
+**Rehearsal status:** none of this has run against the live MFL. Sections 2 to 6 are exercised
 against a stub MFL by `qa/api/mfl/verify-mfl-sync.py` on every CI run
 ([qa/api/README.md](../../qa/api/README.md)); the check that covers each step is named in it.
-Rehearse sections 1 and 2 at central with the MOH-issued account before go-live.
+The suite does not test section 7 (credential rotation). Rehearse sections 1, 2 and 7 at
+central with the MOH-issued account before go-live.
 
 Commands assume the repository is checked out on the host. At central, `central` below stands
 for `docker compose -f distribution/compose/central/docker-compose.yml --env-file distribution/env/central.env`.
