@@ -16,6 +16,8 @@ jest.mock('swr', () => ({
   default: (key: string) =>
     key.endsWith('/identity/status')
       ? { data: (global as any).__swrIdentity, error: undefined, isLoading: false }
+      : key.endsWith('/mfl/status')
+      ? { data: (global as any).__swrMfl, error: undefined, isLoading: false }
       : { data: (global as any).__swrData, error: (global as any).__swrError, isLoading: false },
 }));
 
@@ -23,6 +25,7 @@ function givenStatus(status: unknown) {
   (global as any).__swrData = { data: status };
   (global as any).__swrError = undefined;
   (global as any).__swrIdentity = undefined;
+  (global as any).__swrMfl = undefined;
 }
 
 function givenIdentity(identity: unknown) {
@@ -129,5 +132,18 @@ describe('sync status page', () => {
 
     expect(screen.getByText('Alerts firing')).toBeInTheDocument();
     expect(screen.getByText('SyncFacilitySilent')).toBeInTheDocument();
+  });
+
+  it('links to the MFL sync only where it is set up', () => {
+    givenStatus({ enabled: true, available: true, facilities: [], central: null, alerts: [] });
+    (global as any).__swrMfl = { data: { available: false } };
+
+    const { unmount } = render(<SyncStatus />);
+    expect(screen.queryByText(/Master Facility List sync/)).not.toBeInTheDocument();
+    unmount();
+
+    (global as any).__swrMfl = { data: { available: true } };
+    render(<SyncStatus />);
+    expect(screen.getByText(/Master Facility List sync/)).toBeInTheDocument();
   });
 });

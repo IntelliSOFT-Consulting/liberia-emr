@@ -13,6 +13,8 @@ import {
   WarningIcon,
 } from '@openmrs/esm-framework';
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
+import FacilityPicker from './facility-picker.component';
+import { useFacilities } from './facility-picker.resource';
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
 import styles from './location-picker.scss';
@@ -50,7 +52,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     isLoading: isLoadingLocationCount,
     locationCount,
     firstLocation,
-  } = useLocationCount(chooseLocation.useLoginLocationTag);
+  } = useLocationCount(chooseLocation.useLoginLocationTag, chooseLocation.locationTag);
 
   const { user, sessionLocation } = useSession();
   const { currentUser, userProperties } = useMemo(
@@ -63,6 +65,25 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   const hasNoLocations = !isLoadingLocationCount && locationCount === 0;
 
+  // With a locationTag, only a tagged facility may be chosen: a saved default or a session
+  // location outside that list is ignored rather than logged into or submitted. Without one,
+  // useFacilities fetches nothing and the saved default is used as before.
+  const { facilities, isLoading: isLoadingFacilities } = useFacilities(
+    chooseLocation.locationTag,
+    chooseLocation.mflCodeAttributeTypeUuid,
+  );
+  const isChoosable = useCallback(
+    (locationUuid?: string) =>
+      !chooseLocation.locationTag || facilities.some((facility) => facility.uuid === locationUuid),
+    [chooseLocation.locationTag, facilities],
+  );
+  const isUsable = useCallback(
+    (locationUuid?: string) => !chooseLocation.locationTag || (!isLoadingFacilities && isChoosable(locationUuid)),
+    [chooseLocation.locationTag, isLoadingFacilities, isChoosable],
+  );
+  const usableDefaultLocation =
+    chooseLocation.locationTag && (isLoadingFacilities || !isChoosable(defaultLocation)) ? null : defaultLocation;
+
   const [activeLocation, setActiveLocation] = useState(() => {
     if (currentLocationUuid && hideWelcomeMessage) {
       return currentLocationUuid;
@@ -71,6 +92,15 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // In the tagged flow a location counts as chosen only once the tagged list has loaded and holds it.
+  const chosenLocation = isUsable(activeLocation) ? activeLocation : undefined;
+
+  useEffect(() => {
+    if (chooseLocation.locationTag && !isLoadingFacilities && activeLocation && !isChoosable(activeLocation)) {
+      setActiveLocation(undefined);
+    }
+  }, [chooseLocation.locationTag, isLoadingFacilities, activeLocation, isChoosable]);
 
   const { state } = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
@@ -119,23 +149,23 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     if (isUpdateFlow) {
       return;
     }
-    if (defaultLocation && !isSubmitting) {
-      setActiveLocation(defaultLocation);
-      changeLocation(defaultLocation, true);
+    if (usableDefaultLocation && !isSubmitting) {
+      setActiveLocation(usableDefaultLocation);
+      changeLocation(usableDefaultLocation, true);
     }
-  }, [changeLocation, isSubmitting, defaultLocation, isUpdateFlow]);
+  }, [changeLocation, isSubmitting, usableDefaultLocation, isUpdateFlow]);
 
   const handleSubmit = useCallback(
     (evt: React.FormEvent<HTMLFormElement>) => {
       evt.preventDefault();
 
-      if (!activeLocation) {
+      if (!chosenLocation) {
         return;
       }
 
-      changeLocation(activeLocation, savePreference);
+      changeLocation(chosenLocation, savePreference);
     },
-    [activeLocation, changeLocation, savePreference],
+    [chosenLocation, changeLocation, savePreference],
   );
 
   return (
@@ -170,12 +200,23 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
           </div>
           {!hasNoLocations && (
             <>
-              <LocationPicker
-                selectedLocationUuid={activeLocation}
-                defaultLocationUuid={userProperties.defaultLocation}
-                locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
-                onChange={(locationUuid) => setActiveLocation(locationUuid)}
-              />
+              {chooseLocation.locationTag ? (
+                <FacilityPicker
+                  locationTag={chooseLocation.locationTag}
+                  mflCodeAttributeTypeUuid={chooseLocation.mflCodeAttributeTypeUuid}
+                  maxResults={chooseLocation.locationsPerRequest}
+                  selectedLocationUuid={activeLocation}
+                  defaultLocationUuid={userProperties.defaultLocation}
+                  onChange={setActiveLocation}
+                />
+              ) : (
+                <LocationPicker
+                  selectedLocationUuid={activeLocation}
+                  defaultLocationUuid={userProperties.defaultLocation}
+                  locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
+                  onChange={(locationUuid) => setActiveLocation(locationUuid)}
+                />
+              )}
               <div className={styles.footerContainer}>
                 <Checkbox
                   className={styles.savePreferenceCheckbox}
@@ -188,7 +229,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
                   className={styles.confirmButton}
                   kind="primary"
                   type="submit"
-                  disabled={!activeLocation || !isLoginEnabled || isSubmitting}
+                  disabled={!chosenLocation || !isLoginEnabled || isSubmitting}
                 >
                   {isSubmitting ? (
                     <InlineLoading className={styles.loader} description={t('submitting', 'Submitting')} />

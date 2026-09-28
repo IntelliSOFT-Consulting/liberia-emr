@@ -15,7 +15,24 @@ import {
 } from '@carbon/react';
 import { ConfigurableLink, formatDate } from '@openmrs/esm-framework';
 import { useIdentityStatus, useSyncStatus } from './sync-status.resource';
+import { useMflStatus } from '../mfl-sync/mfl-sync.resource';
 import styles from './sync-status.scss';
+
+/** Where the MFL sync is set up, the page that runs it is one click away. */
+const MflSyncLink: React.FC = () => {
+  const { t } = useTranslation();
+  const { status } = useMflStatus();
+  if (!status?.available) {
+    return null;
+  }
+  return (
+    <p className={styles.explainer}>
+      <ConfigurableLink to="${openmrsSpaBase}/mfl-sync">
+        {t('openMflSync', 'Master Facility List sync: facilities held here and their last update')}
+      </ConfigurableLink>
+    </p>
+  );
+};
 
 /**
  * Shows what central knows about each facility's sync, and what is waiting at central.
@@ -71,6 +88,7 @@ const SyncStatus: React.FC = () => {
       <p className={styles.explainer}>
         {t('explainer', 'How facilities are sending records to the national server, and what is waiting here.')}
       </p>
+      <MflSyncLink />
 
       {status.available === false && (
         <InlineNotification

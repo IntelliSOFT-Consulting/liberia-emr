@@ -1,0 +1,183 @@
+encounter,concept,value,obs_datetime,order,voided,purpose
+C-ANC1-1,${var.concept.ciel.gestational-age.uuid},16,,,,
+C-ANC1-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,,
+C-ANC1-1,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.1st-ipt-dose.uuid},,,,
+C-ANC1-2,${var.concept.national.gestational-age-weeks.uuid},21,,,,
+C-ANC1-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,,
+C-ANC1-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,
+C-ANC1-3,${var.concept.national.gestational-age-weeks.uuid},28,,,,3rd trimester by gestational age only
+C-ANC1-3,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.3rd-ipt-dose.uuid},,,,
+C-ANC1-4,${var.concept.national.gestational-age-weeks.uuid},33,,,,
+C-ANC1-4,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+C-ANC1-4,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.4th-ipt-dose.uuid},,,,
+C-ANC1-4,${var.concept.national.blood-pressure-systolic.uuid},150,,,,local ANC BP concept (NCD-007)
+C-ANC1-4,${var.concept.national.blood-pressure-diastolic.uuid},95,,,,local ANC BP concept (NCD-007)
+C-ANC2-1,${var.concept.ciel.gestational-age.uuid},30,,,,
+C-ANC2-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+C-ANC2-1,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,
+C-ANC2-2,${var.concept.national.gestational-age-weeks.uuid},38,,,,
+C-ANC2-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+C-ANC2-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.3rd-ipt-dose.uuid},,,,
+C-ANC3-1,${var.concept.national.anc-visit-number.uuid},${var.concept.national.1st.uuid},,,,national first ANC visit (MAL-002 denominator)
+C-ANC3-1,${var.concept.ciel.gestational-age.uuid},12,,,,
+C-ANC3-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+C-ANC3-2,${var.concept.national.anc-visit-number.uuid},${var.concept.national.2nd.uuid},,,,
+C-ANC3-2,${var.concept.ciel.gestational-age.uuid},26,,,,
+C-ANC3-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,,
+C-ANC3-2,${var.concept.national.ipt-dose-administered.uuid},${var.concept.national.3rd-ipt-dose.uuid},,,,national 3rd IPT dose+
+C-ANC4-1,${var.concept.ciel.gestational-age.uuid},27,,,1,voided with its encounter
+C-ANC4-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,1,voided with its encounter
+C-ANC4-2,${var.concept.national.gestational-age-weeks.uuid},29,,,,
+C-ANC4-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+C-ANC4-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.3rd-ipt-dose.uuid},,,1,entered in error
+C-ANC4-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,correction
+C-ANC5-0,${var.concept.ciel.gestational-age.uuid},12,,,,
+C-ANC5-0,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+C-ANC5-1,${var.concept.national.gestational-age-weeks.uuid},31,,,,
+C-ANC5-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+C-ANC5-1,${var.concept.national.woman-receiving-ipt.uuid},${var.concept.ciel.no.uuid},,,,
+C-ANC5-1,${var.concept.mch.iptp-deferral-reason.uuid},${var.concept.mch.iptp-deferred-malaria-treatment.uuid},,,,
+C-ANC6-0,${var.concept.ciel.gestational-age.uuid},10,,,,
+C-ANC6-0,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+C-ANC6-1,${var.concept.national.gestational-age-weeks.uuid},27,,,,one week short of the 3rd trimester; no trimester answer
+C-ANC6-1,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,
+C-X-2,${var.concept.ciel.gestational-age.uuid},20,,,,
+C-X-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,,
+C-X-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.1st-ipt-dose.uuid},,,,
+C-FP1-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+C-FP1-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.ciel.injectable-contraceptives.uuid},,,,
+C-FP1-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid},,,,
+C-FP1-2,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-continuing.uuid},,,,
+C-FP1-2,${var.concept.mch.fp-chosen-method.uuid},${var.concept.ciel.injectable-contraceptives.uuid},,,,
+C-FP1-2,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid},,,,
+C-FP2-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.national.iuds.uuid},,,,old national form offers only IUDs
+C-FP3-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+C-FP3-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.ciel.injectable-contraceptives.uuid},,,,
+C-FP3-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid},,,,
+C-FP4-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+C-FP4-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.mch.fp-implants.uuid},,,,
+C-FP4-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-implants.uuid},,,,
+C-FP4-2,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-continuing.uuid},,,,
+C-FP4-2,${var.concept.national.purpose-of-visit.uuid},${var.concept.mch.fp-purpose-jadelle-iucd-removal.uuid},,,,
+C-FP4-2,${var.concept.national.date-when-the-family-planning-method-was-removed.uuid},date:2026-04-15,,,,
+C-FP5-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+C-FP5-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.ciel.iud.uuid},,,,
+C-FP5-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.national.iuds.uuid},,,,
+C-FP6-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,1,voided with its encounter
+C-FP6-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.ciel.injectable-contraceptives.uuid},,,1,voided with its encounter
+C-FP6-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.ciel.drug.medroxyprogesterone-acetate.uuid},,,1,voided with its encounter
+C-LD1-1,${var.concept.national.delivery-method.uuid},${var.concept.national.spontaneous-vaginal-delivery-svd.uuid},,,,
+C-LD2-1,${var.concept.national.delivery-method.uuid},${var.concept.ciel.cesarean-section.uuid},,,,
+C-LD2-2,${var.concept.national.delivery-method.uuid},${var.concept.ciel.cesarean-section.uuid},,,,
+C-LD3-1,${var.concept.national.delivery-method.uuid},${var.concept.ciel.cesarean-section.uuid},,,,
+C-LD4-1,${var.concept.national.delivery-method.uuid},${var.concept.ciel.cesarean-section.uuid},,,1,voided with its encounter
+C-LD5-1,${var.concept.national.delivery-method.uuid},${var.concept.national.spontaneous-vaginal-delivery-svd.uuid},,,,
+C-PNC1-1,${var.concept.national.place-of-delivery.uuid},${var.concept.national.place-of-delivery-home.uuid},,,,
+C-PNC1-2,${var.concept.national.place-of-delivery.uuid},${var.concept.national.place-of-delivery-home.uuid},,,,
+C-PNC2-1,${var.concept.national.place-of-delivery.uuid},${var.concept.ciel.health-facility.uuid},,,,
+C-PNC3-1,${var.concept.national.place-of-delivery.uuid},${var.concept.national.place-of-delivery-home.uuid},,,,
+C-VITA1-1,${var.concept.national.supplementary-immunization-activities.uuid},${var.concept.national.vit-a-blue-100-000iu.uuid},,,,
+C-VITA2-1,${var.concept.national.supplementary-immunization-activities.uuid},${var.concept.national.vit-a-blue-100-000iu.uuid},,,,
+C-VITA3-1,${var.concept.national.supplementary-immunization-activities.uuid},${var.concept.national.vit-a-blue-100-000iu.uuid},,,,
+C-VITA6-1,${var.concept.national.supplementary-immunization-activities.uuid},${var.concept.national.vit-a-blue-100-000iu.uuid},,,1,entered in error
+C-MUAC1-1,${var.concept.ciel.muac.uuid},11.0,,,,
+C-MUAC2-1,${var.concept.ciel.muac.uuid},11.2,,,,
+C-MUAC2-2,${var.concept.ciel.muac.uuid},12.1,,,,latest in Q2
+C-MUAC3-1,${var.concept.ciel.muac.uuid},11.0,,,,
+C-MUAC4-1,${var.concept.ciel.muac.uuid},11.4,,,,
+C-MUAC5-1,${var.concept.ciel.muac.uuid},11.5,,,,
+C-MUAC6-1,${var.concept.ciel.muac.uuid},10.9,,,,
+C-MUAC7-1,${var.concept.ciel.muac.uuid},11.3,,,,
+C-MUAC8-1,${var.concept.ciel.muac.uuid},11.0,,,1,entered in error
+C-MUAC8-1,${var.concept.ciel.muac.uuid},12.5,,,,correction
+C-WHZ1-1,${var.concept.ciel.height.uuid},90.0,,,,boy 90.0 cm: WHO -3SD 10.2 kg / -2SD 11.0 kg
+C-WHZ1-1,${var.concept.ciel.weight.uuid},10.6,,,,WHZ -2.52
+C-WHZ2-1,${var.concept.ciel.height.uuid},95.0,,,,girl 95.0 cm: WHO -3SD 10.8 kg / -2SD 11.7 kg
+C-WHZ2-1,${var.concept.ciel.weight.uuid},11.2,,,,WHZ -2.50
+C-WHZ3-1,${var.concept.ciel.height.uuid},88.0,,,,boy 88.0 cm: median 12.4 kg
+C-WHZ3-1,${var.concept.ciel.weight.uuid},12.0,,,,WHZ -0.42
+C-WHZ3-1,${var.concept.wz-score.uuid},-2.6,,,,weight-for-AGE score; must not be read as WHZ
+C-WHZ4-1,${var.concept.ciel.height.uuid},92.0,,,,girl 92.0 cm: WHO -3SD 10.2 kg
+C-WHZ4-1,${var.concept.ciel.weight.uuid},9.4,,,,WHZ -3.90 (below -3)
+C-WHZ5-1,${var.concept.ciel.weight.uuid},11.4,,,,no height on this encounter
+C-WHZ5-2,${var.concept.ciel.height.uuid},94.0,,,,no weight on this encounter
+C-DTH1-1,${var.concept.ciel.weight.uuid},58,,,,
+C-DTH2-1,${var.concept.ciel.weight.uuid},64,,,,
+C-DTH3-1,${var.concept.ciel.weight.uuid},52,,,,
+C-DTH4-1,${var.concept.ciel.weight.uuid},70,,,,
+C-BP1-1,${var.concept.ciel.systolic-bp.uuid},150,,,,
+C-BP1-1,${var.concept.ciel.diastolic-bp.uuid},85,,,,
+C-BP2-1,${var.concept.ciel.systolic-bp.uuid},139,,,,
+C-BP2-1,${var.concept.ciel.diastolic-bp.uuid},89,,,,
+C-BP3-1,${var.concept.ciel.systolic-bp.uuid},120,,,,
+C-BP3-1,${var.concept.ciel.diastolic-bp.uuid},90,,,,
+C-BP4-1,${var.concept.ciel.systolic-bp.uuid},160,,,,
+C-BP4-1,${var.concept.ciel.diastolic-bp.uuid},100,,,,
+C-BP5-1,${var.concept.ciel.systolic-bp.uuid},145,,,,
+C-BP5-1,${var.concept.ciel.diastolic-bp.uuid},80,,,,
+C-BP6-1,${var.concept.ciel.systolic-bp.uuid},150,,,,
+C-BP6-1,${var.concept.ciel.diastolic-bp.uuid},95,,,,
+C-BP6-2,${var.concept.ciel.systolic-bp.uuid},128,,,,latest in Q2
+C-BP6-2,${var.concept.ciel.diastolic-bp.uuid},82,,,,latest in Q2
+C-BP7-1,${var.concept.ciel.systolic-bp.uuid},155,,,1,entered in error
+C-BP7-1,${var.concept.ciel.systolic-bp.uuid},125,,,,correction
+C-BP7-1,${var.concept.ciel.diastolic-bp.uuid},80,,,,
+B-BP1-1,${var.concept.ciel.systolic-bp.uuid},142,,,,
+B-BP1-1,${var.concept.ciel.diastolic-bp.uuid},88,,,,
+B-BP2-1,${var.concept.ciel.systolic-bp.uuid},118,,,,
+B-BP2-1,${var.concept.ciel.diastolic-bp.uuid},76,,,,
+C-MAL1-1,CIEL:1643,${var.concept.ciel.703.uuid},2026-02-02 11:00:00,C-MAL1-RDT,,
+C-MAL2-1,CIEL:1643,CIEL:664,2026-02-10 11:00:00,C-MAL2-RDT,,negative
+C-MAL3-1,CIEL:1643,CIEL:161246,2026-04-05 11:00:00,C-MAL3-RDT,,positive for P. falciparum
+C-MAL3-2,CIEL:32,${var.concept.ciel.703.uuid},2026-04-15 11:00:00,C-MAL3-SMEAR,,same episode (10 days later)
+C-MAL4-1,CIEL:1643,${var.concept.ciel.703.uuid},2026-05-22 11:00:00,C-MAL4-RDT,1,entered in error
+C-MAL4-1,CIEL:1643,CIEL:664,2026-05-22 11:05:00,C-MAL4-RDT,,correction
+C-MAL5-1,CIEL:1643,${var.concept.ciel.703.uuid},2026-03-31 23:59:59,C-MAL5-RDT,,resulted in the last second of Q1
+B-MAL1-1,CIEL:1643,${var.concept.ciel.703.uuid},2026-01-05 11:00:00,B-MAL1-RDT,,
+B-MAL2-1,CIEL:1643,${var.concept.ciel.703.uuid},2026-06-02 11:00:00,B-MAL2-RDT,,
+B-MAL3-1,CIEL:1643,CIEL:161247,2026-06-20 11:00:00,B-MAL3-RDT,,positive for P. vivax
+C-BP1-2,${var.concept.ciel.1006.uuid},5.0,2026-02-18 11:00:00,C-BP1-CHOL,,exactly the 5.0 mmol/L threshold
+C-CHOL2-1,${var.concept.ciel.1006.uuid},4.9,2026-05-06 11:00:00,C-CHOL2-CHOL,,
+C-CHOL3-1,${var.concept.ciel.1006.uuid},6.1,2026-05-10 11:00:00,C-CHOL3-CHOL,,
+C-CHOL4-1,${var.concept.ciel.1006.uuid},6.2,2026-04-01 11:00:00,C-CHOL4-CHOL1,,
+C-CHOL4-2,${var.concept.ciel.1006.uuid},4.5,2026-06-01 11:00:00,C-CHOL4-CHOL2,,latest in Q2
+B-CHOL1-1,${var.concept.ciel.1006.uuid},5.8,2026-06-11 11:00:00,B-CHOL1-CHOL,,
+C-REN1-1,${var.concept.ciel.790.uuid},310,2026-02-12 10:30:00,C-REN1-CREAT,,
+C-REN2-1,${var.concept.ciel.857.uuid},5.1,2026-03-02 11:00:00,C-REN2-UREA,,
+C-REN4-1,${var.concept.ciel.790.uuid},80,2026-04-20 11:00:00,C-REN4-CREAT,,
+C-REN5-1,${var.concept.ciel.790.uuid},95,2026-06-08 11:00:00,C-REN5-CREAT,1,entered in error; no replacement
+C-REN6-1,CIEL:161132,55,2026-06-22 11:00:00,C-REN6-EGFR,,
+B-REN1-1,${var.concept.ciel.790.uuid},250,2026-04-16 10:30:00,B-REN1-CREAT,,
+C-MUAC7-1,${var.concept.ciel.weight.uuid},10.5,,,,
+B-PNE1-3,${var.concept.ciel.weight.uuid},9.1,,,,
+B-MUAC1-1,${var.concept.ciel.muac.uuid},10.8,,,,
+B-MUAC2-1,${var.concept.ciel.muac.uuid},13.0,,,,
+B-WHZ1-1,${var.concept.ciel.height.uuid},91.0,,,,girl 91.0 cm: WHO -3SD 10.0 kg / -2SD 10.9 kg
+B-WHZ1-1,${var.concept.ciel.weight.uuid},10.4,,,,WHZ -2.51
+B-WHZ2-1,${var.concept.ciel.height.uuid},100.0,,,,boy 100.0 cm: WHO -3SD 12.1 kg / -2SD 13.1 kg
+B-WHZ2-1,${var.concept.ciel.weight.uuid},12.6,,,,WHZ -2.49
+B-DTH1-1,${var.concept.ciel.weight.uuid},66,,,,
+B-X-1,${var.concept.ciel.gestational-age.uuid},26,,,,
+B-X-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.2nd-trimester.uuid},,,,
+B-X-1,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,
+B-X-2,${var.concept.national.gestational-age-weeks.uuid},31,,,,
+B-X-2,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+B-X-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.3rd-ipt-dose.uuid},,,,
+B-ANC2-1,${var.concept.national.anc-visit-number.uuid},${var.concept.national.1st.uuid},,,,
+B-ANC2-1,${var.concept.ciel.gestational-age.uuid},29,,,,
+B-ANC2-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
+B-ANC2-1,${var.concept.national.ipt-dose-administered.uuid},${var.concept.national.2nd-ipt-dose.uuid},,,,
+B-ANC3-1,${var.concept.ciel.gestational-age.uuid},14,,,,
+B-ANC3-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+B-FP1-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+B-FP1-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.mch.fp-microgynon.uuid},,,,
+B-FP1-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-microgynon.uuid},,,,
+B-FP2-1,${var.concept.mch.fp-client-type.uuid},${var.concept.mch.fp-client-new.uuid},,,,
+B-FP2-1,${var.concept.mch.fp-chosen-method.uuid},${var.concept.mch.fp-implants.uuid},,,,
+B-FP2-1,${var.concept.national.family-planning-method-dispensed.uuid},${var.concept.mch.fp-implants.uuid},,,,
+B-LD1-1,${var.concept.national.delivery-method.uuid},${var.concept.ciel.cesarean-section.uuid},,,,
+B-LD2-1,${var.concept.national.delivery-method.uuid},${var.concept.national.spontaneous-vaginal-delivery-svd.uuid},,,,
+B-LD3-1,${var.concept.national.delivery-method.uuid},${var.concept.national.spontaneous-vaginal-delivery-svd.uuid},,,,
+B-PNC1-1,${var.concept.national.place-of-delivery.uuid},${var.concept.national.place-of-delivery-home.uuid},,,,
+B-PNC2-1,${var.concept.national.place-of-delivery.uuid},${var.concept.national.place-of-delivery-home.uuid},,,,
+B-VITA1-1,${var.concept.national.supplementary-immunization-activities.uuid},${var.concept.national.vit-a-blue-100-000iu.uuid},,,,

@@ -1,0 +1,31 @@
+encounter,concept,certainty,voided,purpose
+C-X-1,CIEL:116023,CONFIRMED,,cervical cancer; first ever for person X (Careysburg Q1)
+B-X-3,CIEL:116023,CONFIRMED,,cervical cancer; first at Barnersville but not first for person X
+C-DIA1-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA2-1,CIEL:149856,CONFIRMED,,
+C-DIA3-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA4-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA4-2,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA4-3,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA5-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA5-2,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-DIA6-1,${var.concept.ciel.142412.uuid},CONFIRMED,1,entered in error
+C-DIA7-1,CIEL:149856,CONFIRMED,,
+B-DIA1-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+B-DIA2-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+B-DIA3-1,${var.concept.ciel.142412.uuid},CONFIRMED,,
+C-PNE1-1,CIEL:114100,CONFIRMED,,
+C-PNE2-1,CIEL:121252,CONFIRMED,,
+C-PNE2-2,CIEL:121252,CONFIRMED,,same episode (7 days later)
+C-PNE3-1,CIEL:114100,CONFIRMED,,
+C-PNE4-1,CIEL:114100,CONFIRMED,,
+B-PNE1-1,CIEL:114100,CONFIRMED,,
+B-PNE2-1,CIEL:123098,CONFIRMED,,
+C-CAN1-1,CIEL:113753,CONFIRMED,,
+C-CAN1-2,CIEL:113753,CONFIRMED,,repeat diagnosis; not a new case
+C-CAN2-1,CIEL:134788,CONFIRMED,,
+C-CAN3-1,CIEL:116023,CONFIRMED,1,entered in error
+B-CAN1-1,CIEL:146221,CONFIRMED,,
+C-REN1-2,CIEL:113338,CONFIRMED,,
+C-REN3-1,CIEL:145438,CONFIRMED,,
+B-REN1-2,CIEL:113338,CONFIRMED,,

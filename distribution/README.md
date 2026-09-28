@@ -102,6 +102,11 @@ Besides the database, release and sync settings, the facility and central templa
 - `LIBERIAEMR_SMTP_*` and `LIBERIAEMR_FRONTEND_URL`: the password reset relay for the
   `liberiaemr` module, passed through to `backend` by both compose files. Prefer
   `LIBERIAEMR_SMTP_PASSWORD_FILE` to the plain variable. Unset means no reset mail.
+- `LIBERIAEMR_MFL_*`: the MOH Master Facility List account and the hosts it may be sent to
+  (ADR 0009), passed through to `backend` by both compose files. Central sets the account;
+  a facility leaves it empty, and the sync is then unavailable there. Prefer
+  `LIBERIAEMR_MFL_PASSWORD_FILE` to the plain variable. `LIBERIAEMR_MFL_ALLOWED_HOSTS`
+  defaults to `dhis2.moh.gov.lr`.
 - `LIBERIAEMR_SYNC_MONITORING_URL` (central only): the Prometheus the sync status endpoint
   reads, `http://prometheus:9090` by default. Empty turns the page off.
 - `LEGACY_ADMIN_UI` (facility and demo, commented out): one variable drives both the

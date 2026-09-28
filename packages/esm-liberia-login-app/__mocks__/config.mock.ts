@@ -15,6 +15,8 @@ export const mockConfig: ConfigSchema = {
     numberToShow: 3,
     useLoginLocationTag: true,
     locationsPerRequest: 50,
+    locationTag: '',
+    mflCodeAttributeTypeUuid: '3118cabe-9a5d-420c-8a55-86234deb9b1b',
   },
   logo: {
     src: null,
