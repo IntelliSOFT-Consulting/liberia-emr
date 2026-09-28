@@ -1497,12 +1497,20 @@ jobs:
             top=\$(git rev-parse --show-toplevel)
             # Checked BEFORE moving anything: a fast-forward keeps a hand edit to any tracked file
             # the target commit does not touch, and HEAD matching says nothing about the files.
-            # Untracked files are fine (central.env is git-ignored).
+            # Untracked files are fine (central.env is git-ignored), except a compose override.
             if [ -n \"\$(git -C \"\$top\" status --porcelain --untracked-files=no)\" ]; then
               echo \"checkout at \$top has local changes to tracked files; not starting this run's images under a compose file that differs from ${{ github.sha }}. Commit or discard them by hand:\" >&2
               git -C \"\$top\" status --short --untracked-files=no >&2
               exit 1
             fi
+            # The one untracked file that is NOT fine: compose loads an override beside the
+            # compose file automatically, and it can replace images, mounts or commands.
+            for f in docker-compose.override.yml docker-compose.override.yaml compose.override.yml compose.override.yaml; do
+              if [ -e \"\$f\" ]; then
+                echo \"\$PWD/\$f exists: compose would apply it on top of ${{ github.sha }}'s compose file. Remove it, or commit what it does, before CI deploys here\" >&2
+                exit 1
+              fi
+            done
             git -C \"\$top\" fetch -q origin main
             git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
               || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
@@ -1608,18 +1616,26 @@ jobs:
           echo "  frontend: $frontend"
           echo "  gateway:  $gateway"
           echo "  checkout: $checkout"
+          # The compose file goes back FIRST, and each image is tagged under the name THAT file
+          # gives its service: an older compose file may name a different image (the facility
+          # frontend, before the central one existed), and tagging a fixed name would leave
+          # compose starting whatever that other name points at. python3 is on the server
+          # because Ansible, which provisions it, needs it.
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
-            docker pull '$backend'
-            docker pull '$frontend'
-            docker pull '$gateway'
-            docker tag '$backend'  '${{ env.REGISTRY }}/liberia-emr-backend:latest'
-            docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend-central:latest'
-            docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
             cd '$CENTRAL_DEV_COMPOSE_DIR'
             git reset -q --keep '$checkout'
             echo \"checkout back at \$(git rev-parse HEAD)\"
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
+            compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
+            config=\$(compose config --format json)
+            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway'; do
+              svc=\${pair%%=*}; digest=\${pair#*=}
+              name=\$(printf '%s' \"\$config\" | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"services\"][sys.argv[1]][\"image\"])' \"\$svc\")
+              docker pull \"\$digest\"
+              docker tag \"\$digest\" \"\$name\"
+              echo \"\$svc: \$digest tagged as \$name\"
+            done
+            compose up -d --no-deps backend frontend gateway
           "
       # Same bar as the smoke test: the SPA answering is not enough, since the frontend serves
       # it with the backend down. A rollback that leaves the backend unhealthy fails here.

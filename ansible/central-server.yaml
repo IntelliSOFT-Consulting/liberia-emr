@@ -130,6 +130,17 @@
   # below (the marked line replaces it), and any key listed in ci_deploy_revoked_keys is
   # removed whatever its comment or marker. A server whose key is rotated in the same run as
   # this upgrade must list the old key there, or it stays authorized.
+  # Every entry is checked before ANY is removed. A partial entry would be a pattern, not a
+  # key: a bare "ssh-ed25519" would match, and remove, every Ed25519 key in the file,
+  # operators' included. So each must be a whole plain key line, body and all.
+  - name: Refuse a ci_deploy_revoked_keys entry that is not a whole plain public key
+    ansible.builtin.assert:
+      that: ci_deploy_revoked_keys | default([]) | reject('match', '^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]{16,}( .*)?$') | list | length == 0
+      fail_msg: >-
+        Every ci_deploy_revoked_keys entry must be a complete public key line, e.g.
+        "ssh-ed25519 AAAA... comment". Not a plain key:
+        {{ ci_deploy_revoked_keys | default([]) | reject('match', '^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]{16,}( .*)?$') | list }}
+
   - name: Revoke the keys listed in ci_deploy_revoked_keys
     ansible.builtin.lineinfile:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
