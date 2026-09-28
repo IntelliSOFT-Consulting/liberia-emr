@@ -10,8 +10,9 @@
     "The site's billing cash point is deliberately absent: it names a facility's cash point,",
     "and central does not bill.",
     "",
-    "The MFL facility switcher (LE-324) is enabled by adding \"locationTag\": \"Health Facility\"",
-    "to chooseLocation below, once LE-324 is merged."
+    "chooseLocation.locationTag turns on the MFL facility switcher (LE-324, ADR 0009 §6): the",
+    "login picker lists every Health Facility location, searchable by name and MFL code and",
+    "narrowed by County and District. Facilities leave it unset and keep the Login Location picker."
   ],
   "@openmrs/esm-primary-navigation-app": {
     "logo": {
@@ -23,6 +24,7 @@
     "chooseLocation": {
       "enabled": true,
       "useLoginLocationTag": true,
+      "locationTag": "Health Facility",
       "locationsPerRequest": 50
     }
   },
