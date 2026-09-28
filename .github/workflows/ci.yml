@@ -743,6 +743,7 @@ jobs:
           MYSQL_USER=openmrs
           MYSQL_PASSWORD=ci-ephemeral
           MYSQL_ROOT_PASSWORD=ci-ephemeral-root
+          ETL_DB_PASSWORD=ci-ephemeral-etl
           OMRS_CREATE_TABLES=true
           TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
           CENTRAL_URL=http://localhost
@@ -771,11 +772,33 @@ jobs:
                 -f distribution/compose/facility/docker-compose.yml \
                 -f distribution/compose/facility/docker-compose.demo.yml \
                 -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
-                --env-file "$RUNNER_TEMP/e2e.env" logs --tail 200 backend >&2
+                --env-file "$RUNNER_TEMP/e2e.env" logs --no-color backend > "$RUNNER_TEMP/backend.log" 2>&1
+              # The last 200 lines alone can be one repeated stack trace; list every ERROR and
+              # Caused-by line from the whole boot first, so the real cause is not scrolled away.
+              echo "== ERROR / Caused by lines in the whole backend log ==" >&2
+              grep -E "ERROR|SEVERE|Caused by" "$RUNNER_TEMP/backend.log" | cut -c1-400 | head -80 >&2 || true
+              echo "== last 200 lines ==" >&2
+              tail -n 200 "$RUNNER_TEMP/backend.log" >&2
               exit 1
             fi
             sleep 10
           done
+
+      # LE-367: the reporting ETL gets its database user only when ETL_DB_PASSWORD is set
+      # (initdb/20-etl-db-user.sh). Without it every boot logged "Access denied for user
+      # 'mambaetl'", and those traces were the only errors a failed run showed.
+      - name: The reporting ETL reaches its database
+        run: |
+          if docker compose \
+               -f distribution/compose/facility/docker-compose.yml \
+               -f distribution/compose/facility/docker-compose.demo.yml \
+               -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
+               --env-file "$RUNNER_TEMP/e2e.env" logs --no-color backend 2>&1 \
+             | grep -m1 "Access denied for user 'mambaetl'"; then
+            echo "FAIL: the reporting ETL cannot log in to its database (is ETL_DB_PASSWORD set?)" >&2
+            exit 1
+          fi
+          echo "ok: no ETL database login failure in the backend log"
 
       - name: Start the frontend and the gateway
         run: |
