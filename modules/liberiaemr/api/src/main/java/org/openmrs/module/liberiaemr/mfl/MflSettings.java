@@ -110,7 +110,7 @@ public final class MflSettings {
 			if (url.toLowerCase(Locale.ROOT).endsWith("/api")) {
 				throw new IllegalArgumentException("url is the MFL instance root: leave out /api, the module adds it");
 			}
-			policy.check(url);
+			policy.checkRoot(url);
 			properties.put(GP_URL, url);
 		}
 		if (body.containsKey("schedule")) {

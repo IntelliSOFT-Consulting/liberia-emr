@@ -74,6 +74,20 @@ public final class MflEndpointPolicy {
 	}
 
 	/**
+	 * {@link #check}, plus: the instance root carries no query or fragment. The client appends
+	 * {@code /api/...} to it, so {@code .../mfl?x=1} would become {@code .../mfl?x=1/api/...}.
+	 *
+	 * @param url the configured MFL instance root
+	 */
+	public void checkRoot(String url) {
+		check(url);
+		URI uri = URI.create(url.trim());
+		if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
+			throw new IllegalArgumentException("The MFL URL is the instance root and must not carry a query or fragment");
+		}
+	}
+
+	/**
 	 * @param url the MFL instance root, or any URL the client is about to call
 	 * @throws IllegalArgumentException with a message fit for an administrator when the URL is not
 	 *             https:// (or allowed http://) on an allowed host, or carries user info

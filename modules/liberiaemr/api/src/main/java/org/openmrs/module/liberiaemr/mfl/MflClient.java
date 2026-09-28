@@ -122,7 +122,7 @@ public class MflClient implements MflSource {
 
 	private void checkUsable() throws MflException {
 		try {
-			policy.check(baseUrl);
+			policy.checkRoot(baseUrl);
 		}
 		catch (IllegalArgumentException e) {
 			throw new MflException(e.getMessage());

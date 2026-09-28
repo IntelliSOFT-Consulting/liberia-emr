@@ -73,6 +73,12 @@ public class MflSettingsTest {
 	}
 
 	@Test
+	public void validate_shouldRefuseAQueryOrFragmentOnTheInstanceRoot() {
+		assertThat(rejected(body("url", "https://dhis2.moh.gov.lr/mfl?x=1")), containsString("query or fragment"));
+		assertThat(rejected(body("url", "https://dhis2.moh.gov.lr/mfl#top")), containsString("query or fragment"));
+	}
+
+	@Test
 	public void validate_shouldRefusePlainHttpAndAnApiSuffix() {
 		assertThat(rejected(body("url", "http://dhis2.moh.gov.lr/mfl")), containsString("https://"));
 		assertThat(rejected(body("url", "https://dhis2.moh.gov.lr/mfl/api")), containsString("/api"));

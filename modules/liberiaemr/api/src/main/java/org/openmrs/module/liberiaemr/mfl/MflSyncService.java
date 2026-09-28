@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hibernate.jdbc.ReturningWork;
 import org.openmrs.User;
@@ -89,8 +88,8 @@ public class MflSyncService {
 	@Autowired
 	private DbSessionFactory sessionFactory;
 
-	/** The run in progress: 0 for none, -1 while one is being recorded, else its id. */
-	private final AtomicInteger running = new AtomicInteger();
+	/** The run in progress. Taken and recorded under one monitor, so a 409 always names the run. */
+	private final MflRunLock running = new MflRunLock();
 
 	private Map<String, String> environment = System.getenv();
 
@@ -240,33 +239,42 @@ public class MflSyncService {
 		if (!isAvailable()) {
 			throw new UnavailableException();
 		}
-		if (!running.compareAndSet(0, -1)) {
-			throw new BusyException(currentRunId());
-		}
 		final int runId;
 		try {
-			runId = store.create(dryRun, TRIGGER_MANUAL, startedBy, new Date());
+			runId = running.start(new MflRunLock.Recorder() {
+
+				@Override
+				public int record() {
+					return store.create(dryRun, TRIGGER_MANUAL, startedBy, new Date());
+				}
+			});
+		}
+		catch (MflRunLock.BusyException e) {
+			throw new BusyException(e.getRunId());
+		}
+		try {
+			Map<String, Object> run = store.get(runId);
+			final MflSource source = source();
+			executor.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						execute(runId, source, dryRun);
+					}
+					finally {
+						running.release(runId);
+					}
+				}
+			});
+			return run;
 		}
 		catch (RuntimeException e) {
-			running.set(0);
+			// Nothing will run it: never leave it RUNNING, holding the lock until a restart.
+			running.release(runId);
+			fail(runId, "The run could not start: " + describe(e));
 			throw e;
 		}
-		running.set(runId);
-		Map<String, Object> run = store.get(runId);
-		final MflSource source = source();
-		executor.execute(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					execute(runId, source, dryRun);
-				}
-				finally {
-					running.set(0);
-				}
-			}
-		});
-		return run;
 	}
 
 	/**
@@ -281,17 +289,25 @@ public class MflSyncService {
 			log.warn("The MFL sync is enabled but has no credentials on this instance; the scheduled run is skipped");
 			return;
 		}
-		if (!running.compareAndSet(0, -1)) {
-			log.info("The scheduled MFL sync is skipped: run {} is still going", currentRunId());
+		final int runId;
+		try {
+			runId = running.start(new MflRunLock.Recorder() {
+
+				@Override
+				public int record() {
+					return store.create(false, TRIGGER_SCHEDULE, null, new Date());
+				}
+			});
+		}
+		catch (MflRunLock.BusyException e) {
+			log.info("The scheduled MFL sync is skipped: run {} is still going", e.getRunId());
 			return;
 		}
 		try {
-			int runId = store.create(false, TRIGGER_SCHEDULE, null, new Date());
-			running.set(runId);
 			execute(runId, source(), false);
 		}
 		finally {
-			running.set(0);
+			running.release(runId);
 		}
 	}
 
@@ -303,13 +319,18 @@ public class MflSyncService {
 		}
 	}
 
-	private Integer currentRunId() {
-		int id = running.get();
-		if (id > 0) {
-			return id;
+	/** Marks a recorded run FAILED; a failure to do so is only logged. */
+	private void fail(int runId, String message) {
+		try {
+			store.finish(runId, MflRunStore.STATUS_FAILED, null, message, new Date());
 		}
-		Map<String, Object> run = getRunningRun();
-		return run == null ? null : (Integer) run.get("id");
+		catch (RuntimeException e) {
+			log.error("MFL sync run " + runId + " could not be marked FAILED", e);
+		}
+	}
+
+	private static String describe(RuntimeException e) {
+		return e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage());
 	}
 
 	private MflSource source() {
@@ -342,7 +363,7 @@ public class MflSyncService {
 		environment = System.getenv();
 		executor = DAEMON;
 		sourceOverride = null;
-		running.set(0);
+		running.clear();
 	}
 
 	/**

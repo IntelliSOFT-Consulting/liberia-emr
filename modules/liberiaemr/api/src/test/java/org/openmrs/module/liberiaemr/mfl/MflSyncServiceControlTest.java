@@ -184,6 +184,35 @@ public class MflSyncServiceControlTest extends BaseModuleContextSensitiveTest {
 	}
 
 	@Test
+	public void startRun_shouldFailTheRunAndFreeTheLockWhenItCannotBeHandedToTheExecutor() throws Exception {
+		service.setExecutor(new Executor() {
+
+			@Override
+			public void execute(Runnable command) {
+				throw new java.util.concurrent.RejectedExecutionException("no threads");
+			}
+		});
+		try {
+			service.startRun(false, null);
+			fail("expected the refusal to reach the caller");
+		}
+		catch (java.util.concurrent.RejectedExecutionException expected) {}
+		assertNull("no run is left RUNNING", service.getStatus().get("running"));
+		Map<?, ?> last = (Map<?, ?>) service.getStatus().get("lastRun");
+		assertEquals("FAILED", last.get("status"));
+		assertThat((String) last.get("message"), containsString("no threads"));
+
+		service.setExecutor(new Executor() {
+
+			@Override
+			public void execute(Runnable command) {
+				command.run();
+			}
+		});
+		assertEquals("the lock is free again", "RUNNING", service.startRun(true, null).get("status"));
+	}
+
+	@Test
 	public void startRun_shouldRefuseWithoutCredentials() throws Exception {
 		service.setEnvironment(new HashMap<String, String>());
 		try {
