@@ -295,7 +295,10 @@ alternatives give the same number wherever possible.
     visit whose only encounter is voided still counts (`C-ANC4`). Central counts per person,
     across that person's records.
 16. **EMR-OPS-008.** This counts encounters, not people, so roll-ups are sums. The excluded
-    system types are those listed in the CSV.
+    system types are those listed in the CSV; of them, the fixtures use only *Order*. Voided
+    encounters (`C-ANC4-1`, `C-FP6-1`, `C-LD4-1`) are out of both the numerator and the
+    denominator, per the CSV's `voided=0`. Each row's `reasoning` gives the count as
+    encounters in the period, minus Order, minus voided.
 
 ## What the test step needs from the other workstreams
 
@@ -336,6 +339,12 @@ exceptions are:
 
 - **NUT-009**, whose WHZ values were computed from the WHO LMS tables instead;
 - **EMR-OPS-007**, which was counted from the load's own totals.
+
+A second, scripted recount was made straight from the fixture CSVs and the matrix rows, with
+voided encounters, obs, diagnoses and orders dropped and the matrix's encounter-type
+exclusions applied. It matched all 312 rows it covers, which is every row except the 24
+central EMR-OPS-007 and EMR-OPS-015 rows. Those depend on CPI linking, and they were checked by
+hand.
 
 This check does not replace running the loader on a stack built from `main`, which the test
 step does.
