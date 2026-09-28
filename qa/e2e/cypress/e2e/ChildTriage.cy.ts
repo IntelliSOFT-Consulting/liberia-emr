@@ -26,4 +26,8 @@ describe('Child Triage Assessment form', () => {
     it('requires a child triage category before saving', () => {
         triageForm.verifyChildCategoryRequired();
     });
+
+    it('validates temperature limits', () => {
+        triageForm.verifyTemperatureLimits();
+    });
 });

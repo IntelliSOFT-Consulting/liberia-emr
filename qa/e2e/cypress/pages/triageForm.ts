@@ -67,6 +67,23 @@ class TriageFormPage {
             .should('not.be.empty');
         cy.get('@saveTriage.all').should('have.length', 0);
     }
+
+    verifyTemperatureLimits() {
+        cy.get('#temp', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('have.attr', 'min', '20')
+            .and('have.attr', 'max', '45');
+
+        ['20', '45'].forEach((value) => {
+            cy.get('#temp').type(`{selectall}${value}`).blur().should('have.value', value);
+        });
+
+        ['19.9', '45.1'].forEach((value) => {
+            cy.get('#temp').type(`{selectall}${value}`).blur();
+            cy.contains('button', 'Save', { timeout: this.timeout }).click();
+            cy.get('#temp').should('have.attr', 'aria-invalid', 'true');
+        });
+    }
 }
 
 export default TriageFormPage;
