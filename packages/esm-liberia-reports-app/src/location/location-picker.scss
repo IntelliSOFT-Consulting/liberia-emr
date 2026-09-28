@@ -1,0 +1,44 @@
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-04;
+}
+
+.fixedLocation {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-02;
+}
+
+.label {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary, #525252);
+}
+
+.value {
+  @include type.type-style('body-compact-02');
+}
+
+.helper {
+  @include type.type-style('helper-text-01');
+  color: var(--cds-text-helper, #6f6f6f);
+}
+
+.areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: spacing.$spacing-04;
+}
+
+.facilities {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-03;
+}
+
+.selection {
+  @include type.type-style('heading-compact-01');
+}

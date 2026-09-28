@@ -950,6 +950,13 @@ jobs:
           yarn typescript
           yarn test
           yarn build
+      - name: Verify indicator reports app
+        working-directory: packages/esm-liberia-reports-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn typescript
+          yarn test
+          yarn build
 
   backend-module:
     name: Build LiberiaEMR Module

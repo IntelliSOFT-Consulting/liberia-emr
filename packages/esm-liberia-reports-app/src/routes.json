@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.47.0",
+    "reportingrest": ">=2.0.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "indicator-reports"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "indicator-reports-app-menu-item",
+      "component": "reportsAppMenuItem",
+      "slot": "app-menu-slot",
+      "privileges": ["Export National Report"],
+      "online": true,
+      "offline": false
+    }
+  ]
+}
