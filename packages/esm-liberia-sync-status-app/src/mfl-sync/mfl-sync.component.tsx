@@ -44,7 +44,7 @@ const MflSync: React.FC = () => {
   const canManage = userHasAccess(managePrivilege, session?.user);
   const { status, error, isLoading, mutate } = useMflStatus();
   const [runsStart, setRunsStart] = useState(0);
-  const { runs, error: runsError, mutate: mutateRuns } = useMflRuns(runsStart, Boolean(status?.running));
+  const { runs, error: runsError, isLoading: runsLoading, mutate: mutateRuns } = useMflRuns(runsStart, Boolean(status?.running));
   const [selectedRun, setSelectedRun] = useState<number | null>(null);
 
   if (isLoading) {
@@ -117,6 +117,7 @@ const MflSync: React.FC = () => {
       <RunHistory
         runs={runs?.results ?? []}
         unreadable={Boolean(runsError)}
+        loading={runsLoading}
         totalCount={runs?.totalCount ?? 0}
         startIndex={runsStart}
         onPage={setRunsStart}
@@ -308,6 +309,8 @@ interface RunHistoryProps {
   runs: Array<MflRun>;
   /** GET /runs failed, which is not the same as an empty history. */
   unreadable: boolean;
+  /** The first GET /runs has not answered yet. */
+  loading: boolean;
   totalCount: number;
   startIndex: number;
   onPage: (startIndex: number) => void;
@@ -315,7 +318,7 @@ interface RunHistoryProps {
   onSelect: (id: number) => void;
 }
 
-const RunHistory: React.FC<RunHistoryProps> = ({ runs, unreadable, totalCount, startIndex, onPage, selected, onSelect }) => {
+const RunHistory: React.FC<RunHistoryProps> = ({ runs, unreadable, loading, totalCount, startIndex, onPage, selected, onSelect }) => {
   const { t } = useTranslation();
   return (
     <TableContainer className={styles.section} title={t('runHistory', 'Run history')}>
@@ -331,7 +334,13 @@ const RunHistory: React.FC<RunHistoryProps> = ({ runs, unreadable, totalCount, s
           </TableRow>
         </TableHead>
         <TableBody>
-          {unreadable ? (
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={6}>
+                <InlineLoading description={t('loadingRuns', 'Loading run history...')} />
+              </TableCell>
+            </TableRow>
+          ) : unreadable ? (
             <TableRow>
               <TableCell colSpan={6}>
                 <InlineNotification

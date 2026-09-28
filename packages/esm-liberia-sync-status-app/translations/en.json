@@ -85,6 +85,7 @@
   "loadingItems": "Loading changes...",
   "loadingMflSync": "Loading the MFL sync...",
   "loadingRun": "Loading the run...",
+  "loadingRuns": "Loading run history...",
   "location": "Location",
   "mflAccount": "MFL account",
   "mflActions": "MFL sync actions",

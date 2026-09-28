@@ -21,13 +21,13 @@ jest.mock('swr', () => ({
   __esModule: true,
   default: (key: string | null) => {
     const answer = key ? (global as any).__swr[key.split('?')[0]] : undefined;
-    return { data: answer?.data, error: answer?.error, isLoading: false, mutate: jest.fn() };
+    return { data: answer?.data, error: answer?.error, isLoading: Boolean(answer?.isLoading), mutate: jest.fn() };
   },
 }));
 
 const base = '/ws/rest/v1/liberiaemr/mfl';
 
-function given(path: string, answer: { data?: unknown; error?: unknown }) {
+function given(path: string, answer: { data?: unknown; error?: unknown; isLoading?: boolean }) {
   (global as any).__swr[`${base}${path}`] = answer;
 }
 
@@ -426,6 +426,35 @@ describe('MFL sync page', () => {
         expect.objectContaining({ method: 'PUT', body: { schedule: { time: '03:30' } } }),
       ),
     );
+  });
+
+  it('shows the history as loading, not as never synced, while GET /runs is pending', () => {
+    given('/status', { data: { data: status() } });
+    given('/runs', { isLoading: true });
+
+    render(<MflSync />);
+
+    expect(screen.getByText('Loading run history...')).toBeInTheDocument();
+    expect(screen.queryByText('The MFL has not been synced yet.')).not.toBeInTheDocument();
+  });
+
+  it("does not warn about the administrator's own saved change", async () => {
+    const saved = status({ config: { ...status().config, schedule: { time: '03:30' } } });
+    given('/status', { data: { data: status() } });
+    mockOpenmrsFetch.mockResolvedValue({ data: saved });
+    const { rerender } = render(<MflSync />);
+
+    fireEvent.change(screen.getByLabelText('Daily run time (HH:MM, Monrovia time)'), { target: { value: '03:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+    await waitFor(() => expect(screen.getByText('Settings saved')).toBeInTheDocument());
+
+    // The parent's status now carries the saved config.
+    given('/status', { data: { data: saved } });
+    rerender(<MflSync />);
+
+    expect(screen.queryByText(/changed on the server while you were editing/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Daily run time (HH:MM, Monrovia time)')).toHaveValue('03:30');
+    expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled();
   });
 
   it("opens a run's changes, warnings and errors", () => {

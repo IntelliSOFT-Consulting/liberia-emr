@@ -88,8 +88,15 @@ const MflSettings: React.FC<MflSettingsProps> = ({ status, canManage, onSaved })
     setResult(null);
     try {
       const response = await updateMflConfig(changes);
-      onSaved(response.data);
+      // Line the draft and the baseline up with what was saved first, so the status refresh that
+      // follows is not mistaken for someone else's change.
+      const saved = response.data.config;
+      setEnabled(saved.enabled);
+      setUrl(saved.url);
+      setTime(saved.schedule.time);
+      setBaseline({ enabled: saved.enabled, url: saved.url, time: saved.schedule.time });
       setConflicts([]);
+      onSaved(response.data);
       setResult({ kind: 'success', title: t('settingsSaved', 'Settings saved') });
     } catch (e) {
       const message = messageOf(e);
