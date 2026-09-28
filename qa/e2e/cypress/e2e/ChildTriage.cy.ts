@@ -42,4 +42,8 @@ describe('Child Triage Assessment form', () => {
     it('shows clinical warnings without blocking a complete assessment', () => {
         triageForm.verifyClinicalWarningsAllowSave();
     });
+
+    it('omits previously selected signs after changing the child category', () => {
+        triageForm.verifyHiddenSignsAreNotSubmitted();
+    });
 });

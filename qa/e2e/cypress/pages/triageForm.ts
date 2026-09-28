@@ -170,6 +170,78 @@ class TriageFormPage {
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveTriage', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);
     }
+
+    verifyHiddenSignsAreNotSubmitted() {
+        cy.get('#ebola_screen-Negative', { timeout: this.timeout }).scrollIntoView().check({ force: true });
+        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Urgent Priority', {
+            timeout: this.timeout
+        }).click();
+
+        cy.get('#triage_category_child').should('contain.text', 'Urgent Priority');
+        cy.contains('legend', 'Urgent priority signs', { timeout: this.timeout })
+            .scrollIntoView()
+            .closest('fieldset')
+            .find('input[type="checkbox"]')
+            .first()
+            .scrollIntoView()
+            .check({ force: true })
+            .should('be.checked');
+
+        cy.get('#triage_category_child').scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Emergency Priority', {
+            timeout: this.timeout
+        }).click();
+        cy.contains('legend', 'Urgent priority signs').should('not.exist');
+        cy.contains('legend', 'Emergency Signs', { timeout: this.timeout })
+            .scrollIntoView()
+            .closest('fieldset')
+            .find('input[type="checkbox"]')
+            .first()
+            .scrollIntoView()
+            .check({ force: true })
+            .should('be.checked');
+
+        cy.get('#triage_category_child').scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
+            timeout: this.timeout
+        }).click();
+        cy.contains('legend', 'Emergency Signs').should('not.exist');
+
+        [
+            { id: 'temp', value: '37.2' },
+            { id: 'hr', value: '78' },
+            { id: 'rr', value: '18' },
+            { id: 'spo2', value: '98' },
+            { id: 'weight', value: '20.5' },
+            { id: 'height', value: '120.5' },
+            { id: 'wz_score', value: '0' },
+            { id: 'muac', value: '15.5' }
+        ].forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
+        });
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(request.body.obs, 'submitted triage observations').to.be.an('array');
+            ['yellow_signs_child', 'red_signs_child'].forEach((fieldId) => {
+                expect(
+                    request.body.obs.some((observation: { formFieldPath?: string }) =>
+                        observation.formFieldPath?.includes(fieldId)
+                    ),
+                    `hidden ${fieldId} observations`
+                ).to.equal(false);
+            });
+        });
+    }
 }
 
 export default TriageFormPage;
