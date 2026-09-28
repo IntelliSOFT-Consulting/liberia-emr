@@ -320,6 +320,42 @@ class Expected:
                 n = f"{n} ({' '.join(self.units[u['parent']['id']]['name'].split())})"
             self.name[u["id"]] = n
         self.clashing = [u["id"] for u in active if counts[norm[u["id"]].lower()] > 1]
+        self.managed = managed
+        self.norm = norm
+
+    def expected_names(self, adopted=None, local_names=()):
+        """ADR 0009 §3 name disambiguation, for the rows the sync creates.
+
+        adopted maps an MFL UID to the local name of the row that adopted it: content owns that
+        name, so the MFL name of an adopted unit does not count, and the local name does.
+        local_names are the instance's other non-MFL location names. An active created row is
+        suffixed when another active name matches it; a closed created row is suffixed when any
+        other name matches it, open or closed, since OpenMRS refuses a retired location under an
+        active one's name. Only level-4 facilities have a district to suffix with.
+        """
+        adopted = adopted or {}
+        key = lambda n: " ".join(n.split()).lower()
+        created = [u for u in self.managed if u["id"] not in adopted]
+        locals_ = [key(n) for n in list(adopted.values()) + list(local_names)]
+        active_counts, all_counts = {}, {}
+        for n in locals_:
+            active_counts[n] = active_counts.get(n, 0) + 1
+            all_counts[n] = all_counts.get(n, 0) + 1
+        for u in created:
+            k = key(self.norm[u["id"]])
+            all_counts[k] = all_counts.get(k, 0) + 1
+            if not u.get("closedDate"):
+                active_counts[k] = active_counts.get(k, 0) + 1
+        names = {}
+        for u in created:
+            n = self.norm[u["id"]]
+            clash = (all_counts if u.get("closedDate") else active_counts)[key(n)] > 1
+            if u["level"] == 4 and clash:
+                n = f"{n} ({' '.join(self.units[u['parent']['id']]['name'].split())})"
+            names[u["id"]] = n
+        for uid, local in adopted.items():
+            names[uid] = local
+        return names
 
     def attributes(self, u):
         groups = {g["id"] for g in u.get("organisationUnitGroups", [])}
@@ -545,22 +581,22 @@ def test_connection(c, exp):
     elsewhere = [q for q in reqs if q["host"] == "mfl-stub-elsewhere"]
     R.check("test-connection redirected to another host: 200, ok false",
             r.status == 200 and r.json.get("ok") is False, r)
-    R.check("a cross-host redirect is not followed with credentials attached",
-            not [q for q in elsewhere if q["authPresent"]],
-            [(q["host"], q["path"], q["authPresent"]) for q in reqs])
+    R.check("a cross-host redirect is never followed: the other host gets no request at all",
+            not elsewhere, [(q["host"], q["path"], q["authPresent"]) for q in reqs])
     c.scenario("normal")
 
 
 def adoption_target(c):
     """The existing row the first sync must adopt for ADOPTED (Careysburg Clinic).
 
-    content-site-careysburg declares its root's MFL UID (LE-320, var.site.mfl-uid), so on the
-    CI stack that row is the site root itself. If the content does not declare it, a QA row
-    carrying the UID stands in, so adoption by attribute is tested either way.
+    By default no site package declares an MFL UID: each match waits for MOH/site confirmation
+    (ADR 0009 §1, LE-320). So normally a QA row carrying the UID stands in. Once
+    content-site-careysburg declares its root's MFL UID, that root is adopted instead, so
+    adoption by attribute is tested either way.
     """
     root_uid = attr(c.root_before, "MFL UID")
     if root_uid == ADOPTED:
-        R.check("the site root carries its MFL UID from content (LE-320)", True)
+        R.check("the site root carries its confirmed MFL UID from content", True)
         return c.args.own_root_uuid, c.root_before["name"]
     R.check("the site root carries no other MFL UID than the fixture's Careysburg Clinic",
             root_uid is None, root_uid)
@@ -630,6 +666,8 @@ def check_first_sync_rows(c, exp, adopt_uuid):
     R.check("no Country location and no level-3 unit without facilities (CHT - Bong)",
             c.location(v5(COUNTRY)) is None and c.location(v5(NOT_A_DISTRICT)) is None)
 
+    # Content owns an adopted row's name and parent; the sync owns them on the rows it creates.
+    want_names = exp.expected_names(adopted={ADOPTED: c.adopt_name})
     wrong_names, wrong_parents, wrong_tags, wrong_attrs, wrong_address = [], [], [], [], []
     for u in exp.counties + exp.districts + exp.facilities:
         loc = rows.get(u["id"])
@@ -637,10 +675,8 @@ def check_first_sync_rows(c, exp, adopt_uuid):
             continue
         if attr(loc, "MFL UID") != u["id"]:
             wrong_attrs.append((u["id"], "MFL UID", attr(loc, "MFL UID")))
-        # Content owns an adopted row's name and parent; the sync owns them on the rows it creates.
-        want_name = c.adopt_name if u["id"] == ADOPTED else exp.name[u["id"]]
-        if not u.get("closedDate") and loc["name"] != want_name:
-            wrong_names.append((u["id"], loc["name"], want_name))
+        if loc["name"] != want_names[u["id"]]:
+            wrong_names.append((u["id"], loc["name"], want_names[u["id"]]))
         if u["id"] == ADOPTED:
             want_parent = c.adopt_parent
         else:
@@ -689,6 +725,10 @@ def check_first_sync_rows(c, exp, adopt_uuid):
 
     closed = rows.get(CLOSED)
     if closed is not None:
+        R.check("the closed facility shares its name with an active one, so it is suffixed: "
+                "'Jamaica Rd Clinic (Bushrod District)'",
+                closed["name"] == "Jamaica Rd Clinic (Bushrod District)"
+                and want_names[CLOSED] == closed["name"], closed["name"], want_names[CLOSED])
         R.check("the closed facility is retired with reason 'MFL: closed 2026-04-01' and MFL Closed Date",
                 closed["retired"] and retire_reason(closed).startswith("MFL: closed 2026-04-01")
                 and str(attr(closed, "MFL Closed Date") or "").startswith("2026-04-01"),
@@ -857,8 +897,9 @@ def failures(c):
         run = c.run(label=label)
         R.check(f"{label}: the run is FAILED with a message", run["status"] == "FAILED" and run.get("message"), run)
         if scenario == "redirect-cross-host":
-            R.check("a run never follows a cross-host redirect with credentials",
-                    not [q for q in c.stub_requests() if q["host"] == "mfl-stub-elsewhere" and q["authPresent"]])
+            elsewhere = [q for q in c.stub_requests() if q["host"] == "mfl-stub-elsewhere"]
+            R.check("a run never follows a cross-host redirect: the other host gets no request at all",
+                    not elsewhere, [(q["path"], q["authPresent"]) for q in elsewhere])
     c.scenario("normal")
     s = c.status()
     R.check("a failed run is lastRun but not lastSuccessfulRun",
@@ -897,8 +938,9 @@ def own_root(c):
     root = c.args.own_root_uuid
     uid = attr(c.location(root), "MFL UID")
     if uid is None:
-        # No MFL UID from content: give the root one that exists only in the with-extra
-        # scenario, adopt it there, then let the unit disappear.
+        # The normal case: content declares no MFL UID until MOH confirms the match (ADR 0009
+        # §1). Give the root one that exists only in the with-extra scenario, adopt it there,
+        # then let the unit disappear.
         r = c.rest("POST", f"/location/{root}/attribute", {"attributeType": ATTR["MFL UID"], "value": EXTRA[0]})
         R.check("give the facility root an MFL UID", r.status in (200, 201), r)
         c.scenario("with-extra")

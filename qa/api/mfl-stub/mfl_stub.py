@@ -63,8 +63,9 @@ EXTRA_FACILITY = {
     "geometry": {"type": "Point", "coordinates": [-10.53, 6.47]},
     "organisationUnitGroups": [{"id": "cLPxlR1Brv9"}, {"id": "xSUk0MvIAUh"}],
 }
-# remove-site-root drops the unit the Careysburg site package declares as its root's MFL UID
-# (content-site-careysburg, var.site.mfl-uid). The sync must never retire an instance's own root.
+# remove-site-root drops Careysburg's candidate match, for when the Careysburg site package
+# declares it as its root's MFL UID once MOH confirms it (ADR 0009 §1; none does by default).
+# The sync must never retire an instance's own root.
 SITE_ROOT_FACILITY = "jbGSiLCEFKJ"  # Careysburg Clinic
 # shrink keeps this many facilities: 2 counties + 5 districts + 4 facilities is 11 of the 22
 # active locations a first sync holds, far under 90%.
@@ -295,7 +296,29 @@ def compare(value, op, arg):
     return ORDERED_OPS[op](str(value), arg)
 
 
-def apply_filters(objects, filters, junction="AND"):
+# Properties DHIS2 accepts in a filter although a fixture object may omit them (a null field is
+# absent from the JSON), keyed by collection. Anything else is an unknown property: DHIS2 answers
+# 400, and so does the stub, so a typo in the backend's filter fails the suite instead of
+# silently matching nothing.
+OPTIONAL_PROPERTIES = {
+    "organisationUnits": {"id", "code", "name", "shortName", "displayName", "level", "path",
+                          "parent", "openingDate", "closedDate", "created", "lastUpdated",
+                          "geometry", "organisationUnitGroups", "attributeValues"},
+    "organisationUnitGroups": {"id", "code", "name", "shortName", "displayName", "groupSets",
+                               "organisationUnits", "created", "lastUpdated"},
+    "organisationUnitGroupSets": {"id", "code", "name", "shortName", "displayName", "compulsory",
+                                  "organisationUnitGroups", "created", "lastUpdated"},
+}
+
+
+def known_properties(collection, objects):
+    known = set(OPTIONAL_PROPERTIES.get(collection, ()))
+    for obj in objects:
+        known.update(obj.keys())
+    return known
+
+
+def apply_filters(objects, filters, junction="AND", known=None):
     if not filters:
         return objects
     parsed = []
@@ -304,6 +327,8 @@ def apply_filters(objects, filters, junction="AND"):
         if len(parts) < 2:
             raise UnsupportedFilter(f)
         prop, op = parts[0], parts[1]
+        if known is not None and prop.split(".")[0] not in known:
+            raise UnsupportedFilter(f"property {prop!r} in {f!r}")
         arg = parts[2] if len(parts) > 2 else ""
         parsed.append((prop, op, arg))
 
@@ -487,7 +512,8 @@ def make_handler(state, fixture, prefix, username, password, redirect_host, port
             if fields is None:
                 fields = {"id": None, "displayName": None}
             matched = apply_filters(objects, query.get("filter", []),
-                                    query.get("rootJunction", ["AND"])[-1])
+                                    query.get("rootJunction", ["AND"])[-1],
+                                    known=known_properties(name, objects))
             matched = sorted(matched, key=lambda o: (o.get("level", 0), o["id"]))
             forced = FAILED_PAGE_SIZE if scenario == "failed-page" and name == "organisationUnits" else None
             body, page = page_of([catalogue.select(o, fields) for o in matched], query, name, forced)
