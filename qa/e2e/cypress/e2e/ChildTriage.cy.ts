@@ -18,4 +18,12 @@ describe('Child Triage Assessment form', () => {
     it('opens with the child-specific sections and fields', () => {
         triageForm.verifyChildFormContract();
     });
+
+    it('requires Ebola screening before saving', () => {
+        triageForm.verifyEbolaScreeningRequired();
+    });
+
+    it('requires a child triage category before saving', () => {
+        triageForm.verifyChildCategoryRequired();
+    });
 });

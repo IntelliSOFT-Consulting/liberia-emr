@@ -33,6 +33,40 @@ class TriageFormPage {
             cy.get(`#${fieldId}`).should('not.exist');
         });
     }
+
+    verifyEbolaScreeningRequired() {
+        cy.get('#triage_category_child', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Non-urgent Priority', {
+            timeout: this.timeout
+        }).click();
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+
+        cy.get('input[name="ebola_screen"]', { timeout: this.timeout })
+            .first()
+            .closest('fieldset')
+            .find('.cds--radio-button__validation-msg')
+            .should('not.be.empty');
+        cy.get('@saveTriage.all').should('have.length', 0);
+    }
+
+    verifyChildCategoryRequired() {
+        cy.get('#ebola_screen-Negative', { timeout: this.timeout })
+            .scrollIntoView()
+            .check({ force: true });
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+
+        cy.get('#triage_category_child', { timeout: this.timeout })
+            .closest('.cds--dropdown__wrapper')
+            .find('.cds--form-requirement')
+            .should('not.be.empty');
+        cy.get('@saveTriage.all').should('have.length', 0);
+    }
 }
 
 export default TriageFormPage;
