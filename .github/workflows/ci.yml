@@ -1202,7 +1202,11 @@ jobs:
         run: |
           output=$(ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
             for service in backend frontend gateway; do
-              digest=$(docker inspect --format="{{index .RepoDigests 0}}" "liberiaemr-facility-${service}-1" 2>/dev/null || echo unknown)
+              # A container has no RepoDigests; its image does. Ask the container for its image
+              # ID, then that image for the registry digest a rollback can pull.
+              image=$(docker inspect --format="{{.Image}}" "liberiaemr-facility-${service}-1" 2>/dev/null || true)
+              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$image" 2>/dev/null || true)
+              [ -n "$digest" ] || digest=unknown
               echo "${service}: ${digest}"
             done
           ')
@@ -1439,7 +1443,11 @@ jobs:
               exit 0
             fi
             for service in backend frontend gateway; do
-              digest=$(docker inspect --format="{{index .RepoDigests 0}}" "liberiaemr-central-${service}-1" 2>/dev/null || echo unknown)
+              # A container has no RepoDigests; its image does. Ask the container for its image
+              # ID, then that image for the registry digest a rollback can pull.
+              image=$(docker inspect --format="{{.Image}}" "liberiaemr-central-${service}-1" 2>/dev/null || true)
+              digest=$(docker image inspect --format="{{index .RepoDigests 0}}" "$image" 2>/dev/null || true)
+              [ -n "$digest" ] || digest=unknown
               echo "${service}: ${digest}"
             done
           ')
