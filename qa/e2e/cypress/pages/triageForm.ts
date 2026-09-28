@@ -84,6 +84,40 @@ class TriageFormPage {
             cy.get('#temp').should('have.attr', 'aria-invalid', 'true');
         });
     }
+
+    verifyNumericPrecision() {
+        [
+            { id: 'hr', value: '78.5' },
+            { id: 'rr', value: '18.5' },
+            { id: 'spo2', value: '97.5' }
+        ].forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('have.attr', 'step', '1')
+                .type(`{selectall}${value}`)
+                .blur()
+                .should(($input) => {
+                    const input = $input[0] as HTMLInputElement;
+                    expect(input.value === value && input.validity.valid, `${id} must not accept decimals`).to.equal(false);
+                });
+        });
+
+        [
+            { id: 'temp', value: '37.2' },
+            { id: 'weight', value: '20.5' },
+            { id: 'height', value: '120.5' }
+        ].forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout })
+                .scrollIntoView()
+                .should('have.attr', 'step', '0.1')
+                .type(`{selectall}${value}`)
+                .blur()
+                .should('have.value', value)
+                .should(($input) => {
+                    expect(($input[0] as HTMLInputElement).validity.valid, `${id} accepts decimals`).to.equal(true);
+                });
+        });
+    }
 }
 
 export default TriageFormPage;

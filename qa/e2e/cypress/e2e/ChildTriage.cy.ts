@@ -30,4 +30,8 @@ describe('Child Triage Assessment form', () => {
     it('validates temperature limits', () => {
         triageForm.verifyTemperatureLimits();
     });
+
+    it('rejects decimals in integer-only vitals and accepts them in decimal vitals', () => {
+        triageForm.verifyNumericPrecision();
+    });
 });
