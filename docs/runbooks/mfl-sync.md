@@ -119,9 +119,10 @@ A site root the sync adopts keeps its own name and parent: content owns both (AD
 §3). *Careysburg Health Center* stays *Careysburg Health Center*, top-level, although the MFL
 calls it *Careysburg Clinic*. The sync adds its MFL attributes, the `Health Facility` tag,
 coordinates and county/district address, so the central switcher places it in its district.
-Both matches are **pending MOH or site confirmation** (ADR 0009 §1). Until a match is
-confirmed, the site package must not declare the MFL UID, and the sync creates a separate row
-for that facility.
+Both matches were **confirmed on 2026-09-28**, and each site package declares its root's MFL
+UID (Careysburg `jbGSiLCEFKJ`, Barnersville `kueVlXwUXiI`). For any future site, the package
+must not declare an MFL UID until its match is confirmed (ADR 0009 §1). Until then, the sync
+creates a separate row for that facility.
 
 ## 3. Reading a run
 

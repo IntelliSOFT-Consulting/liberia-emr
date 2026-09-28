@@ -620,10 +620,9 @@ def test_connection(c, exp):
 def adoption_target(c):
     """The existing row the first sync must adopt for ADOPTED (Careysburg Clinic).
 
-    By default no site package declares an MFL UID: each match waits for MOH/site confirmation
-    (ADR 0009 §1, LE-320). So normally a QA row carrying the UID stands in. Once
-    content-site-careysburg declares its root's MFL UID, that root is adopted instead, so
-    adoption by attribute is tested either way.
+    content-site-careysburg declares its root's confirmed MFL UID (ADR 0009 §1, LE-320), so on
+    the CI stack that root is adopted. A site package without a confirmed UID declares none, and
+    then a QA row carrying the UID stands in, so adoption by attribute is tested either way.
     """
     root_uid = attr(c.root_before, "MFL UID")
     if root_uid == ADOPTED:
@@ -970,9 +969,9 @@ def own_root(c):
     root = c.args.own_root_uuid
     uid = attr(c.location(root), "MFL UID")
     if uid is None:
-        # The normal case: content declares no MFL UID until MOH confirms the match (ADR 0009
-        # §1). Give the root one that exists only in the with-extra scenario, adopt it there,
-        # then let the unit disappear.
+        # A site whose match is not confirmed declares no MFL UID (ADR 0009 §1). Give the root
+        # one that exists only in the with-extra scenario, adopt it there, then let the unit
+        # disappear.
         r = c.rest("POST", f"/location/{root}/attribute", {"attributeType": ATTR["MFL UID"], "value": EXTRA[0]})
         R.check("give the facility root an MFL UID", r.status in (200, 201), r)
         c.scenario("with-extra")

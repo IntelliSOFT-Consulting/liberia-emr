@@ -48,11 +48,11 @@ Stub scenarios, switched by `POST /__stub/scenario {"name": …}`:
 | --- | --- | --- |
 | `normal` | is the fixture | create, adopt and update per ADR 0009 §3 |
 | `remove-one` | has lost *Come & See Clinic* | retire it (21 of 22 is above the guard) |
-| `remove-site-root` | has lost *Careysburg Clinic*, Careysburg's candidate root | not retire the instance's own root; record an item error (used once content declares the confirmed UID) |
+| `remove-site-root` | has lost *Careysburg Clinic*, Careysburg's confirmed root | not retire the instance's own root; record an item error (used when content declares the root's UID, as Careysburg does) |
 | `shrink` | returns 4 facilities | skip retirement: PARTIAL |
 | `failed-page` | pages by 4 and fails page 2 | skip retirement: PARTIAL |
 | `rename-reparent` | renames Kesselee and moves City Lab Clinic | update both in place |
-| `with-extra` | adds `QaStubRoot1` | (used to adopt the site root, which carries no MFL UID from content by default) |
+| `with-extra` | adds `QaStubRoot1` | (used to adopt a site root whose content declares no MFL UID) |
 | `redirect-cross-host` | redirects every call to `mfl-stub-elsewhere` | not follow it with credentials; the run FAILS |
 | `unauthorized` / `down` | answers 401 / 503 | FAIL the run; test-connection answers `ok: false` |
 
