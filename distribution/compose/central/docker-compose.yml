@@ -10,10 +10,19 @@ services:
   db:
     image: mariadb:10.11
     restart: unless-stopped
+    # The last three serve the reporting ETL, which runs as a user without SUPER (ADR 0010
+    # decision 3): event-scheduler replaces core's own SET GLOBAL, which the build strips, and
+    # performance-schema with its events_statements_current consumer (OFF by default in
+    # MariaDB) lets core's stuck-run check see a running ETL. Central has no
+    # binlog, so the facility's binlog-ignore-db and log-bin-trust-function-creators do not
+    # apply here; if a binlog is ever enabled, both must be added with it.
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
       --max_allowed_packet=1G
+      --event-scheduler=ON
+      --performance-schema=ON
+      --performance-schema-consumer-events-statements-current=ON
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
       MARIADB_USER: ${MYSQL_USER}
@@ -24,6 +33,9 @@ services:
       SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       SYNC_MGMT_DB_USER: ${SYNC_MGMT_DB_USER:-dbsync_mgmt}
       SYNC_MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:-}
+      # For initdb/30-etl-db-user.sh (first boot only); an unset password skips it.
+      ETL_DB_USER: ${ETL_DB_USER:-mambaetl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
     volumes:
       - db-data:/var/lib/mysql
       - ./initdb:/docker-entrypoint-initdb.d:ro
@@ -70,14 +82,40 @@ services:
       LIBERIAEMR_SMTP_PASSWORD_FILE: ${LIBERIAEMR_SMTP_PASSWORD_FILE:-}
       LIBERIAEMR_SMTP_FROM: ${LIBERIAEMR_SMTP_FROM:-}
       LIBERIAEMR_FRONTEND_URL: ${LIBERIAEMR_FRONTEND_URL:-}
+      # MOH Master Facility List sync (liberiaemr module, ADR 0009). The credentials are
+      # deployment secrets: mount the password file and leave the plain variable empty. Unset
+      # means the MFL sync is unavailable on this instance and its page hides itself.
+      # LIBERIAEMR_MFL_ALLOWED_HOSTS is where the credentials may be sent; the MFL URL itself
+      # is editable from the page, so this list is what keeps them on the MOH's host.
+      LIBERIAEMR_MFL_USERNAME: ${LIBERIAEMR_MFL_USERNAME:-}
+      LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
+      LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
+      LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
       # Empty turns the sync status page off, which is what a facility gets.
       LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
       # Read by the Sync conflicts page; empty turns it off. The window is for display only.
       LIBERIAEMR_SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
       LIBERIAEMR_SYNC_CONFLICT_WINDOW: ${SYNC_CONFLICT_WINDOW-01:00-05:00}
+      # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4); see the facility stack.
+      # Central flattens the whole national replica, so its interval is longer; both the
+      # interval and the width are provisional until central's first full build is timed.
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_OPENMRS__DATABASE: ${MYSQL_DATABASE}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_ETL__DATABASE: liberiaemr_etl
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_USERNAME: ${ETL_DB_USER:-mambaetl}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_DB_PASSWORD: ${ETL_DB_PASSWORD:-}
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_LOCALE: en
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_COLUMNS: "40"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_INCREMENTAL__MODE: "1"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_AUTOMATED__FLATTENING: "0"
+      OMRS_EXTRA_MAMBAETL_ANALYSIS_ETL__INTERVAL: ${ETL_INTERVAL_SECONDS:-3600}
       JAVA_OPTS: -Xmx${BACKEND_HEAP:-6g} -Duser.timezone=Africa/Monrovia
     volumes:
       - openmrs-data:/openmrs/data
+      # The MFL password (ADR 0009 decision 7): a host file, mode 0400 and owned by uid 1001
+      # (the backend's user), mounted read-only. Set LIBERIAEMR_MFL_PASSWORD_FILE to
+      # /run/secrets/mfl-password to use it. Unset, /dev/null is mounted: an empty password,
+      # so the MFL sync is unavailable. See docs/runbooks/mfl-sync.md.
+      - ${LIBERIAEMR_MFL_PASSWORD_HOST_FILE:-/dev/null}:/run/secrets/mfl-password:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
       interval: 20s
@@ -89,8 +127,12 @@ services:
       start_period: 5400s
     networks: [liberiaemr]
 
+  # The central frontend (build-distribution.sh --site central): the facility layers with
+  # content-central in the site layer's place, so no facility's config-site.json reaches
+  # central and nothing in config-central.json reaches a facility. See
+  # docs/adr/0011-central-composition.md.
   frontend:
-    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    image: ${REGISTRY}/liberia-emr-frontend-central:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       backend:
@@ -98,9 +140,13 @@ services:
     environment:
       SPA_PATH: /openmrs/spa
       API_URL: /openmrs
+      # Baked into the image at build time; this copy is what an operator reads, and
+      # build-distribution.sh --site central fails if the two differ.
       SPA_CONFIG_URLS: >-
         /openmrs/spa/config/config-core.json,
         /openmrs/spa/config/config-national.json,
+        /openmrs/spa/config/config-mch.json,
+        /openmrs/spa/config/config-opd.json,
         /openmrs/spa/config/config-central.json
     networks: [liberiaemr]
 

@@ -2,12 +2,13 @@
 
 | Directory | Type | Who |
 | --- | --- | --- |
-| [`api/`](api/) | Automated API tests | QA Engineer directs; developers contribute |
+| [`api/`](api/) | Automated API tests: so far the MFL sync contract suite and its stub MFL | QA Engineer directs; developers contribute |
 | [`e2e/`](e2e/) | Automated Cypress tests | QA Engineer directs |
 | [`manual/`](manual/) | Manual and exploratory testing | Tester executes against QA Engineer's plan |
 | [`uat/`](uat/) | UAT scripts and sign-off | MOH / UNFPA / facility staff execute |
 | [`upgrade/`](upgrade/) | Clean-install and upgrade harness | **Runs on every release** |
 | [`sync/`](sync/) | Facility→central sync checks and drills | CI runs three; the rest run against staging stacks |
+| [`reporting/`](reporting/) | Indicator-report fixtures and hand-computed expected values (LE-336) | Loaded onto staging or throwaway stacks; the report tests follow |
 
 Test **strategy and review** sit with the QA Engineer. Support and junior roles execute
 against that strategy and do not own it (IMPLEMENTATION.md §11).

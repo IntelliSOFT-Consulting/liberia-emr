@@ -1,0 +1,77 @@
+# QA-only overlay: a stand-in MFL for the MFL sync tests (LE-325). NEVER for a real deployment.
+#
+#   docker compose \
+#     -f distribution/compose/facility/docker-compose.yml \
+#     -f distribution/compose/facility/docker-compose.demo.yml \
+#     -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
+#     --env-file <env> up -d db backend mfl-stub
+#
+# The env file must set three ABSOLUTE paths (compose resolves relative paths in an overlay
+# against the first file's directory, not this one):
+#   QA_MFL_DIR       material from qa/api/mfl-stub/gen-material.sh (certificates, truststore,
+#                    the stub account's throwaway password)
+#   QA_MFL_STUB_DIR  this directory
+#   QA_MFL_FIXTURES  integration/dhis2/mfl/fixtures
+#
+# What it changes on the backend, and why:
+# - LIBERIAEMR_MFL_USERNAME / LIBERIAEMR_MFL_PASSWORD_FILE: the stub's throwaway account, so the
+#   sync is "available" (ADR 0009 §2). The password is read from a mounted file, the path
+#   production uses.
+# - LIBERIAEMR_MFL_ALLOWED_HOSTS: only the stub. The live MFL host is NOT on the list, so even a
+#   test that forgot to point the sync at the stub cannot send credentials there.
+# - extra_hosts: dhis2.moh.gov.lr resolves to the container itself. A second, independent guard:
+#   nothing in CI can reach the live MFL.
+# - JAVA_TOOL_OPTIONS: a truststore of the JDK's own CAs plus the stub's throwaway CA, so the
+#   sync talks to the stub over real, verified TLS. JAVA_OPTS (heap, timezone) is left alone.
+services:
+  backend:
+    environment:
+      LIBERIAEMR_MFL_USERNAME: qa-mfl-stub
+      LIBERIAEMR_MFL_PASSWORD: ""
+      LIBERIAEMR_MFL_PASSWORD_FILE: /run/qa-mfl/password
+      LIBERIAEMR_MFL_ALLOWED_HOSTS: mfl-stub
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/qa-mfl/truststore.p12
+        -Djavax.net.ssl.trustStorePassword=changeit
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    extra_hosts:
+      - "dhis2.moh.gov.lr:127.0.0.1"
+    volumes:
+      - ${QA_MFL_DIR:?set QA_MFL_DIR to the gen-material.sh output}:/run/qa-mfl:ro
+
+  mfl-stub:
+    image: python:3.12-alpine
+    user: "65534:65534"
+    restart: "no"
+    command:
+      - python
+      - /stub/mfl_stub.py
+      - --port=8443
+      - --fixtures=/fixtures
+      - --cert=/run/qa-mfl/stub.pem
+      - --key=/run/qa-mfl/stub.key
+      - --username=qa-mfl-stub
+      - --password-file=/run/qa-mfl/password
+      - --redirect-host=mfl-stub-elsewhere
+    volumes:
+      - ${QA_MFL_STUB_DIR:?set QA_MFL_STUB_DIR}:/stub:ro
+      - ${QA_MFL_FIXTURES:?set QA_MFL_FIXTURES}:/fixtures:ro
+      - ${QA_MFL_DIR:?set QA_MFL_DIR}:/run/qa-mfl:ro
+    # The tests switch scenarios and read the request log from the host, on loopback only.
+    ports:
+      - "127.0.0.1:${QA_MFL_STUB_PORT:-18443}:8443"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import ssl,urllib.request; urllib.request.urlopen('https://localhost:8443/__stub/health', context=ssl._create_unverified_context(), timeout=3)"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      liberiaemr:
+        # A second name for the same stub, deliberately NOT on the backend's allowlist: the
+        # redirect-cross-host scenario sends the backend here to prove it will not follow a
+        # redirect to another host with credentials attached.
+        aliases: [mfl-stub-elsewhere]

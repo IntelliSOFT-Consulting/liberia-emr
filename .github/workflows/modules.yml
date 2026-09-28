@@ -1,7 +1,7 @@
 # Backend OMOD pipeline — modules/liberiaemr.
 #
 # Shaped after packages.yml, which does the same job for the ESMs on npm: one workflow per
-# area, paths-scoped, PR builds and tests, and publishing only from main or a tag.
+# area, PR builds paths-scoped, and publishing only from main or a tag.
 #
 # Deliberately NOT part of ci.yml. ci.yml carries the single required status check for
 # branch protection ("CI gate"), and a publish step that can fail on a credential or a
@@ -10,45 +10,46 @@
 #
 # Two version streams, and they are the whole design:
 #
-#   merge to main       ->  1.0.0-SNAPSHOT   re-deployed over itself on every merge
-#   release x.y.z       ->  x.y.z            stamped from the tag, immutable, OPT-IN
+#   push to main              ->  1.0.0-SNAPSHOT   re-deployed over itself on every merge
+#   push liberiaemr-x.y.z     ->  x.y.z            immutable, cut by maven-release-plugin
 #
-# The release stream is opt-in because a distribution release is cut far more often than this
-# module changes, and publishing on every one of them would fill Repsy with versions whose
-# contents are byte-identical to the version before. The opt-in signal is the pom's base:
-# the module publishes on a release only when modules/liberiaemr/pom.xml's <version>, minus
-# -SNAPSHOT, equals the tag being released. So to ship the module as 1.2.0, set the pom to
-# 1.2.0-SNAPSHOT on main BEFORE cutting 1.2.0; leave it alone and release 1.2.0 carries
-# whichever module version was published last. The `decide` job below is where that is
-# worked out, and it says on the run summary which way it went and why.
-#
-# The bump is therefore a PRE-release act. modules/liberiaemr/README.md used to call it a
-# post-release one; both it and this comment have to stay in step with the decide job.
+# A GitHub release publishes NOTHING here. The bare x.y.z tags are the distribution's
+# release namespace (release.yml); the module's are liberiaemr-x.y.z, cut locally with
+# `mvn release:prepare` and pushed after the release PR merges. The decision, its failure
+# modes and its test live in scripts/ci/module-publish-decision.sh and
+# qa/ci/verify-module-publish-decision.sh. The sequence is docs/runbooks/release-module.md.
 #
 # The backend image takes neither version: distribution/backend/Dockerfile builds the module
 # from source (it COPYs modules/liberiaemr) and stamps it with the distribution version it is
 # being built into, so a release image never ships a SNAPSHOT (IMPLEMENTATION.md §6/§11) and
 # never depends on the module having been published at all. Repsy is for consumers outside
 # this repository.
+#
+# build-and-test carries no `paths` filter on the push trigger, so it builds on every push to
+# main, not just ones that touch modules/. That is the accepted price of a tag trigger that
+# cannot silently fail: gating the test job on `decide`'s output would make a bug in the
+# decision script also stop the module being tested, and the module's test signal must not
+# depend on the publish decision being correct.
 name: Modules CI / CD
 
 on:
+  # No `paths` filter here, and there cannot be one: `paths` applies to the whole push
+  # event, and a tag push reports no changed files — so a paths filter beside the tags
+  # filter below would stop module releases firing at all (the reason module releases
+  # hung off a GitHub `release:` event before). scripts/ci/module-publish-decision.sh filters main pushes
+  # by path instead, which also puts the whole publish decision in one place.
   push:
     branches: [main]
-    paths:
-      - 'modules/**'
-      - '.github/workflows/modules.yml'
-  # A published release, NOT a tag push. `paths` applies to the whole push event, and a tag
-  # push commonly reports no changed files at all — so a `tags:` trigger sitting beside this
-  # filter would silently never fire, and the release version would never be published.
-  # packages.yml publishes to npm off the same event for the same reason.
-  release:
-    types: [created]
+    # maven-release-plugin's tags, namespaced so they cannot collide with the bare x.y.z
+    # tags release.yml watches for DISTRIBUTION releases.
+    tags: ['liberiaemr-[0-9]+.[0-9]+.[0-9]+']
   pull_request:
     branches: [main]
     paths:
       - 'modules/**'
       - '.github/workflows/modules.yml'
+      - 'scripts/ci/module-publish-decision.sh'
+      - 'qa/ci/verify-module-publish-decision.sh'
   workflow_dispatch:
 
 permissions:
@@ -57,8 +58,9 @@ permissions:
 concurrency:
   group: modules-${{ github.head_ref || github.ref_name }}
   # Never cancel a run that is mid-publish; a half-deployed Maven directory is worse than a
-  # queued build.
-  cancel-in-progress: ${{ github.ref_name != 'main' && github.event_name != 'release' }}
+  # queued build. That covers both publishing streams: a push to main, and a push of a
+  # liberiaemr-x.y.z tag.
+  cancel-in-progress: ${{ github.ref_name != 'main' && !startsWith(github.ref, 'refs/tags/') }}
 
 env:
   JAVA_VERSION: '17'
@@ -74,6 +76,12 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
+      # This is what makes the `scripts/ci/` and `qa/ci/` entries in the pull_request `paths`
+      # filter above meaningful: without it, nothing in this workflow ever runs the test
+      # suite, and it starts decaying the day a change breaks it silently. Runs before the
+      # Maven build so a broken publish decision fails fast.
+      - name: Verify the publish decision
+        run: ./qa/ci/verify-module-publish-decision.sh
       - name: Build and test
         working-directory: modules/liberiaemr
         run: mvn -B clean package
@@ -89,71 +97,41 @@ jobs:
   #
   # A separate job rather than an `if:` on a step inside publish, for one reason: GitHub
   # enters a job's `environment:` when the job starts, so a step-level skip would still put
-  # a release that ships nothing in front of repsy-publish's reviewer, if one is ever
+  # an event that ships nothing in front of repsy-publish's reviewer, if one is ever
   # attached. Skipping the whole job never touches the environment.
   #
-  # Deliberately does NOT need build-and-test — it reads one field out of a pom and has no
-  # reason to queue behind a Maven build. publish needs both.
+  # Deliberately does NOT need build-and-test — deciding is a clone, a fetch and a diff, none
+  # of which have any reason to queue behind a Maven build. publish needs both.
   decide:
     name: Decide whether to publish
     runs-on: ubuntu-latest
     outputs:
       publish: ${{ steps.decide.outputs.publish }}
     steps:
+      # fetch-depth: 0 and the explicit main fetch are for the reachability check in the
+      # script: a tag push checks out a detached commit with no branches, so there would
+      # otherwise be no origin/main to compare against. This is also load-bearing for the
+      # main stream: at the default depth of 1, `git cat-file -e "$BEFORE_SHA"` would always
+      # miss, the script would fail open on "no usable base", and EVERY main push would
+      # publish. A future "optimisation" back to a shallow clone would change that silently
+      # rather than break visibly.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # actions/checkout@v4 with fetch-depth: 0 already leaves origin/main in place on an
+      # ordinary checkout. This is belt-and-braces for the case that actually needs it: a
+      # detached tag checkout, where the ref being built is not a branch, so an explicit
+      # fetch is cheap insurance against a checkout behaviour change removing origin/main.
+      - name: Make main available for the reachability check
+        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
       - id: decide
-        name: Compare the pom version against the release
+        name: Decide whether this event publishes
         env:
-          POM: modules/liberiaemr/pom.xml
-        run: |
-          set -euo pipefail
-
-          reason() { echo "$1"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
-
-          # Everything that is not a release keeps the behaviour of the `if:` expression this
-          # job replaced: the SNAPSHOT stream publishes from main and from nowhere else. A
-          # pull request and a workflow_dispatch build and test, and stop there — a fork PR
-          # must not reach the credentials, and an unreviewed branch must not be able to move
-          # a published artifact.
-          if [[ "$GITHUB_EVENT_NAME" != "release" ]]; then
-            if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
-              echo "publish=true" >> "$GITHUB_OUTPUT"
-              reason "main push -> publishing the SNAPSHOT stream."
-            else
-              echo "publish=false" >> "$GITHUB_OUTPUT"
-              reason "${GITHUB_EVENT_NAME} on ${GITHUB_REF} never publishes."
-            fi
-            exit 0
-          fi
-
-          # help:evaluate would need setup-java and a network fetch of the OpenMRS parent pom
-          # to answer one question, and would fail this job on a Maven outage. Read the field
-          # directly instead: find() searches direct children, so <parent><version> — which
-          # comes FIRST in this pom — cannot be picked up by mistake.
-          tag="$GITHUB_REF_NAME"
-          pom="$(python3 - "$POM" <<'PY'
-          import sys, xml.etree.ElementTree as ET
-          NS = "{http://maven.apache.org/POM/4.0.0}"
-          v = ET.parse(sys.argv[1]).getroot().find(NS + "version")
-          if v is None or not (v.text or "").strip():
-              sys.exit("modules/liberiaemr/pom.xml has no project-level <version>")
-          print(v.text.strip())
-          PY
-          )"
-          base="${pom%-SNAPSHOT}"
-          echo "release tag: ${tag}"
-          echo "pom version: ${pom} (base ${base})"
-
-          # Fails CLOSED by design: an unbumped pom means no publish. An unreadable one fails
-          # the job instead, which blocks publish through `needs` and turns the run red rather
-          # than quietly shipping nothing.
-          if [[ "$base" == "$tag" ]]; then
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-            reason "pom base version ${base} matches release ${tag} -> publishing the module."
-          else
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            reason "pom base version ${base} is not release ${tag} -> the module did not change for this release, so nothing is published and ${tag} carries the module version published before it. To have shipped it as ${tag}, modules/liberiaemr/pom.xml needed to say ${tag}-SNAPSHOT in the commit this tag points at -- a bump on main now will not change that. Either move the tag onto a commit carrying the bump and release again, or let the module ship with the next release."
-          fi
+          # github.event.before is how the script path-filters a main push, now that the
+          # trigger cannot carry a paths filter. It is absent on non-push events, which the
+          # script treats as "no usable base" and fails open on.
+          BEFORE_SHA: ${{ github.event.before }}
+        run: ./scripts/ci/module-publish-decision.sh
 
   publish:
     name: Publish to Repsy
@@ -200,40 +178,25 @@ jobs:
           echo "url=${url}" >> "$GITHUB_OUTPUT"
           echo "publishing to ${url}"
 
-      # On a release, the version IS the tag. versions:set rewrites the reactor so the
-      # deployed coordinate matches it; without this a release would publish a SNAPSHOT
-      # again and no release version would ever exist.
-      #
-      # Since the decide job only lets a release through when the pom's base version already
-      # equals the tag, all this now changes is dropping -SNAPSHOT — and it still has to run,
-      # because that suffix is exactly what must not reach Repsy as a release. It also keeps
-      # the reactor's child modules in step, which a hand-edited parent <version> would not.
-      - name: Stamp the release version
-        if: github.event_name == 'release'
-        working-directory: modules/liberiaemr
-        run: |
-          set -euo pipefail
-          mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
-            -DnewVersion="${GITHUB_REF_NAME}" -DgenerateBackupPoms=false
-          echo "module stamped as ${GITHUB_REF_NAME}"
-
-      # Refuse the one combination that silently produces a wrong artifact: a release tag
-      # that still resolves to a SNAPSHOT, or a main build that somehow is not one.
+      # The decision script already asserted the tag stream's invariants. This re-checks them
+      # against the tree the deploy will actually run on, which is a different question: the
+      # script reads the pom from a plain checkout, this runs in the publish job.
       - name: Check the version matches the stream
         working-directory: modules/liberiaemr
         run: |
           set -euo pipefail
           version="$(mvn -B -q -DforceStdout help:evaluate -Dexpression=project.version)"
           echo "module version: ${version}"
-          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+          if [[ "${GITHUB_REF}" == refs/tags/liberiaemr-* ]]; then
+            want="${GITHUB_REF_NAME#liberiaemr-}"
             [[ "${version}" != *SNAPSHOT* ]] \
-              || { echo "::error::release ${GITHUB_REF_NAME} would publish a SNAPSHOT"; exit 1; }
-            [[ "${version}" == "${GITHUB_REF_NAME}" ]] \
-              || { echo "::error::version ${version} does not match release ${GITHUB_REF_NAME}"; exit 1; }
+              || { echo "::error::tag ${GITHUB_REF_NAME} would publish a SNAPSHOT"; exit 1; }
+            [[ "${version}" == "${want}" ]] \
+              || { echo "::error::version ${version} does not match tag ${GITHUB_REF_NAME}"; exit 1; }
           else
             [[ "${version}" == *SNAPSHOT* ]] \
               || { echo "::error::main must publish a SNAPSHOT, got ${version}." >&2
-                   echo "Bump modules/liberiaemr/pom.xml to the next -SNAPSHOT after a release." >&2
+                   echo "release:prepare sets the next -SNAPSHOT; check its second commit merged." >&2
                    exit 1; }
           fi
 

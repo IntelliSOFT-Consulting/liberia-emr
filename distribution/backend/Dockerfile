@@ -129,6 +129,37 @@ RUN set -eu; \
       echo "FAIL: module still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
     fi
 
+# --- mamba-etl-liberiaemr (modules/mambaetl, ADR 0010 decisions 1, 2 and 7) ---------------
+# Built, stamped and SNAPSHOT-guarded exactly like liberiaemr above. Its api module compiles
+# the ETL SQL inside `package`, with core's compile.sh, which needs jq and rsync; this image
+# ships neither. The content layers' variables.properties are the filter inputs for ${var.*}
+# in _etl, copied to the same place relative to the module as in the repository. Site
+# packages, content-central and content-demo are deliberately not copied: ETL output must not
+# vary by site. mamba-core-api is bundled inside this OMOD and never pinned in distro.properties.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends jq rsync \
+    && rm -rf /var/lib/apt/lists/*
+COPY content-packages/content-common/configuration/variables.properties /build/content-packages/content-common/configuration/
+COPY content-packages/content-liberia-national/configuration/variables.properties /build/content-packages/content-liberia-national/configuration/
+COPY content-packages/content-liberia-mch/configuration/variables.properties /build/content-packages/content-liberia-mch/configuration/
+COPY content-packages/content-liberia-lab/configuration/variables.properties /build/content-packages/content-liberia-lab/configuration/
+COPY content-packages/content-liberia-pharmacy/configuration/variables.properties /build/content-packages/content-liberia-pharmacy/configuration/
+COPY content-packages/content-liberia-opd-ipd/configuration/variables.properties /build/content-packages/content-liberia-opd-ipd/configuration/
+COPY modules/mambaetl /build/modules/mambaetl
+RUN set -eu; \
+    if [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "stamping mamba-etl-liberiaemr as ${LIBERIAEMR_VERSION}"; \
+      mvn -B -q -f /build/modules/mambaetl/pom.xml \
+        org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+        -DnewVersion="${LIBERIAEMR_VERSION}" -DgenerateBackupPoms=false; \
+    fi; \
+    mvn -B -q -f /build/modules/mambaetl/pom.xml -DskipTests clean package; \
+    ls /build/modules/mambaetl/omod/target/mamba-etl-liberiaemr-*.omod; \
+    if ls /build/modules/mambaetl/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
+       && [ -n "${LIBERIAEMR_VERSION}" ]; then \
+      echo "FAIL: mamba-etl-liberiaemr still SNAPSHOT after stamping ${LIBERIAEMR_VERSION}" >&2; exit 1; \
+    fi
+
 # ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
@@ -170,6 +201,7 @@ COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
 # The in-tree module, built in stage 2, lands beside them. Kept as a separate COPY so it is
 # obvious in the layer list that one OMOD here is ours and the rest are resolved pins.
 COPY --from=module /build/liberiaemr/omod/target/liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
+COPY --from=module /build/modules/mambaetl/omod/target/mamba-etl-liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/

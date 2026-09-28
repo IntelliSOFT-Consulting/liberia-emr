@@ -1,0 +1,103 @@
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.container {
+  margin: spacing.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-04');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.subheading {
+  @include type.type-style('heading-03');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.explainer {
+  @include type.type-style('body-01');
+  margin-bottom: spacing.$spacing-05;
+}
+
+.meta {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+}
+
+.notice {
+  margin-top: spacing.$spacing-05;
+  margin-bottom: spacing.$spacing-05;
+}
+
+.section {
+  margin-top: spacing.$spacing-07;
+}
+
+.panel {
+  margin-top: spacing.$spacing-05;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: spacing.$spacing-06;
+  row-gap: spacing.$spacing-04;
+  @include type.type-style('body-compact-01');
+
+  dt {
+    color: var(--cds-text-secondary);
+  }
+}
+
+.counts {
+  @include type.type-style('body-compact-01');
+}
+
+.code {
+  @include type.type-style('code-01');
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-03;
+}
+
+.form {
+  display: grid;
+  gap: spacing.$spacing-05;
+  max-width: 32rem;
+  margin: spacing.$spacing-05 0;
+}
+
+.selectedRow td {
+  background-color: var(--cds-layer-selected);
+}
+
+.review {
+  margin-top: spacing.$spacing-06;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: spacing.$spacing-05;
+}
+
+.filter {
+  margin-bottom: spacing.$spacing-05;
+}
+
+.changes {
+  margin: 0;
+  padding-left: spacing.$spacing-05;
+  list-style: disc;
+}
+
+.error {
+  color: var(--cds-text-error);
+}

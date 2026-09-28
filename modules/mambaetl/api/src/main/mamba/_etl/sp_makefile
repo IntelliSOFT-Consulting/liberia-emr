@@ -1,0 +1,50 @@
+#############################################################################################
+# LiberiaEMR derived ETL procedures (docs/reporting/README.md §2.4).
+#
+# One section per owner, in this order. A workstream edits ONLY its own section, and adds the
+# matching CALL to the same section of sp_mamba_data_processing_etl.sql. Paths are relative to
+# this directory; each file's base name is the procedure it defines.
+#
+# Core appends these entries to its own sp_makefile at build time, so every procedure below is
+# compiled after core's. The caller must stay LAST.
+#############################################################################################
+
+# ---- core overrides (coordinator) ----
+# Same-named replacements for core procedures (LE-363). Compiled after core's copies, so
+# these are the definitions deployed. Core calls them; the caller below does not.
+core_overrides/sp_mamba_etl_incremental_columns_index_new_insert.sql
+core_overrides/sp_mamba_etl_incremental_columns_index_modified_insert.sql
+core_overrides/sp_mamba_dim_patient_identifier_incremental_update.sql
+core_overrides/sp_mamba_dim_encounter_insert.sql
+
+# ---- common (coordinator) ----
+derived/common/sp_mamba_dim_location_hierarchy.sql
+derived/common/sp_mamba_dim_encounter_form.sql
+derived/common/sp_mamba_dim_encounter_location.sql
+derived/common/sp_mamba_dim_person_cpi.sql
+
+# ---- rmncah (RPT 6) ----
+derived/rmncah/sp_mamba_fact_rmncah_anc_visit.sql
+derived/rmncah/sp_mamba_fact_rmncah_family_planning.sql
+derived/rmncah/sp_mamba_fact_rmncah_delivery.sql
+derived/rmncah/sp_mamba_fact_rmncah_mother_pnc.sql
+
+# ---- nutrition (RPT 6) ----
+derived/nutrition/sp_mamba_dim_nutrition_who_wflh.sql
+derived/nutrition/sp_mamba_fact_nutrition_anthropometry.sql
+derived/nutrition/sp_mamba_fact_nutrition_vitamin_a.sql
+
+# ---- malaria (RPT 7) ----
+derived/malaria/sp_mamba_fact_malaria_diagnosis.sql
+derived/malaria/sp_mamba_fact_malaria_lab_result.sql
+derived/malaria/sp_mamba_fact_malaria_drug.sql
+
+# ---- ncd (RPT 7) ----
+derived/ncd/sp_mamba_fact_ncd_death.sql
+derived/ncd/sp_mamba_fact_ncd_blood_pressure.sql
+
+# ---- emr_ops (RPT 7) ----
+derived/emr_ops/sp_mamba_fact_emr_ops_visit.sql
+
+# ---- caller (coordinator): calls everything above, in this order ----
+sp_mamba_data_processing_etl.sql
