@@ -221,6 +221,16 @@ jobs:
       - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
 
+      # docker-build below builds a facility (careysburg) distribution, whose script checks
+      # the facility compose's SPA_CONFIG_URLS. Nothing in CI builds the central frontend, so
+      # its list is checked here against the order a central build would collect. Needs only
+      # the content packages built above. See docs/adr/0011-central-composition.md.
+      - name: Check the central SPA_CONFIG_URLS
+        run: |
+          ./scripts/build/collect-frontend-config.sh --site central --out "$RUNNER_TEMP/central-config"
+          ./scripts/validate/spa-config-urls.sh distribution/compose/central/docker-compose.yml \
+            "$RUNNER_TEMP/central-config/.config-urls"
+
       # Sonar only runs if the secret is actually configured, so this
       # doesn't hard-fail on fork PRs (which never get repo secrets).
       - name: SonarQube Analysis
@@ -853,6 +863,12 @@ jobs:
           cache: maven
       - name: Build and Package
         working-directory: modules/liberiaemr
+        run: mvn -B clean package
+      # The reporting ETL module (ADR 0010). Its package compiles the ETL SQL with core's
+      # compile.sh (bash, jq and rsync, all on the runner) and fails on an unresolved ${var.*},
+      # a SET GLOBAL or a DELIMITER; DeployScriptTest then checks the script it ships.
+      - name: Build and test the reporting ETL module
+        working-directory: modules/mambaetl
         run: mvn -B clean package
 
   # ---------------------------------------------------------------------

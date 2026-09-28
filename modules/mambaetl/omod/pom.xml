@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.openmrs.module</groupId>
+		<artifactId>mamba-etl-liberiaemr</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>mamba-etl-liberiaemr-omod</artifactId>
+	<packaging>jar</packaging>
+	<name>LiberiaEMR MambaETL OMOD</name>
+	<description>OMOD packaging for the LiberiaEMR MambaETL module</description>
+
+	<dependencies>
+		<!--
+			Compile scope: the api jar (with the compiled ETL SQL), mamba-core-api and core's
+			commons-dbcp2/commons-pool2 land in the OMOD's lib/. No JDBC driver is bundled; core
+			uses connection.driver_class from the platform (ADR 0010 decision 1).
+		-->
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>mamba-etl-liberiaemr-api</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.api</groupId>
+			<artifactId>openmrs-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
+
+		<plugins>
+			<plugin>
+				<groupId>org.openmrs.maven.plugins</groupId>
+				<artifactId>maven-openmrs-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

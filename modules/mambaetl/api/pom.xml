@@ -1,0 +1,220 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.openmrs.module</groupId>
+		<artifactId>mamba-etl-liberiaemr</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>mamba-etl-liberiaemr-api</artifactId>
+	<packaging>jar</packaging>
+	<name>LiberiaEMR MambaETL API</name>
+	<description>Activator, and the ETL SQL compiled from core and src/main/mamba/_etl</description>
+
+	<properties>
+		<!-- Where the ETL is assembled and compiled. Wiped at the start of every build. -->
+		<mambaWorkDir>${project.build.directory}/mamba-etl</mambaWorkDir>
+		<!--
+			The content packages whose variables.properties resolve ${var.*} in _etl. The
+			Dockerfile's module stage copies them to the same place relative to this module.
+		-->
+		<contentPackagesDir>${project.basedir}/../../../content-packages</contentPackagesDir>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.openmrs.api</groupId>
+			<artifactId>openmrs-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>mamba-core-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<!--
+		The ETL SQL is compiled HERE, inside one `mvn package`, so the api jar always carries SQL
+		built from the same commit (ADR 0010 decision 2). The reference module
+		(mamba-etl-ehospital) compiles in the omod at `package` and copies the result back into
+		api/src/main/resources at `install`: the jar then ships the PREVIOUS build's SQL, and
+		under `clean package` (what the Dockerfile runs) no SQL at all. Nothing generated is
+		written under src/ or committed.
+
+		Each step sits in its own phase because executions of different plugins bound to ONE
+		phase run in effective-pom order, which inheritance can reorder:
+
+		  validate             delete the work directory
+		  initialize           unpack core's _core/** into it
+		  generate-resources   copy src/main/mamba/_etl into it, filtering ${var.*}
+		  process-resources    compile.sh -n mysql
+		  process-classes      strip SET GLOBAL, verify, copy into target/classes/mamba/
+	-->
+	<build>
+		<plugins>
+			<!--
+				compile-base.sh APPENDS our makefile entries to the unpacked core sp_makefile, and
+				dependency:unpack skips when its marker exists. Without this, a second build
+				without `clean` would compile every derived procedure twice.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.3.2</version>
+				<executions>
+					<execution>
+						<id>clean-mamba-work-dir</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+						<configuration>
+							<excludeDefaultDirectories>true</excludeDefaultDirectories>
+							<filesets>
+								<fileset>
+									<directory>${mambaWorkDir}</directory>
+								</fileset>
+							</filesets>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.7.0</version>
+				<executions>
+					<execution>
+						<id>unpack-mamba-core</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.openmrs.module</groupId>
+									<artifactId>mamba-core-api</artifactId>
+									<version>${mambaCoreVersion}</version>
+									<overWrite>true</overWrite>
+									<outputDirectory>${mambaWorkDir}</outputDirectory>
+									<includes>_core/**</includes>
+								</artifactItem>
+							</artifactItems>
+							<!-- Inside the work directory, so the validate-phase delete clears it too. -->
+							<markersDirectory>${mambaWorkDir}/.markers</markersDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				${var.*} is resolved from the content layers' variables.properties in LAYER ORDER,
+				the same chain as content-packages/pom.xml's filter-configuration execution, and
+				the same `${*}`-only delimiter. Site packages (content-site-*), content-central
+				and content-demo are deliberately NOT in the chain: ETL output must be identical at
+				every instance (ADR 0010 decision 7). A token no layer declares survives the
+				filter and fails the process-classes check below.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>filter-etl</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${mambaWorkDir}/_etl</outputDirectory>
+							<includeEmptyDirs>true</includeEmptyDirs>
+							<useDefaultDelimiters>false</useDefaultDelimiters>
+							<delimiters>
+								<delimiter>${*}</delimiter>
+							</delimiters>
+							<filters>
+								<filter>${contentPackagesDir}/content-common/configuration/variables.properties</filter>
+								<filter>${contentPackagesDir}/content-liberia-national/configuration/variables.properties</filter>
+								<filter>${contentPackagesDir}/content-liberia-mch/configuration/variables.properties</filter>
+								<filter>${contentPackagesDir}/content-liberia-lab/configuration/variables.properties</filter>
+								<filter>${contentPackagesDir}/content-liberia-pharmacy/configuration/variables.properties</filter>
+								<filter>${contentPackagesDir}/content-liberia-opd-ipd/configuration/variables.properties</filter>
+							</filters>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/src/main/mamba/_etl</directory>
+									<filtering>true</filtering>
+									<excludes>
+										<exclude>**/README.md</exclude>
+										<exclude>**/.gitkeep</exclude>
+									</excludes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.3.0</version>
+				<executions>
+					<!--
+						-d and -a only name the mysql-client and Liquibase outputs, which are not
+						shipped. The jdbc_ file keeps the mamba_source_db / mamba_etl_db placeholders,
+						which core replaces at runtime from mambaetl.analysis.db.*, so one build serves
+						every instance. -b 1 is compile.sh's mandatory "do rebuild" flag. Needs bash, jq
+						and rsync on the build host.
+					-->
+					<execution>
+						<id>compile-mamba-sql</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>bash</executable>
+							<workingDirectory>${mambaWorkDir}/_core/compiler/linux</workingDirectory>
+							<arguments>
+								<argument>-c</argument>
+								<argument>chmod +x ./*.sh &amp;&amp; ./compile.sh -n mysql -d openmrs -a liberiaemr_etl -s ../../database/mysql/sp_makefile -t "$0" -b 1</argument>
+								<argument>${mambaWorkDir}/_etl/config</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<!--
+						Strips SET GLOBAL (ERROR 1227 for any non-SUPER user; the servers run with
+						event_scheduler=ON instead) and fails the build if the result is empty or
+						still holds ${var., SET GLOBAL or DELIMITER. ADR 0010 decisions 2 and 3.
+					-->
+					<execution>
+						<id>finalize-mamba-sql</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>bash</executable>
+							<arguments>
+								<argument>${project.basedir}/src/main/sh/finalize-jdbc-sql.sh</argument>
+								<argument>${mambaWorkDir}/_core/database/mysql/build/jdbc_create_stored_procedures.sql</argument>
+								<argument>${project.build.outputDirectory}/mamba/jdbc_create_stored_procedures.sql</argument>
+								<argument>${project.basedir}/src/main/mamba/_etl/sp_makefile</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

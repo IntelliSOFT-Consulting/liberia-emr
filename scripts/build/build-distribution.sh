@@ -3,8 +3,15 @@
 #
 #   scripts/build/build-distribution.sh --version 1.0.0 [--site careysburg] [--demo]
 #                                       [--no-frontend] [--no-sync]
+#   scripts/build/build-distribution.sh --version 1.0.0 --site central
 #
 # Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry :<version>
+#
+# --site central builds the central composition: content-central in the site layer's place
+# (docs/adr/0011-central-composition.md). Today that is one image, liberia-emr-frontend-central.
+# Central runs the facility release's backend, gateway and sync images of the same version
+# until its own backend layer exists (LE-339), so a central build does not rebuild them.
+#
 # A mutable git checkout is never mounted into a production container.
 #
 # --no-frontend skips ONLY the frontend image, whose assemble stage npm-installs the O3 app
@@ -35,6 +42,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$VERSION" ]] || { echo "--version is required" >&2; exit 2; }
+
+if [[ "$SITE" == "central" ]]; then
+  [[ "$DEMO" == "false" ]] || { echo "there is no demo build of central" >&2; exit 2; }
+  [[ "$FRONTEND" == "true" ]] \
+    || { echo "--no-frontend leaves nothing to build for central" >&2; exit 2; }
+fi
 
 case "$VERSION" in
   *SNAPSHOT*|latest)
@@ -259,23 +272,27 @@ echo "== collecting frontend runtime configuration =="
 echo "== checking SPA_CONFIG_URLS against what was collected =="
 compose="$ROOT/distribution/compose/facility/docker-compose.yml"
 [[ "$DEMO" == "true" ]] && compose="$ROOT/distribution/compose/facility/docker-compose.demo.yml"
-declared="$(sed -n '/SPA_CONFIG_URLS/,/^ *[A-Za-z_]*:/p' "$compose" \
-  | grep -oE '/openmrs/spa/config/[A-Za-z0-9._-]+\.json')"
-if ! diff -u <(echo "$declared") "$ROOT/distribution/frontend/config/.config-urls" \
-     --label "SPA_CONFIG_URLS in ${compose#$ROOT/}" --label "collected in layer order"; then
-  echo "FAIL: SPA_CONFIG_URLS does not match the collected configuration" >&2
-  exit 1
-fi
-echo "  ok: $(echo "$declared" | wc -l | tr -d ' ') config files, in order"
+[[ "$SITE" == "central" ]] && compose="$ROOT/distribution/compose/central/docker-compose.yml"
+"$ROOT/scripts/validate/spa-config-urls.sh" "$compose" "$ROOT/distribution/frontend/config/.config-urls"
 
-echo "== backend =="
-docker build \
-  -f "$ROOT/distribution/backend/Dockerfile" \
-  --build-arg "SITE_PACKAGE=liberiaemr-site-${SITE}" \
-  --build-arg "DEMO_PACKAGE=${demo_package}" \
-  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
-  -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
-  "$ROOT"
+# The central composition differs from a facility's only in its frontend image for now, so
+# that is all it builds. The -central name keeps it from overwriting the facility frontend of
+# the same version, the way -demo does for a training build.
+if [[ "$SITE" == "central" ]]; then
+  suffix="-central"
+  echo "== backend, gateway and sync == SKIPPED (central runs the facility release's images until LE-339)"
+fi
+
+if [[ "$SITE" != "central" ]]; then
+  echo "== backend =="
+  docker build \
+    -f "$ROOT/distribution/backend/Dockerfile" \
+    --build-arg "SITE_PACKAGE=liberiaemr-site-${SITE}" \
+    --build-arg "DEMO_PACKAGE=${demo_package}" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
+    "$ROOT"
+fi
 
 if [[ "$FRONTEND" == "true" ]]; then
   echo "== frontend =="
@@ -294,6 +311,12 @@ if [[ "$FRONTEND" == "true" ]]; then
     "$ROOT/distribution/frontend"
 else
   echo "== frontend == SKIPPED (--no-frontend)"
+fi
+
+if [[ "$SITE" == "central" ]]; then
+  echo
+  echo "built ${VERSION} (central: liberia-emr-frontend-central)"
+  exit 0
 fi
 
 echo "== gateway =="

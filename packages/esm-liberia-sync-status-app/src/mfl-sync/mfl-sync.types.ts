@@ -1,6 +1,7 @@
 /**
- * The MFL sync REST contract, as types. docs/architecture/mfl-sync-api.md is the source of truth;
- * where the two disagree, fix this file. Design: docs/adr/0009-mfl-facility-locations.md.
+ * The MFL sync REST contract, as types. docs/architecture/mfl-sync-api.md is the source of truth:
+ * where the two disagree, the document wins and this file is changed to match it. Design:
+ * docs/adr/0009-mfl-facility-locations.md.
  *
  * Base path: `${restBaseUrl}/liberiaemr/mfl`. Timestamps are epoch milliseconds. No type here has a
  * password field, and none must ever gain one.

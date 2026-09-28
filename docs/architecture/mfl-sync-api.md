@@ -14,7 +14,8 @@ Where the types and this document disagree, this document wins.
   `SyncConflictController`, not a REST module resource.
 - JSON only. Timestamps are **epoch milliseconds**, like the sync conflicts API. Dates without
   a time (`openingDate`, `closedDate`) are `yyyy-mm-dd` strings.
-- Every error body is `{"error": "<message>"}`.
+- Every error body has a required `error` message: `{"error": "<message>"}`. Some add fields,
+  such as the 409 on `POST /runs`, which also carries `runId`.
 - Privileges, created by `content-liberia-national` (LE-320) and granted to the Sync
   Administrator role:
   - **`View MFL Sync`** for every `GET`.
@@ -90,14 +91,19 @@ resource that call creates.
     "startedBy": null,
     "started": 1790474400000,
     "finished": 1790474431000,
-    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1107, "failed": 0, "warnings": 11 },
+    "counts": { "created": 0, "updated": 3, "retired": 0, "unretired": 0, "unchanged": 1106, "failed": 0, "warnings": 11 },
     "message": null
   },
   "lastSuccessfulRun": { "id": 42, "...": "same shape as lastRun" },
-  "held": { "counties": 15, "districts": 106, "facilities": 996, "retired": 2 }
+  "held": { "counties": 15, "districts": 98, "facilities": 996, "retired": 2 }
 }
 ```
 
+- `config.url` never carries user information. `PUT /config` rejects a URL with a user name or
+  password, and `GET /status` strips any `user:password@` from a `liberiaemr.mfl.url` edited
+  directly in the database before returning it.
+- `held` counts what this instance holds after a complete sync: 15 counties, 98 districts (the 8
+  level-3 units with no facilities are not created, ADR 0009 §3) and 996 facilities.
 - `config.username` is shown so an administrator can see *which* account is configured; it is
   `null` when unset. There is **no** password field, masked or otherwise.
 - `nextRun` is `null` when `enabled` is false.
@@ -119,7 +125,8 @@ accepted.
   immediately.
 - **400**: validation errors:
   - `url` is not `https://`, or ends in `/api`. It is the instance root, and the module adds
-    `/api`.
+    `/api`. The one exception to `https://` is `http://localhost` or `http://127.0.0.1` when
+    `LIBERIAEMR_MFL_ALLOW_INSECURE_HTTP=true` (see [Allowed MFL hosts](#allowed-mfl-hosts)).
   - `url`'s host is not in `LIBERIAEMR_MFL_ALLOWED_HOSTS` (see
     [Allowed MFL hosts](#allowed-mfl-hosts)), or `url` carries a user name or password. The
     message names the allowed hosts, for example
