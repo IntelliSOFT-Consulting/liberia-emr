@@ -1483,6 +1483,10 @@ jobs:
       # or a manual change got there first), stops the deploy for a human rather than start
       # this run's images under a different compose file.
       #
+      # -f docker-compose.yml names the tracked file. Without it compose would prefer an
+      # untracked compose.yaml, compose.yml or docker-compose.yaml placed beside it, and
+      # would load any override file, and none of the checks here would notice.
+      #
       # REGISTRY is passed explicitly, as rollback-central-dev's retags already assume: the
       # images come from where this workflow published them, not from whatever central.env
       # says (central.env.example still names ghcr.io). Shell variables win over --env-file.
@@ -1503,11 +1507,12 @@ jobs:
               git -C \"\$top\" status --short --untracked-files=no >&2
               exit 1
             fi
-            # The one untracked file that is NOT fine: compose loads an override beside the
-            # compose file automatically, and it can replace images, mounts or commands.
+            # The one untracked file that is NOT fine: an override. With -f compose ignores it,
+            # but a manual docker compose up here would apply it, so its presence means this
+            # server is meant to run something other than the tracked file. Stop for a human.
             for f in docker-compose.override.yml docker-compose.override.yaml compose.override.yml compose.override.yaml; do
               if [ -e \"\$f\" ]; then
-                echo \"\$PWD/\$f exists: compose would apply it on top of ${{ github.sha }}'s compose file. Remove it, or commit what it does, before CI deploys here\" >&2
+                echo \"\$PWD/\$f exists: a manual docker compose up here would apply it on top of ${{ github.sha }}'s compose file. Remove it, or commit what it does, before CI deploys here\" >&2
                 exit 1
               fi
             done
@@ -1520,8 +1525,8 @@ jobs:
               exit 1
             fi
             echo \"checkout \$top now at \$head\"
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
@@ -1624,18 +1629,18 @@ jobs:
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
             cd '$CENTRAL_DEV_COMPOSE_DIR'
-            # As the deploy step: an override added since then would be applied by both
-            # compose config and compose up, so this would not start the recorded configuration.
+            # As the deploy step: -f keeps an override out of compose config and compose up,
+            # but one added since the deploy means the server is not in the recorded state.
             # (No backticks in these comments: they sit inside a double-quoted ssh string.)
             for f in docker-compose.override.yml docker-compose.override.yaml compose.override.yml compose.override.yaml; do
               if [ -e \"\$f\" ]; then
-                echo \"\$PWD/\$f exists: compose would apply it on top of the restored compose file, so this cannot roll back to the recorded configuration. Remove it and roll back by hand\" >&2
+                echo \"\$PWD/\$f exists: the server is not in the state this deploy recorded. Remove it and roll back by hand\" >&2
                 exit 1
               fi
             done
             git reset -q --keep '$checkout'
             echo \"checkout back at \$(git rev-parse HEAD)\"
-            compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
+            compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
             config=\$(compose config --format json)
             for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway'; do
               svc=\${pair%%=*}; digest=\${pair#*=}

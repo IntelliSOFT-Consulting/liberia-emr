@@ -151,10 +151,13 @@
       state: absent
     loop: "{{ ci_deploy_revoked_keys | default([]) }}"
 
+  # Matched on the key's type and body with any comment, or none, EXCEPT the marker: a comment
+  # is not part of a key's identity, so an old line carrying a different comment is the same
+  # authorization and must go too, while the managed line is left for the task below.
   - name: Remove an unmarked copy of the CI deploy key from before it was managed
     ansible.builtin.lineinfile:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
-      line: "{{ ci_deploy_public_key }}"
+      regexp: "^{{ (ci_deploy_public_key.split())[:2] | join(' ') | regex_escape }}(\\s+(?!\\s)(?!{{ ci_key_marker | regex_escape }}$).*)?$"
       state: absent
     when: ci_deploy_public_key | default('') | length > 0
 
@@ -293,6 +296,6 @@
   # ASSUMPTIONS note at the top of this file.
   - name: Bring up db, backend, frontend, gateway
     ansible.builtin.command: >
-      docker compose --env-file {{ central_env_file }} up -d db backend frontend gateway
+      docker compose -f docker-compose.yml --env-file {{ central_env_file }} up -d db backend frontend gateway
     args:
       chdir: "{{ repo_dest }}/distribution/compose/central"
