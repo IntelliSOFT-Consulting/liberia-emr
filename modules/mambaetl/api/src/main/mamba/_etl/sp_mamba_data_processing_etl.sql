@@ -36,6 +36,8 @@ BEGIN
 
     -- ---- emr_ops (RPT 7) ----
     CALL sp_mamba_fact_emr_ops_visit();
+    CALL sp_mamba_dim_emr_ops_encounter_type();
+    CALL sp_mamba_fact_emr_ops_patient();
 
 END //
 

@@ -9,8 +9,9 @@
 --                         visit's first live encounter when the visit has none
 --   facility_location_id  from mamba_dim_location_hierarchy
 --
--- EMR-OPS-008 needs no table of its own: core's mamba_dim_encounter carries date_created and
--- encounter_datetime, and mamba_dim_encounter_location the attribution.
+-- EMR-OPS-008 needs no fact of its own: core's mamba_dim_encounter carries date_created and
+-- encounter_datetime, mamba_dim_encounter_location the attribution, and
+-- mamba_dim_emr_ops_encounter_type which types are system types.
 --
 -- Incremental in both modes: rows whose visit was voided, deleted or edited are removed and
 -- re-added, missing live visits are added, and facility is refreshed where it differs.
