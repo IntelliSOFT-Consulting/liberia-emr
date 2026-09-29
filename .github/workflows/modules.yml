@@ -47,6 +47,8 @@ on:
     branches: [main]
     paths:
       - 'modules/**'
+      # liberiaemr's content UUIDs are filtered from it (liberiaemr-uuids.properties).
+      - 'content-packages/content-liberia-national/configuration/variables.properties'
       - '.github/workflows/modules.yml'
       - 'scripts/ci/module-publish-decision.sh'
       - 'qa/ci/verify-module-publish-decision.sh'

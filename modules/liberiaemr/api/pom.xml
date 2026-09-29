@@ -39,6 +39,30 @@
 	</dependencies>
 	<build>
 		<!--
+			Everything except the UUID file is copied verbatim. The UUID file is resolved from the
+			national layer's variables.properties (ADR 0010 decision 7), the same way
+			modules/liberiaemrreports and content-packages/pom.xml resolve ${var.*}: delimiter ${*} only.
+		-->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>liberiaemr-uuids.properties</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>liberiaemr-uuids.properties</include>
+				</includes>
+			</resource>
+		</resources>
+		<filters>
+			<filter>${liberiaemr.content.dir}/content-liberia-national/configuration/variables.properties</filter>
+		</filters>
+		<!--
 			The MFL tests read the real fixture from integration/dhis2/mfl/fixtures (LE-318) rather
 			than a copy that could drift from it. A build that has only this module (the backend
 			image's module stage) skips tests, and a missing test resource directory is skipped
@@ -54,6 +78,46 @@
 			</testResource>
 		</testResources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<configuration>
+					<encoding>UTF-8</encoding>
+					<propertiesEncoding>UTF-8</propertiesEncoding>
+					<useDefaultDelimiters>false</useDefaultDelimiters>
+					<delimiters>
+						<delimiter>${*}</delimiter>
+					</delimiters>
+				</configuration>
+			</plugin>
+			<!--
+				ADR 0010 decision 7, check 3: the build fails if a ${var. token survives filtering.
+				The module would otherwise start and mint every CPI with no facility of origin. The
+				substring is "{var." so that neither Maven nor Ant reads it as a property reference.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>no-unresolved-variables</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<fail message="unresolved variable in target/classes/liberiaemr-uuids.properties; declare it in content-liberia-national/configuration/variables.properties">
+									<condition>
+										<resourcecontains resource="${project.build.outputDirectory}/liberiaemr-uuids.properties" substring="{var."/>
+									</condition>
+								</fail>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<!--
 				maven-parent-openmrs-module 1.1.1 adds powermock-api-mockito 1.5 to every test
 				classpath. Its jar registers a Mockito 1 MockMaker (CglibMockMaker), which does not

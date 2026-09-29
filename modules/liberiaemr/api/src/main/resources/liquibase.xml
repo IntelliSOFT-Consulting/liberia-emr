@@ -314,4 +314,22 @@
 		</addColumn>
 	</changeSet>
 
+	<!--
+		Links minted before this change hold the ROOT of the identifier location's tree as their
+		facility, which under the MFL hierarchy (ADR 0009) is the county or the country. This
+		recomputes every link with the rule new links are minted with: the nearest ancestor-or-self
+		tagged Health Facility (IdentityService, FacilityOfOrigin). It is Java, not SQL, so the rule
+		exists once in the module; it writes only rows whose value changes, so it is idempotent.
+		Like the changesets above it is skipped, and not marked ran, where the identity schema is
+		missing: every facility. It touches only openmrs_identity, which no binlog reader follows.
+	-->
+	<changeSet id="liberiaemr-2026-09-30-identity-facility-of-origin" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<tableExists schemaName="openmrs_identity" tableName="patient_link"/>
+		</preConditions>
+		<comment>Recompute patient_link.facility_location_uuid as the nearest Health Facility, not the tree's root.</comment>
+		<customChange class="org.openmrs.module.liberiaemr.identity.FacilityOfOriginBackfill"/>
+	</changeSet>
+
 </databaseChangeLog>
