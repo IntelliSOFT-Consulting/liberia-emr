@@ -107,6 +107,11 @@ RUN set -eu; \
       done; \
       [ "$sites" -ge 1 ] || { echo "central: no site package in the build context" >&2; exit 1; }; \
       echo "central: locations from ${sites} site package(s)"; \
+      # The national MOH Health Record Number auto-generation option points at the ID source
+      # each SITE package defines, with that site's HRN prefix, and central loads no site ID
+      # source. Central is not a point-of-care system (sync-eip.md) and must not issue a
+      # facility-scoped identifier, so the option is dropped here rather than satisfied.
+      rm -f /openmrs_config/autogenerationoptions/autogenerationoptions-national.csv; \
     fi; \
     rm -rf /tmp/pkg; \
     # A resolved configuration must never contain demo content.

@@ -38,5 +38,12 @@ for site in "$ROOT"/content-packages/content-site-*; do
 done
 
 (( sites > 0 )) || { echo "FAIL: no content-packages/content-site-* found" >&2; exit 1; }
+
+# Central issues no facility-scoped identifier: the national MOH HRN auto-generation option
+# points at a site's ID source, which central does not load (ADR 0012).
+if grep -qxF "autogenerationoptions/autogenerationoptions-national.csv" <<<"$shipped"; then
+  echo "FAIL: $image ships the MOH HRN auto-generation option, whose ID source is site-only" >&2
+  fail=1
+fi
 (( fail == 0 )) || exit 1
 echo "  ok: $image holds the locations of all $sites site packages and none of their other content"

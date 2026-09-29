@@ -62,6 +62,12 @@ Checked against the current site packages on 29 September 2026:
 - **Adopted roots:** each site root keeps the name and parent its CSV gives it and carries its
   `MFL UID` (ADR 0009 §1). So the MFL sync at central adopts every site root instead of
   duplicating it.
+- **MOH Health Record Number auto-generation:** the national option
+  (`autogenerationoptions-national.csv`) points at the ID source every site package defines,
+  with that site's HRN prefix. Central loads no site ID source, so Initializer would reject
+  the option. The central build drops it instead. Central is not a point-of-care system
+  (`sync-eip.md`) and must not issue a facility-scoped identifier. The central backend it
+  replaces, Careysburg's, would have issued Careysburg-prefixed HRNs.
 - **`liberiaemr.facility.locationUuid`:** this global property comes from a site's
   `gp-facility-*.xml`, which central no longer loads. It is documented as ignored on a central
   instance.
@@ -74,7 +80,10 @@ Checked against the current site packages on 29 September 2026:
   includes its new wards and departments.
 - The central dev server switches from the facility backend image to
   `liberia-emr-backend-central` on the first central deploy after this merges. Initializer then
-  loads the other sites' locations into the existing database.
+  loads the other sites' locations into the existing database. Initializer never deletes rows,
+  so central dev keeps the Careysburg ID source and HRN auto-generation option it already
+  holds from the facility image. A fresh central does not get them. Retire them there by hand
+  if they matter.
 - **Not yet proven end to end:** a record created at a second facility against one of its
   wards, pushed through the broker, and landing at central without parking. This is the ticket's
   "done when" check. The image-content check proves the precondition on every build: central
