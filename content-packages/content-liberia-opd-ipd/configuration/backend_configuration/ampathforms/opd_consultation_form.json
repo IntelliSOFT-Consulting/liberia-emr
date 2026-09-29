@@ -1003,7 +1003,7 @@
                                 "rendering": "textarea",
                                 "concept": "${var.concept.advice-non-pharmacological.uuid}",
                                 "rows": 3,
-                                "max": 100
+                                "max": 500
                             }
                         },
                         {
@@ -1117,7 +1117,7 @@
                                         "rendering": "textarea",
                                         "concept": "${var.concept.referral-reason.uuid}",
                                         "rows": 3,
-                                        "max": 100
+                                        "max": 500
                                     },
                                     "hide": {
                                         "hideWhenExpression": "isEmpty(outcomeDisposition) || outcomeDisposition !== '${var.concept.ciel.disposition-refer.uuid}'"
