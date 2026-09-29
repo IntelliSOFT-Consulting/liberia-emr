@@ -12,11 +12,11 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
  * - the facility's own location, the `liberiaemr.facility.locationUuid` global property. Reading
  *   it through `systemsetting` would need Get Global Properties, which National Reporting
  *   Officer does not hold.
- * - when the ETL last ran, from `_mamba_etl_schedule`.
+ * - when the ETL last ran, and how that run ended, from `_mamba_etl_schedule`.
  *
- * TODO(LE-335): the endpoint and its shape are this page's PROPOSAL to the reports module
- * subtask, which owns it; nothing serves it yet. Only this file changes if the module settles
- * on a different path or field names.
+ * Served by the reports module (`ReportingContextController` and `ReportingContextService` in
+ * modules/liberiaemrreports), which owns the path and the field names. Only this file changes
+ * if they do.
  */
 export const reportingContextUrl = `${restBaseUrl}/liberiaemrreports/context`;
 
@@ -27,12 +27,19 @@ export interface ReportingContextResponse {
   facilityLocation?: { uuid: string; display?: string } | null;
   /** The last row of _mamba_etl_schedule. Null before the first run. */
   etlLastRun?: {
+    /**
+     * SUCCESS and RUNNING rows carry their own times; a RUNNING row has `startedAt` and no
+     * `completedAt` yet. For INTERRUPTED and ERROR they are not that run's: core rewrites a
+     * stuck or failed row's times to the last successful run's.
+     */
     startedAt?: string | null;
     completedAt?: string | null;
-    /** Mamba's own status text, shown as is. */
+    /** One of SUCCESS, RUNNING, INTERRUPTED or ERROR (ReportingContextService.getEtlLastRun). */
     status?: string | null;
   } | null;
 }
+
+export type EtlStatus = 'SUCCESS' | 'RUNNING' | 'INTERRUPTED' | 'ERROR';
 
 export type InstanceRole = 'facility' | 'central';
 
@@ -46,6 +53,37 @@ export interface ReportingContext {
   etlCompletedAt?: string;
   etlStartedAt?: string;
   etlStatus?: string;
+}
+
+/**
+ * How far the report data can be trusted, from the last ETL run:
+ *
+ * - `current`: the last run succeeded, so its completion time is how fresh the figures are.
+ * - `refreshing`: a run is in progress. The figures are those of the last completed run, if any.
+ * - `failed`: the last run ended in ERROR or was INTERRUPTED. Its times are the last good run's,
+ *   so no time is stated as current.
+ * - `unknown`: a run is reported with no status, a status this page does not know, or SUCCESS
+ *   with no completion time. Treated like a failure: no time is claimed.
+ * - `never`: the ETL has not run here, or the context did not answer.
+ */
+export type EtlRefreshState = 'current' | 'refreshing' | 'failed' | 'unknown' | 'never';
+
+export function etlRefreshState(context: ReportingContext): EtlRefreshState {
+  const status = context.etlStatus?.trim().toUpperCase();
+  if (!status) {
+    return context.etlCompletedAt || context.etlStartedAt ? 'unknown' : 'never';
+  }
+  switch (status as EtlStatus) {
+    case 'SUCCESS':
+      return context.etlCompletedAt ? 'current' : 'unknown';
+    case 'RUNNING':
+      return 'refreshing';
+    case 'ERROR':
+    case 'INTERRUPTED':
+      return 'failed';
+    default:
+      return 'unknown';
+  }
 }
 
 /**
