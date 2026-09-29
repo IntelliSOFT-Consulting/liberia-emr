@@ -21,11 +21,22 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io/intellisoft-consulting
+  # The sites one release builds (LE-360). The guard checks them and the build matrix reads
+  # them from its output, so there is one list. Shared images come from the first facility
+  # site in it (scripts/build/image-refs.sh).
+  RELEASE_SITES: careysburg barnersville central
+  # The publish job promotes release candidates only once the full-stack and upgrade stages
+  # below really test them (IMPLEMENTATION.md section 8). Both are placeholders today, so
+  # promotion refuses to run: set this to "true" in the PR that implements them.
+  RELEASE_TESTS_READY: "false"
 
 jobs:
   guard:
     name: Release guards
     runs-on: ubuntu-latest
+    outputs:
+      sites: ${{ steps.sites.outputs.sites }}
+      shared_from: ${{ steps.sites.outputs.shared_from }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,16 +53,30 @@ jobs:
       - run: ./scripts/validate/validate-content.sh
       - run: ./scripts/validate/no-secrets.sh
       - run: ./scripts/validate/no-demo-in-release.sh
+      # LE-360: two sites must never publish the same repository at one version, or the second
+      # push silently replaces the first and a facility pulls another site's content.
+      - name: Every published image reference is distinct
+        run: ./scripts/build/image-refs.sh --check $RELEASE_SITES
+      - name: Site list for the build matrix
+        id: sites
+        run: |
+          echo "sites=$(printf '%s\n' $RELEASE_SITES | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          for s in $RELEASE_SITES; do
+            if [ "$s" != central ]; then echo "shared_from=$s" >> "$GITHUB_OUTPUT"; break; fi
+          done
 
   build:
     name: Build distribution
     runs-on: ubuntu-latest
     needs: guard
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         # central builds only liberia-emr-frontend-central; it runs the facility images of
         # the same version otherwise (docs/adr/0011-central-composition.md).
-        site: [careysburg, barnersville, central]
+        site: ${{ fromJSON(needs.guard.outputs.sites) }}
     # Without this the release images ship without the MOH's curated CIEL
     # collections, and build-distribution.sh only WARNS about that — so the
     # release would build green and fail at the facility instead. Pin
@@ -71,6 +96,31 @@ jobs:
           ./scripts/build/build-distribution.sh \
             --version "${{ github.event.inputs.version || github.ref_name }}" \
             --site "${{ matrix.site }}"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Each matrix job runs on its own machine, so publish cannot push what this job built.
+      # Push it here under a candidate tag that no deploy uses; publish promotes it to the
+      # release tag only after the tests below, without rebuilding. Only this site's own
+      # images, plus the shared ones from the one site the guard named, so no two jobs ever
+      # push the same repository (LE-360).
+      - name: Push this site's images as release candidates
+        env:
+          VERSION: ${{ github.event.inputs.version || github.ref_name }}
+          CANDIDATE: ${{ github.event.inputs.version || github.ref_name }}-rc.${{ github.run_id }}
+          SITE: ${{ matrix.site }}
+          SHARED_FROM: ${{ needs.guard.outputs.shared_from }}
+        run: |
+          repos="$(./scripts/build/image-refs.sh --site "$SITE" --role site)"
+          if [ "$SITE" = "$SHARED_FROM" ]; then
+            repos="$repos $(./scripts/build/image-refs.sh --role shared)"
+          fi
+          for repo in $repos; do
+            docker tag "${REGISTRY}/${repo}:${VERSION}" "${REGISTRY}/${repo}:${CANDIDATE}"
+            docker push "${REGISTRY}/${repo}:${CANDIDATE}"
+          done
 
   full-stack-tests:
     name: Full stack — API + Cypress
@@ -101,7 +151,7 @@ jobs:
   publish:
     name: Publish images and packages
     runs-on: ubuntu-latest
-    needs: upgrade-test
+    needs: [guard, upgrade-test]
     permissions:
       contents: read
       packages: write
@@ -112,8 +162,29 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push images
-        run: 'echo "TODO: docker push the images built above"'
+      # Promotes every candidate the build jobs pushed to the release tag, server-side: the
+      # bytes that were tested are the bytes released, nothing is rebuilt. The repository list
+      # comes from the same script the build jobs and the guard used.
+      - name: Refuse to publish images the release has not tested
+        if: env.RELEASE_TESTS_READY != 'true'
+        run: |
+          echo "::error::The full-stack and upgrade stages are still placeholders, so nothing has tested the candidate images. Implement them against the -rc.${{ github.run_id }} candidates, then set RELEASE_TESTS_READY to true (IMPLEMENTATION.md section 8)."
+          exit 1
+      - name: Promote the release candidates to the release tag
+        env:
+          VERSION: ${{ github.event.inputs.version || github.ref_name }}
+          CANDIDATE: ${{ github.event.inputs.version || github.ref_name }}-rc.${{ github.run_id }}
+          SITES: ${{ join(fromJSON(needs.guard.outputs.sites), ' ') }}
+        run: |
+          repos="$(./scripts/build/image-refs.sh --role shared)"
+          for s in $SITES; do
+            repos="$repos $(./scripts/build/image-refs.sh --site "$s" --role site)"
+          done
+          for repo in $repos; do
+            docker buildx imagetools create \
+              -t "${REGISTRY}/${repo}:${VERSION}" "${REGISTRY}/${repo}:${CANDIDATE}"
+            echo "published ${REGISTRY}/${repo}:${VERSION}"
+          done
 
   deploy-staging:
     name: Deploy to staging

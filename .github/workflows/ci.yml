@@ -149,6 +149,14 @@ jobs:
         run: ./scripts/validate/no-secrets.sh
       - name: Refuse demo content in a production distribution
         run: ./scripts/validate/no-demo-in-release.sh
+      # LE-360: the release guard runs the same check, but only when a tag is cut. Reading the
+      # site list from release.yml keeps one list and catches a colliding site on the PR.
+      - name: Every image a release publishes has a distinct reference
+        run: |
+          sites="$(sed -n 's/^  RELEASE_SITES: //p' .github/workflows/release.yml)"
+          [ -n "$sites" ] || { echo "RELEASE_SITES not found in release.yml"; exit 1; }
+          # shellcheck disable=SC2086  # one argument per site
+          ./scripts/build/image-refs.sh --check $sites
       # content-demo is upstream's, vendored verbatim. A local edit there is invisible in
       # review and lost at the next re-lift, so it is caught here instead. Needs network:
       # it re-fetches the pinned tag and verifies the commit it resolves to.
