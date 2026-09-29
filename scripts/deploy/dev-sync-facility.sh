@@ -46,8 +46,8 @@ case "$STEP" in
     changes="$(git -C "$top" status --porcelain --untracked-files=no)"
     if [ -n "$changes" ]; then
       log "local change in the checkout:"; echo "$changes"
-      git -C "$top" diff | head -80
-      if git -C "$top" diff --name-only | grep -q -E '(^|/)(docker-compose[^/]*\.ya?ml|initdb/)'; then
+      git -C "$top" diff HEAD --stat
+      if git -C "$top" diff HEAD --name-only | grep -E '(^|/)(docker-compose[^/]*\.ya?ml|initdb/)' >/dev/null; then
         log "it changes the compose setup itself; decide what to keep before running this"; exit 1
       fi
       log "the next step keeps it in a named stash"
@@ -85,6 +85,8 @@ case "$STEP" in
     setting SYNC_SNAPSHOT_MODE initial
     setting DEBEZIUM_DB_PASSWORD "$(secret)"
     setting SYNC_MGMT_DB_PASSWORD "$(secret)"
+    # The sender signs in with an account of its own, never an operator's.
+    case "$(value SYNC_REST_USER)" in admin|daemon) sed -i -e '/^SYNC_REST_USER=/d' -e '/^SYNC_REST_PASSWORD=/d' "$ENV_FILE" ;; esac
     setting SYNC_REST_USER "${SYNC_REST_USER:?}"
     setting SYNC_REST_PASSWORD "${SYNC_REST_PASSWORD:?}"
     compose config -q
