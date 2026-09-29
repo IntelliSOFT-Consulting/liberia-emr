@@ -57,12 +57,18 @@ until both are in place this control is partial, not enforced.
 | --- | --- | --- | --- |
 | B1 | Role-based access control | `content-common/…/roles.csv`, `content-liberia-national/…/roles.csv` | Enforced |
 | B2 | Least privilege by job function | Roles map to actual facility job functions | Enforced |
-| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached** | Enforced |
+| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds the auditlog module's `View Audit Log`, `Get Audit Logs` and `Get Items` | Enforced — see the note below |
 | B4 | Named accounts, no shared logins | — | **Open** — operational policy, not configuration; belongs in the go-live runbook and training |
 
 B3 is easy to get wrong by granting the auditor "read everything" for convenience. Reading
 audit logs and reading patient records are different permissions, and the SOP grants the
 first, not the second.
+
+What the auditor can see is still more than metadata. An audit entry records the old and new
+value of every changed property, so the viewer (`/openmrs/module/auditlog/viewAuditLog.form`,
+a legacy UI page) shows, for example, a patient's previous and corrected name. `Get Items` is
+the module's service privilege for resolving an entry's object; it has no REST endpoint and
+opens no chart. Treat the audit log as PHI.
 
 ---
 
@@ -70,9 +76,27 @@ first, not the second.
 
 | # | Control | Baseline | Where | Status |
 | --- | --- | --- | --- | --- |
-| C1 | Audit logging enabled | all clinical + admin actions | `gp-audit.csv` | Enforced |
-| C2 | Retention | ≥ 3 months | `gp-audit.csv` + backup policy | **Partial** — retention depends on the backup schedule in `docs/runbooks/backup-restore.md` |
+| C1 | Audit logging enabled | all clinical + admin actions | `gp-audit.xml` configures the auditlog module, which `distribution/backend/Dockerfile` builds from the commit pinned in `distro.properties` (`source.auditlog.*`) | Enforced — see the note below |
+| C2 | Retention | ≥ 3 months | `auditlog_audit_log` is never purged by the module + backup policy | **Partial** — retention depends on the backup schedule in `docs/runbooks/backup-restore.md` |
 | C3 | No PHI in application logs | — | `integration/` ground rules; the sync receiver's retry route and complex obs processor, which log payloads at INFO, run at WARN (`distribution/sync/receiver-application.properties.template`). Known residue: dbsync's JSON mapping errors quote part of the payload, and `SYNC_LOG_LEVEL=DEBUG` logs whole payloads | **Open** — needs a log review before go-live |
+
+### C1 — what the audit log does and does not cover
+
+Before LE-353 the global properties were configured but the module was not in the image, so
+this row claimed a control that did not exist. The module is a Hibernate interceptor: it
+writes one row per created, updated or deleted entity to `auditlog_audit_log`, with the
+user, the time and the changed values. Strategy `ALL_EXCEPT`, excluding only the OCL
+importer's bookkeeping.
+
+- **Not covered:** writes that bypass Hibernate (direct SQL, Liquibase, the reporting ETL,
+  and at central the sync receiver, which writes through its own JPA layer), and reads —
+  who viewed a chart is not recorded. Logins are not recorded either.
+- **Stays local.** `auditlog_audit_log` is not in `eip.watchedTables`, which CI pins to an
+  exact list, so a facility's audit log is not synced; central's log covers central users
+  only. It is in the facility binlog like any `openmrs` table, which the binlog disk sizing
+  must allow for.
+- **Volume:** grows without bound. A first boot that imported the concept dictionary wrote
+  about 114,000 rows (30 MB); day-to-day volume follows clinical activity.
 
 ---
 

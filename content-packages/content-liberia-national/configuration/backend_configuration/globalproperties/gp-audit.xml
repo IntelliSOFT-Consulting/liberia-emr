@@ -1,9 +1,33 @@
+<!--
+  MOH ICT SOP control C1: audit logging of all clinical and admin actions.
+
+  Read by the auditlog module (openmrs/openmrs-module-auditlog), which
+  distribution/backend/Dockerfile builds from the commit pinned as source.auditlog.* in
+  distribution/distro.properties. Without that module these properties configure nothing.
+
+  ALL_EXCEPT audits every entity written through OpenMRS, which covers what the controls
+  name: Patient, Person and its names/addresses/attributes, Encounter, Obs, Visit, Order,
+  User, Role, Privilege, GlobalProperty (including liberiaemr.facility.locationUuid),
+  Location, and report definitions (reporting stores them as SerializedObject).
+
+  The exceptions are the OCL importer's own bookkeeping, one row per imported item. The
+  concepts, names, mappings and drugs an import writes are still audited; only the importer's
+  record of having processed them is not. On a first boot they were a quarter of all rows.
+
+  Writes that bypass Hibernate are not audited: direct SQL, Liquibase, the reporting ETL and
+  the central sync receiver (which writes through its own JPA layer).
+-->
 <config>
   <globalProperties>
     <globalProperty>
       <property>auditlog.auditingStrategy</property>
-      <value>ALL</value>
-      <description>Audit every auditable type rather than a hand-picked subset</description>
+      <value>ALL_EXCEPT</value>
+      <description>Audit every entity type except those listed in auditlog.exceptions</description>
+    </globalProperty>
+    <globalProperty>
+      <property>auditlog.exceptions</property>
+      <value>org.openmrs.module.openconceptlab.Import,org.openmrs.module.openconceptlab.Item</value>
+      <description>OCL importer bookkeeping only; the concepts an import writes stay audited</description>
     </globalProperty>
     <globalProperty>
       <property>auditlog.storeLastStateOfDeletedItems</property>
