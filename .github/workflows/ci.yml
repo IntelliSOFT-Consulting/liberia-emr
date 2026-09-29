@@ -1021,6 +1021,14 @@ jobs:
           yarn typescript
           yarn test
           yarn build
+      - name: Verify audit log app
+        working-directory: packages/esm-liberia-audit-log-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn lint
+          yarn typescript
+          yarn test
+          yarn build
 
   backend-module:
     name: Build LiberiaEMR Module
