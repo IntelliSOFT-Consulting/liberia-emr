@@ -290,14 +290,24 @@ section "UUID identity across packages"
 # compared with each other, because no distribution holds two.
 #
 # A row counts when its header has a Uuid column and a name column (Name, Fully specified
-# name:en, Role name, Privilege name, Service name). Domains without a name (concept sets,
+# name:en, Role name, Privilege name, Service name, Label). Domains without a name (concept sets,
 # workflows, mappings...) are identified by other columns and have nothing to compare. An AMPATH
-# form counts by the uuid field it declares.
+# form counts by the UUID Initializer derives from its name and version, since the JSON uuid
+# field is ignored at load.
 python3 - "$PKG_DIR" "$FILTER_CHAIN" <<'PY' || err "UUIDs declared under different names (see above)"
-import csv, glob, json, os, re, sys
+import csv, glob, hashlib, json, os, re, sys, uuid as uuidlib
 
 pkg_dir, chain = sys.argv[1], sys.argv[2].split()
-NAME_COLS = ("name", "fully specified name:en", "role name", "privilege name", "service name")
+AMPATH_FORMS_UUID = "794c4598-ab82-47ca-8d18-483a8abe6f4f"
+
+def form_uuid(name, version):
+    # What Initializer's AmpathFormsLoader gives the form (the JSON uuid field is ignored): the
+    # same derivation as the "AMPATH form UUID consistency" section below.
+    b = bytearray(hashlib.md5(f"{AMPATH_FORMS_UUID}_{name}_{version}".encode("utf-8")).digest())
+    b[6] = (b[6] & 0x0f) | 0x30
+    b[8] = (b[8] & 0x3f) | 0x80
+    return str(uuidlib.UUID(bytes=bytes(b)))
+NAME_COLS = ("name", "fully specified name:en", "role name", "privilege name", "service name", "label")
 rel = lambda path: os.path.relpath(path, os.path.dirname(pkg_dir))
 
 compositions = {}
@@ -350,9 +360,9 @@ def rows_for(pkg):
             continue   # the JSON syntax check reports it
         if not isinstance(schema, dict):
             continue
-        uuid, name = resolve(str(schema.get("uuid") or "")).lower(), str(schema.get("name") or "")
-        if uuid and name and "${" not in uuid:
-            out.append(("ampathforms", uuid, name, rel(f)))
+        name, version = schema.get("name"), schema.get("version")
+        if name:
+            out.append(("ampathforms", form_uuid(name, version), str(name), rel(f)))
     return out
 
 cache, found = {}, {}
