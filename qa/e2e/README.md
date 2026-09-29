@@ -14,7 +14,7 @@ In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 | `OPDConsultation.cy.ts` | OPD consultation form: contract, vitals inputs and validation, BMI, general and systemic examination toggles, follow-up date, referral fields, complete save |
 | `TBScreening.cy.ts` | TB Screening form: required radio groups and score, negative and mixed screenings, previous-treatment date, both saves |
 | `Queue.cy.ts` | Add a patient to the queue from home-page search — **`it.skip`**: the `--demo` Careysburg content has no queue services configured |
-| `IndicatorReports.cy.ts` | Indicator report runner: menu entry, fixed facility location and data freshness, run → completed → figures by disaggregation → CSV download — **all `it.skip` (pending)** until the reports module, its context endpoint and the pinned ESM reach the demo stack (LE-335) |
+| `IndicatorReports.cy.ts` | Indicator report runner: menu entry, fixed facility location and data freshness, run → completed → figures by disaggregation → CSV download — **all `it.skip` (pending)**; see [Indicator reports: what unblocks the spec](#indicator-reports-what-unblocks-the-spec) |
 | `MflSync.cy.ts` | MFL sync admin page (`/openmrs/spa/mfl-sync`, LE-323): status with no password field, test connection (ok and refused), dry run, Sync now with counts and run items, schedule save, a URL off the allowlist refused. Syncs from the MFL stub (`qa/api/mfl-stub/`), never the live MFL |
 | `MflFacilitySwitcher.cy.ts` | Central facility switcher (LE-324), with `chooseLocation.locationTag = Health Facility` applied as an O3 temporary config: search by name and by MFL code, district and code shown, duplicate names told apart, retired facilities hidden, the session switched; without the setting the facility picker is unchanged |
 
@@ -32,6 +32,16 @@ colour. No `CYPRESS_SKIP_*` variables are set in `ci.yml` at present, and nothin
 `RUN_LIVE_REGISTRATION`: the `ci.yml` comment saying it keeps a live registration test
 skipped is stale. The live-backend registration test in `Registration.cy.ts` runs on every
 CI run.
+
+### Indicator reports: what unblocks the spec
+
+The ESM is pinned in `distro.properties` and `reportUuids` is set in `config-national.json`,
+and the reports module's context endpoint exists. The spec stays skipped because the MOH report
+definitions are still being written in the reports module. The run test needs at least one
+report listed in `reportUuids` to be registered on the demo stack, with its CSV design and
+`indicators` data set ([docs/reporting/README.md](../../docs/reporting/README.md) §3.1).
+When the first report is registered, unskip the spec in the same PR, and check the
+`N passing, M pending` tail to confirm that its three tests ran.
 
 ## Running
 

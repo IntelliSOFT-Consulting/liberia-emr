@@ -3,12 +3,12 @@ import { loginWithSession } from '../support/session';
 /**
  * Indicator report runner (LE-335), @liberiaemr/esm-liberia-reports-app.
  *
- * PENDING: every test is `it.skip` until all three of these exist on the CI demo stack:
- *   1. the liberiaemrreports module with at least one MOH report (docs/reporting/README.md 3.1);
- *   2. its context endpoint (instance role, facility location, last ETL run);
- *   3. the ESM pinned in distribution/distro.properties, and `reportUuids` set in config-national.json.
- * Until then Cypress reports these as pending and the e2e job stays green: read the
- * `N passing, M pending` tail. Unskip them in the PR that pins the ESM.
+ * PENDING: every test is `it.skip` until the liberiaemrreports module registers at least one
+ * MOH report listed in `reportUuids` on the CI demo stack (docs/reporting/README.md 3.1). The
+ * context endpoint, the ESM pin in distribution/distro.properties and `reportUuids` in
+ * config-national.json are already in place. Until then Cypress reports these as pending and
+ * the e2e job stays green: read the `N passing, M pending` tail. Unskip them in the PR that
+ * registers the first report (qa/e2e/README.md).
  */
 describe('Indicator reports', () => {
   beforeEach(() => {
