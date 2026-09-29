@@ -321,7 +321,9 @@ fi
 
 if [[ "$SITE" == "central" ]]; then
   echo
-  echo "built ${VERSION} (central: liberia-emr-backend-central, liberia-emr-frontend-central)"
+  built="liberia-emr-backend-central"
+  [[ "$FRONTEND" == "true" ]] && built="$built, liberia-emr-frontend-central"
+  echo "built ${VERSION} (central: ${built})"
   exit 0
 fi
 
