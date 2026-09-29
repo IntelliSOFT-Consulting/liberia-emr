@@ -1250,7 +1250,8 @@ jobs:
       # The compose file on the server has to match the images being deployed, as for central
       # dev: a checkout left behind keeps old service definitions (a facility server ran without
       # the binary log sync reads for weeks this way). Fast-forward only; a checkout with local
-      # changes stops the deploy rather than being overwritten.
+      # changes is left as it is, with a warning, and the images still deploy. The "Enable sync
+      # on dev" workflow keeps such a change in a stash and brings the checkout up to date.
       - name: Bring the server's checkout to this commit
         run: |
           ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
@@ -1258,9 +1259,9 @@ jobs:
             cd "${{ secrets.DEV_COMPOSE_DIR }}"
             top=$(git rev-parse --show-toplevel)
             if [ -n "$(git -C "$top" status --porcelain --untracked-files=no)" ]; then
-              echo "the checkout at $top has local changes; commit or discard them before CI deploys here:" >&2
-              git -C "$top" status --short >&2
-              exit 1
+              echo "::warning::the checkout at $top has local changes, so it stays where it is; run Enable sync on dev, or commit or discard them:"
+              git -C "$top" status --short
+              exit 0
             fi
             git -C "$top" fetch -q origin main
             if git -C "$top" merge-base --is-ancestor ${{ github.sha }} HEAD; then
