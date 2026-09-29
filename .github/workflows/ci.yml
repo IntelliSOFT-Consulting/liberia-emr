@@ -147,6 +147,10 @@ jobs:
         run: ./scripts/validate/validate-content.sh
       - name: Refuse secrets, keys and PHI
         run: ./scripts/validate/no-secrets.sh
+      # LE-340: proves the scanner still catches short, symbol-bearing credentials and still
+      # lets references, placeholders and allowlisted throwaways through.
+      - name: The secret scanner catches what it should
+        run: ./scripts/validate/tests/no-secrets.test.sh
       - name: Refuse demo content in a production distribution
         run: ./scripts/validate/no-demo-in-release.sh
       # LE-360: the release guard runs the same check, but only when a tag is cut. Reading the
