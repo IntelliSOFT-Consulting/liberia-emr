@@ -78,6 +78,21 @@ export default defineConfig({
     viewportWidth: 1440,
     viewportHeight: 900,
     setupNodeEvents(on, config) {
+      // AuditLog.cy.ts: the file a download link saved, found by its name's prefix.
+      const downloads = () => config.downloadsFolder
+      on('task', {
+        clearDownloads() {
+          fs.rmSync(downloads(), { recursive: true, force: true })
+          return null
+        },
+        readDownload(prefix: string) {
+          const dir = downloads()
+          const name = fs.existsSync(dir)
+            ? fs.readdirSync(dir).find((file) => file.startsWith(prefix) && !file.endsWith('.crdownload'))
+            : undefined
+          return name ? fs.readFileSync(path.join(dir, name), 'utf8') : null
+        },
+      })
       return config
     },
   },

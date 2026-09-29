@@ -800,6 +800,14 @@ jobs:
       - name: Install Cypress test dependencies
         working-directory: qa/e2e
         run: npm ci
+      # AuditLog.cy.ts adds this build to the served SPA while the app is not yet pinned in
+      # distro.properties (a new package has no published version before its first merge); once
+      # it is pinned the spec uses the served one and this build goes unused.
+      - name: Build the audit log app for AuditLog.cy.ts
+        working-directory: packages/esm-liberia-audit-log-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
 
       # --demo: the priority journeys log in as admin/Admin123, which only content-demo
       # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —
