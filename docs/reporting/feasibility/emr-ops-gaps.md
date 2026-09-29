@@ -22,7 +22,7 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
 | Question | Finding |
 | --- | --- |
 | Sender state (facility `openmrs_mgmt`) | `debezium_event_queue` (`date_created` TIMESTAMP(3), `table_name`, `identifier`, `operation`, `snapshot`) and `sender_retry_queue` (`date_created`, `date_changed`, `attempt_count`, `exception_type`). Both are **transient**: a row is removed once the message reaches the broker. No history of sent records is kept. |
-| Receiver state (central `openmrs_mgmt`) | `receiver_sync_msg` (`date_created` = arrival at the receiver), `receiver_synced_msg` (`date_sent` = sender's `metadata.dateSent`, stamped when it serialised the message; `date_received`), `receiver_retry_queue`, `receiver_conflict_queue`, `site_info`. `receiver_sync_msg` and `receiver_synced_msg` are **transient**: `CleanerProcessor` deletes a synced message once cache eviction and indexing are done. **There is no archive table in 4.0.0.** `sync-eip.md` and `sync-module-evaluation.md` say "synced-message archiving", which is stale. |
+| Receiver state (central `openmrs_mgmt`) | `receiver_sync_msg` (`date_created` = arrival at the receiver), `receiver_synced_msg` (`date_sent` = sender's `metadata.dateSent`, stamped when it serialised the message; `date_received`), `receiver_retry_queue`, `receiver_conflict_queue`, `site_info`. `receiver_sync_msg` and `receiver_synced_msg` are **transient**: `CleanerProcessor` deletes a synced message once cache eviction and indexing are done. **There is no archive table in 4.0.0.** `sync-eip.md` and `sync-module-evaluation.md` said "synced-message archiving"; corrected by LE-354 (`sync-eip.md` §5.8). |
 | Durable per-record receipt time | **The per-entity hash tables at central** (`encounter_hash`, `patient_hash`, `visit_hash`, `obs_hash`, …): `identifier` = entity uuid; `date_created` = `LocalDateTime.now()` when central first applied the record (`OpenmrsLoadProducer`); `date_changed` = the latest update, overwritten each time. |
 | Does central keep the facility's `date_created`? | **Yes.** dbsync writes through its own JPA entities: `BaseCreatableEntity` maps `date_created` from the payload, and `BaseChangeableDataEntity` does the same for `date_changed`. The OpenMRS `AuditableInterceptor` is not involved, so central holds the facility values. |
 | Facility of origin at central | Not on the replica rows. dbsync keeps `metadata.sourceIdentifier` only inside payloads that are later deleted, and `SyncStatusService` notes that it records no sender on queued or failed records. Use the root of `encounter.location_id` / `visit.location_id`, or `openmrs_identity.patient_link.facility_location_uuid` (the root of the identifier location, set by `IdentityService`). |
@@ -41,11 +41,31 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    by hand on existing facility databases.
    *Done when* a `liberiaemrreports` dataset at the facility can count queue rows older than 48h.
 
+   **Done differently (LE-354).** The grant goes to the **ETL user**, not the EMR user, because
+   reports read only the ETL schema (ADR 0010 decision 6) and the EMR user is the web
+   application's credential. `initdb/30-etl-sync-queue-grant.sh` grants column-level `SELECT`
+   on the metadata columns of both queues, applied by a self-dropping event once the sender has
+   created the tables (MariaDB refuses a column grant on a missing table).
+   `sp_mamba_fact_emr_ops_sync_queue` copies the pending rows into
+   `mamba_fact_emr_ops_sync_queue` on every ETL run, and `mamba_fact_emr_ops_sync_status` says
+   when it sampled them and whether they were readable. A report counts rows with
+   `is_snapshot = 0` and `date_created < sampled_at - INTERVAL 48 HOUR`.
+
 2. **Record a sync go-live date per facility (EMR-OPS-005).** The initial snapshot applies
    months of history in one go, and every such record would score as "late". Store the
    date the sender first started for each facility, for example as a GP
    `liberiaemr.sync.goLiveDate` at the facility plus a central lookup keyed by the root
    location uuid. Exclude records whose `date_created` is earlier than that date.
+
+   **Facility half done (LE-354).** Each site package declares `var.site.sync-go-live-date`
+   (empty until enrolment) and seeds it as the GP `liberiaemr.sync.goLiveDate`; the ETL copies
+   it into `mamba_fact_emr_ops_sync_status.sync_go_live_date`. A GP rather than a runtime
+   property, because the ETL reads it in SQL (runtime properties never reach the database),
+   and because the site package is the versioned, per-facility source that Initializer
+   re-applies on every start. Global properties are not synced, so **central's lookup is still
+   open**: it belongs with central's per-facility location content (LE-339), carrying the same
+   date per facility root. Until then, the first arrival at central
+   (`MIN(<entity>_hash.date_created)` over a facility's records) approximates it.
 
 3. **Facility-side record counts for the true denominator (EMR-OPS-005).** Central sees only
    the records that arrived, so its rate is conditional on arrival. The honest denominator
@@ -54,9 +74,10 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    Build §5.5, or at least publish facility daily counts to central monitoring, and compute
    005 against them. Until then, report central's figure as "of records received".
 
-4. **Correct the "synced-message archiving" claim** in `docs/architecture/sync-eip.md` and
-   `sync-module-evaluation.md`. dbsync 4.0.0 deletes processed messages and has no archive.
-   Say that the hash tables are the only durable receipt record.
+4. **Done (LE-354).** ~~Correct the "synced-message archiving" claim~~ in
+   `docs/architecture/sync-eip.md` and `sync-module-evaluation.md`. dbsync 4.0.0 deletes
+   processed messages and has no archive; `sync-eip.md` §5.8 now says so, with the source for
+   each table, and names the hash tables as the only durable receipt record.
 
 5. **Define the core minimum dataset (EMR-OPS-006).** Author the per-form CMDS in section 2
    as content, reviewed by the MCH, OPD and TB programme leads. Include a validation check

@@ -70,7 +70,7 @@ be reimplemented:
 | **Payload encryption** | PGP-style, independent of TLS (`SenderEncryptionProperties`) |
 | **Metrics** | Prometheus endpoint (`ReceiverPrometheusConfig`) |
 | Search index at central | `SearchIndexUpdateTask`, `FullIndexerTask` |
-| Queue hygiene | `CleanerTask`, synced-message archiving |
+| Queue hygiene | `CleanerTask` **deletes** each synced message once it is processed. There is no archive (§5.8) |
 | Multi-facility | `SiteInfo` in receiver management |
 | Directionality | One receiver, one or more senders, **one-way only** |
 
@@ -822,6 +822,41 @@ purge the **payload** immediately on acknowledgement (it is PHI with no further 
 and retain **metadata only** (UUID, entity type, timestamp, content hash) for a configurable
 window long enough to serve §5.5 reconciliation. Retaining payloads "just in case" turns
 the facility queue into a second uncontrolled copy of the record.
+
+**As built (dbsync 4.0.0, openmrs-eip 4.2.0; LE-354).** Neither end keeps payloads or
+metadata after a message is processed, and **neither has an archive table**. Earlier
+versions of this document and of the [module evaluation](sync-module-evaluation.md) said
+"synced-message archiving". That was wrong for the pinned versions. Checked in source at
+the pinned tags:
+
+| Where | Table | What happens to a row | Source |
+| --- | --- | --- | --- |
+| Sender | `debezium_event_queue` | Deleted once the event has been published to the sender route, or moved to `sender_retry_queue` if that fails | eip `openmrs-watcher/src/main/resources/camel/db-event-processor.xml` (`DELETE FROM DebeziumEvent`) and `watcher-error-handler.xml` |
+| Sender | `sender_retry_queue` | Deleted once a retry succeeds. `date_created` is when the event **first failed**, not when it was captured | eip `db-event-processor.xml` (`DELETE FROM SenderRetryQueueItem`), `watcher-error-handler.xml` (`setDateCreated(new java.util.Date())`) |
+| Receiver | `receiver_sync_msg` | Deleted after it is applied, moved to the conflict queue or moved to the retry queue. An applied message is copied to `receiver_synced_msg` first | dbsync `receiver-app/.../receiver/MessageConsumer.java` |
+| Receiver | `receiver_synced_msg` | Deleted by `CleanerProcessor` once the cache has been evicted and the search index updated | dbsync `receiver-app/.../receiver/CleanerProcessor.java` (`repo.delete(item)`) |
+| Receiver | `receiver_retry_queue` | Deleted once a retry succeeds | dbsync `receiver-app/src/main/resources/camel/receiver-retry-route.xml` |
+| Receiver | `<entity>_hash` (`encounter_hash`, `patient_hash`, `visit_hash`, `obs_hash`, …) | **Kept.** `date_created` is set when central first applies the record, and `date_changed` is overwritten on each later update. A delete sets the hash to the deleted marker; the row stays | dbsync `api/.../camel/OpenmrsLoadProducer.java` |
+
+The full table lists are `openmrs-watcher/src/main/resources/liquibase-watcher.xml` (sender)
+and `receiver-app/src/main/resources/liquibase-receiver.xml` (receiver). Neither creates an
+archive table.
+
+Consequences:
+
+- **The hash tables at central are the only durable record of when a record was
+  received.** `<entity>_hash.date_created`, joined to the replicated row on
+  `identifier = uuid`, is the arrival time. Nothing records when a record *left* a facility.
+- **A facility's sender tables are a point-in-time stock.** They hold what is pending now and
+  nothing about what was sent. The facility sync backlog indicator (EMR-OPS-005) can
+  therefore only sample them: the reporting ETL copies their metadata columns into
+  `mamba_fact_emr_ops_sync_queue` on every run (LE-354).
+- **The sender queue does not see a stopped sender.** Events are written to
+  `debezium_event_queue` only as Debezium reads the binlog. While the sender is down, the
+  backlog is in the binlog, not in the queue, so an empty queue is not proof of health.
+  Combine it with the sender's liveness (§5.6).
+- The metadata-only retention that the recommendation above asks for is not built. §5.5
+  reconciliation would have to supply it.
 
 ### 5.9 The guarantee, and everything that could still break it
 
