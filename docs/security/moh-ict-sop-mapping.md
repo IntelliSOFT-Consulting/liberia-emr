@@ -136,12 +136,13 @@ scheduler, at which point the exception can be dropped entirely.
 
 ### D3: the copies that are easy to miss
 
-Backup encryption is usually scoped to the OpenMRS database. The sync layer creates
-further copies of clinical data at rest. The authoritative list is the five-row table in
-[sync architecture](../architecture/sync-eip.md) §7.4; D3 is closed only when every row of
-that table is covered. The `sync-queue` volume is not a sixth store: it is the physical
-backing of the sender's management database and Debezium offset (§1.5), and is covered by
-that row.
+Backup encryption is usually scoped to the OpenMRS database. The sync layer and the reporting
+ETL create further copies of clinical data at rest. The authoritative list is the six-row table
+in [sync architecture](../architecture/sync-eip.md) §7.4; D3 is closed only when every row of
+that table is covered. The reporting ETL schema, `liberiaemr_etl`, is a full flattened copy of
+the clinical record at every facility and at central (ADR 0010). The `sync-queue` volume is
+not a further store: it is the physical backing of the sender's management database and
+Debezium offset (§1.5), and is covered by that row.
 
 ### D6: why a broker permission is a national-scale control
 
@@ -164,7 +165,7 @@ certificate. Disk encryption is what makes theft a hardware loss rather than a b
 2. **A7**: server-side session timeout to match the client timer.
 3. **B4**: named-account policy in the runbook and training material.
 4. **C3**: log review confirming no PHI reaches application logs.
-5. **D3**: backup encryption implemented and a restore rehearsed, covering all five copies
+5. **D3**: backup encryption implemented and a restore rehearsed, covering all six copies
    of clinical data at rest enumerated in [sync architecture](../architecture/sync-eip.md)
    §7.4, not only the OpenMRS database.
 6. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each

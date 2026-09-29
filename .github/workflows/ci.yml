@@ -479,7 +479,9 @@ jobs:
       # MariaDB flags on); a full run succeeds with an empty _mamba_etl_error_log; all 42
       # Careysburg rows of expected-values.csv match (compare-reports.py); a late, back-dated
       # row is picked up by an incremental run and the rows still match; no liberiaemr_etl event
-      # is in the binlog. Measured locally at about 3 minutes; the times land in the job summary.
+      # is in the binlog. Measured locally at 48 seconds; each step's time lands in the job summary.
+      # Central's check is too costly here (its own image and a second dictionary import) and is
+      # run by hand: docs/runbooks/reporting-etl.md section 10.
       - name: Indicator reports match their expected values on the clean stack
         run: |
           qa/reporting/run-stack-check.sh --role facility --site careysburg -- \
