@@ -3,25 +3,23 @@ import { loginWithSession } from '../support/session';
 /**
  * Indicator report runner (LE-335), @liberiaemr/esm-liberia-reports-app.
  *
- * PENDING: every test is `it.skip` until all three of these exist on the CI demo stack:
- *   1. the liberiaemrreports module with at least one MOH report (docs/reporting/README.md 3.1);
- *   2. its context endpoint (instance role, facility location, last ETL run);
- *   3. the ESM pinned in distribution/distro.properties, and `reportUuids` set in config-national.json.
- * Until then Cypress reports these as pending and the e2e job stays green: read the
- * `N passing, M pending` tail. Unskip them in the PR that pins the ESM.
+ * The app lists only the reports in `reportUuids` that the server has registered. On the demo
+ * stack today that is the EMR-Ops report (EmrOpsReportManager, `var.report.emr-ops.uuid`),
+ * whose `indicators` data set and CSV design are enough for the run test. The MOH indicator
+ * reports (LE-334) add to the list without changing these tests.
  */
 describe('Indicator reports', () => {
   beforeEach(() => {
     loginWithSession();
   });
 
-  it.skip('shows the Indicator reports menu entry to a user with Export National Report', () => {
+  it('shows the Indicator reports menu entry to a user with Export National Report', () => {
     cy.visit('/openmrs/spa/home');
     cy.get('[aria-label="App Menu"], [aria-label="Open menu"]').first().click();
     cy.contains('a', 'Indicator reports').should('be.visible');
   });
 
-  it.skip('fixes the location to this facility and shows when report data was refreshed', () => {
+  it('fixes the location to this facility and shows when report data was refreshed', () => {
     cy.visit('/openmrs/spa/indicator-reports');
     cy.contains('h3', 'Indicator reports').should('be.visible');
     cy.get('[data-testid="fixed-location"]').should('be.visible');
@@ -29,7 +27,7 @@ describe('Indicator reports', () => {
     cy.contains('Central figures lag the facilities').should('not.exist');
   });
 
-  it.skip('runs a report, shows figures by disaggregation and downloads the CSV', () => {
+  it('runs a report, shows figures by disaggregation and downloads the CSV', () => {
     cy.intercept('POST', '**/reportingrest/reportRequest').as('requestReport');
     cy.intercept('GET', '**/reportingrest/reportDataSet/**').as('preview');
 

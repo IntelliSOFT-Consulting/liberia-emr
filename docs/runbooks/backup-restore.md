@@ -35,8 +35,11 @@ point of the two-artefact model.
 4. Start with `LIBERIAEMR_VERSION` set to **the release the backup was taken from** — not
    the latest. Restoring an old database under a newer release runs migrations against data
    that has not been through the upgrade test.
-5. Verify: login, patient search, a chart, MCH enrolments, sync queue draining.
-6. Record the restore in the operations log.
+5. If the backup predates the binlog-password rotation in
+   [binlog-credentials.md](binlog-credentials.md), run that runbook on the restored database
+   before step 6: the backup brings the old, leaked passwords back into force.
+6. Verify: login, patient search, a chart, MCH enrolments, sync queue draining.
+7. Record the restore in the operations log.
 
 ## To build
 

@@ -68,7 +68,7 @@ following was verified in source, not inferred:
 | **Payload encryption independent of TLS** | `SenderEncryptionProperties` / `ReceiverEncryptionProperties` (PGP-style: key folder, user id, passphrase, receiver user id) |
 | Operational metrics | `ReceiverPrometheusConfig`: Prometheus endpoint |
 | Search index consistency at central | `SearchIndexUpdateTask`, `FullIndexerTask` |
-| Queue hygiene | `CleanerTask`, archiving of synced messages |
+| Queue hygiene | `CleanerTask` / `CleanerProcessor`, which **delete** a synced message once it is processed. dbsync 4.0.0 has no archive table; only the receiver's `<entity>_hash` rows are kept (see [sync-eip.md §5.8](sync-eip.md#58-queue-retention-after-successful-push)) |
 | Complex obs (attachments) | `ComplexObsProcessor`, `ComplexObsHash` |
 
 Rebuilding that list is the entirety of Option B. The estimate for doing it *properly*,

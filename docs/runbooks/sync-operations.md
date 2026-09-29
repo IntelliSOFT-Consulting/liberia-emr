@@ -98,6 +98,16 @@ certificate, the PGP key and the broker address, and must be the facility's `FAC
      on it, so a large load keeps that scan going for as long as it lasts.
    - Do not upgrade the facility until the load has finished: a migration that changes a table
      the load is still reading waits for it, and the clinic's saves to that table wait too.
+   - Record the go-live date: set `var.site.sync-go-live-date` in the facility's site package
+     to the day of this first start (`YYYY-MM-DD`) and deploy that site release with it. It
+     becomes the `liberiaemr.sync.goLiveDate` global property, which the reporting ETL copies
+     into `mamba_fact_emr_ops_sync_status`. Records created before it came in the initial
+     load, so the sync timeliness indicator (EMR-OPS-005) leaves them out instead of counting
+     them late; while it is empty, the facility's sync backlog reads as not applicable. Set it
+     once. If the start slips, correct it in the next site release: until then, records
+     created between the recorded date and the real start count as late. Central does not
+     see a facility's global properties, so the same date also goes into central's record of
+     the facility when central gets per-facility content (LE-339).
 6. **Check.** The sender logs `Started Application`; the receiver logs
    `Entity: ..., source=<code>` as the facility's changes arrive; Prometheus at central shows
    `sync_cert_not_after_seconds{identity="<code>"}`. The first load is finished when the sender
