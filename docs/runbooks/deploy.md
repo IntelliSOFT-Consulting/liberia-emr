@@ -16,6 +16,14 @@ cp distribution/env/facility.env.example distribution/env/facility.env   # first
 ./scripts/deploy/deploy-facility.sh --env distribution/env/facility.env
 ```
 
+Set **`LIBERIAEMR_SITE`** in `facility.env` to this facility's site (`careysburg`,
+`barnersville`, …). A release publishes the two site-bearing images per site,
+`liberia-emr-backend-<site>` and `liberia-emr-frontend-<site>`, so two sites released at one
+version never overwrite each other (LE-360). The gateway, sync, broker and cert-expiry images
+carry no site content and keep one name. Compose falls back to the unsuffixed backend and
+frontend names when `LIBERIAEMR_SITE` is empty; only CI and development builds publish those
+(the dev server's `:latest`), so the deploy script refuses a release deploy without it.
+
 The script asks you to confirm the preconditions above, then pulls and starts the stack. It
 does **not** take the backup and does not start sync. By hand, it is:
 

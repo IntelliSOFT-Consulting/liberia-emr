@@ -40,8 +40,8 @@ Every report call is reportingrest 2.0.0, as in
   array, or plain text, until LE-335 confirms the encoding on a real stack.
 
 Instance role, facility location and ETL freshness come from
-`GET /ws/rest/v1/liberiaemrreports/context`. This is **a proposal to the reports module; it
-does not exist yet** (ADR 0010 decision 8a). The page fails closed:
+`GET /ws/rest/v1/liberiaemrreports/context`, served by the reports module
+(`ReportingContextService`; ADR 0010 decision 8a). The page fails closed:
 
 - **Runs only when the location is known.** That means the endpoint answered, and either said
   `central` or gave the facility's location UUID.
@@ -62,8 +62,17 @@ does not exist yet** (ADR 0010 decision 8a). The page fails closed:
   reads it there for the menu item, and `src/privileges.ts` reads it from there for the
   components. It is not a config key, because the app shell cannot read config and the reports
   module enforces the same fixed privilege on the server.
-- **Report data freshness.** When the ETL last completed. At central, a second notice says
-  that figures lag the facilities' own reports until sync catches up.
+- **Report data freshness.** Read from the last ETL run's `status`
+  (`src/context/reporting-context.resource.ts`, `etlRefreshState`):
+  - `SUCCESS`: its completion time, as how fresh the figures are.
+  - `RUNNING`: "A data refresh is in progress", with the last completion time if the run
+    carries one, otherwise its start time.
+  - `ERROR` or `INTERRUPTED`: a warning that the last refresh failed. No time is shown: core
+    rewrites such a run's times to the last good run's, so they are not that run's own.
+  - No status, or one the page does not know: a warning, and no time.
+
+  At central, a second notice says that figures lag the facilities' own reports until sync
+  catches up.
 - **Location.**
   - At a facility: the facility, fixed.
   - At central: national by default, then a county, a district, or a facility found by name

@@ -81,10 +81,12 @@ Per [ADR 0001](../adr/0001-two-artefact-model.md), two kinds:
 | `distribution/` | platform + modules + content → Docker images | **exact pins** |
 | `content-packages/*` | configuration + clinical content | **ranges (`>=`)** |
 
-Seven images per release, immutable and versioned: `liberia-emr-backend:x.y.z`,
-`-frontend`, `-gateway`, `-sync`, `-sync-receiver`, `-broker` and `-cert-expiry`
-(`scripts/build/build-distribution.sh`; the last four are skipped for a demo build or with
-`--no-sync`). A mutable git checkout is never mounted into a
+Images per release, immutable and versioned (`scripts/build/build-distribution.sh`):
+`liberia-emr-backend-<site>` and `liberia-emr-frontend-<site>` for each facility site, which carry
+that site's content (LE-360); `liberia-emr-frontend-central` for central; and the site-agnostic
+`-gateway`, `-sync`, `-sync-receiver`, `-broker` and `-cert-expiry`, published once (the last
+four are skipped for a demo build or with `--no-sync`). `scripts/build/image-refs.sh` is the
+list; today's sites make 10. A mutable git checkout is never mounted into a
 production container.
 
 ## Content layering

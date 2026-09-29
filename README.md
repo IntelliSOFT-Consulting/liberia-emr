@@ -117,7 +117,7 @@ endpoints, SMTP configuration and how a module release is cut.
 | `ci.yml` | PRs to `main`/`develop`, pushes to `main`, manual runs | Validation, content build, clean-DB Initializer, backend module, images, sync hardening and Cypress E2E. Its **CI gate** job is the required check on `main`; on a push to `main` it also publishes `:latest` images and updates the dev environment |
 | `modules.yml` | every push to `main`, `liberiaemr-x.y.z` tags, PRs touching `modules/**` or the workflow, manual runs | Builds and tests the module; publishes the SNAPSHOT from a `main` push that touched `modules/`, and a release from its `liberiaemr-x.y.z` tag ([release-module.md](docs/runbooks/release-module.md)). A GitHub release publishes nothing |
 | `packages.yml` | changes under `packages/**`, releases, manual runs | Lints, type-checks, builds and publishes the frontend modules to npm (`next` from `main`, `latest` on a release). Unit tests run in `ci.yml`, not here, and only for the login and sync-status apps |
-| `release.yml` | `x.y.z` tags, manual runs | Upgrade test from the previous release and production approval. Full-stack API/Cypress, image push and staging deploy are still `echo "TODO"` stubs |
+| `release.yml` | `x.y.z` tags, manual runs | Checks that no two sites publish the same image, builds each site and pushes its images as `-rc` candidates, then promotes them to `x.y.z` after the full-stack and upgrade stages, and ends with production approval. The full-stack stage, the upgrade test and the staging deploy are still stubs, so promotion is refused until `RELEASE_TESTS_READY` is set (LE-360) |
 
 ## Current status
 

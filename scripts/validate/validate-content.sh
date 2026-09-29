@@ -188,8 +188,7 @@ section "conflicting variable declarations"
 # variables.properties is read as a Java properties file: a key declared twice keeps the LAST
 # value with no warning. Two roles both claiming var.role.nurse.uuid meant the clinical Nurse
 # role silently inherited the RefApp Organizational Nurse UUID.
-# Only WITHIN one file — two site packages legitimately declare the same key, because a build
-# resolves exactly one of them.
+# This check is WITHIN one file. "variables across layers" below compares files.
 while IFS= read -r f; do
   # Split on the FIRST '=' only: a value may contain one. An exact re-declaration of the
   # same value is harmless duplication, so only a differing value is reported.
@@ -207,6 +206,199 @@ while IFS= read -r f; do
   fi
 done < <(find_src -name 'variables.properties')
 ok "no conflicting variable declarations"
+
+# The shared filter chain, read from content-packages/pom.xml (execution filter-configuration)
+# so the two checks below cannot drift from the build: every <filter> except the package's
+# own file, in order. Every other package is a TERMINAL layer (a site, central or demo),
+# which the build applies last, alone, on top of the chain.
+FILTER_CHAIN="$(python3 - "$PKG_DIR/pom.xml" <<'PY'
+import re, sys
+chain = re.findall(r"<filter>\$\{project\.basedir\}/\.\./([^/]+)/configuration/variables\.properties</filter>",
+                   open(sys.argv[1], encoding="utf-8").read())
+print(" ".join(chain))
+PY
+)"
+[[ -n "$FILTER_CHAIN" ]] || err "could not read the variable filter chain from content-packages/pom.xml"
+
+section "variables across layers"
+# A key declared in two SHARED layers with different values is one name for two things. Every
+# package filters its own variables.properties last, so each layer's own rows resolve to its
+# own value, but everything that resolves through the chain (a later layer, a site package, the
+# ETL, the QA fixtures) gets the LAST shared layer's value. The reports module, filtered from
+# content-liberia-national alone, gets national's. That is how var.encountertype.family-planning
+# meant national 'Family Planning' in one build and MCH 'Family Planning Visit' in another
+# (LE-343).
+#
+# A terminal layer overriding a shared key is the intended mechanism (ADR 0003, IMPLEMENTATION.md
+# §7): it is how a site maps onto pre-existing production metadata. Two terminal layers
+# disagreeing is expected too, because a build applies exactly one site. Neither is reported.
+#
+# A package that is neither in the chain nor a terminal layer is a new programme layer missing
+# from pom.xml's filter list: its variables would resolve nowhere else, so that fails too.
+#
+# ALLOWED holds a shared-layer disagreement that is deliberate, with the reason. Keep it empty
+# unless one is.
+python3 - "$PKG_DIR" "$FILTER_CHAIN" <<'PY' || err "variables resolve differently across layers (see above)"
+import glob, os, sys
+
+pkg_dir, chain = sys.argv[1], sys.argv[2].split()
+ALLOWED = {}   # "var.key" -> "why the shared layers legitimately disagree"
+TERMINAL = lambda p: p.startswith("content-site-") or p in ("content-central", "content-demo")
+
+def declared(pkg):
+    out = {}
+    vf = os.path.join(pkg_dir, pkg, "configuration", "variables.properties")
+    if os.path.exists(vf):
+        for n, line in enumerate(open(vf, encoding="utf-8"), start=1):
+            s = line.strip()
+            if s.startswith("var.") and "=" in s:
+                k, _, v = s.partition("=")
+                out[k.strip()] = (v.strip(), n)
+    return out
+
+problems = []
+for vf in sorted(glob.glob(f"{pkg_dir}/*/configuration/variables.properties")):
+    pkg = vf[len(pkg_dir) + 1:].split(os.sep)[0]
+    if pkg not in chain and not TERMINAL(pkg):
+        problems.append(f"{pkg} is not in the filter chain in content-packages/pom.xml and is not "
+                        f"a site, central or demo layer")
+
+by_key = {}
+for pkg in chain:
+    for k, (v, n) in declared(pkg).items():
+        by_key.setdefault(k, []).append((pkg, v, n))
+for k, decls in sorted(by_key.items()):
+    if len({v for _, v, _ in decls}) > 1 and k not in ALLOWED:
+        where = "; ".join(f"{p}:{n}={v}" for p, v, n in decls)
+        problems.append(f"{k} has different values in shared layers: {where}")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "every shared variable has one value; only terminal layers override"
+
+section "UUID identity across packages"
+# One UUID must name one thing. Initializer loads rows by UUID, so two rows of the same domain
+# (encounter types, forms, concepts, roles, locations...) resolving to one UUID under different
+# names are ONE entity. The later layer silently renames it, and every earlier layer's encounters,
+# reports and labels then point at the other name.
+#
+# Rows are resolved exactly as the build resolves them: the shared chain, then the package's own
+# file. Each composition a distribution can install is compared as a whole: the chain plus one
+# site, the same with the demo layer on top, and the chain plus central. Sites are never
+# compared with each other, because no distribution holds two.
+#
+# A row counts when its header has a Uuid column and a name column (Name, Fully specified
+# name:en, Role name, Privilege name, Service name, Label). Domains without a name (concept sets,
+# workflows, mappings...) are identified by other columns and have nothing to compare. An AMPATH
+# form counts by the UUID Initializer derives from its name and version, since the JSON uuid
+# field is ignored at load.
+#
+# ALLOWED holds a known rename that is not ours to fix, with the reason. Keep it to rows in
+# content-demo, which is vendored from upstream at a pinned tag and must not be edited here
+# (scripts/build/lift-demo-content.sh --check fails any drift).
+python3 - "$PKG_DIR" "$FILTER_CHAIN" <<'PY' || err "UUIDs declared under different names (see above)"
+import csv, glob, hashlib, json, os, re, sys, uuid as uuidlib
+
+pkg_dir, chain = sys.argv[1], sys.argv[2].split()
+# Each entry is exact: the two names, and one of them must come from content-demo. Any other
+# name for the same UUID still fails.
+ALLOWED = {  # (domain, uuid, {name, name}) -> why the rename is accepted
+    ("conceptreferencerange", "13a9cfe1-b3ea-49d0-b97a-db99d9cbcb80",
+     frozenset({"Temp Celsius >=3mos", "Temp Celsius >3mos"})):
+        "upstream demo 1.9.2 labels the >= 3 months temperature range 'Temp Celsius >3mos'; "
+        "national's '>=3mos' matches the criterion. Label only: limits and criterion agree.",
+}
+AMPATH_FORMS_UUID = "794c4598-ab82-47ca-8d18-483a8abe6f4f"
+
+def form_uuid(name, version):
+    # What Initializer's AmpathFormsLoader gives the form (the JSON uuid field is ignored): the
+    # same derivation as the "AMPATH form UUID consistency" section below.
+    b = bytearray(hashlib.md5(f"{AMPATH_FORMS_UUID}_{name}_{version}".encode("utf-8")).digest())
+    b[6] = (b[6] & 0x0f) | 0x30
+    b[8] = (b[8] & 0x3f) | 0x80
+    return str(uuidlib.UUID(bytes=bytes(b)))
+NAME_COLS = ("name", "fully specified name:en", "role name", "privilege name", "service name", "label")
+rel = lambda path: os.path.relpath(path, os.path.dirname(pkg_dir))
+
+compositions = {}
+for site in sorted(os.path.basename(p) for p in glob.glob(f"{pkg_dir}/content-site-*")):
+    compositions[site] = chain + [site]
+    if os.path.isdir(f"{pkg_dir}/content-demo"):
+        compositions[f"{site} + demo"] = chain + [site, "content-demo"]
+if os.path.isdir(f"{pkg_dir}/content-central"):
+    compositions["content-central"] = chain + ["content-central"]
+
+def load_vars(pkg, into):
+    vf = os.path.join(pkg_dir, pkg, "configuration", "variables.properties")
+    if os.path.exists(vf):
+        for line in open(vf, encoding="utf-8"):
+            s = line.strip()
+            if s and not s.startswith("#") and "=" in s:
+                k, _, v = s.partition("=")
+                into[k.strip()] = v.strip()
+    return into
+
+def rows_for(pkg):
+    variables = {}
+    for layer in chain:
+        load_vars(layer, variables)
+    load_vars(pkg, variables)
+    resolve = lambda s: re.sub(r"\$\{([^}]+)\}", lambda m: variables.get(m.group(1), m.group(0)), s)
+    base = os.path.join(pkg_dir, pkg, "configuration", "backend_configuration")
+    out = []
+    for f in sorted(glob.glob(f"{base}/*/*.csv")):
+        with open(f, newline="", encoding="utf-8") as fh:
+            rows = list(csv.reader(fh))
+        if not rows:
+            continue
+        hdr = [h.strip().lower() for h in rows[0]]
+        ni = next((hdr.index(c) for c in NAME_COLS if c in hdr), None)
+        if "uuid" not in hdr or ni is None:
+            continue
+        ui = hdr.index("uuid")
+        domain = os.path.basename(os.path.dirname(f))
+        for n, r in enumerate(rows[1:], start=2):
+            if len(r) <= max(ui, ni):
+                continue   # the short-row check reports it
+            uuid, name = resolve(r[ui].strip()).lower(), resolve(r[ni].strip())
+            if uuid and name and "${" not in uuid:   # an unresolved token is reported above
+                out.append((domain, uuid, name, f"{rel(f)}:{n}"))
+    for f in sorted(glob.glob(f"{base}/ampathforms/*.json")):
+        try:
+            schema = json.load(open(f, encoding="utf-8"))
+        except Exception:
+            continue   # the JSON syntax check reports it
+        if not isinstance(schema, dict):
+            continue
+        name, version = schema.get("name"), schema.get("version")
+        if name:
+            out.append(("ampathforms", form_uuid(name, version), str(name), rel(f)))
+    return out
+
+def allowed(domain, uuid, a, b):
+    demo = "content-packages/content-demo/"
+    return ((domain, uuid, frozenset({a[0], b[0]})) in ALLOWED
+            and (a[1].startswith(demo) or b[1].startswith(demo)))
+
+cache, found = {}, {}
+for comp, layers in compositions.items():
+    first = {}
+    for pkg in layers:
+        if pkg not in cache:
+            cache[pkg] = rows_for(pkg)
+        for domain, uuid, name, origin in cache[pkg]:
+            owner = first.setdefault((domain, uuid), (name, origin))
+            if owner[0] != name and not allowed(domain, uuid, owner, (name, origin)):
+                found.setdefault((domain, uuid, owner, (name, origin)), []).append(comp)
+
+for (domain, uuid, (n1, o1), (n2, o2)), comps in found.items():
+    print(f"       {domain}: {uuid} is '{n1}' ({o1}) and '{n2}' ({o2}) in {', '.join(comps)}",
+          file=sys.stderr)
+sys.exit(1 if found else 0)
+PY
+ok "every UUID has one name per domain in every composition"
 
 section "unresolved variables"
 # Every ${var.x} referenced anywhere must be declared in some variables.properties.

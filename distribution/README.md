@@ -44,14 +44,17 @@ page; at a facility its menu item is hidden and the page shows a not-available n
 
 ## Images
 
-Eight per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`.
+Per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`: the backend and
+frontend for each facility site, central's frontend, and the five site-agnostic images, published
+once. That is 10 for today's `RELEASE_SITES` (Careysburg, Barnersville, central);
+`scripts/build/image-refs.sh --check` prints the count.
 `REGISTRY` defaults to `intellisoftdev` in `scripts/build/build-distribution.sh`; the
 compose files read it from the stack's `.env`.
 
 | Image | Built from | Runs in |
 | --- | --- | --- |
-| `liberia-emr-backend` | `backend/Dockerfile` | facility, central |
-| `liberia-emr-frontend` | `frontend/Dockerfile` | facility |
+| `liberia-emr-backend-<site>` | `backend/Dockerfile`, `--site <site>` | facility (`LIBERIAEMR_SITE`) |
+| `liberia-emr-frontend-<site>` | `frontend/Dockerfile`, `--site <site>` | facility (`LIBERIAEMR_SITE`) |
 | `liberia-emr-frontend-central` | `frontend/Dockerfile`, `--site central` | central |
 | `liberia-emr-gateway` | `gateway/Dockerfile` | facility, central |
 | `liberia-emr-sync` | `sync/Dockerfile --target sender` | facility (`sync` profile) |
@@ -60,6 +63,15 @@ compose files read it from the stack's `.env`.
 | `liberia-emr-cert-expiry` | `monitoring/cert-expiry/Dockerfile` | central |
 
 Prometheus and Alertmanager run the upstream images, pinned by tag in the compose files.
+
+**Per-site names (LE-360).** The backend and frontend carry one site's content, so a release
+publishes them per site: `liberia-emr-backend-careysburg`, `liberia-emr-frontend-barnersville`,
+and so on. The other images are site-agnostic and published once, from the first facility site
+in `release.yml`'s `RELEASE_SITES`. `scripts/build/image-refs.sh` is the single list that
+`build-distribution.sh`, the release push and its duplicate check all read. A build also tags
+the unsuffixed `liberia-emr-backend` and `liberia-emr-frontend`, which CI's E2E stack and the dev
+server's `:latest` use; a release never pushes those. Central's compose still names the unsuffixed
+backend until LE-339 gives central its own; a release cannot deploy central before then.
 The central stack also names `liberia-emr-dhis2-export` under the `dhis2` profile; nothing in
 this repository builds that image yet.
 
@@ -68,7 +80,8 @@ wanting to, the answer is a runtime config change, not a bind mount. The stacks 
 two checkout directories read-only, both configuration rather than code: `monitoring/` for
 Prometheus and Alertmanager, and each stack's own `initdb/` for MariaDB's first boot. A host
 deployed from images alone still needs both; without `initdb/`, a fresh volume never gets
-the sync database principals and the sender or receiver cannot connect.
+the OpenMRS application user or the sync database principals, and neither the backend nor the
+sender or receiver can connect.
 
 ## Stacks
 
@@ -82,8 +95,8 @@ the sync database principals and the sender or receiver cannot connect.
 | `prometheus`, `alertmanager` | `sync` profile | yes |
 | `dhis2-export` | — | `dhis2` profile |
 
-Each stack's `initdb/` creates the sync database principals on the first boot of an empty
-volume (see the `initdb/README.md` in each). The demo overlay, `compose/facility/docker-compose.demo.yml`,
+Each stack's `initdb/` creates the OpenMRS application user and the sync database principals
+on the first boot of an empty volume (see the `initdb/README.md` in each). The demo overlay, `compose/facility/docker-compose.demo.yml`,
 swaps in the `-demo` backend and frontend images and disables `sync`.
 
 ## Environment

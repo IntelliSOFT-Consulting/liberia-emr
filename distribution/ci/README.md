@@ -71,8 +71,12 @@ dev server. `release.yml` sets `REGISTRY=ghcr.io/intellisoft-consulting`.
 
 ## What in `release.yml` is still a stub
 
-`full-stack-tests`, the image push in `publish`, and `deploy-staging` only echo a TODO today.
-`guard`, the per-site `build` matrix and `upgrade-test` do real work. `approve-production`
+`full-stack-tests` and `deploy-staging` only echo a TODO today, and `upgrade-test` runs
+`qa/upgrade/run-upgrade.sh`, which is itself a stub (`qa/upgrade/README.md`). `guard` does real
+work, including the duplicate image-reference check (LE-360). The per-site `build` matrix builds
+and pushes each site's images as `-rc.<run>` candidates. `publish` would promote them to
+`x.y.z`, but it refuses while `RELEASE_TESTS_READY` is `false`, because nothing has tested them
+yet. `approve-production`
 waits on the `production` environment's approval, then points at
 [docs/runbooks/deploy.md](../../docs/runbooks/deploy.md); production deploys are manual.
 

@@ -7,6 +7,13 @@
 #
 # Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry :<version>
 #
+# Per-site names (LE-360): a facility build ALSO tags its two site-bearing images as
+# liberia-emr-backend-<site> and liberia-emr-frontend-<site> (scripts/build/image-refs.sh).
+# Those are what a release publishes, so two sites at one version never overwrite each other.
+# The unsuffixed backend/frontend tags stay for local and CI use (the E2E stack, the dev
+# deploy's :latest, the facility compose when LIBERIAEMR_SITE is unset); a release never
+# pushes them.
+#
 # --site central builds the central composition: content-central in the site layer's place
 # (docs/adr/0011-central-composition.md). That is two images: liberia-emr-frontend-central and
 # liberia-emr-backend-central, whose content adds the locations/ of EVERY site package, so a
@@ -286,6 +293,15 @@ if [[ "$SITE" == "central" ]]; then
   echo "== gateway and sync == SKIPPED (central runs the facility release's images)"
 fi
 
+# The per-site names a release publishes (LE-360). A demo build is never released and keeps
+# its -demo names only; central's images are already per-composition (-central).
+site_backend=""
+site_frontend=""
+if [[ "$DEMO" == "false" && "$SITE" != "central" ]]; then
+  site_backend="$("$ROOT/scripts/build/image-refs.sh" --site "$SITE" --role site | grep '^liberia-emr-backend-')"
+  site_frontend="$("$ROOT/scripts/build/image-refs.sh" --site "$SITE" --role site | grep '^liberia-emr-frontend-')"
+fi
+
 echo "== backend =="
 docker build \
   -f "$ROOT/distribution/backend/Dockerfile" \
@@ -293,6 +309,7 @@ docker build \
   --build-arg "DEMO_PACKAGE=${demo_package}" \
   --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
   -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
+  ${site_backend:+-t "${REGISTRY}/${site_backend}:${VERSION}"} \
   "$ROOT"
 
 # LE-339: a central backend must carry every site's locations and nothing else of theirs.
@@ -314,6 +331,7 @@ if [[ "$FRONTEND" == "true" ]]; then
     --build-arg "SPA_CONFIG_URLS=${spa_config_urls}" \
     --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
     -t "${REGISTRY}/liberia-emr-frontend${suffix}:${VERSION}" \
+    ${site_frontend:+-t "${REGISTRY}/${site_frontend}:${VERSION}"} \
     "$ROOT/distribution/frontend"
 else
   echo "== frontend == SKIPPED (--no-frontend)"
