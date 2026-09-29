@@ -25,6 +25,7 @@ import org.openmrs.GlobalProperty;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemrreports.EtlTestSupport;
 import org.openmrs.module.liberiaemrreports.reporting.EtlSqlDataSetDefinition;
+import org.openmrs.module.liberiaemrreports.reporting.IndicatorQuery;
 import org.openmrs.module.liberiaemrreports.reporting.LiberiaReportManager;
 import org.openmrs.module.liberiaemrreports.reporting.ReportParameters;
 import org.openmrs.module.liberiaemrreports.reporting.ReportRegistrar;
@@ -56,6 +57,9 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 	/** The data set name the EMR-Ops report registers its indicators under. */
 	private static final String REGISTERED_NAME = ReportSheet.EMR_OPS.getKey() + "-" + LiberiaReportManager.INDICATORS;
 
+	/** EMR-OPS-008's denominator: the Q3 encounters at facility one. */
+	private static final String PROBE = "EMR_OPS_008_DEN";
+	
 	/** Patient-level, behind an alias that looks like an indicator column. */
 	private static final String PATIENT_LEVEL_SQL = "SELECT e.patient_id AS MAL_004_NUM\n" //
 	        + "FROM encounter e\n" //
@@ -70,10 +74,12 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 		EtlTestSupport.createEtlTables(getConnection());
 		executeDataSet("LiberiaEMRReportsTestDataset.xml");
 		EtlTestSupport.insertHierarchy(getConnection());
-		List<LiberiaReportManager> managers = Context.getRegisteredComponents(LiberiaReportManager.class);
-		assertEquals(1, managers.size());
-		new ReportRegistrar().register(managers.get(0));
 		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
+		List<LiberiaReportManager> managers = Context.getRegisteredComponents(LiberiaReportManager.class);
+		assertEquals(ReportSheet.values().length, managers.size());
+		for (LiberiaReportManager manager : managers) {
+			new ReportRegistrar().register(manager);
+		}
 		Context.getAdministrationService()
 		        .saveGlobalProperty(new GlobalProperty(LocationScopeResolver.GP_FACILITY_LOCATION, FACILITY_ONE));
 	}
@@ -167,7 +173,7 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 		ReportData data = Context.getService(ReportDefinitionService.class).evaluate(registered(), period());
 		List<DataSetRow> rows = rows(data.getDataSets().get(LiberiaReportManager.INDICATORS));
 		assertEquals(1, rows.size());
-		assertEquals(4, ((Number) rows.get(0).getColumnValue(EmrOpsReportManager.PLACEHOLDER_COLUMN)).intValue());
+		assertEquals(4, ((Number) rows.get(0).getColumnValue(PROBE)).intValue());
 	}
 
 	@Test
@@ -176,9 +182,9 @@ public class RegisteredDataSetOnlyTest extends BaseModuleContextSensitiveTest {
 		EtlSqlDataSetDefinition dsd = (EtlSqlDataSetDefinition) registered().getDataSetDefinitions()
 		        .get(LiberiaReportManager.INDICATORS).getParameterizable();
 		assertEquals(REGISTERED_NAME, dsd.getName());
-		assertEquals(EmrOpsReportManager.PLACEHOLDER_SQL, dsd.getSqlQuery());
+		assertEquals(IndicatorQuery.indicatorsSql(EmrOpsReportManager.queries(InstanceRole.FACILITY)), dsd.getSqlQuery());
 		List<DataSetRow> rows = rows(Context.getService(DataSetDefinitionService.class).evaluate(dsd, period()));
 		assertEquals(1, rows.size());
-		assertTrue(rows.get(0).getColumnValue(EmrOpsReportManager.PLACEHOLDER_COLUMN) instanceof Number);
+		assertTrue(rows.get(0).getColumnValue(PROBE) instanceof Number);
 	}
 }

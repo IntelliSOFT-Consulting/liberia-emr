@@ -25,42 +25,55 @@ instance's own Mamba ETL schema and served through reportingrest 2.0.0. The desi
 | Aggregates only | The evaluator also refuses person- or record-identifying column names and any cell that is not a number, text or date. That catches a mistake in our own SQL; it is no defence against a hostile alias, which the registration check is. |
 | UI context | `GET /ws/rest/v1/liberiaemrreports/context`: role, own facility, last ETL run. |
 
-## Adding a sheet's indicators
+## The sheets
 
-Edit the sheet's manager (`EmrOpsReportManager` is the placeholder for EMR-Ops) or add one per
-sheet. Use `IndicatorSql` for the column names and aggregates, and `Disaggregation` for sex and
-age bands:
+One `@Component` manager per sheet, in `reports/`. Each report's description carries its notes:
+the disaggregations the workbook asks for that the EMR does not capture, and the rows returned as
+numerator only.
+
+| Manager | Rows | Reads |
+| --- | --- | --- |
+| `RmncahReportManager` | RMNCAH-017, 018, 019, 020, 021, 026, 028 | `mamba_fact_rmncah_family_planning`, `_delivery`, `_mother_pnc`; `mamba_fact_malaria_diagnosis` and `_drug` |
+| `NutritionReportManager` | NUT-005, 008, 009 | `mamba_fact_nutrition_vitamin_a`, `_anthropometry` |
+| `MalariaReportManager` | MAL-002, 003, 004 | `mamba_fact_rmncah_anc_visit`, `mamba_fact_malaria_lab_result` |
+| `NcdReportManager` | NCD-002, 005, 007, 011, 015 | `mamba_fact_ncd_death`, `_blood_pressure`; `mamba_fact_malaria_diagnosis`, `_lab_result` |
+| `EmrOpsReportManager` | EMR-OPS-007, 008, 015 | `mamba_fact_emr_ops_patient`, `_visit`; `mamba_dim_encounter`, `mamba_dim_emr_ops_encounter_type` |
+
+People are counted with `mamba_dim_person_cpi.person_key`, so at central a person with records
+at two facilities counts once; ages come from core's `mamba_dim_person`. The definitions, episode
+windows and edge cases are those `qa/reporting/README.md` adopts. EMR-OPS-007 and 015 have a
+facility and a central definition in the matrix, so their SQL follows the instance role.
+
+## Adding an indicator
+
+Write it as an `IndicatorQuery` in its sheet's manager and add it to the manager's `queries()`.
+The query is written once, against a `Grouping`, and gives both data sets: `indicators` (one row
+for the scope) and, at central, `by_facility` (one row per Health Facility in scope, with
+`facility_name` and `facility_uuid`). Use `IndicatorSql` for the column names and aggregates,
+`Disaggregation` for suffixes, and the `Grouping` methods for the location filter:
 
 ```java
-@Component
-public class MalariaReportManager extends LiberiaReportManager {
-
-	@Override
-	public ReportSheet getSheet() {
-		return ReportSheet.MALARIA;
-	}
-
-	@Override
-	protected List<String> getNotes() {
-		return Collections.singletonList("MAL-004: age band not captured");
-	}
-
-	@Override
-	protected void addDataSets(ReportDefinition rd) {
-		String tested = "f.tested = 1", positive = "f.tested = 1 AND f.positive = 1";
-		List<String> columns = new ArrayList<String>();
-		columns.addAll(IndicatorSql.disaggregated(IndicatorSql.column("MAL-004", "NUM"), null, positive,
-		    Disaggregation.sex("f.gender")));
-		columns.add(IndicatorSql.count(IndicatorSql.column("MAL-004", "DEN"), tested));
-		columns.add(IndicatorSql.percent(IndicatorSql.column("MAL-004", "PCT"),
-		    "SUM(CASE WHEN " + positive + " THEN 1 ELSE 0 END)", "SUM(CASE WHEN " + tested + " THEN 1 ELSE 0 END)"));
-		addDataSet(rd, INDICATORS, IndicatorSql.select(columns,
-		    "FROM ${etl}.mamba_fact_malaria_test f\n"
-		            + "WHERE f.encounter_datetime BETWEEN :startDate AND :endDate\n"
-		            + "  AND f.location_id IN ${scopeLocations}"));
-	}
+static IndicatorQuery confirmedCases() {
+	String num = column("MAL-004", "NUM");
+	return IndicatorQuery.of(g -> IndicatorQuery.select(g, "r.facility_location_id",
+	    Arrays.asList(IndicatorSql.count(num, "1 = 1")),
+	    "FROM ${etl}.mamba_fact_malaria_lab_result r ...\n"
+	            + "WHERE r.is_malaria_positive = 1\n"
+	            + "  AND r.resulted_at BETWEEN :startDate AND :endDate\n"
+	            + "  AND " + g.inScope("r") + "\n"
+	            + "  AND NOT EXISTS (SELECT 1 FROM ... q WHERE ... AND " + g.inSameScope("q", "r") + " ...)"),
+	    num);
 }
 ```
 
-Then add a context-sensitive test beside `EmrOpsReportManagerTest`: create the fact table in
-`EtlTestSupport`, load rows, and assert each column in facility and central mode.
+- `g.inScope(alias)` is the location filter; never write your own.
+- `g.inSameScope(inner, outer)` in a correlated lookup (a latest reading, an earlier diagnosis in
+  the same episode, a first-ever diagnosis): by facility it also ties the lookup to the counted
+  row's facility, so each `by_facility` row equals a run scoped to that facility.
+- Coded logic stays in the ETL: compare fact columns, never a UUID.
+
+Then load rows for it in the sheet's test (`IndicatorReportTestBase` creates the stand-in ETL
+tables of `EtlTestSupport`) and assert each column in facility and central mode.
+`IndicatorContractTest` checks every sheet's column names and that its SQL reads only `${etl}`
+tables and holds no UUID. On a stack, `qa/reporting/compare-reports.py` compares the reports with
+`qa/reporting/expected-values.csv`.

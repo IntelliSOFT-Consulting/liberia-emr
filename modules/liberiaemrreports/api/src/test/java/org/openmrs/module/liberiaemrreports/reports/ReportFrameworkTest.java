@@ -10,24 +10,25 @@
 package org.openmrs.module.liberiaemrreports.reports;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.openmrs.module.liberiaemrreports.EtlTestSupport.COUNTY;
+import static org.openmrs.module.liberiaemrreports.EtlTestSupport.DISTRICT;
+import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_ONE;
+import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_ONE_OPD;
+import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_TWO;
 
 import java.lang.reflect.Method;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.GlobalProperty;
 import org.openmrs.Location;
+import org.openmrs.User;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.context.Context;
-import org.openmrs.module.liberiaemrreports.EtlTestSupport;
 import org.openmrs.module.liberiaemrreports.LiberiaEMRReportsActivator;
 import org.openmrs.module.liberiaemrreports.reporting.LiberiaReportManager;
 import org.openmrs.module.liberiaemrreports.reporting.ReportParameters;
@@ -37,13 +38,10 @@ import org.openmrs.module.liberiaemrreports.scope.LocationScopeResolver;
 import org.openmrs.module.liberiaemrreports.scope.ReportScopeException;
 import org.openmrs.module.liberiaemrreports.security.StoredReportAccessAdvice;
 import org.openmrs.module.liberiaemrreports.uuid.ReportSheet;
-import org.openmrs.module.reporting.dataset.DataSet;
-import org.openmrs.module.reporting.dataset.DataSetRow;
-import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.dataset.definition.SqlDataSetDefinition;
+import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
-import org.openmrs.module.reporting.report.ReportData;
 import org.openmrs.module.reporting.report.ReportDesign;
 import org.openmrs.module.reporting.report.ReportRequest;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
@@ -52,82 +50,33 @@ import org.openmrs.module.reporting.report.renderer.CsvReportRenderer;
 import org.openmrs.module.reporting.report.renderer.XlsReportRenderer;
 import org.openmrs.module.reporting.report.service.ReportService;
 import org.openmrs.module.reporting.report.service.ReportServiceImpl;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * The placeholder EMR-Ops report registers under its fixed UUIDs and evaluates, in facility and
- * central mode, over a stand-in ETL location hierarchy. Expected counts are in
- * LiberiaEMRReportsTestDataset.xml.
+ * What every sheet shares: registration under the fixed UUIDs, the facility clamp and central
+ * roll-up, the privilege, and the central-only by_facility data set. The probe is EMR-OPS-008's
+ * denominator, the live clinical encounters of LiberiaEMRReportsTestDataset.xml in Q3 2026.
  */
-public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
-	
-	private static final String FACILITY_ONE = "c2a1f754-1594-491a-aff2-6d446c09900f";
-	
-	private static final String FACILITY_ONE_OPD = "ed80f7c1-dd08-4685-9afc-b18029365609";
-	
-	private static final String FACILITY_TWO = "9fcc83b6-2574-4f8e-ae92-724d7d5eeeb3";
-	
-	private static final String DISTRICT = "ed8cc084-5cb5-46c2-bd13-58889ef22ffd";
-	
-	private static final String COUNTY = "13cf7f2f-aa51-4daf-a895-adb964720986";
-	
-	@Autowired
-	private LocationScopeResolver locationScopeResolver;
-	
-	@Before
-	public void setUp() throws Exception {
-		EtlTestSupport.createEtlTables(getConnection());
-		executeDataSet("LiberiaEMRReportsTestDataset.xml");
-		EtlTestSupport.insertHierarchy(getConnection());
-		// register() rather than registerAll(), so that a failure fails the test instead of being logged
-		List<LiberiaReportManager> managers = Context.getRegisteredComponents(LiberiaReportManager.class);
-		assertEquals("exactly the placeholder report is registered", 1, managers.size());
-		new ReportRegistrar().register(managers.get(0));
-	}
-	
-	@After
-	public void tearDown() {
-		locationScopeResolver.setRoleOverride(null);
-	}
-	
-	private ReportDefinition registered() {
-		ReportDefinition rd = Context.getService(ReportDefinitionService.class)
-		        .getDefinitionByUuid(ReportSheet.EMR_OPS.getReportUuid());
-		assertNotNull("the EMR-Ops report was not registered", rd);
-		return rd;
-	}
-	
+public class ReportFrameworkTest extends IndicatorReportTestBase {
+
+	private static final String PROBE = "EMR_OPS_008_DEN";
+
 	private void facilityIs(String uuid) {
 		Context.getAdministrationService()
 		        .saveGlobalProperty(new GlobalProperty(LocationScopeResolver.GP_FACILITY_LOCATION, uuid));
 	}
-	
-	private EvaluationContext period(String locationUuid) throws Exception {
-		SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
-		EvaluationContext context = new EvaluationContext();
-		context.addParameterValue(ReportParameters.START_DATE, day.parse("2026-07-01"));
-		context.addParameterValue(ReportParameters.END_DATE, day.parse("2026-09-30"));
-		if (locationUuid != null) {
-			context.addParameterValue(ReportParameters.LOCATION,
-			    Context.getLocationService().getLocationByUuid(locationUuid));
-		}
-		return context;
-	}
-	
-	private int count(EvaluationContext context) throws Exception {
-		ReportData data = Context.getService(ReportDefinitionService.class).evaluate(registered(), context);
-		DataSet dataSet = data.getDataSets().get(LiberiaReportManager.INDICATORS);
-		List<DataSetRow> rows = new ArrayList<DataSetRow>();
-		for (DataSetRow row : dataSet) {
-			rows.add(row);
-		}
-		assertEquals("an aggregate data set has one row", 1, rows.size());
-		Object value = rows.get(0).getColumnValue(EmrOpsReportManager.PLACEHOLDER_COLUMN);
+
+	private static int probe(EvaluationContext context) throws Exception {
+		ReportDefinition rd = registered(ReportSheet.EMR_OPS);
+		Object value = rows(Context.getService(ReportDefinitionService.class).evaluate(rd, context).getDataSets()
+		        .get(LiberiaReportManager.INDICATORS)).get(0).get(PROBE);
 		assertTrue("a plain number, got " + value, value instanceof Number);
 		return ((Number) value).intValue();
 	}
-	
+
+	private static int probe(String locationUuid) throws Exception {
+		return probe(context(Q3_START, Q3_END, locationUuid));
+	}
+
 	private static <T extends Throwable> T causedBy(Throwable thrown, Class<T> type) {
 		for (Throwable t = thrown; t != null; t = t.getCause()) {
 			if (type.isInstance(t)) {
@@ -136,132 +85,147 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 		}
 		throw new AssertionError("expected a " + type.getSimpleName() + " in the cause chain of " + thrown, thrown);
 	}
-	
+
 	// ---- registration ----
-	
+
 	@Test
-	public void shouldRegisterUnderTheFixedUuidsWithTheStandardParametersAndBothDesigns() {
-		ReportDefinition rd = registered();
-		assertEquals("MOH EMR Operational Indicators", rd.getName());
-		List<String> names = new ArrayList<String>();
-		for (Parameter p : rd.getParameters()) {
-			names.add(p.getName());
-		}
-		assertEquals(ReportParameters.START_DATE + "," + ReportParameters.END_DATE + "," + ReportParameters.LOCATION,
-		    String.join(",", names));
-		assertTrue(rd.getDataSetDefinitions().containsKey(LiberiaReportManager.INDICATORS));
-		
+	public void shouldRegisterEverySheetUnderItsFixedUuidsWithTheStandardParametersAndBothDesigns() {
 		ReportService rs = Context.getService(ReportService.class);
-		ReportDesign csv = rs.getReportDesignByUuid(ReportSheet.EMR_OPS.getCsvDesignUuid());
-		ReportDesign xlsx = rs.getReportDesignByUuid(ReportSheet.EMR_OPS.getExcelDesignUuid());
-		assertEquals(CsvReportRenderer.class, csv.getRendererType());
-		assertEquals(XlsReportRenderer.class, xlsx.getRendererType());
-		assertEquals(2, rs.getReportDesigns(rd, null, true).size());
+		for (ReportSheet sheet : ReportSheet.values()) {
+			ReportDefinition rd = registered(sheet);
+			assertEquals(sheet.getReportName(), rd.getName());
+			List<String> names = new ArrayList<String>();
+			for (Parameter p : rd.getParameters()) {
+				names.add(p.getName());
+			}
+			assertEquals(ReportParameters.START_DATE + "," + ReportParameters.END_DATE + "," + ReportParameters.LOCATION,
+			    String.join(",", names));
+			assertTrue(rd.getDataSetDefinitions().containsKey(LiberiaReportManager.INDICATORS));
+			assertTrue(sheet + " describes what it cannot disaggregate", rd.getDescription().contains("\n"));
+
+			ReportDesign csv = rs.getReportDesignByUuid(sheet.getCsvDesignUuid());
+			ReportDesign xlsx = rs.getReportDesignByUuid(sheet.getExcelDesignUuid());
+			assertEquals(CsvReportRenderer.class, csv.getRendererType());
+			assertEquals(XlsReportRenderer.class, xlsx.getRendererType());
+			assertEquals(2, rs.getReportDesigns(rd, null, true).size());
+		}
 	}
-	
+
 	@Test
 	public void shouldBeIdempotentAcrossRestarts() {
-		Integer id = registered().getId();
+		Integer id = registered(ReportSheet.EMR_OPS).getId();
 		new ReportRegistrar().registerAll();
 		new ReportRegistrar().registerAll();
-		ReportDefinition rd = registered();
+		ReportDefinition rd = registered(ReportSheet.EMR_OPS);
 		assertEquals(id, rd.getId());
 		assertEquals(2, Context.getService(ReportService.class).getReportDesigns(rd, null, true).size());
 	}
-	
+
 	@Test
 	public void shouldRegisterOnModuleStart() {
-		Integer id = registered().getId();
+		Integer id = registered(ReportSheet.NCD).getId();
 		LiberiaEMRReportsActivator activator = new LiberiaEMRReportsActivator();
 		activator.started();
-		assertEquals(id, registered().getId());
+		assertEquals(id, registered(ReportSheet.NCD).getId());
 		activator.stopped();
 	}
-	
+
+	@Test
+	public void location_shouldBeAnOptionalLocationParameter() {
+		Parameter location = registered(ReportSheet.RMNCAH).getParameter(ReportParameters.LOCATION);
+		assertEquals(Location.class, location.getType());
+		assertFalse(location.isRequired());
+	}
+
+	@Test
+	public void byFacility_shouldBeCentralOnly() {
+		for (ReportSheet sheet : ReportSheet.values()) {
+			assertFalse(registered(sheet).getDataSetDefinitions().containsKey(LiberiaReportManager.BY_FACILITY));
+		}
+		asRole(InstanceRole.CENTRAL);
+		for (ReportSheet sheet : ReportSheet.values()) {
+			assertTrue(registered(sheet).getDataSetDefinitions().containsKey(LiberiaReportManager.BY_FACILITY));
+		}
+	}
+
 	// ---- facility ----
-	
+
 	@Test
 	public void facility_shouldCountItselfAndItsSubLocationsByDefault() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
-		facilityIs(FACILITY_ONE);
 		// 9001, 9002 at the OPD, 9003 at the facility (the last minute of the period), and 9005
 		// through its visit. Not 9006 (voided) or 9007 (before the period).
-		assertEquals(4, count(period(null)));
-		assertEquals(4, count(period(FACILITY_ONE)));
-		assertEquals(2, count(period(FACILITY_ONE_OPD)));
+		assertEquals(4, probe((String) null));
+		assertEquals(4, probe(FACILITY_ONE));
+		assertEquals(2, probe(FACILITY_ONE_OPD));
 	}
-	
+
 	@Test
 	public void facility_shouldRefuseAnotherFacilityOrAWiderArea() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
-		facilityIs(FACILITY_ONE);
 		for (String outside : new String[] { FACILITY_TWO, DISTRICT, COUNTY }) {
-			EvaluationContext context = period(outside);
-			causedBy(assertThrows(Exception.class, () -> count(context)), ReportScopeException.class);
+			EvaluationContext context = context(Q3_START, Q3_END, outside);
+			causedBy(assertThrows(Exception.class, () -> probe(context)), ReportScopeException.class);
 		}
 	}
-	
+
 	@Test
 	public void facility_shouldFailWithoutItsOwnLocation() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
 		facilityIs("");
-		EvaluationContext context = period(null);
-		causedBy(assertThrows(Exception.class, () -> count(context)), ReportScopeException.class);
+		EvaluationContext context = context(Q3_START, Q3_END, null);
+		causedBy(assertThrows(Exception.class, () -> probe(context)), ReportScopeException.class);
 	}
-	
+
 	// ---- central ----
-	
+
 	@Test
 	public void central_shouldRollUpThroughTheHierarchy() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.CENTRAL);
+		asRole(InstanceRole.CENTRAL);
 		facilityIs(FACILITY_ONE); // ignored at central
-		assertEquals(5, count(period(null)));
-		assertEquals(5, count(period(COUNTY)));
-		assertEquals(5, count(period(DISTRICT)));
-		assertEquals(4, count(period(FACILITY_ONE)));
-		assertEquals(1, count(period(FACILITY_TWO)));
+		assertEquals(5, probe((String) null));
+		assertEquals(5, probe(COUNTY));
+		assertEquals(5, probe(DISTRICT));
+		assertEquals(4, probe(FACILITY_ONE));
+		assertEquals(1, probe(FACILITY_TWO));
 	}
-	
+
 	@Test
-	public void central_shouldEqualTheFacilityForThatFacility() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.FACILITY);
-		facilityIs(FACILITY_ONE);
-		int atFacility = count(period(null));
-		locationScopeResolver.setRoleOverride(InstanceRole.CENTRAL);
-		assertEquals(atFacility, count(period(FACILITY_ONE)));
+	public void central_byFacilityShouldListEachFacilityInScope() throws Exception {
+		asRole(InstanceRole.CENTRAL);
+		List<java.util.Map<String, Object>> rows = byFacility(ReportSheet.EMR_OPS, Q3_START, Q3_END, DISTRICT);
+		assertEquals(2, rows.size());
+		assertEquals("Test Facility One", rows.get(0).get("facility_name"));
+		assertEquals(FACILITY_ONE, rows.get(0).get("facility_uuid"));
+		assertCount(rows.get(0), PROBE, 4);
+		assertEquals("Test Facility Two", rows.get(1).get("facility_name"));
+		assertCount(rows.get(1), PROBE, 1);
+
+		rows = byFacility(ReportSheet.EMR_OPS, Q3_START, Q3_END, FACILITY_TWO);
+		assertEquals(1, rows.size());
+		// a facility with no events has zero counts and no value
+		rows = byFacility(ReportSheet.MALARIA, Q3_START, Q3_END, FACILITY_TWO);
+		assertCount(rows.get(0), "MAL_002_NUM", 0);
+		assertPercent(rows.get(0), "MAL_002_PCT", null);
 	}
-	
+
 	// ---- privilege ----
-	
+
 	@Test
 	public void shouldRefuseAUserWithoutExportNationalReport() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.CENTRAL);
-		EvaluationContext context = period(null);
+		asRole(InstanceRole.CENTRAL);
+		EvaluationContext context = context(Q3_START, Q3_END, null);
 		Context.becomeUser("butch");
-		try {
-			count(context);
-			fail("a user without Export National Report evaluated the report");
-		}
-		catch (Exception e) {
-			causedBy(e, APIAuthenticationException.class);
-		}
+		causedBy(assertThrows(Exception.class, () -> probe(context)), APIAuthenticationException.class);
 	}
-	
+
 	@Test
 	public void shouldRefuseAQueuedRequestFromAUserWithoutExportNationalReport() throws Exception {
-		locationScopeResolver.setRoleOverride(InstanceRole.CENTRAL);
+		asRole(InstanceRole.CENTRAL);
 		ReportRequest request = request(Context.getUserService().getUserByUsername("butch"));
-		EvaluationContext context = period(null);
+		EvaluationContext context = context(Q3_START, Q3_END, null);
 		context.addContextValue(ReportServiceImpl.REPORT_REQUEST_UUID, request.getUuid());
-		try {
-			count(context); // evaluated by admin, but on butch's behalf
-			fail("a request from a user without Export National Report was evaluated");
-		}
-		catch (Exception e) {
-			causedBy(e, APIAuthenticationException.class);
-		}
+		// evaluated by admin, but on butch's behalf
+		causedBy(assertThrows(Exception.class, () -> probe(context)), APIAuthenticationException.class);
 	}
-	
+
 	@Test
 	public void storedOutput_shouldRequireExportNationalReportForOurReportsOnly() throws Exception {
 		Method load = ReportService.class.getMethod("loadRenderedOutput", ReportRequest.class);
@@ -276,32 +240,20 @@ public class EmrOpsReportManagerTest extends BaseModuleContextSensitiveTest {
 		rows.setSqlQuery("SELECT 1");
 		other.addDataSetDefinition("rows", Mapped.mapStraightThrough(rows));
 		theirs.setReportDefinition(Mapped.noMappings(other));
-		
+
 		advice.before(load, new Object[] { ours }, null); // admin may
-		
+
 		Context.becomeUser("butch");
 		advice.before(load, new Object[] { theirs }, null); // not ours: reporting's rules apply
-		try {
-			advice.before(load, new Object[] { ours }, null);
-			fail("butch read a stored national report");
-		}
-		catch (APIAuthenticationException expected) {
-			// the guard held
-		}
+		Object[] args = new Object[] { ours };
+		assertThrows(APIAuthenticationException.class, () -> advice.before(load, args, null));
 	}
-	
-	private ReportRequest request(org.openmrs.User requestedBy) {
+
+	private ReportRequest request(User requestedBy) {
 		ReportRequest request = new ReportRequest();
-		request.setReportDefinition(Mapped.noMappings(registered()));
+		request.setReportDefinition(Mapped.noMappings(registered(ReportSheet.EMR_OPS)));
 		request.setRequestedBy(requestedBy);
 		request.setStatus(ReportRequest.Status.COMPLETED);
 		return Context.getService(ReportService.class).saveReportRequest(request);
-	}
-	
-	@Test
-	public void location_shouldBeAnOptionalLocationParameter() {
-		Parameter location = registered().getParameter(ReportParameters.LOCATION);
-		assertEquals(Location.class, location.getType());
-		assertEquals(false, location.isRequired());
 	}
 }
