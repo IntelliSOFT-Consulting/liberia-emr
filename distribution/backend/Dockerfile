@@ -183,6 +183,60 @@ RUN set -eu; \
     fi
 
 # ---------------------------------------------------------------------------
+# Stage 2b — the audit log module (MOH ICT SOP control C1), from pinned upstream source
+# ---------------------------------------------------------------------------
+# openmrs/openmrs-module-auditlog records every create, update and delete that goes through
+# the OpenMRS Hibernate session in auditlog_audit_log. It is what the auditlog.* global
+# properties in content-liberia-national's gp-audit.xml configure; without it those GPs
+# configure nothing.
+#
+# It is NOT an omod.* pin because mavenrepo.openmrs.org, the only repository
+# scripts/build/resolve-modules.sh reads, has no usable release of it:
+#   - org.openmrs.module:auditlog-omod:1.1-1.0.0 there is a DIFFERENT module under the same
+#     coordinate (a client-posted event log with its own audit_log table, which never reads
+#     auditlog.*, and bundles a -SNAPSHOT api jar);
+#   - the real module's 1.1 release exists only on a third-party Repsy repository, and
+#     predates two fixes a security control cannot ship without: AUDIT-35 (stored XSS in the
+#     audit log viewer, from a person's name) and AUDIT-38 (the list view drops the
+#     user from every entry that has one, and throws on the ones that do not).
+# So it is built here from the commit pinned in distribution/distro.properties (source.auditlog.*),
+# the dbsync precedent. The commit is fetched by its full SHA, so the source cannot move under
+# the pin, and the version is stamped so no -SNAPSHOT omod reaches the image. Move it to an
+# omod.* pin the day upstream publishes a release containing those fixes.
+#
+# distro.properties is copied into this stage alone, so a change to any other pin does not
+# rebuild the in-tree modules above.
+FROM maven:3.9-eclipse-temurin-17 AS auditlog
+
+WORKDIR /build
+COPY distribution/distro.properties /build/distro.properties
+# Modify + PR patches (packages/modify-pr/README.md), applied in name order. A patch that no
+# longer applies fails the build rather than shipping the unpatched module.
+COPY distribution/backend/patches/auditlog/ /build/patches/
+RUN set -eu; \
+    repo="$(sed -n 's/^source\.auditlog\.repository=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    commit="$(sed -n 's/^source\.auditlog\.commit=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    version="$(sed -n 's/^source\.auditlog\.version=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    [ -n "$repo" ] && [ -n "$version" ] \
+      || { echo "source.auditlog.repository/.version are not pinned in distro.properties" >&2; exit 1; }; \
+    echo "$commit" | grep -qxE '[0-9a-f]{40}' \
+      || { echo "source.auditlog.commit must be a full 40-character SHA, got '${commit}'" >&2; exit 1; }; \
+    case "$version" in *SNAPSHOT*|*latest*) echo "source.auditlog.version must be a fixed version" >&2; exit 1 ;; esac; \
+    git init -q /build/auditlog; \
+    cd /build/auditlog; \
+    git fetch -q --depth 1 "$repo" "$commit"; \
+    git checkout -q FETCH_HEAD; \
+    [ "$(git rev-parse HEAD)" = "$commit" ] || { echo "fetched $(git rev-parse HEAD), pinned $commit" >&2; exit 1; }; \
+    for p in /build/patches/*.patch; do \
+      echo "applying ${p##*/}"; \
+      git apply --whitespace=nowarn "$p"; \
+    done; \
+    mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+      -DnewVersion="$version" -DgenerateBackupPoms=false; \
+    mvn -B -q -DskipTests clean package; \
+    ls "/build/auditlog/omod/target/auditlog-${version}.omod"
+
+# ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
 # Must match war.openmrs in distribution/distro.properties — this image IS the platform, so
@@ -225,6 +279,8 @@ COPY distribution/backend/modules/ /openmrs/distribution/openmrs_modules/
 COPY --from=module /build/liberiaemr/omod/target/liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
 COPY --from=module /build/modules/mambaetl/omod/target/mamba-etl-liberiaemr-*.omod /openmrs/distribution/openmrs_modules/
 COPY --from=module /build/modules/liberiaemrreports/omod/target/liberiaemrreports-*.omod /openmrs/distribution/openmrs_modules/
+# Third-party, but built from a pinned commit rather than resolved (stage 2b says why).
+COPY --from=auditlog /build/auditlog/omod/target/auditlog-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/
