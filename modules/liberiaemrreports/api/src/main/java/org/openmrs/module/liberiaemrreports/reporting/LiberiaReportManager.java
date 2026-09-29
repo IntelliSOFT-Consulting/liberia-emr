@@ -131,10 +131,28 @@ public abstract class LiberiaReportManager extends BaseReportManager {
 	 *            {@code name}, which the aggregate-only check refuses
 	 */
 	protected void addByFacilityDataSet(ReportDefinition reportDefinition, String sql) {
-		LocationScopeResolver resolver = Context.getRegisteredComponent("liberiaemrreports.locationScopeResolver",
-		    LocationScopeResolver.class);
-		if (resolver.getRole() == InstanceRole.CENTRAL) {
+		if (getRole() == InstanceRole.CENTRAL) {
 			addDataSet(reportDefinition, BY_FACILITY, sql);
 		}
+	}
+
+	/**
+	 * Adds a sheet's {@link #INDICATORS} data set and, at central, its {@link #BY_FACILITY} one, from
+	 * the same queries ({@link IndicatorQuery#indicatorsSql}, {@link IndicatorQuery#byFacilitySql}).
+	 */
+	protected void addIndicators(ReportDefinition reportDefinition, List<IndicatorQuery> queries) {
+		addDataSet(reportDefinition, INDICATORS, IndicatorQuery.indicatorsSql(queries));
+		if (getRole() == InstanceRole.CENTRAL) {
+			addDataSet(reportDefinition, BY_FACILITY, IndicatorQuery.byFacilitySql(queries));
+		}
+	}
+
+	/**
+	 * @return this instance's role, for an indicator whose facility and central definitions differ
+	 *         (EMR-Ops). Fixed for the life of the process, and definitions are rebuilt on every start.
+	 */
+	protected InstanceRole getRole() {
+		return Context.getRegisteredComponent("liberiaemrreports.locationScopeResolver", LocationScopeResolver.class)
+		        .getRole();
 	}
 }

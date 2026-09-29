@@ -46,6 +46,8 @@ derived/ncd/sp_mamba_fact_ncd_blood_pressure.sql
 # ---- emr_ops (RPT 7) ----
 derived/emr_ops/sp_mamba_fact_emr_ops_visit.sql
 derived/emr_ops/sp_mamba_fact_emr_ops_sync_queue.sql
+derived/emr_ops/sp_mamba_dim_emr_ops_encounter_type.sql
+derived/emr_ops/sp_mamba_fact_emr_ops_patient.sql
 
 # ---- caller (coordinator): calls everything above, in this order ----
 sp_mamba_data_processing_etl.sql

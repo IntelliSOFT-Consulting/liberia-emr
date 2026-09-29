@@ -3,10 +3,9 @@ import { loginWithSession } from '../support/session';
 /**
  * Indicator report runner (LE-335), @liberiaemr/esm-liberia-reports-app.
  *
- * The app lists only the reports in `reportUuids` that the server has registered. On the demo
- * stack today that is the EMR-Ops report (EmrOpsReportManager, `var.report.emr-ops.uuid`),
- * whose `indicators` data set and CSV design are enough for the run test. The MOH indicator
- * reports (LE-334) add to the list without changing these tests.
+ * The app lists only the reports in `reportUuids` that the server has registered, and selects
+ * the first (RMNCAH). The run test picks the EMR-Ops report by name instead: its data set reads
+ * the encounters every demo stack has, so the run shows figures whatever the sheet order.
  */
 describe('Indicator reports', () => {
   beforeEach(() => {
@@ -32,6 +31,7 @@ describe('Indicator reports', () => {
     cy.intercept('GET', '**/reportingrest/reportDataSet/**').as('preview');
 
     cy.visit('/openmrs/spa/indicator-reports');
+    cy.get('#liberia-report').select('MOH EMR Operational Indicators');
     cy.contains('button', 'Run report').click();
 
     cy.wait('@requestReport').its('response.statusCode').should('be.oneOf', [200, 201]);
