@@ -294,10 +294,19 @@ section "UUID identity across packages"
 # workflows, mappings...) are identified by other columns and have nothing to compare. An AMPATH
 # form counts by the UUID Initializer derives from its name and version, since the JSON uuid
 # field is ignored at load.
+#
+# ALLOWED holds a known rename that is not ours to fix, with the reason. Keep it to rows in
+# content-demo, which is vendored from upstream at a pinned tag and must not be edited here
+# (scripts/build/lift-demo-content.sh --check fails any drift).
 python3 - "$PKG_DIR" "$FILTER_CHAIN" <<'PY' || err "UUIDs declared under different names (see above)"
 import csv, glob, hashlib, json, os, re, sys, uuid as uuidlib
 
 pkg_dir, chain = sys.argv[1], sys.argv[2].split()
+ALLOWED = {  # (domain, uuid) -> why the rename is accepted
+    ("conceptreferencerange", "13a9cfe1-b3ea-49d0-b97a-db99d9cbcb80"):
+        "upstream demo 1.9.2 labels the >= 3 months temperature range 'Temp Celsius >3mos'; "
+        "national's '>=3mos' matches the criterion. Label only: limits and criterion agree.",
+}
 AMPATH_FORMS_UUID = "794c4598-ab82-47ca-8d18-483a8abe6f4f"
 
 def form_uuid(name, version):
@@ -373,7 +382,7 @@ for comp, layers in compositions.items():
             cache[pkg] = rows_for(pkg)
         for domain, uuid, name, origin in cache[pkg]:
             owner = first.setdefault((domain, uuid), (name, origin))
-            if owner[0] != name:
+            if owner[0] != name and (domain, uuid) not in ALLOWED:
                 found.setdefault((domain, uuid, owner, (name, origin)), []).append(comp)
 
 for (domain, uuid, (n1, o1), (n2, o2)), comps in found.items():
