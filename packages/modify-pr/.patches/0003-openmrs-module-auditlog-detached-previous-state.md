@@ -1,11 +1,11 @@
-# 0003 openmrs-module-auditlog: keep the temporary session open for a detached entity's previous state
+# 0003 openmrs-module-auditlog: fix the detached-entity path of onFlushDirty()
 
 | Field | |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-module-auditlog` |
 | Upstream PR | **TODO — not opened yet.** Open it against `master` with the patch below; until it exists this patch breaks [the rule](../README.md#the-rule) |
 | Component version patched | commit `ba96ba5471ccf6e91db0d11b5c7d416ffd4a7460` (`source.auditlog.commit` in `distribution/distro.properties`) |
-| Why not configuration | The failure is in compiled code: `HibernateAuditLogInterceptor.onFlushDirty()` closes the session its previous-state proxies belong to before comparing them. Excluding the affected types would take `Concept`, and with it most metadata, out of the audit log. |
+| Why not configuration | The failures are in compiled code: `HibernateAuditLogInterceptor.onFlushDirty()` closes the session its previous-state proxies belong to before comparing them, and assumes a detached entity always has a stored row. Excluding the affected types would take `Concept`, and with it most metadata, out of the audit log. |
 | Removal condition | An upstream commit or release containing the fix; then bump `source.auditlog.*`, and delete the patch body and this sidecar |
 | Owner | LE-353 assignee |
 
@@ -18,3 +18,8 @@ patch `0001` applied, Initializer failed to load two rows that load without the 
 program workflow (`could not initialize proxy [org.openmrs.Concept#4017] - no Session`) and an
 appointment service type (`… [org.openmrs.module.appointments.model.Speciality#1] - no
 Session`). The exception escaped the interceptor and failed Initializer's own save.
+
+With the session kept open, the same path then threw `NullPointerException` where a detached
+entity has no stored row yet: creating a patient over REST for an existing person (the
+Person is being made a Patient) failed, as did one Initializer appointment service type row.
+A missing row now means no previous state, and every current value is recorded as the change.

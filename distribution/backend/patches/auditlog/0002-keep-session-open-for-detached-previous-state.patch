@@ -1,4 +1,5 @@
-Keep the temporary session open while a detached entity's previous state is compared.
+Fix the detached-entity path of onFlushDirty(): keep the temporary session open while the
+previous state is compared, and handle a detached entity with no stored row.
 
 openmrs-module-auditlog (master ba96ba5, and the 1.1 release) handles an update to a
 DETACHED entity by loading its previous state in a temporary session. It closed that
@@ -14,7 +15,14 @@ metadata, failed to load a program workflow ("could not initialize proxy
 [org.openmrs.module.appointments.model.Speciality#1] - no Session"). Neither fails
 without the module.
 
-The session now closes in a finally after the comparison and serialization. The body of
+The same path also assumed a stored row always exists. Making an existing Person a
+Patient saves a detached Patient whose id has no patient row yet: the temporary session's
+get() returns null and getEntityPersister(null, null) throws NullPointerException, which
+also fails the caller's save. Seen on the same stack: creating a patient over REST for an
+existing person, and Initializer loading an appointment service type.
+
+The session now closes in a finally after the comparison and serialization, and a missing
+row means no previous state, so every current value is recorded as the change. The body of
 the new try is left at its old indentation to keep this diff reviewable.
 
 Applied by distribution/backend/Dockerfile (stage 2b). Tracked in
@@ -22,7 +30,7 @@ packages/modify-pr/.patches/0003-openmrs-module-auditlog-detached-previous-state
 
 --- a/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
 +++ b/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
-@@ -155,25 +155,23 @@
+@@ -155,25 +155,27 @@
  	                            String[] propertyNames, Type[] types) {
  		
  		if (propertyNames != null && InterceptorUtil.isAudited(entity.getClass())) {
@@ -44,33 +52,33 @@ packages/modify-pr/.patches/0003-openmrs-module-auditlog-detached-previous-state
 +				tmpSession = sf.openSession();
 +				Object obj = tmpSession.get(entity.getClass(), id);
  
--					SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
-+				SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
++				// No stored row of this type yet, for example a Person being made a Patient:
++				// there is no previous state, so every current value is recorded as the change.
++				if (obj != null) {
+ 					SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
  
--					EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
--					previousState = ep.getPropertyValues(obj);
--				}
+ 					EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
+ 					previousState = ep.getPropertyValues(obj);
+ 				}
 -				finally {
 -					if (tmpSession != null) {
 -						SessionFactoryUtils.closeSession(tmpSession);
 -					}
 -				}
 -				
-+				EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
-+				previousState = ep.getPropertyValues(obj);
  			}
  			Map<String, Object[]> propertyChangesMap = null;//Map<propertyName, Object[]{currentValue, PreviousValue}>
  			for (int i = 0; i < propertyNames.length; i++) {
-@@ -226,6 +224,12 @@
- 				
+@@ -227,6 +229,12 @@
  				updates.get().peek().add(entity);
  				objectChangesMap.get().peek().put(entity, propertyChangesMap);
-+			}
+ 			}
 +			}
 +			finally {
 +				if (tmpSession != null) {
 +					SessionFactoryUtils.closeSession(tmpSession);
 +				}
- 			}
++			}
  		}
  		
+ 		return false;
