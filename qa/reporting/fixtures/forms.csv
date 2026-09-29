@@ -3,7 +3,7 @@ anc-initial-v1.2,${var.form.anc-initial.uuid},${var.encountertype.anc-initial.uu
 anc-initial-v1.1,form:ANC Initial Visit@1.1,${var.encountertype.anc-initial.uuid},create-retired,old version of the same form; exists on upgraded databases only so the loader creates it retired (old/new form version edge case)
 anc-followup-v1.0,${var.form.anc-followup.uuid},${var.encountertype.anc-followup.uuid},fail,MCH ANC Follow-up Visit
 anc-national-v1.1,${var.form.anc-national.uuid},${var.encountertype.consultation.uuid},fail,national ANC form family; saves under the shared Consultation encounter type
-fp-v2.2,${var.form.family-planning.uuid},${var.encountertype.family-planning.uuid},fail,current 3. Family Planning (MCH)
+fp-v2.2,${var.form.family-planning.uuid},${var.encountertype.mch-family-planning.uuid},fail,current 3. Family Planning (MCH)
 fp-national-v1.0,form:3. Family Planning@1.0,${var.encountertype.consultation.uuid},fail,older version of 3. Family Planning (national); saves under the shared Consultation encounter type
 ld-first-second-v1.2,${var.form.first-and-second-stage-of-labor-and-delivery.uuid},${var.encountertype.labor-delivery.uuid},fail,1. First and Second Stage of Labor and Delivery
 pnc-mother-v1.0,${var.form.pnc-visit.uuid},${var.encountertype.mch-pnc.uuid},fail,Mother PNC

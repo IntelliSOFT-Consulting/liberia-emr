@@ -92,6 +92,14 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       resolve to one UUID in the merged tree, and which name survives depends on load order.
     * `validate-content.sh` checks for duplicates within a file only, so it does not catch this.
     * **Ask:** give the MCH type its own key. Until then, reports should key on the form UUID.
+    * **Resolved (LE-343).** The MCH type is now `var.encountertype.mch-family-planning.uuid`,
+      with its value unchanged. `validate-content.sh` fails on a key that differs between
+      programme layers, and on a UUID declared under two names.
+    * **Correction to the second bullet.** The two rows never collapsed into one. Each package
+      filters its own `variables.properties` last, so the national row resolved to `87cba9c7-…`
+      and the MCH row and form to `d260ac4b-…`. The real hazard was that the national key's
+      value depended on which chain resolved it. The ETL and QA chains got MCH's value; the
+      reports module, filtered from the national file only, got national's.
 11. **Repo form variables for OPD and Triage are not the runtime UUIDs.**
     * `var.form.opd-consultation.uuid=96b72a44-…` and `var.form.triage.uuid=cc825000-…` hold the
       JSON `uuid` literal, which `AmpathFormsLoader` ignores.

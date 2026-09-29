@@ -5,7 +5,7 @@
   "published": true,
   "retired": false,
   "encounter": "Family Planning Visit",
-  "encounterType": "${var.encountertype.family-planning.uuid}",
+  "encounterType": "${var.encountertype.mch-family-planning.uuid}",
   "processor": "EncounterFormProcessor",
   "referencedForms": [],
   "description": "Captures family planning counselling, visit purpose, contraceptive method selection and provision, pregnancy and eligibility assessment, LAM guidance, implant insertion or removal, and follow-up requirements.",
@@ -79,10 +79,7 @@
                     "concept": "${var.concept.mch.fp-purpose-side-effects.uuid}",
                     "label": "Side Effects Management"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? [] : purposeOfVisit"
-                }
+                ]
               },
               "id": "purposeOfVisit",
               "label": "Purpose of Visit",
@@ -104,10 +101,7 @@
                 "concept": "${var.concept.ciel.parity.uuid}",
                 "disallowDecimals": true,
                 "step": 1,
-                "min": "0",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : parity"
-                }
+                "min": "0"
               },
               "id": "parity",
               "label": "Parity",
@@ -168,10 +162,7 @@
                     "concept": "${var.concept.mch.fp-sayana-press.uuid}",
                     "label": "Sayana Press"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : chosenFamilyPlanningMethod"
-                }
+                ]
               },
               "id": "chosenFamilyPlanningMethod",
               "label": "Chosen Family Planning Method"
@@ -218,10 +209,7 @@
                     "concept": "${var.concept.mch.fp-sayana-press.uuid}",
                     "label": "Sayana Press"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : familyPlanningMethodDispensed"
-                }
+                ]
               },
               "id": "familyPlanningMethodDispensed",
               "label": "Family Planning Method Dispensed",
@@ -250,10 +238,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : amenorrhea"
-                }
+                ]
               },
               "id": "amenorrhea",
               "label": "Amenorrhea (Menses Not Returned)"
@@ -272,10 +257,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : missedOrLateMenses"
-                }
+                ]
               },
               "id": "missedOrLateMenses",
               "label": "Missed or Late Menses"
@@ -287,10 +269,7 @@
                 "concept": "${var.concept.mch.fp-days-since-unprotected-sex.uuid}",
                 "disallowDecimals": true,
                 "step": 1,
-                "min": "0",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : daysSinceUnprotectedSex"
-                }
+                "min": "0"
               },
               "id": "daysSinceUnprotectedSex",
               "label": "Days Since Unprotected Sex"
@@ -309,10 +288,7 @@
                     "concept": "${var.concept.ciel.703.uuid}",
                     "label": "Positive"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : pregnancyTestResult"
-                }
+                ]
               },
               "id": "pregnancyTestResult",
               "label": "Pregnancy Test Result"
@@ -418,10 +394,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : exclusiveBreastfeeding"
-                }
+                ]
               },
               "id": "exclusiveBreastfeeding",
               "label": "Exclusive Breastfeeding"
@@ -430,10 +403,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.mch.fp-date-of-delivery.uuid}",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : dateOfLastDelivery"
-                }
+                "concept": "${var.concept.mch.fp-date-of-delivery.uuid}"
               },
               "id": "dateOfLastDelivery",
               "label": "Date of Last Delivery",
@@ -509,10 +479,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : unexplainedVaginalBleeding"
-                }
+                ]
               },
               "id": "unexplainedVaginalBleeding",
               "label": "Unexplained Vaginal Bleeding"
@@ -531,10 +498,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : historyOfBreastCancer"
-                }
+                ]
               },
               "id": "historyOfBreastCancer",
               "label": "History of Breast Cancer"
@@ -553,10 +517,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : severeLiverDisease"
-                }
+                ]
               },
               "id": "severeLiverDisease",
               "label": "Severe Liver Disease"
@@ -575,10 +536,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : currentDvtOrPulmonaryEmbolism"
-                }
+                ]
               },
               "id": "currentDvtOrPulmonaryEmbolism",
               "label": "Current DVT or Pulmonary Embolism"
@@ -647,10 +605,7 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : implantInserted"
-                }
+                ]
               },
               "id": "implantInserted",
               "label": "Implant Inserted"
@@ -659,10 +614,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.mch.fp-implant-insertion-date.uuid}",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : implantInsertionDate"
-                }
+                "concept": "${var.concept.mch.fp-implant-insertion-date.uuid}"
               },
               "id": "implantInsertionDate",
               "label": "Implant Insertion Date",
@@ -695,10 +647,7 @@
               "type": "obs",
               "questionOptions": {
                 "rendering": "date",
-                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}",
-                "calculate": {
-                  "calculateExpression": "counsellingDone !== '${var.concept.ciel.yes.uuid}' ? null : dateMethodRemoved"
-                }
+                "concept": "${var.concept.national.date-when-the-family-planning-method-was-removed.uuid}"
               },
               "id": "dateMethodRemoved",
               "label": "Date Method Removed",

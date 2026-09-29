@@ -86,9 +86,10 @@ sql` prints it for review.
 
 Two resolutions to know about:
 
-- **`var.encountertype.family-planning.uuid`** is declared twice (rmncah-nutrition gap 10).
-  The chain resolves it to the MCH value, *Family Planning Visit*, which is the encounter type
-  the v2.2 form is filtered with.
+- **FP encounters use `var.encountertype.mch-family-planning.uuid`**, *Family Planning Visit*,
+  the encounter type of the v2.2 form. `var.encountertype.family-planning.uuid` is the national
+  layer's separate *Family Planning* type, which no form uses. Until LE-343 the MCH type shared
+  that key with a second value (rmncah-nutrition gap 10), and the chain resolved it to MCH's.
 - **Forms with no variable** are referenced by `form:`: `3. Family Planning` v1.0, and the
   retired `ANC Initial Visit` v1.1. Every `var.form.*` holds the runtime uuid Initializer
   derives from the form's name and version (gap 11, fixed by LE-344), and `validate-content.sh`
