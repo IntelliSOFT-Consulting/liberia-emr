@@ -103,15 +103,15 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.fetal-heart-rate.uuid}",
                 "rendering": "number",
-                "min": 40,
-                "max": 250,
+                "min": 60,
+                "max": 220,
                 "step": 1
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 40 || myValue > 250)",
-                  "message": "Value must be between 40 and 250"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 60 || myValue > 220)",
+                  "message": "Value must be between 60 and 220"
                 }
               ]
             },
