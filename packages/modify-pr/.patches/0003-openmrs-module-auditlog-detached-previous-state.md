@@ -23,3 +23,9 @@ With the session kept open, the same path then threw `NullPointerException` wher
 entity has no stored row yet: creating a patient over REST for an existing person (the
 Person is being made a Patient) failed, as did one Initializer appointment service type row.
 A missing row now means no previous state, and every current value is recorded as the change.
+
+The same person-to-patient case fails differently when the Person is still in Hibernate's
+second-level cache: the temporary session's `get()` throws `WrongClassException` instead of
+returning null. This was reproduced in upstream's test harness on core 2.5.0, but not yet
+seen in production. That exception also means no previous state now. The patch body is the
+main-code diff of the fix prepared for upstream; the upstream PR adds the tests.
