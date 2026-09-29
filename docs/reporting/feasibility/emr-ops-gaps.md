@@ -22,7 +22,7 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
 | Question | Finding |
 | --- | --- |
 | Sender state (facility `openmrs_mgmt`) | `debezium_event_queue` (`date_created` TIMESTAMP(3), `table_name`, `identifier`, `operation`, `snapshot`) and `sender_retry_queue` (`date_created`, `date_changed`, `attempt_count`, `exception_type`). Both are **transient**: a row is removed once the message reaches the broker. No history of sent records is kept. |
-| Receiver state (central `openmrs_mgmt`) | `receiver_sync_msg` (`date_created` = arrival at the receiver), `receiver_synced_msg` (`date_sent` = sender's `metadata.dateSent`, stamped when it serialised the message; `date_received`), `receiver_retry_queue`, `receiver_conflict_queue`, `site_info`. `receiver_sync_msg` and `receiver_synced_msg` are **transient**: `CleanerProcessor` deletes a synced message once cache eviction and indexing are done. **There is no archive table in 4.0.0.** `sync-eip.md` and `sync-module-evaluation.md` say "synced-message archiving", which is stale. |
+| Receiver state (central `openmrs_mgmt`) | `receiver_sync_msg` (`date_created` = arrival at the receiver), `receiver_synced_msg` (`date_sent` = sender's `metadata.dateSent`, stamped when it serialised the message; `date_received`), `receiver_retry_queue`, `receiver_conflict_queue`, `site_info`. `receiver_sync_msg` and `receiver_synced_msg` are **transient**: `CleanerProcessor` deletes a synced message once cache eviction and indexing are done. **There is no archive table in 4.0.0.** `sync-eip.md` and `sync-module-evaluation.md` said "synced-message archiving"; corrected by LE-354 (`sync-eip.md` §5.8). |
 | Durable per-record receipt time | **The per-entity hash tables at central** (`encounter_hash`, `patient_hash`, `visit_hash`, `obs_hash`, …): `identifier` = entity uuid; `date_created` = `LocalDateTime.now()` when central first applied the record (`OpenmrsLoadProducer`); `date_changed` = the latest update, overwritten each time. |
 | Does central keep the facility's `date_created`? | **Yes.** dbsync writes through its own JPA entities: `BaseCreatableEntity` maps `date_created` from the payload, and `BaseChangeableDataEntity` does the same for `date_changed`. The OpenMRS `AuditableInterceptor` is not involved, so central holds the facility values. |
 | Facility of origin at central | Not on the replica rows. dbsync keeps `metadata.sourceIdentifier` only inside payloads that are later deleted, and `SyncStatusService` notes that it records no sender on queued or failed records. Use the root of `encounter.location_id` / `visit.location_id`, or `openmrs_identity.patient_link.facility_location_uuid` (the root of the identifier location, set by `IdentityService`). |
@@ -54,9 +54,10 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    Build §5.5, or at least publish facility daily counts to central monitoring, and compute
    005 against them. Until then, report central's figure as "of records received".
 
-4. **Correct the "synced-message archiving" claim** in `docs/architecture/sync-eip.md` and
-   `sync-module-evaluation.md`. dbsync 4.0.0 deletes processed messages and has no archive.
-   Say that the hash tables are the only durable receipt record.
+4. **Done (LE-354).** ~~Correct the "synced-message archiving" claim~~ in
+   `docs/architecture/sync-eip.md` and `sync-module-evaluation.md`. dbsync 4.0.0 deletes
+   processed messages and has no archive; `sync-eip.md` §5.8 now says so, with the source for
+   each table, and names the hash tables as the only durable receipt record.
 
 5. **Define the core minimum dataset (EMR-OPS-006).** Author the per-form CMDS in section 2
    as content, reviewed by the MCH, OPD and TB programme leads. Include a validation check
