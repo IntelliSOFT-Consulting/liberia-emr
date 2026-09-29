@@ -52,7 +52,8 @@ services:
     networks: [liberiaemr]
 
   backend:
-    image: ${REGISTRY}/liberia-emr-backend:${LIBERIAEMR_VERSION}
+    # Central's own backend: every site package's locations (LE-339, docs/adr/0012).
+    image: ${REGISTRY}/liberia-emr-backend-central:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       db:

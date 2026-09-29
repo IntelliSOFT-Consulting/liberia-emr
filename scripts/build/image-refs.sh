@@ -42,7 +42,9 @@ site_images() {
   case "$site" in
     demo) echo "'demo' is a build flavour, not a site" >&2; exit 2 ;;
     central)
-      # Central runs the site-agnostic images of the same release (ADR 0011).
+      # Central's own backend (every site's locations, LE-339 / ADR 0012) and frontend
+      # (ADR 0011); it runs the site-agnostic images of the same release.
+      echo liberia-emr-backend-central
       echo liberia-emr-frontend-central ;;
     *)
       echo "liberia-emr-backend-${site}"

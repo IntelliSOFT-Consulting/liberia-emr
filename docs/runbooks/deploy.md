@@ -98,11 +98,13 @@ time; section 1 of the sync runbook covers what to check first and how to tell i
 
 ## Central deployment
 
-Central runs the same backend as a facility, its own frontend image
-(`liberia-emr-frontend-central`, built by `build-distribution.sh --site central`; see
-[ADR 0011](../adr/0011-central-composition.md)), plus the broker, the sync receiver and their
-monitoring, all in one stack. Both frontend images carry the release version, so the pull
-below needs that release's central build to have been published as well as its facility build:
+Central runs its own backend and frontend images (`liberia-emr-backend-central`, which holds
+every site's locations, and `liberia-emr-frontend-central`, both built by
+`build-distribution.sh --site central`; see [ADR 0011](../adr/0011-central-composition.md) and
+[ADR 0012](../adr/0012-central-site-locations.md)), the facility release's gateway, plus the
+broker, the sync receiver and their monitoring, all in one stack. All images carry the release
+version, so the pull below needs that release's central build to have been published as well as
+its facility build:
 
 ```bash
 cd distribution/compose/central
@@ -117,7 +119,11 @@ the receiver's certificate and every enrolled facility's PGP key; both stacks re
 without them. `ARTEMIS_BIND_ADDR` is the one interface facilities reach the broker on. The same
 first-boot rule for `OMRS_CREATE_TABLES` applies. Central must run the same release as its
 facilities, since both hold the same metadata ([sync-entity-coverage.md](../architecture/sync-entity-coverage.md)
-section 3). Adding a facility later is section 1 of the sync runbook, not a redeploy.
+section 3). Enrolling an existing facility in sync is section 1 of the sync runbook, not a
+redeploy. A **new site package** is different: central's backend image carries the locations of
+the site packages it was built with (ADR 0012), so central must be redeployed from a build that
+includes the new package before that facility syncs, and before central's next MFL sync (the MFL
+sync runbook, section 2). Otherwise its records reference locations central does not hold.
 
 ## Upgrade
 

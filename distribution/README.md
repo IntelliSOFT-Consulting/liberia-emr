@@ -167,10 +167,13 @@ carry one version and are meant to ship together.
 
 `--site central` builds the central composition ([ADR 0011](../docs/adr/0011-central-composition.md)):
 `content-central` takes the site layer's place, so central gets its own last frontend layer,
-`config-central.json`, and no facility's `config-site.json`. Today that yields a single image,
-`liberia-emr-frontend-central`. Central runs the facility release's backend, gateway and sync
-images of the same version, so a release builds a facility site **and** central. `--demo` and
-`--no-frontend` are refused with it.
+`config-central.json`, and no facility's `config-site.json`. That yields two images:
+`liberia-emr-frontend-central` and `liberia-emr-backend-central`, whose content adds the
+`locations/` of every site package and nothing else of theirs
+([ADR 0012](../docs/adr/0012-central-site-locations.md); checked by
+`scripts/validate/central-backend-content.sh`). Central runs the facility release's gateway and
+sync images of the same version, so a release builds a facility site **and** central. `--demo`
+is refused with it; `--no-frontend` builds the central backend alone.
 
 For a training stack, `--demo` builds `liberia-emr-{backend,frontend}-demo` with
 `content-demo` added as the last content layer (the gateway keeps its normal name, and the
