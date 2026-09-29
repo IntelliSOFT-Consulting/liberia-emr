@@ -20,6 +20,11 @@
     mappings and drugs an import writes are still audited; only the importer's record of
     having processed them is not. On a first boot they were a quarter of all rows.
 
+  KEEP auditlog.auditingStrategy ABOVE auditlog.exceptions. When the strategy is saved and the
+  module has no cached strategy (every boot), its listener clears auditlog.exceptions; only a
+  later save of the exceptions puts them back. Reversed, every boot would end with no
+  exceptions, and password hashes would be audited.
+
   Writes that bypass Hibernate are not audited: direct SQL, Liquibase, the reporting ETL and
   the central sync receiver (which writes through its own JPA layer).
 -->
