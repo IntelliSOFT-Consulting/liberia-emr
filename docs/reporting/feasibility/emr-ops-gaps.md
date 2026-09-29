@@ -27,7 +27,7 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
 | Does central keep the facility's `date_created`? | **Yes.** dbsync writes through its own JPA entities: `BaseCreatableEntity` maps `date_created` from the payload, and `BaseChangeableDataEntity` does the same for `date_changed`. The OpenMRS `AuditableInterceptor` is not involved, so central holds the facility values. |
 | Facility of origin at central | Not on the replica rows. dbsync keeps `metadata.sourceIdentifier` only inside payloads that are later deleted, and `SyncStatusService` notes that it records no sender on queued or failed records. Use the root of `encounter.location_id` / `visit.location_id`, or `openmrs_identity.patient_link.facility_location_uuid` (the root of the identifier location, set by `IdentityService`). |
 | Login events | **Not persisted.** Core writes only the last login as `user_property` `lastLoginTimestamp` (epoch ms, `HibernateContextDAO.setLastLoginTime`). The authentication module 2.3.0 keeps active logins in memory (`UserLoginTracker`) and emits `UserLogin` INFO events with marker `AUTHENTICATION_EVENT`. Its README documents an opt-in log4j2 JDBC appender, which this repo does not configure. No `authentication.*` property is set anywhere in the repo. |
-| Audit log | `gp-audit.xml` (content-liberia-national) sets `auditlog.auditingStrategy=ALL` and `auditlog.storeLastStateOfDeletedItems`, **but the auditlog module is not pinned in `distribution/distro.properties`**, so those GPs configure nothing. Even when installed, auditlog records object changes, not logins. |
+| Audit log | `gp-audit.xml` (content-liberia-national) sets `auditlog.auditingStrategy=ALL` and `auditlog.storeLastStateOfDeletedItems`, which at the time of this review configured nothing: the module was not in the image (since installed, see gap 8). Even when installed, auditlog records object changes, not logins. |
 | DHIS2 | No push exists. `dhis2-export` in the central compose names an image that nothing builds (profile `dhis2`, off). `integration/dhis2/mappings/` is blocked on the MOH. |
 | MPI | The CPI service in the liberiaemr module (central only): `openmrs_identity.cpi`, `patient_link` (`patient_uuid`, `cpi_id`, `facility_location_uuid`, `basis`, `national_id`), `cpi_event`, `match_review`. Only the deterministic National ID rule is built. Fellegi–Sunter scoring is not. |
 
@@ -96,10 +96,10 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    user's person, which syncs so central sees it, or whether it stays in the training
    register. Until then, 009 uses active clinical-role accounts as a proxy denominator.
 
-8. **Install or drop the auditlog module.** `gp-audit.xml` configures a module the
-   distribution does not ship, so the "audit logging enabled" control in the global
-   properties README is not met. This is not an indicator gap, but it came up here and it
-   affects the MOH security controls.
+8. **Install or drop the auditlog module.** *Done:* the backend image now builds the
+   module from a pinned upstream commit and `gp-audit.xml` configures it (control C1 in
+   `docs/security/moh-ict-sop-mapping.md`). It records entity changes, not logins, so it
+   does not close the login gap above.
 
 9. **DHIS2 exporter with a transmission log (EMR-OPS-014).** When the exporter is built,
    it must persist each push: org unit, dataset, period, import summary status, counts and

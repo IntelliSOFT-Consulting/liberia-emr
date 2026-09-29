@@ -1,0 +1,194 @@
+Fix the detached-entity path of onFlushDirty(): keep the temporary session open while the
+previous state is compared, and handle a detached entity with no stored row.
+
+openmrs-module-auditlog (master ba96ba5, and the 1.1 release) handles an update to a
+DETACHED entity by loading its previous state in a temporary session. It closed that
+session as soon as the state was read, and only then compared each previous value with
+the current one. A previous value that is a lazy association is a proxy bound to the
+closed session; OpenMRS's BaseOpenmrsObject.equals() initialises it, and Hibernate
+throws LazyInitializationException. That exception escapes onFlushDirty() and fails the
+caller's own save.
+
+Seen on a LiberiaEMR facility stack on core 2.8.8: Initializer, which saves detached
+metadata, failed to load a program workflow ("could not initialize proxy
+[org.openmrs.Concept#4017] - no Session") and an appointment service type ("...
+[org.openmrs.module.appointments.model.Speciality#1] - no Session"). Neither fails
+without the module.
+
+The same path also assumed a stored row always exists. Making an existing Person a
+Patient saves a detached Patient whose id has no patient row yet: the temporary session's
+get() returns null and getEntityPersister(null, null) throws NullPointerException, which
+also fails the caller's save. Seen on the same stack: creating a patient over REST for an
+existing person, and Initializer loading an appointment service type.
+
+The session now closes in a finally after the comparison and serialization, and a missing
+row means no previous state, so every current value is recorded as the change. The same
+holds when the person is still in the second-level cache: get() then throws
+WrongClassException instead of returning null, and that is also read as no previous state.
+This diff is the one proposed upstream (branch detached-previous-state), main code only.
+
+Applied by distribution/backend/Dockerfile (stage 2b). Tracked in
+packages/modify-pr/.patches/0003-openmrs-module-auditlog-detached-previous-state.md.
+
+diff --git a/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java b/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
+index 6a402f8..1c9b34f 100644
+--- a/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
++++ b/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
+@@ -39,6 +39,7 @@ import org.hibernate.Hibernate;
+ import org.hibernate.Session;
+ import org.hibernate.SessionFactory;
+ import org.hibernate.Transaction;
++import org.hibernate.WrongClassException;
+ import org.hibernate.collection.spi.PersistentCollection;
+ import org.hibernate.engine.spi.SessionImplementor;
+ import org.hibernate.engine.spi.SharedSessionContractImplementor;
+@@ -155,77 +156,91 @@ public class HibernateAuditLogInterceptor extends EmptyInterceptor {
+ 	                            String[] propertyNames, Type[] types) {
+ 		
+ 		if (propertyNames != null && InterceptorUtil.isAudited(entity.getClass())) {
+-			if (previousState == null) {
+-				//This is a detached object, load the previous state in a separate session
+-				Session tmpSession = null;
+-				SessionFactory sf = InterceptorUtil.getSessionFactory();
+-				try {
++			//The previous values of lazy associations of a detached object are proxies bound to the
++			//temporary session below, comparing them with the current values can initialize them so
++			//the session should stay open until we are done with them
++			Session tmpSession = null;
++			try {
++				if (previousState == null) {
++					//This is a detached object, load the previous state in a separate session
++					SessionFactory sf = InterceptorUtil.getSessionFactory();
+ 					tmpSession = sf.openSession();
+-					Object obj = tmpSession.get(entity.getClass(), id);
+-
+-					SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
+-
+-					EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
+-					previousState = ep.getPropertyValues(obj);
+-				}
+-				finally {
+-					if (tmpSession != null) {
+-						SessionFactoryUtils.closeSession(tmpSession);
++					Object obj = null;
++					try {
++						obj = tmpSession.get(entity.getClass(), id);
++					}
++					catch (WrongClassException e) {
++						//The stored row is of a super class e.g when an existing person is saved as a patient
++						if (log.isDebugEnabled()) {
++							log.debug("No stored row of type:" + entity.getClass().getName() + " with id:" + id, e);
++						}
++					}
++					//If there is no stored row of this type, there is no previous state
++					//and all the current values are changes
++					if (obj != null) {
++						SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
++					
++						EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
++						previousState = ep.getPropertyValues(obj);
+ 					}
+ 				}
++				Map<String, Object[]> propertyChangesMap = null;//Map<propertyName, Object[]{currentValue, PreviousValue}>
++				for (int i = 0; i < propertyNames.length; i++) {
++					//we need to ignore dateChanged and changedBy fields in any case they
++					//are actually part of the Auditlog in form of user and dateCreated
++					if (ArrayUtils.contains(IGNORED_PROPERTIES, propertyNames[i])) {
++						continue;
++					}
+ 				
+-			}
+-			Map<String, Object[]> propertyChangesMap = null;//Map<propertyName, Object[]{currentValue, PreviousValue}>
+-			for (int i = 0; i < propertyNames.length; i++) {
+-				//we need to ignore dateChanged and changedBy fields in any case they
+-				//are actually part of the Auditlog in form of user and dateCreated
+-				if (ArrayUtils.contains(IGNORED_PROPERTIES, propertyNames[i])) {
+-					continue;
+-				}
+-				
+-				Object previousValue = (previousState != null) ? previousState[i] : null;
+-				Object currentValue = (currentState != null) ? currentState[i] : null;
+-				if (!types[i].isCollectionType() && !OpenmrsUtil.nullSafeEquals(currentValue, previousValue)) {
+-					//For string properties, ignore changes from null to blank and vice versa
+-					//TODO This should be user configurable via a module GP
+-					if (StringType.class.getName().equals(types[i].getClass().getName())
+-					        || TextType.class.getName().equals(types[i].getClass().getName())) {
+-						String currentStateString = null;
+-						if (currentValue != null && !StringUtils.isBlank(currentValue.toString())) {
+-							currentStateString = currentValue.toString();
+-						}
++					Object previousValue = (previousState != null) ? previousState[i] : null;
++					Object currentValue = (currentState != null) ? currentState[i] : null;
++					if (!types[i].isCollectionType() && !OpenmrsUtil.nullSafeEquals(currentValue, previousValue)) {
++						//For string properties, ignore changes from null to blank and vice versa
++						//TODO This should be user configurable via a module GP
++						if (StringType.class.getName().equals(types[i].getClass().getName())
++						        || TextType.class.getName().equals(types[i].getClass().getName())) {
++							String currentStateString = null;
++							if (currentValue != null && !StringUtils.isBlank(currentValue.toString())) {
++								currentStateString = currentValue.toString();
++							}
+ 						
+-						String previousValueString = null;
+-						if (previousValue != null && !StringUtils.isBlank(previousValue.toString())) {
+-							previousValueString = previousValue.toString();
+-						}
++							String previousValueString = null;
++							if (previousValue != null && !StringUtils.isBlank(previousValue.toString())) {
++								previousValueString = previousValue.toString();
++							}
+ 						
+-						//TODO Case sensibility here should be configurable via a GP
+-						if (OpenmrsUtil.nullSafeEqualsIgnoreCase(previousValueString, currentStateString)) {
+-							continue;
++							//TODO Case sensibility here should be configurable via a GP
++							if (OpenmrsUtil.nullSafeEqualsIgnoreCase(previousValueString, currentStateString)) {
++								continue;
++							}
+ 						}
+-					}
+ 					
+-					if (propertyChangesMap == null) {
+-						propertyChangesMap = new HashMap<String, Object[]>();
+-					}
++						if (propertyChangesMap == null) {
++							propertyChangesMap = new HashMap<String, Object[]>();
++						}
+ 					
+-					String serializedPreviousValue = AuditLogUtil.serializeObject(previousValue);
+-					String serializedCurrentValue = AuditLogUtil.serializeObject(currentValue);
++						String serializedPreviousValue = AuditLogUtil.serializeObject(previousValue);
++						String serializedCurrentValue = AuditLogUtil.serializeObject(currentValue);
+ 					
+-					propertyChangesMap.put(propertyNames[i],
+-					    new String[] { serializedCurrentValue, serializedPreviousValue });
++						propertyChangesMap.put(propertyNames[i],
++						    new String[] { serializedCurrentValue, serializedPreviousValue });
++					}
+ 				}
+-			}
+ 			
+-			if (MapUtils.isNotEmpty(propertyChangesMap)) {
+-				if (log.isDebugEnabled()) {
+-					log.debug("Creating log entry for updated object with id:" + id + " of type:"
+-					        + entity.getClass().getName());
+-				}
++				if (MapUtils.isNotEmpty(propertyChangesMap)) {
++					if (log.isDebugEnabled()) {
++						log.debug("Creating log entry for updated object with id:" + id + " of type:"
++						        + entity.getClass().getName());
++					}
+ 				
+-				updates.get().peek().add(entity);
+-				objectChangesMap.get().peek().put(entity, propertyChangesMap);
++					updates.get().peek().add(entity);
++					objectChangesMap.get().peek().put(entity, propertyChangesMap);
++				}
++			}
++			finally {
++				if (tmpSession != null) {
++					SessionFactoryUtils.closeSession(tmpSession);
++				}
+ 			}
+ 		}
+ 		

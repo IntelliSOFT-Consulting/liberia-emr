@@ -1,0 +1,46 @@
+Serialize a lazy association by its proxy's identifier instead of looking up a persister
+for the proxy class.
+
+openmrs-module-auditlog (master ba96ba5, and the 1.1 release) serializes the old and new
+values of every changed property. For an entity-valued property it calls
+AuditLogUtil.getEntityIdentifier(), which asks the metamodel for the persister of
+obj.getClass(). When the value is an uninitialised lazy association, obj is a Hibernate
+proxy and its class is org.openmrs.User$HibernateProxy$..., which is not a mapped
+entity, so Hibernate 5.6 (core 2.8.8) throws MappingException. isMappedEntity() just
+above already resolves the real class through getActualType(); this call did not.
+
+Two failures follow, both seen on a LiberiaEMR facility stack on core 2.8.8:
+
+  - in onFlushDirty() the exception escapes the interceptor and aborts the business
+    write: OCL concept mapping saves failed with "Unknown entity:
+    org.openmrs.ConceptReferenceTerm$HibernateProxy$...";
+  - in beforeTransactionCompletion() it is caught and logged ("An error occured while
+    creating audit log(s)"), and EVERY audit row of that transaction is dropped.
+
+The fix reads the identifier from the proxy's lazy initializer, which does not
+initialise it, and resolves the persister from the actual type otherwise.
+
+Applied by distribution/backend/Dockerfile (stage 2b) to the commit pinned as
+source.auditlog.commit in distribution/distro.properties. Tracked in
+packages/modify-pr/.patches/0002-openmrs-module-auditlog-serialize-hibernate-proxies.md.
+
+--- a/api/src/main/java/org/openmrs/module/auditlog/util/AuditLogUtil.java
++++ b/api/src/main/java/org/openmrs/module/auditlog/util/AuditLogUtil.java
+@@ -335,8 +335,16 @@
+ 	}
+
+ 	private static String getEntityIdentifier(Object obj) {
++		// An uninitialised lazy association is a Hibernate proxy, whose runtime class (for
++		// example org.openmrs.User$HibernateProxy$...) is not a mapped entity: looking up a
++		// persister for it throws MappingException. The proxy already knows its identifier, so
++		// read it from there, without initialising the proxy.
++		if (obj instanceof HibernateProxy) {
++			Serializable id = ((HibernateProxy) obj).getHibernateLazyInitializer().getIdentifier();
++			return id != null ? id.toString() : null;
++		}
+ 		SessionFactoryImplementor sessionFactoryImpl = (SessionFactoryImplementor) DAOUtils.getSessionFactory();
+-		EntityPersister persister = sessionFactoryImpl.getMetamodel().entityPersister(obj.getClass());
++		EntityPersister persister = sessionFactoryImpl.getMetamodel().entityPersister(getActualType(obj));
+
+ 		if (persister != null) {
+ 			SharedSessionContractImplementor session = (SharedSessionContractImplementor) sessionFactoryImpl.getCurrentSession();
