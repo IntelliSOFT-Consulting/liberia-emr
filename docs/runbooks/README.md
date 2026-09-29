@@ -17,9 +17,11 @@ fails it.
 | [jira-automation.md](jira-automation.md) | Jira Automation rules that move LE issues from branch, PR and dev deploy |
 | [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
 | [release-module.md](release-module.md) | Cut and publish a `liberiaemr` module version to Repsy |
+| [reporting-etl-existing-database.md](reporting-etl-existing-database.md) | Turn on the reporting ETL on a database created before it — ⚠ not yet rehearsed |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
-a document, not a capability. Three procedures here have not been executed end to end, and each
+a document, not a capability. Four procedures here have not been executed end to end, and each
 says so at the top: `dak-to-iniz.md`, because the DAK itself is not in this repository;
 the enrolment, rotation, upgrade and account sections of `sync-operations.md`, which wait for
-MOH-issued material; and `mfl-sync.md`, which CI exercises only against a stub MFL.
+MOH-issued material; `mfl-sync.md`, which CI exercises only against a stub MFL; and
+`reporting-etl-existing-database.md`, which has not yet met a database from before the ETL.

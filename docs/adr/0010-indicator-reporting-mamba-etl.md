@@ -1,6 +1,8 @@
 # 0010: Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module
 
-**Status:** Proposed. Every decision is built and merged, and the builds changed some of them;
+**Status:** Proposed; implementation in progress. The ETL module, the reports framework and the
+report UI package are built and merged, and the builds changed some decisions. The indicator
+report definitions (LE-334) and the UI's pin in the distribution (LE-335) are not yet merged;
 see [Amendment (2026-09)](#amendment-2026-09-what-building-and-verifying-found).
 **Date:** 27 September 2026 · **Amended:** 29 September 2026 (LE-362) · **Ticket:** LE-330
 (parent: *Indicator reports*)
@@ -281,8 +283,10 @@ GRANT SELECT ON `liberiaemr_etl`.* TO '<MARIADB_USER>'@'%';
   credential already reaches them, and the ETL credential lives in the same container
   environment. Narrow the grant to table level only if MOH ICT asks: every new source table
   would then be a grant change.
-- **Existing databases.** initdb runs once, so on an existing database the runbook runs these
-  statements by hand. The server flags take effect when the `db` container restarts.
+- **Existing databases.** initdb runs once. On an existing database,
+  [reporting-etl-existing-database.md](../runbooks/reporting-etl-existing-database.md) reruns
+  the same initdb script in the running container *(amended: A2)*. The server flags take
+  effect when the `db` container is recreated.
 
 ### 4. Per-instance runtime configuration
 
@@ -565,7 +569,9 @@ the fallback if the cost were too high. It is **not** taken: the flag ships on b
   42 and 54; `distribution/compose/central/initdb/30-etl-db-user.sh` lines 42 and 58).
   Otherwise `CREATE USER … IDENTIFIED BY` would write the ETL password to the facility binlog in
   clear text, for the whole retention period. Nothing downstream replays account statements.
-  The by-hand runbook for an existing database must do the same.
+  An existing database gets the same protection, and at central the same identity grant,
+  because [its runbook](../runbooks/reporting-etl-existing-database.md) reruns these scripts
+  rather than typing the statements by hand.
 - **Central only: `GRANT SELECT ON openmrs_identity.*`** to the ETL user (`30-etl-db-user.sh`
   line 52). That schema holds the CPI (ADR 0005). `mamba_dim_person_cpi` (A3) reads it, and
   that gives central a key that counts each person once. A facility has no such schema and no
@@ -603,9 +609,10 @@ of four core procedures.** `modules/mambaetl/api/src/main/mamba/_etl/core_overri
 Each has the same name as core's procedure and is compiled after it, so ours is the definition
 deployed. `DeployScriptTest` fails the build if that stops being true.
 
-1. **New rows** (`sp_mamba_etl_incremental_columns_index_new_insert`). A key is new if the
-   table does not hold it and it is above the table's previous maximum, less a margin of
-   10,000. Once a day per table a **sweep** drops that bound, and so does the first incremental
+1. **New rows** (`sp_mamba_etl_incremental_columns_index_new_insert`). A row is new if the
+   table does not hold its key and **either** the key is above the table's previous maximum,
+   less a margin of 10,000, **or** its `date_created` is at or after the run's start (core's
+   timestamp test, kept). Once a day per table a **sweep** drops that bound, and so does the first incremental
    run after a full one. State is kept in `mamba_etl_liberia_incremental_state`.
 2. **Modified rows** (`sp_mamba_etl_incremental_columns_index_modified_insert`). Core's timestamp
    test is kept. A row also counts as modified when any stored change column differs from the
@@ -766,13 +773,16 @@ and it is recorded here so that nobody reads A9 as closing it.
   needs *Manage Report Definitions*, an administrator privilege. **Accepted as an admin-only
   risk.** If MOH security asks, the next step is **provenance**: record, at run time, that a
   request ran our data sets, and guard on that record rather than on the current definition.
-  The five sheet report UUIDs themselves are always guarded, and they are re-saved from code on
-  every start.
+  The five sheet report UUIDs themselves are always guarded. The reports built so far are
+  re-saved from code on every start; today that is the EMR-Ops placeholder, until LE-334 adds
+  the indicator reports.
 
 ## Decision record
 
-Every row is built and merged. "Proposed" is the ADR's status, not a build state: acceptance
-is its owner's call. The Amended column points to the amendment.
+"Proposed" is the ADR's status, not a build state: acceptance is its owner's call. Every row
+is built and merged as a framework. Two deliverables are not yet merged: the indicator report
+definitions on decision 6's framework (LE-334; one EMR-Ops placeholder today), and 8a's UI
+pinned and configured in the distribution (LE-335; `reportUuids` defaults to `[]`). The Amended column points to the amendment.
 
 | # | Decision | Status | Amended |
 | --- | --- | --- | --- |
