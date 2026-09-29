@@ -3,7 +3,7 @@
 | Field | |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-module-auditlog` |
-| Upstream PR | **TODO — not opened yet.** Open it against `master` with the patch below; until it exists this patch breaks [the rule](../README.md#the-rule) |
+| Upstream PR | [openmrs/openmrs-module-auditlog#30](https://github.com/openmrs/openmrs-module-auditlog/pull/30) (ticket [AUDIT-64](https://openmrs.atlassian.net/browse/AUDIT-64)) |
 | Component version patched | commit `ba96ba5471ccf6e91db0d11b5c7d416ffd4a7460` (`source.auditlog.commit` in `distribution/distro.properties`) |
 | Why not configuration | The failure is in compiled code: `AuditLogUtil.getEntityIdentifier()` looks up a persister for `obj.getClass()`, which for a Hibernate proxy is not a mapped entity. No global property changes that path, and excluding the affected types would drop `User` and concept changes from the audit log. |
 | Removal condition | An upstream commit or release containing the fix; then bump `source.auditlog.*` (or move to an `omod.auditlog` pin if it is a release on mavenrepo.openmrs.org), and delete the patch body and this sidecar |

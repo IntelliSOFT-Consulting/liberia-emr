@@ -3,7 +3,7 @@
 | Field | |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-module-auditlog` |
-| Upstream PR | **TODO — not opened yet.** Open it against `master` with the patch below; until it exists this patch breaks [the rule](../README.md#the-rule) |
+| Upstream PR | [openmrs/openmrs-module-auditlog#32](https://github.com/openmrs/openmrs-module-auditlog/pull/32) (ticket [AUDIT-66](https://openmrs.atlassian.net/browse/AUDIT-66)) |
 | Component version patched | commit `ba96ba5471ccf6e91db0d11b5c7d416ffd4a7460` (`source.auditlog.commit` in `distribution/distro.properties`) |
 | Why not configuration | The failure is in compiled code: `DAOUtils` relies on `SessionFactory.getClassMetadata()` returning null for an unmapped class, which Hibernate 5 no longer does. The only configuration that avoids the code path is the `ALL` strategy with no exceptions, which would put password hashes back into the audit log (see `gp-audit.xml`). |
 | Removal condition | An upstream commit or release containing the fix; then bump `source.auditlog.*`, and delete the patch body and this sidecar |

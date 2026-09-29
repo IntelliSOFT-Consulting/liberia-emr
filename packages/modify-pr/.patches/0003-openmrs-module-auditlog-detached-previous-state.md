@@ -3,7 +3,7 @@
 | Field | |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-module-auditlog` |
-| Upstream PR | **TODO — not opened yet.** Open it against `master` with the patch below; until it exists this patch breaks [the rule](../README.md#the-rule) |
+| Upstream PR | [openmrs/openmrs-module-auditlog#31](https://github.com/openmrs/openmrs-module-auditlog/pull/31) (ticket [AUDIT-65](https://openmrs.atlassian.net/browse/AUDIT-65)) |
 | Component version patched | commit `ba96ba5471ccf6e91db0d11b5c7d416ffd4a7460` (`source.auditlog.commit` in `distribution/distro.properties`) |
 | Why not configuration | The failures are in compiled code: `HibernateAuditLogInterceptor.onFlushDirty()` closes the session its previous-state proxies belong to before comparing them, and assumes a detached entity always has a stored row. Excluding the affected types would take `Concept`, and with it most metadata, out of the audit log. |
 | Removal condition | An upstream commit or release containing the fix; then bump `source.auditlog.*`, and delete the patch body and this sidecar |
