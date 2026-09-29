@@ -36,7 +36,7 @@ scan() {
     return
   fi
   # A failure must name the file and key, never echo the value it caught.
-  if [[ "$want" == "fail" ]] && printf '%s' "$out" | grep -qF 'abc&123xyz'; then
+  if [[ "$want" == "fail" ]] && printf '%s' "$out" | grep -qE 'abc&(amp;)?123xyz|abc123xyzLONGVALUE9'; then
     echo "FAIL [$name]: the scanner printed the secret value"
     failed=$((failed + 1))
     return
@@ -54,6 +54,15 @@ scan fail json                   config.json               '{"secretToken": "abc
 scan fail xml-element            settings.xml              '<password>abc&amp;123xyz</password>'
 scan fail second-on-a-line       workflow.yml              'run: docker run -e DB_USER=u -e DB_PASSWORD=abc&123xyz img'
 scan fail allowlisted-key-other-value compose.yml          'MYSQL_PASSWORD: abc&123xyz'
+# Review of #192: a literal hidden in a reference's default, an expression, or a passphrase.
+scan fail env-default-literal    compose.yml               'DB_PASSWORD: ${DB_PASSWORD:-abc&123xyz}'
+scan fail gh-expression-literal  workflow.yml              "API_TOKEN: \${{ 'abc&123xyz' }}"
+scan fail quoted-passphrase      site.env.example          'DB_PASSWORD="correct horse battery abc&123xyz"'
+scan fail json-next-line         config.json               $'{\n  "password":\n    "abc&123xyz"\n}'
+scan fail xml-multiline          settings.xml              $'<password>\n  abc&amp;123xyz\n</password>'
+scan fail yaml-run-block         workflow.yml              $'steps:\n  - run: |\n      docker run -e DB_PASSWORD=abc&123xyz img'
+# The legacy long-token rule must name the file and line only, never print the match.
+scan fail legacy-long-token      notes/setup.sh            'token=abc123xyzLONGVALUE9'
 
 # --- must pass: references, placeholders, settings, throwaways and prose -----------------
 scan pass placeholder-change-me  site.env.example          'MYSQL_PASSWORD=CHANGE_ME'
@@ -61,6 +70,9 @@ scan pass placeholder-angle      vars.yml                  'db_password: <add_th
 scan pass empty                  site.env.example          'SMTP_PASSWORD='
 scan pass env-reference          compose.yml               'MARIADB_PASSWORD: ${MYSQL_PASSWORD}'
 scan pass env-default            compose.yml               'ETL_DB_PASSWORD: ${ETL_DB_PASSWORD:-}'
+scan pass env-required           compose.yml               'MGMT_DB_PASSWORD: ${SYNC_MGMT_DB_PASSWORD:?set in central.env}'
+scan pass yaml-prose-block       playbook.yaml             $'- fail:\n    msg: >\n      Also set SYNC_REST_PASSWORD: the compose file requires it.'
+scan pass help-message-key       config.json               '{"passwordHelpMessage": "Use at least thirteen characters"}'
 scan pass github-expression      workflow.yml              'NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}'
 scan pass setting-boolean        config.json               '{"showPasswordReset": true}'
 scan pass setting-number         vars.properties           'security.password.minimum-length=13'
