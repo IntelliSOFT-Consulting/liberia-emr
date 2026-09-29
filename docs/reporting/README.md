@@ -87,6 +87,7 @@ must print exactly `16`.
 ```
 modules/mambaetl/api/src/main/mamba/_etl/
 ├── config/<form>.json                 one flat table per encounter type
+├── core_overrides/sp_*.sql            same-named replacements for four core procedures
 ├── derived/<area>/sp_mamba_fact_<area>_<name>.sql
 ├── sp_makefile                        lists every derived SP, in per-owner sections
 └── sp_mamba_data_processing_etl.sql   calls the derived SPs in dependency order
@@ -98,6 +99,11 @@ dimensions such as location hierarchy, age bands and encounter form go under `co
 **The build.** It filters these files with the content `variables.properties`, then compiles
 them with core 3.0.0's `compile.sh`, and ships `mamba/jdbc_create_stored_procedures.sql` in the
 api jar (ADR 0010 decision 2). Nothing generated is committed.
+
+**Core overrides.** `core_overrides/` replaces four core 3.0.0 procedures, so that incremental
+runs find late-synced rows: new rows by key, modified rows by value (ADR 0010 amendment A4;
+`modules/mambaetl/README.md`). These files belong to the coordinator. On every core upgrade,
+compare each one with the new core's version of the same procedure.
 
 ### 2.2 `config/<form>.json`
 
@@ -153,16 +159,21 @@ long as its encounter type and concepts stay the same.
   - **`facility_location_id`**, taken from `mamba_dim_location_hierarchy`.
 - **The `common` area** provides:
   - `mamba_dim_location_hierarchy`: `location_id`, `uuid`, `name`, `parent_location_id`,
-    `facility_location_id`, `district_location_id`, `county_location_id` and `tags`. It is built
-    from `openmrs.location` and its tag map, because core's `mamba_dim_location` has neither
-    uuid nor parent;
+    `facility_location_id`, `district_location_id`, `county_location_id`, `tags`, `tag_uuids`
+    and `retired`. The three level columns hold the **nearest** ancestor-or-self with the Health
+    Facility, District or County tag, and tags are compared by uuid. It is built from
+    `openmrs.location` and its tag map, because core's `mamba_dim_location` has neither uuid
+    nor parent. Use it for `facility_location_id` and for display, **not for roll-up**: a
+    descendant of an untagged node, such as a ward, would be missed;
   - `mamba_dim_encounter_form`: `encounter_id` and `form_uuid`. It is needed wherever several
     forms share an encounter type (for example *Consultation*). Filter on the form's
     `${var.form.*}` tokens, **every version of the form included**. It also has `form_id`, and
     it keeps retired form versions;
   - `mamba_dim_location_ancestor`: one row per `location_id` and each of its ancestors,
-    itself included (`ancestor_location_id`, `depth`). To report on any MFL node, join on
-    `ancestor_location_id` = that node;
+    itself included (`ancestor_location_id`, `depth`). It is built in the same procedure as the
+    hierarchy (`sp_mamba_dim_location_hierarchy.sql`). **All roll-up goes through it.** To report
+    on any MFL node, join on `ancestor_location_id` = that node. Report SQL does not write that
+    join itself; it writes `${scopeLocations}` (§3.2);
   - `mamba_dim_encounter_location`: `encounter_id`, `visit_id` and **`location_id`, the
     attribution location** as defined above. Every fact takes its `location_id` from here;
   - `mamba_dim_person_cpi`: `person_id` and **`person_key`**. Count people with
@@ -237,12 +248,18 @@ Every report takes the same three parameters, with these exact names:
 | --- | --- | --- | --- |
 | `startDate` | `java.util.Date`, required | inclusive, 00:00 | same |
 | `endDate` | `java.util.Date`, required | inclusive, to 23:59:59 | same |
-| `location` | `org.openmrs.Location`, optional | defaults to the facility (`liberiaemr.facility.locationUuid`) and is **clamped** to it and its descendants; any other value fails the run | any County, District or Health Facility location. Events roll up through `parent_location`; empty means national |
+| `location` | `org.openmrs.Location`, optional | defaults to the facility (`liberiaemr.facility.locationUuid`) and is **clamped** to it and its descendants; any other value fails the run | any County, District or Health Facility location. Events roll up through `mamba_dim_location_ancestor`, so the node counts itself and every location below it at any depth; empty means national |
 
 - **How the role is known.** From `LIBERIAEMR_INSTANCE_ROLE` (`facility` or `central`). It
   fails closed to `facility`.
 - **Date comparison.** The period is compared against the fact's event date, which by default
   is `encounter_datetime`, never `date_created`.
+- **Location in SQL.** Report SQL filters on the attribution location with
+  `<fact>.location_id IN ${scopeLocations}` and never builds its own location filter.
+  `LocationScope` expands the token to a subquery over `${etl}.mamba_dim_location_ancestor`,
+  bound to the resolved node or to every location for a national run. The expansion is the same
+  at a facility and at central, so a facility's report equals central's report for it. The
+  facility clamp is checked in Java before any SQL runs (`LocationScopeResolver`).
 
 ### 3.3 Columns
 
@@ -253,7 +270,12 @@ Every report takes the same three parameters, with these exact names:
 - **DHIS2 alignment.** Where an indicator maps to a DHIS2 data element, the column **label**
   is that element's short name. Its `description` holds the DHIS2 UID once the MOH mapping
   exists; those mappings are still blocked in `central.env.example`. A later DHIS2 push then
-  consumes the columns unchanged.
+  consumes the columns unchanged on the server.
+  - **The UI cannot see the UID.** reportingrest's data-set column metadata has no
+    `description`, so no DHIS2 UID reaches the browser through §4 (ADR 0010 amendment A10).
+- **Notes.** What a report does not capture (a missing disaggregation, a numerator-only
+  indicator) is written one line per note into `ReportDefinition.description`, after a one-line
+  summary (`LiberiaReportManager.getNotes`). The UI shows it with the report.
 - **Grouping.** One data set per sheet, keyed `indicators`. A row-per-facility breakdown is a
   second data set, `by_facility`, at central only.
 
@@ -263,9 +285,14 @@ Every report takes the same three parameters, with these exact names:
   **`Export National Report`**, as well as reporting's own `Run Reports`/`View Reports`.
   *National Reporting Officer* holds all three (`roles-national.csv`).
 - **Where it is enforced.** In the module's data set evaluators, so every evaluating REST path
-  is covered.
-- **Open.** Whether `downloadReport` of a stored result is guarded by more than reporting's own
-  service privileges must be verified (ADR 0010 decision 6).
+  is covered (`NationalReportPrivilege`). A queued `reportRequest` is evaluated on reporting's
+  daemon thread, where every privilege check passes, so the evaluator checks **the user who
+  requested the run**. A daemon evaluation that belongs to no request is refused.
+- **Stored output.** reporting 2.1.0's `ReportService` has no authorisation of its own, so
+  `downloadReport` was guarded by login alone. `StoredReportAccessAdvice` now requires the
+  privilege on `loadRenderedOutput`, `loadReportData` and `loadReport` for our reports' requests.
+  That covers any request whose report runs our ETL data sets under another UUID too. It fails
+  closed when the definition is missing or cannot be read (ADR 0010 amendment A8).
 
 ---
 
@@ -339,10 +366,16 @@ reportingrest also exposes these resources. The UI must not use them:
 - `definitionlibrary`;
 - `reportDefinitionsWithScheduledRequests`.
 
-Our privilege check (§3.4) applies wherever our own data set evaluators run. Our ETL evaluator
-also runs only the data sets this module registers, matched by name and exact SQL, so a
-definition POSTed to `reportdata` cannot carry its own SQL through it. reporting's own
-`SqlDataSetDefinition` is outside this module and governed by reporting's privileges.
+Our privilege check (§3.4) applies wherever our own data set evaluators run.
+
+**Registered SQL only.** Our ETL evaluator also runs only the data sets this module registers,
+matched by name **and** exact SQL (`RegisteredEtlDataSets`). The expected SQL is rebuilt from
+the report managers' code on every call, not read from the database. So a definition POSTed to
+`reportdata` cannot carry its own SQL through it, and neither can a stored definition that
+someone with *Manage Report Definitions* has altered.
+
+reporting's own `SqlDataSetDefinition` is outside this module. It stays reachable through
+`reportdata`, governed only by reporting's privileges (ADR 0010 amendment A9).
 
 ### 4.4 Instance context (`liberiaemrreports`)
 
@@ -362,6 +395,16 @@ without it, 401 unauthenticated). It tells the UI what it cannot read itself:
 - `facilityLocation` is null at central, and at a facility whose own location does not resolve.
 - `etlLastRun` is the latest row of `<etl schema>._mamba_etl_schedule`, or null before the first
   run. `status` is `SUCCESS`, `RUNNING`, `INTERRUPTED` (core closed a stuck run) or `ERROR`.
+  - **What counts as a success.** Core's un-stuck procedure relabels a failed or stuck row as
+    `SUCCESS`, with the message `Error schedule updated` or `Stuck schedule updated`. So only
+    `COMPLETED` + `SUCCESS` + a null message maps to `SUCCESS`; those two messages map to `ERROR`
+    and `INTERRUPTED` (`ReportingContextService.status`).
+  - **Times.** On a non-`SUCCESS` run, `startedAt` and `completedAt` are the times core wrote
+    back, not that run's own.
+- This is the one endpoint outside reportingrest that the UI calls. It is read-only, and it
+  serves only what the UI cannot read for itself (ADR 0010 amendment A7). **Without it the UI
+  runs and exports nothing.** It shows "Reporting context unavailable" instead, because at central
+  an absent `location` would mean a national report.
 
 ---
 
