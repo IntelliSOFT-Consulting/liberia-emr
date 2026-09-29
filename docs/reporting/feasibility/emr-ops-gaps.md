@@ -41,6 +41,16 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    by hand on existing facility databases.
    *Done when* a `liberiaemrreports` dataset at the facility can count queue rows older than 48h.
 
+   **Done differently (LE-354).** The grant goes to the **ETL user**, not the EMR user, because
+   reports read only the ETL schema (ADR 0010 decision 6) and the EMR user is the web
+   application's credential. `initdb/30-etl-sync-queue-grant.sh` grants column-level `SELECT`
+   on the metadata columns of both queues, applied by a self-dropping event once the sender has
+   created the tables (MariaDB refuses a column grant on a missing table).
+   `sp_mamba_fact_emr_ops_sync_queue` copies the pending rows into
+   `mamba_fact_emr_ops_sync_queue` on every ETL run, and `mamba_fact_emr_ops_sync_status` says
+   when it sampled them and whether they were readable. A report counts rows with
+   `is_snapshot = 0` and `date_created < sampled_at - INTERVAL 48 HOUR`.
+
 2. **Record a sync go-live date per facility (EMR-OPS-005).** The initial snapshot applies
    months of history in one go, and every such record would score as "late". Store the
    date the sender first started for each facility, for example as a GP

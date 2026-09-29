@@ -13,7 +13,11 @@ application user cannot create for itself.
 replication user and the sender's management schema) and does nothing unless their
 passwords are set in the environment. `20-etl-db-user.sh` creates the reporting ETL schema
 `liberiaemr_etl` and its user, and lets the OpenMRS user read that schema (ADR 0010); it does
-nothing unless `ETL_DB_PASSWORD` is set. Compose bind-mounts this
+nothing unless `ETL_DB_PASSWORD` is set. `30-etl-sync-queue-grant.sh` lets the ETL user read the
+sync sender's queue metadata (column-level, LE-354). The sender creates those tables on its
+first start, after initdb, so the script leaves a root-owned event that applies the grant once
+the tables exist and then drops itself; it does nothing unless both `SYNC_MGMT_DB_PASSWORD` and
+`ETL_DB_PASSWORD` are set. Compose bind-mounts this
 directory by relative path, and
 Docker creates a missing bind source as a root-owned directory — so an absent `initdb/`
 does not fail the stack, it silently appears in a working tree owned by root.

@@ -849,7 +849,8 @@ Consequences:
   `identifier = uuid`, is the arrival time. Nothing records when a record *left* a facility.
 - **A facility's sender tables are a point-in-time stock.** They hold what is pending now and
   nothing about what was sent. The facility sync backlog indicator (EMR-OPS-005) can
-  therefore only sample them.
+  therefore only sample them: the reporting ETL copies their metadata columns into
+  `mamba_fact_emr_ops_sync_queue` on every run (LE-354).
 - **The sender queue does not see a stopped sender.** Events are written to
   `debezium_event_queue` only as Debezium reads the binlog. While the sender is down, the
   backlog is in the binlog, not in the queue, so an empty queue is not proof of health.

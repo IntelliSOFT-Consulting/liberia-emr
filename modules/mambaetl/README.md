@@ -125,6 +125,21 @@ place is marked `INTERIM` in the SQL:
 
 The Triage form needs no match, because Triage is its own encounter type.
 
+## Sync backlog tables (EMR-OPS-005, LE-354)
+
+`sp_mamba_fact_emr_ops_sync_queue` reads the sync sender's queues in the management schema,
+which is not the OpenMRS schema. The ETL user may read only their metadata columns, through a
+column-level grant that `distribution/compose/facility/initdb/30-etl-sync-queue-grant.sh`
+applies once the sender has created the tables.
+
+| Table | Grain | Meaning |
+| --- | --- | --- |
+| `mamba_fact_emr_ops_sync_queue` | one pending row in `debezium_event_queue` (`queue_name = 'event'`) or `sender_retry_queue` (`'retry'`), rebuilt on every run | what the sender has not yet delivered. `is_snapshot = 1` rows are the initial load |
+| `mamba_fact_emr_ops_sync_status` | one row | `sampled_at`, the management schema found, and whether each queue was readable. Readable `0` means "unknown", never "nothing pending": central, a stack without sync, a sender that has not started yet, or a missing grant |
+
+Compute ages against `sampled_at`, not `NOW()`. The sender keeps no history, so the table is a
+stock at the last run, and a stopped sender shows an empty queue (sync-eip.md §5.8).
+
 ## Running it locally
 
 Compose sets the runtime properties as `OMRS_EXTRA_MAMBAETL_ANALYSIS_*` on the backend
