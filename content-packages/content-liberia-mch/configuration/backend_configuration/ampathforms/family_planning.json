@@ -5,7 +5,7 @@
   "published": true,
   "retired": false,
   "encounter": "Family Planning Visit",
-  "encounterType": "${var.encountertype.family-planning.uuid}",
+  "encounterType": "${var.encountertype.mch-family-planning.uuid}",
   "processor": "EncounterFormProcessor",
   "referencedForms": [],
   "description": "Captures family planning counselling, visit purpose, contraceptive method selection and provision, pregnancy and eligibility assessment, LAM guidance, implant insertion or removal, and follow-up requirements.",
