@@ -1675,6 +1675,13 @@ jobs:
               echo \"checkout is at \$head, not ${{ github.sha }} which this run deployed: something moved it since. Not rolling back over it; check the server by hand\" >&2
               exit 1
             fi
+            # reset --keep keeps a local edit to any file the two commits do not differ on, so
+            # compose would start the old images under the edited file, not the recorded one.
+            if [ -n \"\$(git status --porcelain --untracked-files=no)\" ]; then
+              echo \"checkout has local changes to tracked files, so the rollback would not restore the recorded compose configuration. Roll back by hand:\" >&2
+              git status --short --untracked-files=no >&2
+              exit 1
+            fi
             git reset -q --keep '$checkout'
             echo \"checkout back at \$(git rev-parse HEAD)\"
             compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
