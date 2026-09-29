@@ -33,6 +33,9 @@
 #   --timings FILE   also write "step seconds" lines here (and to $GITHUB_STEP_SUMMARY in CI)
 #   --python-image   the image compare-reports.py runs in (default python:3.12-alpine)
 #   --deploy-wait S  seconds to wait for setupEtl()'s first run (default 1200)
+#   --dump-dir DIR   after the incremental run, write every report data set read to
+#                    DIR/<instance>.json, all columns, for compare-instances.py (the
+#                    facility-equals-central check). Synthetic figures only; no PHI.
 #
 # The database is reached through `docker compose exec db`, with the credentials the db
 # container already holds (MARIADB_ROOT_PASSWORD, ETL_DB_USER, ETL_DB_PASSWORD); none is passed
@@ -47,6 +50,7 @@ SITE="careysburg"
 TIMINGS=""
 PYTHON_IMAGE="python:3.12-alpine"
 DEPLOY_WAIT=1200
+DUMP_DIR=""
 COMPOSE_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -56,6 +60,7 @@ while [[ $# -gt 0 ]]; do
     --timings)      TIMINGS="$2"; shift 2 ;;
     --python-image) PYTHON_IMAGE="$2"; shift 2 ;;
     --deploy-wait)  DEPLOY_WAIT="$2"; shift 2 ;;
+    --dump-dir)     DUMP_DIR="$(mkdir -p "$2" && cd "$2" && pwd)"; shift 2 ;;
     --) shift; COMPOSE_ARGS=("$@"); break ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -208,9 +213,16 @@ run_etl() {
   [[ -n "$row" ]] || fail "sp_mamba_etl_schedule() started no run"
   [[ "$txn|$completion|$message|$ended" == "COMPLETED|SUCCESS|-|1" ]] \
     || fail "the ${mode} run did not succeed: ${row}"
-  cascaded="$(etl_sql <<< "SELECT incremental_mode_switch_cascaded FROM _mamba_etl_user_settings;")"
-  local expected=0; [[ "$mode" == "full" ]] || expected=1
-  [[ "$cascaded" == "$expected" ]] || fail "asked for a ${mode} run, but the ETL ran with incremental mode ${cascaded}"
+  # Which path ran: only incremental runs keep mamba_etl_liberia_incremental_state (the LE-363
+  # overrides write it), and a full run drops it with every other mamba_* table.
+  local state
+  if [[ "$mode" == "full" ]]; then
+    state="$(etl_sql <<< "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'liberiaemr_etl' AND TABLE_NAME = 'mamba_etl_liberia_incremental_state';")"
+    [[ "$state" == "0" ]] || fail "asked for a full run, but the incremental state table survived it"
+  else
+    state="$(etl_sql <<< "SELECT COUNT(*) FROM mamba_etl_liberia_incremental_state WHERE last_run_time >= (SELECT start_time FROM _mamba_etl_schedule WHERE id = ${_id});")"
+    [[ "$state" =~ ^[1-9] ]] || fail "asked for an incremental run, but run ${_id} did not take the incremental path"
+  fi
   echo "   ${mode} run ${_id} completed in ${took}s"
   assert_no_etl_errors
 }
@@ -222,12 +234,19 @@ assert_no_etl_errors() {
   echo "   _mamba_etl_error_log is empty"
 }
 
+# $1, optional: write every data set read to $DUMP_DIR/<instance>.json (compare-instances.py).
 compare() {
-  local network
+  local network dump=()
   network="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' "$BACKEND_CONTAINER" | head -1)"
   [[ -n "$network" ]] || fail "cannot find the backend's network"
-  docker run --rm --network "$network" -v "$HERE:/qa/reporting:ro" "$PYTHON_IMAGE" \
-    python3 /qa/reporting/compare-reports.py --url http://backend:8080 --instance "$INSTANCE" \
+  if [[ -n "${1:-}" && -n "$DUMP_DIR" ]]; then
+    dump=(-v "$DUMP_DIR:/out" -u "$(id -u):$(id -g)")
+    set -- --dump "/out/${INSTANCE/:/-}.json"
+  else
+    set --
+  fi
+  docker run --rm --network "$network" -v "$HERE:/qa/reporting:ro" ${dump[@]+"${dump[@]}"} "$PYTHON_IMAGE" \
+    python3 /qa/reporting/compare-reports.py --url http://backend:8080 --instance "$INSTANCE" "$@" \
     || fail "the reports do not match expected-values.csv (mismatches above)"
 }
 
@@ -264,7 +283,11 @@ after_counts="$(root_sql <<< "$counts_sql")"
 [[ "$after_counts" == "1 1 1 1" ]] \
   || fail "the incremental run missed the late row (encounter, obs, visit fact, anthropometry fact: ${after_counts})"
 echo "   the encounter, its obs, its visit and its anthropometry row are in the ETL"
-compare
+found_new="$(etl_sql <<< "SELECT last_run_new FROM mamba_etl_liberia_incremental_state WHERE etl_table = 'mamba_dim_encounter';")"
+[[ "$found_new" =~ ^[1-9] ]] || fail "mamba_dim_encounter's incremental state lists no new key (${found_new:-no row})"
+echo "   found as new by key: ${found_new} encounter (its date_created predates the run)"
+compare dump
+[[ -z "$DUMP_DIR" ]] || echo "   every data set read is in ${DUMP_DIR}/${INSTANCE/:/-}.json"
 
 # ---------------------------------------------------------------------------------------------
 if [[ "$ROLE" == "facility" ]]; then

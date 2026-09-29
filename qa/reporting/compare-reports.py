@@ -188,6 +188,7 @@ def main():
     ap.add_argument("--skip-request", action="store_true", help="read reportDataSet only; do not queue reportRequests")
     ap.add_argument("--wait", type=int, default=300, help="seconds to wait for a report request")
     ap.add_argument("--json", help="also write the results here")
+    ap.add_argument("--dump", help="also write every data set read, all columns, here (for compare-instances.py)")
     a = ap.parse_args()
 
     with open(a.expected, newline="", encoding="utf-8") as f:
@@ -235,6 +236,11 @@ def main():
         with open(a.json, "w", encoding="utf-8") as f:
             json.dump([{"indicator": r["indicator"], "period": r["period"], "instance": r["instance"],
                         "scope": r["scope"], "problems": p} for r, p in results], f, indent=1)
+    if a.dump:
+        with open(a.dump, "w", encoding="utf-8") as f:
+            json.dump({"instance": a.instance,
+                       "runs": [{"sheet": k[0], "start": k[1], "end": k[2], "scope": k[3], "values": v[1]}
+                                for k, v in runs.items()]}, f, indent=1, sort_keys=True)
     print("%d/%d rows matched" % (len(results) - len(mismatches), len(results)))
     sys.exit(1 if mismatches else 0)
 

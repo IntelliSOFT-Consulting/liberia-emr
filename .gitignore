@@ -82,6 +82,10 @@ dist/
 qa/upgrade/.ci-certs/
 qa/upgrade/initializer-failure.log
 
+# Report data-set dumps written by qa/reporting/run-stack-check.sh --dump-dir (synthetic figures).
+qa/reporting/.out/
+__pycache__/
+
 ## cypess local environment
 cypress/videos/
 cypress/screenshots/
