@@ -29,6 +29,7 @@ setting() {
   printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"; log "added $1"
 }
 value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -1; }
+policy_ok() { [ ${#1} -ge 13 ] && [[ "$1" =~ [A-Z] ]] && [[ "$1" =~ [a-z] ]] && [[ "$1" =~ [0-9] ]]; }
 # Replaces a setting's value; only ever used on the receiver's account, below.
 replace() { sed -i "/^$1=/d" "$ENV_FILE"; setting "$1" "$2"; }
 healthy() { # container seconds
@@ -66,6 +67,12 @@ case "$STEP" in
         replace SYNC_REST_PASSWORD "Dv$(openssl rand -hex 18)7q"
         log "the receiver now signs in as sync-receiver, not an operator account" ;;
     esac
+    # The EMR refuses a password outside its policy (13 characters, upper and lower case, a
+    # digit); one set before the receiver ever ran is replaced, since nothing uses it yet.
+    if ! policy_ok "$(value SYNC_REST_PASSWORD)"; then
+      replace SYNC_REST_PASSWORD "Dv$(openssl rand -hex 18)7q"
+      log "replaced a receiver password the EMR's policy would refuse"
+    fi
     compose config -q
     compose pull -q
     compose up -d db

@@ -23,6 +23,7 @@ BACKUPS="$HOME/liberiaemr-backups"
 compose() { LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file "$ENV_FILE" --profile sync "$@"; }
 log() { echo "[facility] $*"; }
 value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -1; }
+policy_ok() { [ ${#1} -ge 13 ] && [[ "$1" =~ [A-Z] ]] && [[ "$1" =~ [a-z] ]] && [[ "$1" =~ [0-9] ]]; }
 # Adds a setting only when the env file lacks it or leaves it empty; a value is never changed.
 setting() {
   if [ -n "$(value "$1")" ]; then log "kept $1"; return; fi
@@ -87,6 +88,8 @@ case "$STEP" in
     setting SYNC_MGMT_DB_PASSWORD "$(secret)"
     # The sender signs in with an account of its own, never an operator's.
     case "$(value SYNC_REST_USER)" in admin|daemon) sed -i -e '/^SYNC_REST_USER=/d' -e '/^SYNC_REST_PASSWORD=/d' "$ENV_FILE" ;; esac
+    # The EMR refuses a password outside its policy; the generated one below meets it.
+    policy_ok "$(value SYNC_REST_PASSWORD)" || sed -i '/^SYNC_REST_PASSWORD=/d' "$ENV_FILE"
     setting SYNC_REST_USER "${SYNC_REST_USER:?}"
     setting SYNC_REST_PASSWORD "${SYNC_REST_PASSWORD:?}"
     compose config -q
@@ -110,14 +113,16 @@ case "$STEP" in
     # The sender reads its certificates at start; a run that issued new ones needs a fresh one.
     compose up -d --force-recreate sync
     deadline=$((SECONDS + 600))
-    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "Connected to MySQL binlog" >/dev/null; do
+    # A first load reads every existing record before it streams, which can take a while; its
+    # start is as good a sign as the stream itself that the sender is working.
+    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -a -E "Connected to MySQL binlog|Snapshot step 1" >/dev/null; do
       if docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "refusing to start" >/dev/null; then
         docker logs --tail 20 liberiaemr-facility-sync-1 >&2; exit 1
       fi
       (( SECONDS < deadline )) || { docker logs --tail 40 liberiaemr-facility-sync-1 >&2; exit 1; }
       sleep 10
     done
-    log "sender reading the binary log"
+    log "sender running: loading existing records, then streaming new ones"
     ;;
   credentials)
     # The sender's OpenMRS account, for the workflow to create; it masks the password.
