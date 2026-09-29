@@ -2,7 +2,9 @@
 # Creates the sync receiver's management schema and its principal, ONCE, on the first
 # boot of an empty data volume (see README.md). Gated on the password being set; on an
 # existing database run these statements by hand once. Tables are dbsync's own
-# liquibase, never this script's.
+# liquibase, never this script's. Central has no binlog, but the session still turns
+# sql_log_bin off, as the facility's does, so the script stays safe if one is ever enabled
+# (LE-361).
 set -eu
 
 # SQL string-literal escaping for interpolated values: double the single quotes and the
@@ -19,15 +21,17 @@ if [ -n "${SYNC_MGMT_DB_PASSWORD:-}" ]; then
   MGMT_USER="$(esc "${SYNC_MGMT_DB_USER:-dbsync_mgmt}")"
   MGMT_PW="$(esc "${SYNC_MGMT_DB_PASSWORD}")"
   mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
+-- Keep the password out of the binlog (LE-361); nothing downstream replays account statements.
+SET SESSION sql_log_bin = 0;
 CREATE DATABASE IF NOT EXISTS \`${MGMT_DB}\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${MGMT_USER}'@'%' IDENTIFIED BY '${MGMT_PW}';
 GRANT ALL PRIVILEGES ON \`${MGMT_DB}\`.* TO '${MGMT_USER}'@'%';
 SQL
   # The EMR reads the conflict queue for its Sync conflicts page, and never writes to it.
-  if [ -n "${MARIADB_USER:-}" ]; then
+  if [ -n "${OPENMRS_DB_USER:-}" ]; then
     mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
-GRANT SELECT ON \`${MGMT_DB}\`.* TO '$(esc "${MARIADB_USER}")'@'%';
+GRANT SELECT ON \`${MGMT_DB}\`.* TO '$(esc "${OPENMRS_DB_USER}")'@'%';
 SQL
   fi
   echo "initdb: created sync management schema '${MGMT_DB}'"

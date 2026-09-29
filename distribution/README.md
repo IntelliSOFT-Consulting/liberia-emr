@@ -68,7 +68,8 @@ wanting to, the answer is a runtime config change, not a bind mount. The stacks 
 two checkout directories read-only, both configuration rather than code: `monitoring/` for
 Prometheus and Alertmanager, and each stack's own `initdb/` for MariaDB's first boot. A host
 deployed from images alone still needs both; without `initdb/`, a fresh volume never gets
-the sync database principals and the sender or receiver cannot connect.
+the OpenMRS application user or the sync database principals, and neither the backend nor the
+sender or receiver can connect.
 
 ## Stacks
 
@@ -82,8 +83,8 @@ the sync database principals and the sender or receiver cannot connect.
 | `prometheus`, `alertmanager` | `sync` profile | yes |
 | `dhis2-export` | — | `dhis2` profile |
 
-Each stack's `initdb/` creates the sync database principals on the first boot of an empty
-volume (see the `initdb/README.md` in each). The demo overlay, `compose/facility/docker-compose.demo.yml`,
+Each stack's `initdb/` creates the OpenMRS application user and the sync database principals
+on the first boot of an empty volume (see the `initdb/README.md` in each). The demo overlay, `compose/facility/docker-compose.demo.yml`,
 swaps in the `-demo` backend and frontend images and disables `sync`.
 
 ## Environment

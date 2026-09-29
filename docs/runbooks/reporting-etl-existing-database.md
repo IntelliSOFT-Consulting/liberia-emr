@@ -74,7 +74,8 @@ stack exec -T db sh -c 'cd /var/lib/mysql && mariadb-binlog -vv binlog.[0-9]* \
 Expect `0`. Anything else means the ETL password is in the binlog: set a new one in the env
 file, recreate `db` and `backend` (step 2), then run
 `ALTER USER` for it with `SET SESSION sql_log_bin = 0` and purge the binlogs that hold the old
-one. Older account statements, from before LE-361, have their own procedure under that ticket.
+one. Other accounts' statements, from first boots before LE-361, are handled by
+[binlog-credentials.md](binlog-credentials.md).
 
 ## 5. Restart the backend
 

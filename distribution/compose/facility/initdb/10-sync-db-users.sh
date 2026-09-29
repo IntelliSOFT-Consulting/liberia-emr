@@ -10,7 +10,10 @@
 #   - the management account owns only the sender's own schema (queues, offsets metadata)
 #
 # Both are gated on their password being set, so a stack that does not run the sync
-# profile boots unchanged. For a database that already exists (initdb will not run
+# profile boots unchanged. Each session turns sql_log_bin off before CREATE USER, which would
+# otherwise write the password in clear text to the binlog this database keeps for up to 99
+# days (LE-361). No account statement has to replicate: there is no MariaDB replica, and
+# Debezium reads only OpenMRS table rows. For a database that already exists (initdb will not run
 # again), execute these statements by hand once, with the same environment values.
 set -eu
 
@@ -26,6 +29,8 @@ if [ -n "${DEBEZIUM_DB_PASSWORD:-}" ]; then
   DBZ_USER="$(esc "${DEBEZIUM_DB_USER:-debezium}")"
   DBZ_PW="$(esc "${DEBEZIUM_DB_PASSWORD}")"
   mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
+-- Keep the password out of the binlog (LE-361); nothing downstream replays account statements.
+SET SESSION sql_log_bin = 0;
 CREATE USER IF NOT EXISTS '${DBZ_USER}'@'%' IDENTIFIED BY '${DBZ_PW}';
 GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT
   ON *.* TO '${DBZ_USER}'@'%';
@@ -43,6 +48,8 @@ if [ -n "${SYNC_MGMT_DB_PASSWORD:-}" ]; then
   MGMT_USER="$(esc "${SYNC_MGMT_DB_USER:-dbsync_mgmt}")"
   MGMT_PW="$(esc "${SYNC_MGMT_DB_PASSWORD}")"
   mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
+-- Keep the password out of the binlog (LE-361); nothing downstream replays account statements.
+SET SESSION sql_log_bin = 0;
 CREATE DATABASE IF NOT EXISTS \`${MGMT_DB}\`
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${MGMT_USER}'@'%' IDENTIFIED BY '${MGMT_PW}';
