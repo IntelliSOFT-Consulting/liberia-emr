@@ -1,6 +1,6 @@
 {
   "name": "Triage Form",
-  "uuid": "cc825000-8dc4-4d87-b9ba-a47d2b4f9712",
+  "uuid": "${var.form.triage.uuid}",
   "version": "2.0",
   "published": true,
   "retired": false,

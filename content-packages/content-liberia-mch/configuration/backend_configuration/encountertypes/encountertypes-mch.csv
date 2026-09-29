@@ -5,4 +5,4 @@ ${var.encountertype.labour-admission.uuid},,Labour Admission,Admission assessmen
 ${var.encountertype.partograph.uuid},,Partograph Observation,Serial intrapartum observation recorded on the partograph
 ${var.encountertype.delivery.uuid},,Delivery,Delivery outcome and immediate newborn assessment
 ${var.encountertype.mch-pnc.uuid},,Postnatal Visit,Postnatal contact for mother and newborn
-${var.encountertype.family-planning.uuid},,Family Planning Visit,Family planning counselling and method provision
+${var.encountertype.mch-family-planning.uuid},,Family Planning Visit,Family planning counselling and method provision

@@ -6,9 +6,9 @@
 -- Contacts:
 --   * MCH family: every encounter of type ANC Initial Visit or ANC Follow-up Visit, whatever
 --     the form version (ANC Initial v1.1 and v1.2 both count).
---   * National family: `1. ANC Form` v1.1 on the shared Consultation type.
---     INTERIM: matched on form NAME and VERSION, because the form has no variable that holds
---     its runtime uuid (gaps note, gap 11). Replace with its ${var.form.*} token once one exists.
+--   * National family: `1. ANC Form` v1.1 on the shared Consultation type, matched on
+--     ${var.form.anc-national.uuid}, the runtime uuid Initializer derives from the form's name
+--     and version (so a new form version needs its own token here).
 --
 -- Columns (NULL = not recorded on that contact):
 --   anc_form_family         'mch' or 'national'
@@ -118,9 +118,8 @@ FROM (SELECT e.encounter_id,
       WHERE e.voided = 0
         AND (et.uuid IN ('${var.encountertype.anc-initial.uuid}',
                          '${var.encountertype.anc-followup.uuid}')
-          -- INTERIM name/version match: `1. ANC Form` has no runtime form variable (gap 11).
           OR (et.uuid = '${var.encountertype.consultation.uuid}'
-              AND f.name = '1. ANC Form' AND f.version = '1.1'))) c
+              AND f.uuid = '${var.form.anc-national.uuid}'))) c
          LEFT JOIN
      (SELECT o.encounter_id,
              SUBSTRING_INDEX(GROUP_CONCAT(

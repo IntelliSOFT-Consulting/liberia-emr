@@ -36,6 +36,7 @@ BEGIN
 
     -- ---- emr_ops (RPT 7) ----
     CALL sp_mamba_fact_emr_ops_visit();
+    CALL sp_mamba_fact_emr_ops_sync_queue();
 
 END //
 

@@ -111,6 +111,33 @@
       database: passwd
       key: "{{ ansible_user }}"
 
+  # ci_key_marker is RESERVED: the tasks below treat the one line ending in it as the CI key.
+  # This playbook never writes two, so a second means another key borrowed the comment, and
+  # rotating or revoking would then hit the wrong line. Stop before touching the file.
+  - name: Check for {{ ansible_user }}'s authorized_keys
+    ansible.builtin.stat:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+    register: ci_authorized_keys_stat
+
+  - name: Read {{ ansible_user }}'s authorized_keys
+    ansible.builtin.slurp:
+      src: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+    register: ci_authorized_keys
+    when: ci_authorized_keys_stat.stat.exists
+
+  - name: Refuse to manage the CI key when more than one line carries its marker
+    ansible.builtin.assert:
+      that: ci_marked_lines | length <= 1
+      fail_msg: >-
+        {{ ci_marked_lines | length }} lines in authorized_keys end in the reserved comment
+        "{{ ci_key_marker }}", which marks the ONE CI deploy key. Another key is using it;
+        change that key's comment by hand, then re-run.
+    vars:
+      ci_marked_lines: >-
+        {{ (ci_authorized_keys.content | b64decode).splitlines()
+           | select('search', '\s' ~ (ci_key_marker | regex_escape) ~ '$') | list
+           if ci_authorized_keys_stat.stat.exists else [] }}
+
   - name: Refuse a CI deploy key that is not a plain "type base64 [comment]" key
     ansible.builtin.assert:
       that: ci_deploy_public_key is match('^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]+( .*)?$')

@@ -147,8 +147,20 @@ jobs:
         run: ./scripts/validate/validate-content.sh
       - name: Refuse secrets, keys and PHI
         run: ./scripts/validate/no-secrets.sh
+      # LE-340: proves the scanner still catches short, symbol-bearing credentials and still
+      # lets references, placeholders and allowlisted throwaways through.
+      - name: The secret scanner catches what it should
+        run: ./scripts/validate/tests/no-secrets.test.sh
       - name: Refuse demo content in a production distribution
         run: ./scripts/validate/no-demo-in-release.sh
+      # LE-360: the release guard runs the same check, but only when a tag is cut. Reading the
+      # site list from release.yml keeps one list and catches a colliding site on the PR.
+      - name: Every image a release publishes has a distinct reference
+        run: |
+          sites="$(sed -n 's/^  RELEASE_SITES: //p' .github/workflows/release.yml)"
+          [ -n "$sites" ] || { echo "RELEASE_SITES not found in release.yml"; exit 1; }
+          # shellcheck disable=SC2086  # one argument per site
+          ./scripts/build/image-refs.sh --check $sites
       # content-demo is upstream's, vendored verbatim. A local edit there is invisible in
       # review and lost at the next re-lift, so it is caught here instead. Needs network:
       # it re-fetches the pinned tag and verifies the commit it resolves to.
@@ -516,6 +528,17 @@ jobs:
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site careysburg
 
+      # LE-339: central's backend loads every site package's locations/ and nothing else of
+      # theirs. Built here so a broken central backend fails the PR, not the main-only
+      # publish-central-latest after merge. build-distribution.sh runs
+      # scripts/validate/central-backend-content.sh on the image it builds. The frontend is
+      # skipped: publish-central-latest builds it on main, and its config order is checked in
+      # build-test.
+      - name: Build the central backend and check its content
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version ${{ github.sha }} --site central --no-frontend
+
       # Trivy scans the images already built above — no separate job, no
       # artifact transfer, since the images only exist on this runner's
       # local Docker daemon (build-distribution.sh uses plain `docker
@@ -612,6 +635,10 @@ jobs:
             -t lemr-cert-expiry:ci distribution/monitoring/cert-expiry
       - name: Compose keeps the sync security wiring
         run: qa/sync/verify-compose-wiring.sh
+      # The binlog Debezium reads is kept for up to 99 days; a CREATE USER logged there is a
+      # clear-text password on disk for that long (LE-361).
+      - name: Facility first boot writes no password to the binlog
+        run: qa/sync/verify-binlog-secrets.sh
       - name: Broker refusal suite
         run: |
           qa/sync/verify-hardening.sh --broker-image lemr-broker:ci --sender-image lemr-sync:ci \
@@ -1114,12 +1141,12 @@ jobs:
           done
 
 
-  # LE-368: central's frontend, for deploy-central-dev. Its own job, so a failed central build
-  # never stops publish-latest and the dev deploy. A central build makes only
-  # liberia-emr-frontend-central; central runs the backend and gateway publish-latest pushes
-  # (ADR 0011, until LE-339 gives central its own backend layer).
+  # LE-368: central's images, for deploy-central-dev. Its own job, so a failed central build
+  # never stops publish-latest and the dev deploy. A central build makes
+  # liberia-emr-backend-central (every site's locations, LE-339) and
+  # liberia-emr-frontend-central; central runs the gateway publish-latest pushes (ADR 0011).
   publish-central-latest:
-    name: Publish :latest central frontend
+    name: Publish :latest central images
     runs-on: ubuntu-latest
     needs: gate
     if: >
@@ -1140,16 +1167,18 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build the central frontend
+      - name: Build the central backend and frontend
         run: |
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site central
       - name: Tag and push :latest alongside :${{ github.sha }}
         run: |
-          image="${REGISTRY}/liberia-emr-frontend-central"
-          docker tag "${image}:${{ github.sha }}" "${image}:latest"
-          docker push "${image}:${{ github.sha }}"
-          docker push "${image}:latest"
+          for service in backend frontend; do
+            image="${REGISTRY}/liberia-emr-${service}-central"
+            docker tag "${image}:${{ github.sha }}" "${image}:latest"
+            docker push "${image}:${{ github.sha }}"
+            docker push "${image}:latest"
+          done
 
   deploy-dev:
     name: Update dev environment
@@ -1376,7 +1405,7 @@ jobs:
   # Central dev (LE-368): https://liberiaemrcentraldev.intellisoftkenya.com, a separate
   # server running the CENTRAL composition (distribution/compose/central, ADR 0011). Same
   # shape as deploy-dev / smoke-test / rollback-dev, with three differences:
-  #   - it updates only backend, frontend (the -central image) and gateway, with --no-deps.
+  #   - it updates only backend and frontend (the -central images, LE-339) and gateway, with --no-deps.
   #     The broker, sync receiver and monitoring images are not published as :latest, so
   #     they stay at whatever the server runs;
   #   - it refuses to deploy unless the server runs the liberiaemr-central compose project,
@@ -1638,6 +1667,14 @@ jobs:
                 exit 1
               fi
             done
+            # Only undo the deploy THIS run made. reset --keep refuses to discard a local edit, but it
+            # would happily move a clean checkout back from a newer deploy that landed during
+            # the smoke test (a manual one, say), and start old images over it.
+            head=\$(git rev-parse HEAD)
+            if [ \"\$head\" != '${{ github.sha }}' ]; then
+              echo \"checkout is at \$head, not ${{ github.sha }} which this run deployed: something moved it since. Not rolling back over it; check the server by hand\" >&2
+              exit 1
+            fi
             git reset -q --keep '$checkout'
             echo \"checkout back at \$(git rev-parse HEAD)\"
             compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }

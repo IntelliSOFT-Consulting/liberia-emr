@@ -5,10 +5,9 @@
 -- Sources (source column):
 --   'triage'  encounters of type Triage (only the Triage Form writes it)
 --   'vitals'  encounters of type Vitals (the O3 vitals app; no form)
---   'opd'     `OPD Consultation Form` v2.0 on the shared Consultation type. INTERIM: matched on
---             form NAME and VERSION, because var.form.opd-consultation.uuid holds the JSON uuid
---             that Initializer ignores (gaps note, gap 11). Replace with the variable once it
---             holds the runtime uuid.
+--   'opd'     `OPD Consultation Form` v2.0 on the shared Consultation type, matched on
+--             ${var.form.opd-consultation.uuid}, the runtime uuid Initializer derives from the
+--             form's name and version (so a new form version needs its own token here).
 --
 -- Values are CIEL 5089 weight (kg), 5090 height/length (cm) and 1343 MUAC (cm). A voided obs
 -- never counts; if a concept has several live obs on one encounter, the latest wins. The
@@ -179,9 +178,8 @@ FROM (SELECT y.*,
                         WHERE e.voided = 0
                           AND (et.uuid IN ('${var.encountertype.triage.uuid}',
                                            '${var.encountertype.vitals.uuid}')
-                            -- INTERIM name/version match: the OPD form variable is not the runtime uuid.
                             OR (et.uuid = '${var.encountertype.consultation.uuid}'
-                                AND f.name = 'OPD Consultation Form' AND f.version = '2.0'))) w) x
+                                AND f.uuid = '${var.form.opd-consultation.uuid}'))) w) x
                      LEFT JOIN mamba_dim_nutrition_who_wflh lo
                                ON lo.measure = x.whz_measure
                                    AND lo.sex = x.gender

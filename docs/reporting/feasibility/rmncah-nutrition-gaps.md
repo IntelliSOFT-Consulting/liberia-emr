@@ -92,6 +92,14 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       resolve to one UUID in the merged tree, and which name survives depends on load order.
     * `validate-content.sh` checks for duplicates within a file only, so it does not catch this.
     * **Ask:** give the MCH type its own key. Until then, reports should key on the form UUID.
+    * **Resolved (LE-343).** The MCH type is now `var.encountertype.mch-family-planning.uuid`,
+      with its value unchanged. `validate-content.sh` fails on a key that differs between
+      programme layers, and on a UUID declared under two names.
+    * **Correction to the second bullet.** The two rows never collapsed into one. Each package
+      filters its own `variables.properties` last, so the national row resolved to `87cba9c7-…`
+      and the MCH row and form to `d260ac4b-…`. The real hazard was that the national key's
+      value depended on which chain resolved it. The ETL and QA chains got MCH's value; the
+      reports module, filtered from the national file only, got national's.
 11. **Repo form variables for OPD and Triage are not the runtime UUIDs.**
     * `var.form.opd-consultation.uuid=96b72a44-…` and `var.form.triage.uuid=cc825000-…` hold the
       JSON `uuid` literal, which `AmpathFormsLoader` ignores.
@@ -99,6 +107,9 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       and `869443be-61f3-397f-be1c-ee3dcb591149` (Triage Form v2.0).
     * `1. ANC Form` v1.1 (`bd1ae06c-f522-34dd-816f-1235c89bebee`) has no variable at all.
     * **Ask:** set these variables to the derived values, as the MCH README already requires.
+    * **Fixed (LE-344):** both variables now hold the derived UUIDs, `var.form.anc-national.uuid`
+      is declared, and the ETL matches both forms on those tokens. `validate-content.sh` now
+      fails on any `var.form.*` that is not the derived UUID of a form.
 12. **The L&D encounter type is not the one the MCH config expects.**
     * All four labour forms and the partograph save under the national `Labor & Delivery` type
       (`659775fb-05e4-427f-8d9f-7e4cabe19962`).

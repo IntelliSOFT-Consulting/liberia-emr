@@ -67,14 +67,17 @@ Rejected without further comparison.
   site packages. It is the last layer of a central build, where a facility build has its site
   layer, and it is never part of a facility build. `collect-frontend-config.sh` adds it only
   for `--site central`.
-- **`build-distribution.sh --site central`** builds `liberia-emr-frontend-central:<version>`.
-  It refuses `--demo` and `--no-frontend`. It checks the central compose file's
+- **`build-distribution.sh --site central`** builds `liberia-emr-frontend-central:<version>`
+  and, since LE-339, `liberia-emr-backend-central:<version>` ([ADR 0012](0012-central-site-locations.md)).
+  It refuses `--demo`; `--no-frontend` builds the central backend alone. It checks the central compose file's
   `SPA_CONFIG_URLS` against the collected order, just as a facility build checks the facility
   compose file. CI runs that check on every change without building the image
   (`scripts/validate/spa-config-urls.sh`), and the release matrix builds `central` alongside
   the sites.
-- **For now, the frontend is the only difference.** Central runs the facility release's
-  backend, gateway and sync images of the same version. A central build does not rebuild them.
+- **Central's frontend and backend differ from a facility's.** Its backend,
+  `liberia-emr-backend-central`, adds every site package's locations (LE-339,
+  [ADR 0012](0012-central-site-locations.md)). Central runs the facility release's gateway and
+  sync images of the same version; a central build does not rebuild them.
 - **The central frontend layers** are core, national, mch, opd, then central.
 - **`config-central.json`** does three things:
   - It keeps the non-site settings central used to get from `config-site.json`: the login
@@ -94,8 +97,8 @@ inside `"@liberiaemr/esm-liberia-login-app"` → `"chooseLocation"`:
 
 ## LE-339: how this extends to central's backend
 
-The same layer carries central's backend content when LE-339 is decided. The recommended
-direction, left for LE-339 to confirm:
+**Decided in [ADR 0012](0012-central-site-locations.md) (29 September 2026), as recommended
+here.** The direction this ADR set out:
 
 - `content-central` gains `backend_configuration/`.
 - `--site central` also builds `liberia-emr-backend-central` with
@@ -120,8 +123,9 @@ site's first MFL sync.
   it can reach a facility.
 - Central's navigation text now reads "National Central Server" instead of Careysburg's.
   Nothing else central users see changes.
-- **Not fixed here:** the release matrix builds Careysburg and Barnersville under the same
-  image names and tags, although their backend and frontend images differ by site layer. When
-  pushing is wired up (it is still a TODO in `release.yml`), the second leg will overwrite the
-  first. This needs site-qualified names, e.g. a `-<site>` suffix like `-central`, before the
-  first multi-site release.
+- **Not fixed here, fixed since by LE-360:** the release matrix built Careysburg and Barnersville
+  under the same image names and tags, although their backend and frontend images differ by site
+  layer, so a multi-site release would have overwritten one site's images with the other's.
+  Releases now publish those two images per site, `liberia-emr-backend-<site>` and
+  `liberia-emr-frontend-<site>`, the way `-central` names central's frontend (see
+  `distribution/README.md`).

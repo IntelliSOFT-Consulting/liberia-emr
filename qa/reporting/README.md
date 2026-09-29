@@ -78,7 +78,7 @@ CIEL-shaped literal.
 | --- | --- | --- |
 | Metadata with a variable | `${var.concept.ciel.muac.uuid}` | the value from `variables.properties`, in the build's filter order: common, national, mch, lab, pharmacy, opd-ipd, then the patient's site package; a later value wins |
 | A CIEL concept with no variable | `CIEL:161132` | `161132AAAA…`, the 36-character CIEL UUID |
-| A form whose variable holds no runtime identity | `form:Triage Form@2.0` | Initializer's derivation `nameUUIDFromBytes("794c4598-…_<name>_<version>")` |
+| A form with no variable | `form:3. Family Planning@1.0` | Initializer's derivation `nameUUIDFromBytes("794c4598-…_<name>_<version>")` |
 | The fixture's own rows | the row key, e.g. `C-ANC1-3` | `nameUUIDFromBytes("liberiaemr-qa-reporting/LE-336/<kind>/<key>")`, identical on every load |
 
 UUIDs therefore appear only in the generated SQL, which is never committed. `load-fixtures.py
@@ -86,12 +86,14 @@ sql` prints it for review.
 
 Two resolutions to know about:
 
-- **`var.encountertype.family-planning.uuid`** is declared twice (rmncah-nutrition gap 10).
-  The chain resolves it to the MCH value, *Family Planning Visit*, which is the encounter type
-  the v2.2 form is filtered with.
-- **The form variables for OPD and Triage** hold the ignored JSON literal (gap 11). So do
-  `1. ANC Form` and `3. Family Planning` v1.0, which have no variable at all. All four are
-  referenced by `form:`.
+- **FP encounters use `var.encountertype.mch-family-planning.uuid`**, *Family Planning Visit*,
+  the encounter type of the v2.2 form. `var.encountertype.family-planning.uuid` is the national
+  layer's separate *Family Planning* type, which no form uses. Until LE-343 the MCH type shared
+  that key with a second value (rmncah-nutrition gap 10), and the chain resolved it to MCH's.
+- **Forms with no variable** are referenced by `form:`: `3. Family Planning` v1.0, and the
+  retired `ANC Initial Visit` v1.1. Every `var.form.*` holds the runtime uuid Initializer
+  derives from the form's name and version (gap 11, fixed by LE-344), and `validate-content.sh`
+  checks it, so a form that has a variable is referenced by it.
 
 ## Loading
 
