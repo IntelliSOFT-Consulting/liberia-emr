@@ -28,7 +28,8 @@ export interface ReportingContextResponse {
   /** The last row of _mamba_etl_schedule. Null before the first run. */
   etlLastRun?: {
     /**
-     * A SUCCESS run's own times. For any other status they are not that run's: core rewrites a
+     * SUCCESS and RUNNING rows carry their own times; a RUNNING row has `startedAt` and no
+     * `completedAt` yet. For INTERRUPTED and ERROR they are not that run's: core rewrites a
      * stuck or failed row's times to the last successful run's.
      */
     startedAt?: string | null;
