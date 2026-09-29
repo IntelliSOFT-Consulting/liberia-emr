@@ -23,6 +23,7 @@ BACKUPS="$HOME/liberiaemr-backups"
 compose() { LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file "$ENV_FILE" --profile sync "$@"; }
 log() { echo "[facility] $*"; }
 value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -1; }
+policy_ok() { [ ${#1} -ge 13 ] && [[ "$1" =~ [A-Z] ]] && [[ "$1" =~ [a-z] ]] && [[ "$1" =~ [0-9] ]]; }
 # Adds a setting only when the env file lacks it or leaves it empty; a value is never changed.
 setting() {
   if [ -n "$(value "$1")" ]; then log "kept $1"; return; fi
@@ -87,6 +88,8 @@ case "$STEP" in
     setting SYNC_MGMT_DB_PASSWORD "$(secret)"
     # The sender signs in with an account of its own, never an operator's.
     case "$(value SYNC_REST_USER)" in admin|daemon) sed -i -e '/^SYNC_REST_USER=/d' -e '/^SYNC_REST_PASSWORD=/d' "$ENV_FILE" ;; esac
+    # The EMR refuses a password outside its policy; the generated one below meets it.
+    policy_ok "$(value SYNC_REST_PASSWORD)" || sed -i '/^SYNC_REST_PASSWORD=/d' "$ENV_FILE"
     setting SYNC_REST_USER "${SYNC_REST_USER:?}"
     setting SYNC_REST_PASSWORD "${SYNC_REST_PASSWORD:?}"
     compose config -q
