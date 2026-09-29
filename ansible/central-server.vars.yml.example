@@ -14,6 +14,20 @@ tls_cert_dir: <add_the_cert_bot_dir>
 
 # Optional (LE-368). The PUBLIC half of the CI-only keypair that the "Update central dev
 # environment" job in .github/workflows/ci.yml deploys with; its private half is the
-# CENTRAL_DEV_SSH_PRIVATE_KEY repository secret. Leave it unset on a server CI must not
-# deploy to.
+# CENTRAL_DEV_SSH_PRIVATE_KEY repository secret. Changing it and re-running the playbook
+# replaces the old key, so a rotation revokes it; unsetting it removes the key. Leave it unset
+# on a server CI must not deploy to. A plain key line only, with no options before it.
+# Exception: on a server whose CI key was added before the playbook marked it, the old
+# unmarked line cannot be recognised, so rotating OR unsetting leaves it authorized until it
+# is also listed in ci_deploy_revoked_keys below.
+# The playbook writes this key with the comment liberia-emr-ci-deploy:ansible-managed and finds
+# it again by that comment alone. The comment is RESERVED: no other key in ansible_user's
+# authorized_keys may end in it, or the playbook will replace or remove that key instead.
 # ci_deploy_public_key: "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"
+#
+# Optional. Public keys that must no longer log in, removed whatever comment they carry.
+# Needed once on a server whose CI key was added before the playbook marked it: when that
+# key is rotated or ci_deploy_public_key is unset, list the OLD key here, or its unmarked
+# line stays authorized.
+# ci_deploy_revoked_keys:
+#   - "ssh-ed25519 AAAA... liberia-emr-ci-central-dev"
