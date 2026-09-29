@@ -53,10 +53,10 @@ GRANT SELECT ON \`openmrs_identity\`.* TO '${ETL_USER}'@'%';
 SQL
 echo "initdb: created the reporting ETL user '${ETL_DB_USER:-mambaetl}' and schema 'liberiaemr_etl'"
 
-if [ -n "${MARIADB_USER:-}" ]; then
+if [ -n "${OPENMRS_DB_USER:-}" ]; then
   mariadb -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
 SET SESSION sql_log_bin = 0;
-GRANT SELECT ON \`liberiaemr_etl\`.* TO '$(esc "${MARIADB_USER}")'@'%';
+GRANT SELECT ON \`liberiaemr_etl\`.* TO '$(esc "${OPENMRS_DB_USER}")'@'%';
 SQL
-  echo "initdb: granted '${MARIADB_USER}' read access to 'liberiaemr_etl'"
+  echo "initdb: granted '${OPENMRS_DB_USER}' read access to 'liberiaemr_etl'"
 fi
