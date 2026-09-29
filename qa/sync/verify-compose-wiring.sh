@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks that the compose files keep the sync security wiring the refusal suite assumes but
 # never exercises: read-only certificate mounts that must exist on the host, the broker
-# publishing only 61617 on ARTEMIS_BIND_ADDR, and no stack defaulting payload encryption off.
+# publishing only 61617 on ARTEMIS_BIND_ADDR, no stack defaulting payload encryption off, and the
+# capture exporter reading the sender's state read-only.
 #
 #   qa/sync/verify-compose-wiring.sh
 #
@@ -59,6 +60,14 @@ for name, service, target in [("central artemis", central["artemis"], "/etc/brok
         problems.append(f"{name}: {target} must be a read-only bind mount")
     elif m.get("bind") != explicit_false:
         problems.append(f"{name}: {target} must not be created when the host path is missing")
+
+# The capture exporter reads the sender's saved position; it must never be able to change it.
+capture = facility.get("sync-capture", {})
+m = mount(capture, "/eip")
+if m is None or m.get("type") != "volume" or m.get("source") != "sync-queue" or not m.get("read_only"):
+    problems.append("facility sync-capture: the sender's sync-queue volume must be mounted read-only at /eip")
+if capture.get("ports"):
+    problems.append("facility sync-capture: publishes no ports; the facility Prometheus scrapes it on the stack network")
 
 ports = central["artemis"].get("ports", [])
 if [str(p.get("target")) for p in ports] != ["61617"]:

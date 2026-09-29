@@ -229,6 +229,8 @@ services:
       # When conflict decisions are applied, in UTC; empty turns that off.
       SYNC_CONFLICT_WINDOW: ${SYNC_CONFLICT_WINDOW-01:00-05:00}
       SYNC_CONFLICT_CHECK_SECONDS: ${SYNC_CONFLICT_CHECK_SECONDS:-600}
+      # Compares the facilities' nightly reconciliation digests (sync-eip.md 5.5).
+      SYNC_RECON: ${SYNC_RECON:-true}
     volumes:
       - receiver-state:/opt/eip
       - type: bind

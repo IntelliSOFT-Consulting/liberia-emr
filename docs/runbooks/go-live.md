@@ -43,6 +43,9 @@ Go-live cannot proceed while any of these is open.
 - [ ] Sync conflicts page reads the queue at central: on a database created before it, run the
       grant in `distribution/compose/central/initdb/10-sync-mgmt-db.sh` by hand once
 - [ ] `Sync Conflict Reviewer` given only to the named reviewers the MOH agrees
+- [ ] Broker enrolment rendered with this release, so every facility has its
+      `recon.facility.<code>` queue, and each facility enrolled with `schema_only` has
+      `SYNC_RECON_SINCE` set to its enrolment date (sync-operations.md section 15)
 - [ ] Identity schema present at central: on a database created before it, run
       `distribution/compose/central/initdb/20-identity-db.sh` by hand once and restart OpenMRS so
       the module creates its tables; the identity task then assigns every existing patient a CPI at

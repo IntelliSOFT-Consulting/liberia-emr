@@ -11,6 +11,8 @@ The ActiveMQ Artemis broker at central that facilities push to. Design:
 - **One address per facility.** Facility `careysburg` may send to
   `sync.facility.careysburg` and nothing else. The broker forwards it to
   `openmrs.sync.topic`, where facilities hold no permission; only the receiver consumes.
+  It may also send its nightly reconciliation digest to its own queue,
+  `recon.facility.careysburg`, which only the receiver reads (sync-eip.md 5.5).
 - **Messages are kept.** The receiver's subscription queue is declared by the broker, so
   messages wait from first start even before the receiver connects (risk E11). A message
   the receiver fails on 10 times moves to `DLQ` instead of being dropped.

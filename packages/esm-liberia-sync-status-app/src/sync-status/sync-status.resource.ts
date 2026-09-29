@@ -7,6 +7,10 @@ export interface FacilityStatus {
   receivedLastDay: number;
   silent: boolean;
   certificateExpires: number | null;
+  /** When the facility last sent its reconciliation digest; null until it has. */
+  lastChecked?: number | null;
+  /** Its records confirmed missing at central; null until it has been checked. */
+  recordsMissing?: number | null;
 }
 
 export interface CentralStatus {

@@ -53,6 +53,11 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   conflicts page inside `SYNC_CONFLICT_WINDOW`: the entrypoint keeps the receiver as its
   child so it can stop it, run dbsync's hash updater for the decided tables and start it
   again (docs/runbooks/sync-operations.md section 8).
+- Reconciliation (`recon/`, sync-eip.md 5.5), built into both images and started by both
+  entrypoints beside the app. At a facility it sends a nightly digest of what the facility
+  holds to its own broker queue; at central it compares every digest with the database, keeps
+  the gaps in the management schema and serves them on `:9103/metrics`
+  (docs/runbooks/sync-operations.md section 15). `SYNC_RECON=false` turns it off.
 - A sync account (`SYNC_REST_USER`) with the `Sync Receiver` role only, and for the sender
   one with `Sync Sender` (docs/runbooks/sync-operations.md section 6).
 - Its subscription queue, `DB-SYNC-REC.DB-SYNC-RECEIVER`, is declared by the broker, so

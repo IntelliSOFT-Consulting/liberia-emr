@@ -88,6 +88,10 @@ public class SyncStatusService {
 			Map<String, Double> lastDay = instant(base, "increase(" + FACILITY_ADDRESS + "[24h])", "address");
 			Map<String, Double> silent = instant(base, SILENT_FACILITIES, "address");
 			Map<String, Double> certExpiry = instant(base, "sync_cert_not_after_seconds{kind=\"facility\"}", "identity");
+			// Reconciliation (distribution/sync/recon/): when the facility's records were last
+			// checked against central, and how many were confirmed missing.
+			Map<String, Double> reconMissing = instant(base, "sync_recon_missing_records", "facility");
+			Map<String, Double> reconChecked = instant(base, "sync_recon_digest_taken_seconds", "facility");
 			
 			List<Map<String, Object>> facilities = new ArrayList<Map<String, Object>>();
 			Map<String, Double> byFacility = new TreeMap<String, Double>();
@@ -105,6 +109,10 @@ public class SyncStatusService {
 				facility.put("silent", silent.containsKey("sync.facility." + code));
 				Double notAfter = certExpiry.get(code);
 				facility.put("certificateExpires", notAfter == null ? null : Long.valueOf(notAfter.longValue()));
+				Double checked = reconChecked.get(code);
+				facility.put("lastChecked", checked == null ? null : Long.valueOf(checked.longValue()));
+				Double missing = reconMissing.get(code);
+				facility.put("recordsMissing", missing == null ? null : Long.valueOf(missing.longValue()));
 				facilities.add(facility);
 			}
 			status.put("facilities", facilities);

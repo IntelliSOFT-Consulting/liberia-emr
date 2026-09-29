@@ -189,6 +189,7 @@ const SyncStatus: React.FC = () => {
               <TableHeader>{t('recordsLastDay', 'Records in the last day')}</TableHeader>
               <TableHeader>{t('recordsTotal', 'Records received in total')}</TableHeader>
               <TableHeader>{t('certificateExpires', 'Certificate expires')}</TableHeader>
+              <TableHeader>{t('recordsChecked', 'Records checked')}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -210,6 +211,21 @@ const SyncStatus: React.FC = () => {
                   {facility.certificateExpires
                     ? formatDate(new Date(facility.certificateExpires * 1000), { time: false })
                     : t('unknown', 'Unknown')}
+                </TableCell>
+                <TableCell>
+                  {facility.lastChecked == null ? (
+                    t('notCheckedYet', 'Not checked yet')
+                  ) : facility.recordsMissing > 0 ? (
+                    <Tag type="red">
+                      {t('recordsMissing', '{{count}} missing at central', { count: facility.recordsMissing })}
+                    </Tag>
+                  ) : (
+                    <Tag type="green">
+                      {t('allArrived', 'All arrived, {{date}}', {
+                        date: formatDate(new Date(facility.lastChecked * 1000), { time: false }),
+                      })}
+                    </Tag>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

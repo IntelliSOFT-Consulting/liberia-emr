@@ -92,6 +92,12 @@ public class SyncStatusServiceTest {
 		assertEquals(0L, ((Number) facilities.get(1).get("receivedLastDay")).longValue());
 		assertEquals(Boolean.FALSE, facilities.get(2).get("silent"));
 		assertEquals(Long.valueOf(1790000000L), facilities.get(2).get("certificateExpires"));
+		// Reconciliation: careysburg was checked and is short three records; bong has not sent a
+		// digest yet, so the page says nothing rather than zero.
+		assertEquals(Long.valueOf(1790300000L), facilities.get(2).get("lastChecked"));
+		assertEquals(Long.valueOf(3L), facilities.get(2).get("recordsMissing"));
+		assertEquals(null, facilities.get(1).get("lastChecked"));
+		assertEquals(null, facilities.get(1).get("recordsMissing"));
 		
 		@SuppressWarnings("unchecked")
 		Map<String, Object> central = (Map<String, Object>) status.get("central");
@@ -139,6 +145,12 @@ public class SyncStatusServiceTest {
 		if (query.contains("sync_cert_not_after_seconds")) {
 			return samples("identity", "careysburg", "1790000000", "barnersville", "1791000000", "bong",
 			    "1792000000");
+		}
+		if (query.contains("sync_recon_missing_records")) {
+			return samples("facility", "careysburg", "3", "barnersville", "0");
+		}
+		if (query.contains("sync_recon_digest_taken_seconds")) {
+			return samples("facility", "careysburg", "1790300000", "barnersville", "1790290000");
 		}
 		if (query.contains("DB-SYNC-REC")) {
 			return scalar("3");

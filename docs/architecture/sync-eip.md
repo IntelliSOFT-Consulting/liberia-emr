@@ -792,6 +792,24 @@ replay by UUID range, not a full re-sync. Without this, silent data loss is invi
 someone notices a facility's ANC numbers look low in a DHIS2 report, months later, with no
 way to tell when it started.
 
+**As built (existence, not yet content).** `distribution/sync/recon/` runs beside both apps. At
+each facility, every night, it sends a digest over the broker to the facility's own
+`recon.facility.<code>` queue, on the same certificate as sync: each record's table, uuid and
+creation day, nothing clinical, gzipped. It carries every record from the last 35 days and a
+twenty-eighth of the older ones by uuid, so 28 digests cover the whole database, and leaves out
+what the sender may not have sent yet: anything younger than an hour or than the last event it
+saved, and, by uuid, anything it still holds in its queues. No digest is taken during the
+sender's first load or while it holds a backlog. A night the server is off is caught up the
+next time it runs. At central, beside the receiver, it drains each enrolled facility's queue
+(listed from the broker's addresses in central's monitoring; the queue proves the sender, since
+only that facility can send to it), looks every uuid up in the replica, and records the ones it
+cannot find in the receiver's management schema.
+Each is a suspicion until it is still absent six hours later, with nothing queued at the receiver
+for it and no backlog on the broker; then it is confirmed, `SyncRecordsMissing` fires and the
+Sync status page shows the count. A record that arrives closes its gap. Still to build: comparing
+content, which catches a record that arrived but differs, and a targeted resend by uuid, where
+today the fix is to send the facility's records again.
+
 ### 5.6 Operational limits and alerts
 
 | Signal | Meaning | Action |
@@ -874,10 +892,10 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F5 | **Stale message overwrites fresher data** | Replay or long-delayed delivery | Silent clinical regression at central | Reject updates older than what central holds (§7.5) |
 | F6 | **Poison message blocks the queue head** | One malformed or unsupported entity | The facility appears to be retrying forever and never drains | Bounded retries then dead-letter, and the stream continues (§5.4) |
 | F7 | **Central never notices a facility has gone quiet** | Facility down, sender crashed, or nothing to send | An outage that nobody is counting is an outage nobody fixes | Facilities send a heartbeat; central alerts on silence, per facility, distinguishing "no data" from "no contact" |
-| F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional** |
+| F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional**. BUILT for existence: a nightly digest over the broker, compared at central (§5.5); content comparison is still to come |
 | F9 | **Reconnection storm** | Regional outage ends; all facilities return at once | Receiver overwhelmed; the first facilities to reconnect starve the rest | Jittered backoff and per-facility rate limiting at central (§7.6) |
 | F10 | **Facility server stolen or dies outright** | Physical | Loss of the local record and its credentials | Facility backups (existing runbook), full-disk encryption (§7.4), certificate revocation at central (§7.2) |
-| F11 | **Power cut tears or drops the binlog tail** | Facility loses power with `sync_binlog=0` | The sender stops at the torn event and retries forever, or a committed change never reaches the binlog and never syncs (**silent gap**) | `--sync-binlog=1` with `innodb_flush_log_at_trx_commit=1` on the facility database, so no acknowledged commit is lost or torn; the outage drill asserts both. An unacknowledged commit cut off mid-write can still leave a partial tail event, which the sender may stop on. FOUND 2026-09-25 on a lab stack after a forced Docker restart |
+| F11 | **Power cut tears or drops the binlog tail** | Facility loses power with `sync_binlog=0` | The sender stops at the torn event and retries forever, or a committed change never reaches the binlog and never syncs (**silent gap**) | `--sync-binlog=1` with `innodb_flush_log_at_trx_commit=1` on the facility database, so no acknowledged commit is lost or torn; the outage drill asserts both. An unacknowledged commit cut off mid-write can still leave a partial tail event, which the sender may stop on. `SyncCaptureStalled` raises that at the facility; the runbook's section 16 recovers from it. FOUND 2026-09-25 on a lab stack after a forced Docker restart |
 
 Two of these deserve emphasis because they are the ones that get deferred:
 
@@ -1191,7 +1209,7 @@ can invalidate the Sprint 3 plan.
 | E7 | A shared broker with wrong permissions lets one facility read another's clinical data | Send-only, own-address-only per facility, **proven by a negative test in `qa/`** (§7.3). BUILT: `qa/sync/verify-hardening.sh` asserts the refusals and runs in CI on every change to the sync security surface | **Highest**: national-scale data leak from one config line |
 | E8 | Facility disk filled by binlog and queue during a long outage halts the database | Size disk for the full retention window; separate binlog volume; alarms (F2) | **Highest**: the only path where sync stops care |
 | E9 | Facility disk encryption is not in the SOP mapping, and facility servers are physically exposed | Raise with MOH ICT; add to the control register (§7.4) | High |
-| E10 | Nothing detects a facility that has silently stopped syncing | Per-facility heartbeat and silence alerting (F7). PARTLY BUILT: the `SyncFacilitySilent` alert and the sync status page both read the broker's per-facility message counts, so a facility that stops sending is noticed within three days. A heartbeat would tell "nothing recorded" apart from "no contact"; the broker cannot. | Medium |
+| E10 | Nothing detects a facility that has silently stopped syncing | Per-facility heartbeat and silence alerting (F7). PARTLY BUILT: the `SyncFacilitySilent` alert and the sync status page both read the broker's per-facility message counts, so a facility that stops sending is noticed within three days. A heartbeat would tell "nothing recorded" apart from "no contact"; the broker cannot. A sender that is up but has stopped reading the binlog, the silent case the sender's own metrics miss, raises `SyncCaptureStalled` at the facility within 15 minutes of records waiting (`monitoring/sync-capture/`). | Medium |
 | E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4). BUILT: the broker declares the receiver's subscription queue, so messages wait from its first start whether or not the receiver has connected; `qa/sync/verify-hardening.sh` checks it | **Highest**: defeats every other durability control |
 | E12 | Facility and central drift onto different content-package versions | Same image both sides; assert UUID parity in the upgrade rehearsal (§1.6) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |

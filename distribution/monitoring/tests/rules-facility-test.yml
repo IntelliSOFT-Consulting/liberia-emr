@@ -1,0 +1,108 @@
+# promtool unit tests for the capture rules in rules-facility.yml. Run with:
+#   docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
+#     prom/prometheus:v2.53.4 test rules /m/tests/rules-facility-test.yml
+# sync_capture_stalled_seconds is given as it grows, 60 s a minute.
+rule_files:
+  - ../rules-facility.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: a running sender that stops capturing alerts after 15 minutes
+    interval: 1m
+    input_series:
+      - series: 'sync_capture_stalled_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x30'
+      - series: 'up{job="sync-sender",instance="sync:8080"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 17m
+        alertname: SyncCaptureStalled
+        exp_alerts: []
+      - eval_time: 19m
+        alertname: SyncCaptureStalled
+        exp_alerts:
+          - exp_labels: {severity: critical, job: sync-capture, instance: "sync-capture:9102"}
+            exp_annotations:
+              summary: "Sync sender is running but has stopped capturing changes"
+              description: "New records have been saved at the facility for over 15 minutes while the sender's binlog position has not moved, so none of them is being sent. Look for an error repeating in the sender's log (for example 'bogus data in log event' after a power cut). The records are safe in the facility database and are sent once capture resumes, provided the binlog still holds them. NEVER a reason to stop clinical work."
+
+  - name: a sender in a crash loop does not make the alert flap
+    interval: 1m
+    input_series:
+      - series: 'sync_capture_stalled_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x30'
+      - series: 'up{job="sync-sender",instance="sync:8080"}'
+        values: '1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: SyncCaptureStalled
+        exp_alerts: []
+
+  - name: records waiting with no position to judge them by leave the check blind
+    interval: 1m
+    input_series:
+      - series: 'up{job="sync-capture",instance="sync-capture:9102"}'
+        values: '1x60'
+      - series: 'sync_capture_db_readable{job="sync-capture",instance="sync-capture:9102"}'
+        values: '1x60'
+      - series: 'sync_capture_last_run_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x60'
+      - series: 'sync_capture_unverified_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x60'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: SyncCaptureCheckBlind
+        exp_alerts: []
+      - eval_time: 50m
+        alertname: SyncCaptureCheckBlind
+        exp_alerts:
+          - exp_labels: {severity: warning, job: sync-capture, instance: "sync-capture:9102"}
+            exp_annotations:
+              summary: "The sync capture check cannot see the facility"
+              description: "The capture exporter is down, cannot read the database with the Debezium account, has stopped refreshing, or has had no saved sender position to read for half an hour while records were being saved, so a stalled sender would go unnoticed."
+
+  - name: a stopped sender is left to SyncSenderDown
+    interval: 1m
+    input_series:
+      - series: 'sync_capture_stalled_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x30'
+      - series: 'up{job="sync-sender",instance="sync:8080"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: SyncCaptureStalled
+        exp_alerts: []
+
+  - name: capture that keeps up never alerts
+    interval: 1m
+    input_series:
+      - series: 'sync_capture_stalled_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0x30'
+      - series: 'up{job="sync-sender",instance="sync:8080"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: SyncCaptureStalled
+        exp_alerts: []
+
+  - name: an exporter that cannot read the database says so
+    interval: 1m
+    input_series:
+      - series: 'up{job="sync-capture",instance="sync-capture:9102"}'
+        values: '1x30'
+      - series: 'sync_capture_db_readable{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0x30'
+      - series: 'sync_capture_last_run_seconds{job="sync-capture",instance="sync-capture:9102"}'
+        values: '0+60x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SyncCaptureCheckBlind
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: SyncCaptureCheckBlind
+        exp_alerts:
+          - exp_labels: {severity: warning, job: sync-capture, instance: "sync-capture:9102"}
+            exp_annotations:
+              summary: "The sync capture check cannot see the facility"
+              description: "The capture exporter is down, cannot read the database with the Debezium account, has stopped refreshing, or has had no saved sender position to read for half an hour while records were being saved, so a stalled sender would go unnoticed."
