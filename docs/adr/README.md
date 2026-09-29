@@ -17,7 +17,7 @@ Format: Context → Decision → Consequences → Status.
 | [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | **Proposed** |
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
 | [0009](0009-mfl-facility-locations.md) | The Master Facility List is the source of truth for facility locations | Accepted |
-| [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** |
+| [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** (implementation in progress; amended 2026-09) |
 | [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
@@ -39,6 +39,13 @@ it needs no MOH decision, only a test. That test passed on 2 September 2026
 its status line still reads Proposed, and its Context and Decision still say nothing is built
 or pinned. Read those as the state when it was written, pending an Accepted status (or a
 superseding ADR) from its owner.
+
+0010 is partly built. The ETL module, the reports framework and the report UI package are
+merged; the indicator report definitions (LE-334) and the UI's pin in the distribution (LE-335)
+are not. Unlike 0008, it was amended in place once the builds had run on real stacks, because
+it is still Proposed. It
+has a dated "Amendment (2026-09)" section (LE-362), and inline markers point to it from each
+decision the builds changed. Its status stays Proposed until its owner accepts it.
 
 0009 makes the MOH Master Facility List (a DHIS2 instance) the source of facility locations,
 cached at central by a scheduled sync in the liberiaemr module (LE-317). Accepted on 27 September
