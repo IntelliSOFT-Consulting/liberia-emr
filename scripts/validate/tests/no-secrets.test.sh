@@ -36,7 +36,7 @@ scan() {
     return
   fi
   # A failure must name the file and key, never echo the value it caught.
-  if [[ "$want" == "fail" ]] && printf '%s' "$out" | grep -qE 'abc&(amp;)?123xyz|abc123xyzLONGVALUE9'; then
+  if [[ "$want" == "fail" ]] && printf '%s' "$out" | grep -qE 'abc&(amp;)?123xyz|abc123xyz''LONGVALUE9'; then
     echo "FAIL [$name]: the scanner printed the secret value"
     failed=$((failed + 1))
     return
@@ -62,7 +62,8 @@ scan fail json-next-line         config.json               $'{\n  "password":\n 
 scan fail xml-multiline          settings.xml              $'<password>\n  abc&amp;123xyz\n</password>'
 scan fail yaml-run-block         workflow.yml              $'steps:\n  - run: |\n      docker run -e DB_PASSWORD=abc&123xyz img'
 # The legacy long-token rule must name the file and line only, never print the match.
-scan fail legacy-long-token      notes/setup.sh            'token=abc123xyzLONGVALUE9'
+# Split in two, so this file does not itself hold a 12-character token for the scanner to find.
+scan fail legacy-long-token      notes/setup.sh            'token=abc123xyz''LONGVALUE9'
 
 # --- must pass: references, placeholders, settings, throwaways and prose -----------------
 scan pass placeholder-change-me  site.env.example          'MYSQL_PASSWORD=CHANGE_ME'
