@@ -32,7 +32,8 @@
                     "label": "No"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Medication administered during the third stage of labour.",
@@ -42,6 +43,14 @@
                 "concept": "${var.concept.national.medication-administered-during-the-third-stage-of-labour.uuid}",
                 "rendering": "textarea",
                 "rows": 3
+              },
+              "required": {
+                "type": "conditionalRequired",
+                "message": "Medication administered is required when active management was performed.",
+                "referenceQuestionId": "active_management",
+                "referenceQuestionAnswers": [
+                  "${var.concept.ciel.yes.uuid}"
+                ]
               }
             },
             {
@@ -51,7 +60,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.medication-time.uuid}",
                 "rendering": "time"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isEmpty(myValue) && !isEmpty(medication_administered)",
+                  "message": "Medication time is required when medication administered has been recorded."
+                }
+              ]
             },
             {
               "label": "Dose",
@@ -61,7 +77,14 @@
                 "concept": "${var.concept.national.dose.uuid}",
                 "rendering": "number",
                 "min": 0
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isEmpty(myValue) && !isEmpty(medication_administered)",
+                  "message": "Dose is required when medication administered has been recorded."
+                }
+              ]
             },
             {
               "label": "Placenta delivery time",
@@ -70,7 +93,8 @@
               "questionOptions": {
                 "concept": "${var.concept.national.placenta-delivery-time.uuid}",
                 "rendering": "time"
-              }
+              },
+              "required": true
             },
             {
               "label": "Placenta status",
@@ -89,7 +113,8 @@
                     "label": "Incomplete"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Blood loss amount",
@@ -112,7 +137,8 @@
                     "label": "Large (More than 500 cc)"
                   }
                 ]
-              }
+              },
+              "required": true
             }
           ]
         }
@@ -154,7 +180,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
                   "message": "Value must be between 0 and 10"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Length",
@@ -192,7 +219,8 @@
                     "label": "Female"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Baby presentation",
@@ -215,7 +243,8 @@
                     "label": "Other"
                   }
                 ]
-              }
+              },
+              "required": true
             }
           ]
         }
@@ -249,7 +278,8 @@
                     "label": "10 Minutes"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Colour (Appearance)",
@@ -268,7 +298,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
                   "message": "Value must be between 0 and 2"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Heart rate (Pulse)",
@@ -287,7 +318,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
                   "message": "Value must be between 0 and 2"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Muscle tone (Activity)",
@@ -306,7 +338,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
                   "message": "Value must be between 0 and 2"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Reflex irritability (Grimace)",
@@ -325,7 +358,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
                   "message": "Value must be between 0 and 2"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Respiration (Breathing)",
@@ -344,7 +378,8 @@
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 2)",
                   "message": "Value must be between 0 and 2"
                 }
-              ]
+              ],
+              "required": true
             },
             {
               "label": "Total APGAR score",
@@ -372,7 +407,8 @@
               "questionOptions": {
                 "concept": "${var.concept.national.time-at-which-the-baby-was-delivered.uuid}",
                 "rendering": "time"
-              }
+              },
+              "required": true
             }
           ]
         }

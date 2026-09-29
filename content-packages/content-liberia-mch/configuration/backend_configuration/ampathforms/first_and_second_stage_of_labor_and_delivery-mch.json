@@ -128,7 +128,8 @@
                 "calculate": {
                   "calculateExpression": "mode === 'enter' && isEmpty(myValue) ? getCurrentPregnancyAncNumeric(patient.id, '${var.concept.ciel.gravida.uuid}').then(v => v) : myValue"
                 }
-              }
+              },
+              "required": true
             },
             {
               "label": "Parity",
@@ -144,6 +145,7 @@
                   "calculateExpression": "mode === 'enter' && isEmpty(myValue) ? getCurrentPregnancyAncNumeric(patient.id, '${var.concept.ciel.parity.uuid}').then(v => v) : myValue"
                 }
               },
+              "required": true,
               "validators": [
                 {
                   "type": "js_expression",
@@ -207,7 +209,8 @@
                     "label": "Cesarean section"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Perineum",
@@ -271,6 +274,15 @@
                     "concept": "${var.concept.ciel.no.uuid}",
                     "label": "No"
                   }
+                ]
+              },
+              "required": {
+                "type": "conditionalRequired",
+                "message": "Repair is required when the perineum shows an episiotomy or a laceration.",
+                "referenceQuestionId": "perineum",
+                "referenceQuestionAnswers": [
+                  "${var.concept.national.episiotomy-answer.uuid}",
+                  "${var.concept.mch.laceration.uuid}"
                 ]
               }
             }

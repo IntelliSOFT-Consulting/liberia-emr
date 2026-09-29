@@ -44,7 +44,8 @@
                     "label": "Other"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Complications of baby",
@@ -71,7 +72,8 @@
                     "label": "Other"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Monitoring frequency",
@@ -94,7 +96,8 @@
                     "label": "Every 1 hour for next 4 hours"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Observation time",
@@ -103,7 +106,8 @@
               "questionOptions": {
                 "concept": "${var.concept.mch.observation-time.uuid}",
                 "rendering": "time"
-              }
+              },
+              "required": true
             }
           ]
         }
@@ -268,7 +272,8 @@
                     "label": "No"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Suck",
@@ -287,7 +292,8 @@
                     "label": "No"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Temperature status",
@@ -310,7 +316,8 @@
                     "label": "Normal"
                   }
                 ]
-              }
+              },
+              "required": true
             },
             {
               "label": "Labor notes",
