@@ -1,7 +1,13 @@
 # 0010: Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module
 
-**Status:** Proposed
-**Date:** 27 September 2026 · **Ticket:** LE-330 (parent: *Indicator reports*)
+**Status:** Proposed. Every decision is built and merged, and the builds changed some of them;
+see [Amendment (2026-09)](#amendment-2026-09-what-building-and-verifying-found).
+**Date:** 27 September 2026 · **Amended:** 29 September 2026 (LE-362) · **Ticket:** LE-330
+(parent: *Indicator reports*)
+
+> **Read with the amendment.** The Context and Decision sections below were written before the
+> modules existed, and they are kept as the record of that reasoning. Where the builds changed a
+> decision, the amendment says so, and a marker *(amended: A*n*)* points to it from the text.
 
 ## Context
 
@@ -103,7 +109,9 @@ version, rebuild, then rerun the QA gate described in the Consequences on a faci
 on a central stack. Read the new jar's `JdbcFlattenDatabaseDao` and `compile-mysql.sh` for
 changes to the deploy statements first: decision 3 depends on them.
 
-**Not verified: whether `setupEtl()` runs cleanly on core 2.8.8.** That needs a running
+**Not verified: whether `setupEtl()` runs cleanly on core 2.8.8.** *(Amended: since run on
+facility and central stacks by the builds the amendment lists; A1 and A5 record what that
+found.)* That needs a running
 stack, which is the first acceptance check of the scaffold subtask. The static evidence says it
 should:
 
@@ -121,7 +129,8 @@ we omit it. The connection uses `connection.driver_class` from the core image.
 **Mamba's own REST surface stays unused.** Core component-scans a resource at `/ws/rest/v1/mamba/report`
 (`MambaReportResource`), guarded by `View MambaReport`. That privilege is declared only in core's own
 `config.xml`, which is never loaded when core is bundled. We ship no `reports.json` and
-create no such privilege; reports go through reportingrest (decision 6).
+create no such privilege; reports go through reportingrest (decision 6). *(Amended: A7; the
+UI also reads one `liberiaemrreports` endpoint.)*
 
 ### 2. Build pipeline: one `package` produces current SQL, and nothing generated is committed
 
@@ -139,7 +148,8 @@ even `mvn install` ships the SQL from the *previous* build. Our Dockerfile runs 
 (line 125), so the copy never runs at all. A 3.0.0 build would also need the `jdbc_` file,
 which the reference never copies.
 
-**The fix is to run the chain inside `modules/mambaetl/api`, before `package`:**
+**The fix is to run the chain inside `modules/mambaetl/api`, before `package`** *(amended:
+the phases as built are in A6)*:
 
 | Phase | Step |
 | --- | --- |
@@ -210,7 +220,8 @@ liberiaemr_etl.*` and `SELECT ON openmrs.*`, with the facility's binlog flags:
 
 - **`SET GLOBAL` would stop every stack.** Without the strip, `setupEtl()` aborts on that
   statement for *any* non-SUPER user, **including today's OpenMRS user**.
-- **`performance_schema` protects against overlapping runs.** With `performance_schema=OFF`
+- **`performance_schema` protects against overlapping runs** *(amended: A1; the flag alone is
+  not enough)*. With `performance_schema=OFF`
   (the MariaDB default), the granted table is readable but returns 0 rows, even while a
   statement is running. Both were confirmed. The un-stuck check then marks a genuinely running
   ETL as finished, and the next event can start an overlapping run.
@@ -250,7 +261,7 @@ for our own derived SQL: **no ETL-schema DDL from an `openmrs`-context connectio
 Central has no binlog. If central ever enables one, both flags apply there too.
 
 **Grants.** A dedicated ETL user on both stacks, created by a new initdb script: facility
-`20-etl-db-user.sh`, central `30-etl-db-user.sh`.
+`20-etl-db-user.sh`, central `30-etl-db-user.sh` *(amended: A2)*.
 
 ```sql
 CREATE DATABASE IF NOT EXISTS `liberiaemr_etl` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -313,7 +324,7 @@ restart. A variable that is *removed* leaves its last value in the file.
   (`sp_mamba_flat_encounter_table_create.sql`). Core's `mamba_dim_location` has no `uuid` or
   `parent_location`, and `mamba_dim_encounter` has no location. We add our own derived
   `mamba_dim_location_hierarchy`: each location's uuid, its facility root, district and
-  county ancestors, and its tags.
+  county ancestors, and its tags *(amended: A3 adds four more common tables)*.
 - **Detecting the role.** Use a new backend environment variable,
   **`LIBERIAEMR_INSTANCE_ROLE`**, set to `facility` or `central`. It is hard-coded in each
   compose file and cannot be overridden, the way `OMRS_CONFIG_MODULE_WEB_ADMIN` is hard-coded
@@ -334,7 +345,8 @@ restart. A variable that is *removed* leaves its last value in the file.
   unresolvable property. The same clamp keeps records pulled from other facilities out, if
   ADR 0007's query-never-replicate rule is ever relaxed and such records are persisted.
 - **Central scope.** `location` accepts any MFL node, which is a County, District or Health
-  Facility location. It rolls up through `parent_location`, so a department's events count
+  Facility location. It rolls up through `parent_location` *(amended: A3, through the ETL's
+  `mamba_dim_location_ancestor`)*, so a department's events count
   toward its facility, district, county and the national total. The national total is the
   empty or root selection.
 - **Lag.** For a given facility and period, central lags the facility by the dbsync delay plus
@@ -362,7 +374,7 @@ restart. A variable that is *removed* leaves its last value in the file.
   evaluators, in addition to reporting's own `Run Reports`. That covers every evaluating path:
   `reportRequest`, `reportDataSet` and `reportdata`. reportingrest itself checks nothing
   LiberiaEMR-specific.
-  - **Open:** `downloadReport` returns stored output without re-evaluating, so it is guarded
+  - **Open** *(closed: A8)*: `downloadReport` returns stored output without re-evaluating, so it is guarded
     only by the reporting service's own authorisation. The reports-module subtask must verify
     that guard and, if it is weaker, add advice on `ReportService.loadRenderedOutput` for our
     report UUIDs.
@@ -431,7 +443,8 @@ at central (decision 0; `distribution/frontend/Dockerfile`), so config cannot di
 Not from `systemsetting` either: reading a global property needs *Get Global Properties*,
 which *National Reporting Officer* does not hold, and a writable role property would be a
 second source of truth beside `LIBERIAEMR_INSTANCE_ROLE`. **The UI reads one small endpoint
-served by `liberiaemrreports`**, proposed as `GET /ws/rest/v1/liberiaemrreports/context`:
+served by `liberiaemrreports`**, proposed as `GET /ws/rest/v1/liberiaemrreports/context`
+*(amended: built as proposed, plus an `etlSchema` field and a fixed status vocabulary; A7, A10)*:
 
 ```json
 {
@@ -474,8 +487,9 @@ of this is §4 of the contract; nothing in §4.3 is used.
 - **Two new in-tree OMODs ship in every image.** Neither is in `distro.properties`.
 - **The Dockerfile module stage changes.** It installs `jq` and `rsync` (unpinned apt
   versions, accepted) and copies `variables.properties`.
-- **`modules.yml` must build and test all three modules.**
-- **Database server flags change.**
+- **`modules.yml` must build and test all three modules.** *(Amended: A6; `mambaetl` is built
+  and tested in `ci.yml` instead.)*
+- **Database server flags change** *(amended: A1 adds a fifth flag and measures the cost)*.
   - Facility `db.command` gains `--binlog-ignore-db=liberiaemr_etl`,
     `--log-bin-trust-function-creators=1`, `--event-scheduler=ON` and `--performance-schema=ON`.
   - Central's gains the last two.
@@ -518,17 +532,257 @@ of this is §4 of the contract; nothing in §4.3 is used.
 - **`concepts_locale` in a config JSON is ignored by 3.0.0.** Core reads the locale only from
   `mambaetl.analysis.locale`. The key is kept for readability.
 
+## Amendment (2026-09): what building and verifying found
+
+**29 September 2026 · LE-362.** The decisions above were written before the modules existed.
+The wave-2 and wave-3 builds were then run on real facility and central stacks: the ETL module
+(LE-331, PR #168), the reports module (LE-337, PR #169), the report UI (LE-335, PR #170), the
+fixtures (LE-336, PR #171) and the late-synced-rows fix (LE-363, PR #174). This section records
+what they found and what changed. Each point cites the code on `main` that now holds it.
+Nothing below reverses decision 0.
+
+### A1. MariaDB needs a fifth flag, and `performance_schema` costs about 95 MiB
+
+`--performance-schema=ON` alone is **not enough**. MariaDB ships the `events_statements_current`
+consumer switched off, so with only that flag core's stuck-run check still reads 0 rows, and
+ETL runs can overlap (the failure decision 3 describes). Both stacks therefore also set
+`--performance-schema-consumer-events-statements-current=ON`:
+
+- facility: `distribution/compose/facility/docker-compose.yml`, the five ETL flags on lines
+  42–46, explained on lines 22–31;
+- central: `distribution/compose/central/docker-compose.yml`, lines 23–25, explained on lines
+  13–18.
+
+**Measured cost:** about 95 MiB of resident memory per MariaDB at `max_connections=151`: 175.8 MiB
+against 80.75 MiB idle. The Consequences named an override of `sp_mamba_etl_un_stuck_scheduler` as
+the fallback if the cost were too high. It is **not** taken: the flag ships on both stacks,
+95 MiB is accepted, and core's stuck-run logic stays unforked.
+
+### A2. The ETL user's initdb keeps secrets out of the binlog, and central may read the CPI
+
+- **No password in the binlog.** Both initdb scripts run their statements with
+  `SET SESSION sql_log_bin = 0` (`distribution/compose/facility/initdb/20-etl-db-user.sh` lines
+  42 and 54; `distribution/compose/central/initdb/30-etl-db-user.sh` lines 42 and 58).
+  Otherwise `CREATE USER … IDENTIFIED BY` would write the ETL password to the facility binlog in
+  clear text, for the whole retention period. Nothing downstream replays account statements.
+  The by-hand runbook for an existing database must do the same.
+- **Central only: `GRANT SELECT ON openmrs_identity.*`** to the ETL user (`30-etl-db-user.sh`
+  line 52). That schema holds the CPI (ADR 0005). `mamba_dim_person_cpi` (A3) reads it, and
+  that gives central a key that counts each person once. A facility has no such schema and no
+  such grant, and the same SQL runs unchanged there.
+- Both scripts are skipped when `ETL_DB_PASSWORD` is unset, and there is still no fallback to
+  the OpenMRS user.
+
+### A3. Four common tables beyond the ADR; roll-up goes through a closure table
+
+Decision 5 named one derived common table, `mamba_dim_location_hierarchy`. The `common`
+section of `modules/mambaetl/api/src/main/mamba/_etl/sp_makefile` builds five:
+
+| Table | Built by | Why |
+| --- | --- | --- |
+| `mamba_dim_location_ancestor` | `derived/common/sp_mamba_dim_location_hierarchy.sql` | One row per location and each of its ancestors, itself included, with the depth. **Roll-up reads this, not `parent_location`.** The hierarchy's three tagged levels (facility, district, county) would miss the descendants of an untagged node, such as a ward. The walk is capped at depth 32 and absorbs a cycle. |
+| `mamba_dim_location_hierarchy` | the same file | Each location's uuid and parent, and its **nearest** ancestor-or-self tagged Health Facility, District and County. Tags are compared by uuid. |
+| `mamba_dim_encounter_location` | `derived/common/sp_mamba_dim_encounter_location.sql` | The attribution location, `encounter.location_id` falling back to `visit.location_id`, held in one place. Every fact takes its `location_id` from here. |
+| `mamba_dim_person_cpi` | `derived/common/sp_mamba_dim_person_cpi.sql` | `person_key`, which is the primary CPI at central (following alias chains the way `IdentityService.primary()` does) or `patient:<uuid>` at a facility. People are counted with `COUNT(DISTINCT person_key)`. |
+| `mamba_dim_encounter_form` | `derived/common/sp_mamba_dim_encounter_form.sql` | The form of each encounter. Core flattens per encounter type, and several forms share one. |
+
+**How the reports use the ancestor table.** `LocationScope` (`modules/liberiaemrreports/api/…/scope/LocationScope.java`)
+expands the `${scopeLocations}` token in report SQL to a subquery over
+`mamba_dim_location_ancestor`:
+`ancestor_location_id = :scopeLocationId`, or every location for a national run. It uses the
+same expansion at a facility and at central, so a facility's report equals central's report
+filtered to it. The facility clamp is checked before any SQL runs:
+`LocationScopeResolver.isSameOrDescendant` walks the OpenMRS `parent_location` chain in Java.
+
+### A4. Incremental runs find new rows by key and modified rows by value
+
+**The problem.** Core 3.0.0 finds new and changed rows by timestamp. dbsync keeps each facility's
+original timestamps, so at central a row that syncs after a run has started is never
+flattened. Back-dated data behaves the same way at a facility. **The fix is a deliberate fork
+of four core procedures.** `modules/mambaetl/api/src/main/mamba/_etl/core_overrides/` holds them.
+Each has the same name as core's procedure and is compiled after it, so ours is the definition
+deployed. `DeployScriptTest` fails the build if that stops being true.
+
+1. **New rows** (`sp_mamba_etl_incremental_columns_index_new_insert`). A key is new if the
+   table does not hold it and it is above the table's previous maximum, less a margin of
+   10,000. Once a day per table a **sweep** drops that bound, and so does the first incremental
+   run after a full one. State is kept in `mamba_etl_liberia_incremental_state`.
+2. **Modified rows** (`sp_mamba_etl_incremental_columns_index_modified_insert`). Core's timestamp
+   test is kept. A row also counts as modified when any stored change column differs from the
+   source: `date_changed`, `voided`, `date_voided`, `retired` or `date_retired`.
+3. **Identifier updates** (`sp_mamba_dim_patient_identifier_incremental_update`). Core joined the
+   modified `patient_identifier_id` keys to `patient_id`, so it rewrote the wrong patient's
+   identifiers. The join now uses `patient_identifier_id`.
+4. **Full runs** (`sp_mamba_dim_encounter_insert`). `mamba_dim_encounter` is now built the same
+   way as on incremental runs: every encounter of a known type, not only the types that have a
+   flat table.
+
+- **No scheduled full rebuild.** A full run drops every `mamba_*` table first, so reports would
+  read empty tables until it finished. **A manual full run is the recovery path**, after a
+  restore or a bulk correction. The steps are in `modules/mambaetl/README.md`, "Incremental runs
+  and late-arriving rows".
+- **Upgrade rule, added to decision 1.** **Every core upgrade must compare each override with the
+  new core's version of the same procedure** before the QA gate. A changed upstream procedure is
+  silently replaced by ours.
+
+### A5. Reading an ETL run's status
+
+Core's `sp_mamba_etl_un_stuck_scheduler` rewrites the previous `_mamba_etl_schedule` row on each
+tick if that row ended in `ERROR` or was left `RUNNING`. It **relabels** such a row as
+`completion_status = SUCCESS`, with the message `Error schedule updated` or `Stuck schedule
+updated`, and resets its times. **A genuine success is therefore `transaction_status = COMPLETED`,
+`completion_status = SUCCESS` and a null message.** `ReportingContextService.status`
+(`modules/liberiaemrreports/api/…/context/ReportingContextService.java`, line 127) maps rows to
+`SUCCESS`, `RUNNING`, `INTERRUPTED` (a stuck run core closed) or `ERROR`. A `SUCCESS` row with
+any other message maps to `ERROR`. The times on a non-`SUCCESS` row are not that run's own.
+`_mamba_etl_error_log` is the lasting record of failures.
+
+### A6. Build and CI, as built
+
+- **The api-module phases** (`modules/mambaetl/api/pom.xml`) differ from decision 2's table.
+  They are:
+
+  | Phase | Step |
+  | --- | --- |
+  | `validate` | clean `target/mamba-etl` |
+  | `initialize` | unpack core's `_core/**` |
+  | `generate-resources` | filtered copy of `_etl` |
+  | `process-resources` | core's `compile.sh` |
+  | `process-classes` | `src/main/sh/finalize-jdbc-sql.sh` |
+
+  The finalize script strips `SET GLOBAL` and fails the build on a leftover `${var.`,
+  `SET GLOBAL` or `DELIMITER`, or on a procedure missing from `sp_makefile`.
+- **The `openmrs-web` exclusion is load-bearing** (`modules/mambaetl/pom.xml`, on the
+  `mamba-core-api` dependency). Core's pom declares `openmrs-web:tests` with no scope. Without
+  the exclusion, that jar and about 50 webapp libraries (Spring, Liquibase, Struts,
+  servlet-api) land in the OMOD's `lib/` and shadow the platform's copies. With it, `lib/`
+  holds four jars: the module's api jar, `mamba-core-api`, `commons-dbcp2` and `commons-pool2`.
+- **`liberiaemrreports` uses `maven-parent-openmrs-module` 2.2.0**, not the 1.1.1 that
+  `liberiaemr` and `mambaetl` use (`modules/liberiaemrreports/pom.xml`). 1.1.1 adds powermock 1.5
+  and mockito 1.9.5, and powermock 1.5 cannot load beside the mockito 3 that `openmrs-test`
+  brings. With 1.1.1, no context-sensitive test could start.
+- **Where CI builds the modules.** The Consequences said `modules.yml` would build all three.
+  As built:
+  - `mambaetl` is built and tested by `ci.yml`'s `backend-module` job ("Build and test the
+    reporting ETL module");
+  - `liberiaemrreports` is in the root reactor (`pom.xml`), so `ci.yml`'s `mvn verify`, the
+    dependency scan and the SBOM all see it. `modules.yml` also builds it
+    (`build-and-test-reports`). Neither module is published to Repsy.
+- **The OWASP step runs `package` before `check`** (`ci.yml`, "Run OWASP Dependency Check"). The
+  reports omod depends on its sibling api jar, and unpacks it (MDEP-98), so that jar must be
+  packaged before the reactor can resolve it.
+- **Coverage reaches SonarQube.** JaCoCo 0.8.12 runs in `liberiaemrreports` only:
+  `prepare-agent`, then `report` at `test`, writing `target/site/jacoco/jacoco.xml`, which
+  `sonar.coverage.jacoco.xmlReportPaths` points at. Without it, every line the module adds counts
+  as uncovered new code. On a failed quality gate, `ci.yml`'s "Explain a failed SonarQube quality
+  gate" step prints the failing conditions, the new issues and the unreviewed hotspots from the
+  Sonar API. The Sonar server is not visible to most contributors.
+
+### A7. The UI reads one endpoint outside reportingrest
+
+Decision 8 and §8a said the UI uses reportingrest only, plus a *proposed* context endpoint. The
+endpoint is now built: `GET /ws/rest/v1/liberiaemrreports/context`
+(`modules/liberiaemrreports/omod/…/web/controller/ReportingContextController.java`, served by
+`ReportingContextService`). **The contract is therefore "reportingrest, plus this one read-only
+endpoint".** The UI needs it for the instance role and ETL freshness, which reportingrest cannot
+supply.
+
+- **Guard.** It returns 401 when unauthenticated and 403 without `Export National Report`.
+- **Fields.** It returns `instanceRole`, `facilityLocation`, `etlSchema` (not in §8a) and
+  `etlLastRun`, with the status vocabulary of A5.
+- **Privileges.** The global property and the location are read under proxy privileges, because
+  *National Reporting Officer* holds neither Get Global Properties nor necessarily Get Locations.
+
+The contract is `docs/reporting/README.md` §4.4.
+
+### A8. reporting has no authorisation, so the module adds its own
+
+**reporting 2.1.0's `ReportService` carries no `@Authorized` on any method.** Before this
+module, any logged-in user holding a request UUID could download a stored national report.
+`liberiaemrreports` closes that in two places.
+
+- **Evaluation** (`security/NationalReportPrivilege.check`, called first by
+  `EtlSqlDataSetEvaluator`). The current user must hold `Export National Report`. A queued
+  `reportRequest` is evaluated later on reporting's daemon thread, where every privilege check
+  passes. So when the evaluation belongs to a request, **the user who requested it** must hold
+  the privilege. A daemon evaluation that belongs to no request is refused.
+- **Stored output** (`security/StoredReportAccessAdvice`, registered as `<advice>` on
+  `ReportService` in `omod/src/main/resources/config.xml`). It requires the privilege on
+  `loadRenderedOutput`, `loadReportData` and `loadReport` for requests of this module's reports.
+  This closes decision 6's open question. A request counts as ours, and **fails closed**, in these
+  cases:
+  - its report UUID is one of the sheets;
+  - its definition runs any `EtlSqlDataSetDefinition` under another UUID;
+  - its definition reference is missing;
+  - the definition can no longer be found;
+  - the lookup throws.
+
+  Daemon-thread calls are passed through: the requester was already checked at evaluation.
+
+### A9. Only registered ETL SQL is evaluated
+
+`EtlSqlDataSetEvaluator` runs a data set only if its name **and** exact SQL match one that a
+registered `LiberiaReportManager` builds (`reporting/RegisteredEtlDataSets.require`). The
+expected set is rebuilt from code on every call, not read from the database. As a result:
+
+- an ad-hoc definition POSTed to reportingrest's `reportdata` is refused before any SQL runs;
+- so is a stored definition altered by someone with reporting's *Manage Report Definitions*.
+
+The name-based aggregate check comes after this one. It catches a mistake in our own SQL, not a
+hostile alias. `RegisteredDataSetOnlyTest` covers both refusals.
+
+**Outside this module:** reporting's own `SqlDataSetDefinition` remains reachable through
+`reportdata`, limited only by reporting's own privileges. That is reporting's surface, not ours,
+and it is recorded here so that nobody reads A9 as closing it.
+
+### A10. Contract points from the UI
+
+- **Not-captured notes live in `ReportDefinition.description`**
+  (`LiberiaReportManager.getDescription`). The description is a one-line summary, then one line
+  per note from `getNotes()`. The UI shows it with the report.
+- **DHIS2 UIDs have no route to the UI yet.** reportingrest's data-set column metadata carries no
+  `description`, so the plan in `docs/reporting/README.md` §3.3 (the DHIS2 UID in the column
+  description) cannot reach the browser through reportingrest. A later DHIS2 push reads the
+  columns on the server, where the plan still holds.
+- **The view and the file are evaluated separately.** The on-screen table evaluates the
+  `indicators` data set through `reportDataSet`, apart from the rendered CSV, because the CSV
+  writes column labels and loses the `<CODE>_<part>` names the view groups by. So one run
+  evaluates twice. If the ETL runs in between, the two can differ.
+- **The UI fails closed without context** (`packages/esm-liberia-reports-app/src/context/reporting-context.resource.ts`,
+  `toReportingContext` and `isLocationKnown`). This is §8a as built. The UI runs and exports
+  nothing when the endpoint does not answer, or when a facility has no facility UUID. Anything
+  but `central` is a facility.
+
+### A11. Threat-model decisions accepted in review
+
+- **The facility clamp rests on a global property.** `liberiaemr.facility.locationUuid` can be
+  changed by anyone who can edit global properties. **Accepted:** that is an administrator
+  privilege. Initializer re-applies the site package's value on every start
+  (`content-site-*/configuration/backend_configuration/globalproperties/gp-facility-*.xml`), so
+  an edit lasts only until the next restart.
+- **Report definitions edited after a run.** Stored-output protection (A8) inspects the
+  definition as it is *now*. A copy saved under another UUID and later edited so that it no longer
+  runs our ETL data sets would let its older stored output out without the privilege. That edit
+  needs *Manage Report Definitions*, an administrator privilege. **Accepted as an admin-only
+  risk.** If MOH security asks, the next step is **provenance**: record, at run time, that a
+  request ran our data sets, and guard on that record rather than on the current definition.
+  The five sheet report UUIDs themselves are always guarded, and they are re-saved from code on
+  every start.
+
 ## Decision record
 
-| # | Decision | Status |
-| --- | --- | --- |
-| 0 | Per-instance ETL and reports; ETL never synced; attribution by encounter/visit location | Decided 27 Sep 2026 (recorded) |
-| 1 | `modules/mambaetl` (`mamba-etl-liberiaemr`), `mamba-core-api` 3.0.0 bundled, not in `distro.properties` | Proposed |
-| 2 | Compile in the api module before `package`; strip `SET GLOBAL`; nothing generated committed | Proposed |
-| 3 | `log_bin_trust_function_creators=1` (facility), `event_scheduler=ON`, `performance_schema=ON`, `binlog-ignore-db` (facility), dedicated ETL user | Proposed |
-| 4 | `OMRS_EXTRA_MAMBAETL_*` per stack; intervals and width provisional | Proposed |
-| 5 | Encounter→visit location; `LIBERIAEMR_INSTANCE_ROLE`, failing closed; site-seeded facility location GP | Proposed |
-| 6 | `liberiaemrreports`: fixed UUIDs, runtime schema, `aware_of` ETL, privilege in evaluators | Proposed |
-| 7 | UUIDs via filtered `variables.properties`; checks extended to modules and CIEL-shape UUIDs | Proposed |
-| 8 | reportingrest 2.0.0 contract in `docs/reporting/README.md` | Proposed |
-| 8a | New `esm-liberia-reports-app`; role, facility and ETL freshness from a `liberiaemrreports` context endpoint; UI fails closed to facility | Proposed (LE-335) |
+Every row is built and merged. "Proposed" is the ADR's status, not a build state: acceptance
+is its owner's call. The Amended column points to the amendment.
+
+| # | Decision | Status | Amended |
+| --- | --- | --- | --- |
+| 0 | Per-instance ETL and reports; ETL never synced; attribution by encounter/visit location | Decided 27 Sep 2026 (recorded) | |
+| 1 | `modules/mambaetl` (`mamba-etl-liberiaemr`), `mamba-core-api` 3.0.0 bundled, not in `distro.properties` | Proposed | A4 (core overrides; compare each on every core upgrade), A6 |
+| 2 | Compile in the api module before `package`; strip `SET GLOBAL`; nothing generated committed | Proposed | A6 (phases as built; CI placement) |
+| 3 | `log_bin_trust_function_creators=1` (facility), `event_scheduler=ON`, `performance_schema=ON` **with its `events_statements_current` consumer**, `binlog-ignore-db` (facility), dedicated ETL user | Proposed | A1, A2 |
+| 4 | `OMRS_EXTRA_MAMBAETL_*` per stack; intervals and width provisional | Proposed | |
+| 5 | Encounter→visit location; `LIBERIAEMR_INSTANCE_ROLE`, failing closed; site-seeded facility location GP; roll-up through `mamba_dim_location_ancestor` | Proposed | A3, A11 |
+| 6 | `liberiaemrreports`: fixed UUIDs, runtime schema, `aware_of` ETL, privilege in evaluators (checked against the requester of a queued run), guard on stored output, registered SQL only | Proposed | A8, A9, A11 |
+| 7 | UUIDs via filtered `variables.properties`; checks extended to modules and CIEL-shape UUIDs | Proposed | |
+| 8 | reportingrest 2.0.0 contract in `docs/reporting/README.md`, plus the `liberiaemrreports/context` endpoint | Proposed | A7, A10 |
+| 8a | New `esm-liberia-reports-app`; role, facility and ETL freshness from a `liberiaemrreports` context endpoint; UI fails closed to facility | Proposed (LE-335) | A7, A10 |
