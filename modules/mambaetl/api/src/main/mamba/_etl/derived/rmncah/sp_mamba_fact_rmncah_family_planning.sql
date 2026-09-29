@@ -2,8 +2,10 @@
 -- `3. Family Planning` (RMNCAH-017, contraceptive prevalence).
 --
 -- Forms:
---   * v2.2 (MCH) by its form variable. It is keyed on the FORM, not the encounter type: the
---     family-planning encounter-type variable is declared with two values (gaps note, gap 10).
+--   * v2.2 (MCH) by its form variable. It was keyed on the FORM because the family-planning
+--     encounter-type variable had two values (gaps note, gap 10). The MCH type now has its own
+--     key, var.encountertype.mch-family-planning.uuid, but the FORM is still the right key:
+--     every column below reads this form's questions, and v1.0 has no FP encounter type.
 --   * v1.0 (national, on the shared Consultation type). INTERIM: matched on form NAME and
 --     VERSION, because no variable holds its runtime uuid. Replace with a ${var.form.*} token
 --     once one exists.

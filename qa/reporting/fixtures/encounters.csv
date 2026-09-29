@@ -15,14 +15,14 @@ C-ANC6-0,C-ANC6,2025-12-18 09:00:00,${var.encountertype.anc-initial.uuid},anc-in
 C-ANC6-1,C-ANC6,2026-05-20 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.0,${var.location.maternity.uuid},,,,
 C-X-1,C-X,2026-01-18 10:00:00,${var.encountertypes.visit-note.uuid},,${var.location.opd.uuid},,,,
 C-X-2,C-X,2026-02-10 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,
-C-FP1-1,C-FP1,2026-02-20 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
-C-FP1-2,C-FP1,2026-05-20 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+C-FP1-1,C-FP1,2026-02-20 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+C-FP1-2,C-FP1,2026-05-20 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 C-FP2-1,C-FP2,2025-11-10 09:00:00,${var.encountertype.consultation.uuid},fp-national-v1.0,${var.location.maternity.uuid},,,,old form version on Consultation
-C-FP3-1,C-FP3,2025-12-01 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
-C-FP4-1,C-FP4,2025-10-01 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
-C-FP4-2,C-FP4,2026-04-15 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,removal visit
-C-FP5-1,C-FP5,2025-09-01 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
-C-FP6-1,C-FP6,2026-06-10 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,1,,voided encounter
+C-FP3-1,C-FP3,2025-12-01 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+C-FP4-1,C-FP4,2025-10-01 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+C-FP4-2,C-FP4,2026-04-15 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,removal visit
+C-FP5-1,C-FP5,2025-09-01 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+C-FP6-1,C-FP6,2026-06-10 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,1,,voided encounter
 C-LD1-1,C-LD1,2026-02-14 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,
 C-LD2-1,C-LD2,2026-05-03 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,
 C-LD2-2,C-LD2,2026-05-04 08:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,same delivery recorded again
@@ -113,8 +113,8 @@ B-X-2,B-X,2026-04-25 09:00:00,${var.encountertype.anc-followup.uuid},anc-followu
 B-X-3,B-X,2026-04-28 10:00:00,${var.encountertypes.visit-note.uuid},,${var.location.opd.uuid},,,,
 B-ANC2-1,B-ANC2,2026-05-12 09:00:00,${var.encountertype.consultation.uuid},anc-national-v1.1,${var.location.maternity.uuid},,,,
 B-ANC3-1,B-ANC3,2026-06-02 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,
-B-FP1-1,B-FP1,2026-06-25 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
-B-FP2-1,B-FP2,2026-01-10 09:00:00,${var.encountertype.family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+B-FP1-1,B-FP1,2026-06-25 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
+B-FP2-1,B-FP2,2026-01-10 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 B-LD1-1,B-LD1,2026-03-05 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,
 B-LD2-1,B-LD2,2026-04-22 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,
 B-LD3-1,B-LD3,2026-05-30 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,

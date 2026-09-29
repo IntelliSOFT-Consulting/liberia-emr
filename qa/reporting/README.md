@@ -86,9 +86,10 @@ sql` prints it for review.
 
 Two resolutions to know about:
 
-- **`var.encountertype.family-planning.uuid`** is declared twice (rmncah-nutrition gap 10).
-  The chain resolves it to the MCH value, *Family Planning Visit*, which is the encounter type
-  the v2.2 form is filtered with.
+- **FP encounters use `var.encountertype.mch-family-planning.uuid`**, *Family Planning Visit*,
+  the encounter type of the v2.2 form. `var.encountertype.family-planning.uuid` is the national
+  layer's separate *Family Planning* type, which no form uses. Until LE-343 the MCH type shared
+  that key with a second value (rmncah-nutrition gap 10), and the chain resolved it to MCH's.
 - **The form variables for OPD and Triage** hold the ignored JSON literal (gap 11). So do
   `1. ANC Form` and `3. Family Planning` v1.0, which have no variable at all. All four are
   referenced by `form:`.
