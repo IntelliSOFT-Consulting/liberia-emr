@@ -10,9 +10,15 @@
   User, Role, Privilege, GlobalProperty (including liberiaemr.facility.locationUuid),
   Location, and report definitions (reporting stores them as SerializedObject).
 
-  The exceptions are the OCL importer's own bookkeeping, one row per imported item. The
-  concepts, names, mappings and drugs an import writes are still audited; only the importer's
-  record of having processed them is not. On a first boot they were a quarter of all rows.
+  The exceptions:
+  - org.openmrs.api.db.LoginCredential is CREDENTIAL MATERIAL. Audited, every password change
+    or new user writes the old and new password hash and salt into auditlog_audit_log, where
+    the audit reader, every backup and the binlog would hold them. Never remove it from the
+    list. The cost: a password change leaves no audit row. User creation and every other
+    change to a User are still recorded.
+  - The OCL importer's own bookkeeping, one row per imported item. The concepts, names,
+    mappings and drugs an import writes are still audited; only the importer's record of
+    having processed them is not. On a first boot they were a quarter of all rows.
 
   Writes that bypass Hibernate are not audited: direct SQL, Liquibase, the reporting ETL and
   the central sync receiver (which writes through its own JPA layer).
@@ -26,8 +32,8 @@
     </globalProperty>
     <globalProperty>
       <property>auditlog.exceptions</property>
-      <value>org.openmrs.module.openconceptlab.Import,org.openmrs.module.openconceptlab.Item</value>
-      <description>OCL importer bookkeeping only; the concepts an import writes stay audited</description>
+      <value>org.openmrs.api.db.LoginCredential,org.openmrs.module.openconceptlab.Import,org.openmrs.module.openconceptlab.Item</value>
+      <description>Credential material (password hashes and salts), and OCL importer bookkeeping</description>
     </globalProperty>
     <globalProperty>
       <property>auditlog.storeLastStateOfDeletedItems</property>

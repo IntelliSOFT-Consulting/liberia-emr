@@ -1,0 +1,76 @@
+Keep the temporary session open while a detached entity's previous state is compared.
+
+openmrs-module-auditlog (master ba96ba5, and the 1.1 release) handles an update to a
+DETACHED entity by loading its previous state in a temporary session. It closed that
+session as soon as the state was read, and only then compared each previous value with
+the current one. A previous value that is a lazy association is a proxy bound to the
+closed session; OpenMRS's BaseOpenmrsObject.equals() initialises it, and Hibernate
+throws LazyInitializationException. That exception escapes onFlushDirty() and fails the
+caller's own save.
+
+Seen on a LiberiaEMR facility stack on core 2.8.8: Initializer, which saves detached
+metadata, failed to load a program workflow ("could not initialize proxy
+[org.openmrs.Concept#4017] - no Session") and an appointment service type ("...
+[org.openmrs.module.appointments.model.Speciality#1] - no Session"). Neither fails
+without the module.
+
+The session now closes in a finally after the comparison and serialization. The body of
+the new try is left at its old indentation to keep this diff reviewable.
+
+Applied by distribution/backend/Dockerfile (stage 2b). Tracked in
+packages/modify-pr/.patches/0003-openmrs-module-auditlog-detached-previous-state.md.
+
+--- a/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
++++ b/api/src/main/java/org/openmrs/module/auditlog/api/db/hibernate/interceptor/HibernateAuditLogInterceptor.java
+@@ -155,25 +155,23 @@
+ 	                            String[] propertyNames, Type[] types) {
+ 		
+ 		if (propertyNames != null && InterceptorUtil.isAudited(entity.getClass())) {
++			// For a detached object the previous state is loaded in a separate session. Its
++			// lazy associations are proxies bound to that session, and comparing one with
++			// equals() initialises it, so the session must stay open until the comparison and
++			// serialization below are done. Closing it straight after the load made equals()
++			// throw LazyInitializationException, which escapes this callback and fails the
++			// caller's own save.
++			Session tmpSession = null;
++			try {
+ 			if (previousState == null) {
+-				//This is a detached object, load the previous state in a separate session
+-				Session tmpSession = null;
+ 				SessionFactory sf = InterceptorUtil.getSessionFactory();
+-				try {
+-					tmpSession = sf.openSession();
+-					Object obj = tmpSession.get(entity.getClass(), id);
++				tmpSession = sf.openSession();
++				Object obj = tmpSession.get(entity.getClass(), id);
+ 
+-					SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
++				SharedSessionContractImplementor sessionImpl = (SharedSessionContractImplementor) tmpSession;
+ 
+-					EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
+-					previousState = ep.getPropertyValues(obj);
+-				}
+-				finally {
+-					if (tmpSession != null) {
+-						SessionFactoryUtils.closeSession(tmpSession);
+-					}
+-				}
+-				
++				EntityPersister ep = sessionImpl.getEntityPersister(null, obj);
++				previousState = ep.getPropertyValues(obj);
+ 			}
+ 			Map<String, Object[]> propertyChangesMap = null;//Map<propertyName, Object[]{currentValue, PreviousValue}>
+ 			for (int i = 0; i < propertyNames.length; i++) {
+@@ -226,6 +224,12 @@
+ 				
+ 				updates.get().peek().add(entity);
+ 				objectChangesMap.get().peek().put(entity, propertyChangesMap);
++			}
++			}
++			finally {
++				if (tmpSession != null) {
++					SessionFactoryUtils.closeSession(tmpSession);
++				}
+ 			}
+ 		}
+ 		

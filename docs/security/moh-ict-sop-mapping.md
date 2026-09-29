@@ -57,18 +57,25 @@ until both are in place this control is partial, not enforced.
 | --- | --- | --- | --- |
 | B1 | Role-based access control | `content-common/…/roles.csv`, `content-liberia-national/…/roles.csv` | Enforced |
 | B2 | Least privilege by job function | Roles map to actual facility job functions | Enforced |
-| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds the auditlog module's `View Audit Log`, `Get Audit Logs` and `Get Items` | Enforced — see the note below |
+| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds `View Audit Log` and the auditlog module's `Get Audit Logs` | **Partial** — no working in-app viewer; see the note below |
 | B4 | Named accounts, no shared logins | — | **Open** — operational policy, not configuration; belongs in the go-live runbook and training |
 
 B3 is easy to get wrong by granting the auditor "read everything" for convenience. Reading
 audit logs and reading patient records are different permissions, and the SOP grants the
 first, not the second.
 
-What the auditor can see is still more than metadata. An audit entry records the old and new
-value of every changed property, so the viewer (`/openmrs/module/auditlog/viewAuditLog.form`,
-a legacy UI page) shows, for example, a patient's previous and corrected name. `Get Items` is
-the module's service privilege for resolving an entry's object; it has no REST endpoint and
-opens no chart. Treat the audit log as PHI.
+**There is no working in-app viewer yet.** The module's only viewer is a legacy UI page,
+`/openmrs/module/auditlog/viewAuditLog.form`, and on core 2.8.8 it returns 404: the omod ships
+no `webModuleApplicationContext.xml`, so its controller never reaches the web dispatcher. The
+module has no REST resource either. Until a viewer exists the ICT Unit reads
+`auditlog_audit_log` with read-only database access, which is outside this role. The role
+holds `Get Audit Logs`, the module's service privilege for listing entries, so a viewer built
+on the module's API needs no role change; it deliberately does not hold `Get Items`, which
+resolves ANY object by class and id.
+
+Whoever reads the log sees more than metadata. An entry records the old and new value of
+every changed property, for example a patient's previous and corrected name. Treat the audit
+log as PHI.
 
 ---
 
@@ -85,12 +92,14 @@ opens no chart. Treat the audit log as PHI.
 Before LE-353 the global properties were configured but the module was not in the image, so
 this row claimed a control that did not exist. The module is a Hibernate interceptor: it
 writes one row per created, updated or deleted entity to `auditlog_audit_log`, with the
-user, the time and the changed values. Strategy `ALL_EXCEPT`, excluding only the OCL
-importer's bookkeeping.
+user, the time and the changed values. Strategy `ALL_EXCEPT`, excluding the OCL importer's
+bookkeeping and `LoginCredential`, whose rows would otherwise carry every password hash and
+salt; so a password change is not audited.
 
 - **Not covered:** writes that bypass Hibernate (direct SQL, Liquibase, the reporting ETL,
   and at central the sync receiver, which writes through its own JPA layer), and reads —
-  who viewed a chart is not recorded. Logins are not recorded either.
+  who viewed a chart is not recorded. Logins appear only indirectly, as an update to the
+  user's `lastLoginTimestamp` property.
 - **Stays local.** `auditlog_audit_log` is not in `eip.watchedTables`, which CI pins to an
   exact list, so a facility's audit log is not synced; central's log covers central users
   only. It is in the facility binlog like any `openmrs` table, which the binlog disk sizing
@@ -191,8 +200,10 @@ certificate. Disk encryption is what makes theft a hardware loss rather than a b
 5. **D3**: backup encryption implemented and a restore rehearsed, covering all five copies
    of clinical data at rest enumerated in [sync architecture](../architecture/sync-eip.md)
    §7.4, not only the OpenMRS database.
-6. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each
+6. **B3**: an audit log viewer the ICT Auditor role can use, since the auditlog module's
+   own page does not load on core 2.8.8.
+7. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each
    proven by a negative test rather than by configuration review.
-7. **D7**: facility disk encryption accepted as a control and an owner named.
+8. **D7**: facility disk encryption accepted as a control and an owner named.
 
 Nothing on this list is closed by editing a CSV.
