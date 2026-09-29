@@ -44,7 +44,10 @@ page; at a facility its menu item is hidden and the page shows a not-available n
 
 ## Images
 
-Eight per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`.
+Per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`: the backend and
+frontend for each facility site, central's frontend, and the five site-agnostic images, published
+once. That is 10 for today's `RELEASE_SITES` (Careysburg, Barnersville, central);
+`scripts/build/image-refs.sh --check` prints the count.
 `REGISTRY` defaults to `intellisoftdev` in `scripts/build/build-distribution.sh`; the
 compose files read it from the stack's `.env`.
 

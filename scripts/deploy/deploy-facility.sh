@@ -103,6 +103,9 @@ else
     echo "          That would run ${site}'s content while sync publishes this database as ${code}." >&2
     exit 1
   fi
+  # Compose lets a variable already in this shell override --env-file, so export the values
+  # just checked: what runs is then what was validated, whatever the caller's shell holds.
+  export LIBERIAEMR_SITE="$site" FACILITY_CODE="$code"
   cat <<'PROMPT'
 Before continuing, confirm:
   * the upgrade test passed in CI for this exact release
