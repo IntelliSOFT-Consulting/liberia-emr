@@ -23,7 +23,7 @@ one is a contract breach. Never scaffold a looser default (IMPLEMENTATION.md §1
 | A3 | Password must not match username | — | `gp-security.csv` | Enforced |
 | A4 | Password expiry | 90 days | — | **Open** |
 | A5 | No reuse of last 3 passwords | history = 3 | — | **Open** |
-| A6 | Lockout after failed attempts | 5 attempts | `gp-security.csv` → `security.loginAttemptsBeforeLockout` | Enforced |
+| A6 | Lockout after failed attempts | 5 attempts | `gp-security.xml` → `security.allowedFailedLoginsBeforeLockout=4`; `security.unlockAccountWaitingTime=5` minutes | **Partial** — existing-install configuration update verified; REST authentication checks pending ([evidence](account-lockout-verification.md)) |
 | A7 | Session timeout | 10 minutes | `config-national.json` (client) | **Partial** |
 
 ### A4 / A5 — password expiry and history

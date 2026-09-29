@@ -1,6 +1,6 @@
 # National global properties — coverage of the MOH ICT SOP controls
 
-`gp-security.csv` and `gp-audit.csv` carry the controls that OpenMRS core exposes as
+`gp-security.xml` and `gp-audit.csv` carry the controls that OpenMRS core exposes as
 global properties. **Not every contractual control is a global property**, and pretending
 otherwise by inventing property names that the platform ignores would produce a
 configuration that looks compliant and enforces nothing.
@@ -13,7 +13,7 @@ and must be closed before go-live sign-off.
 | --- | --- | --- |
 | Password minimum length | 13 chars | `gp-security.csv` → `security.passwordMinimumLength` |
 | Password complexity | upper+lower+digit+non-digit | `gp-security.csv` |
-| Lockout after failed attempts | 5 attempts | `gp-security.csv` → `security.loginAttemptsBeforeLockout` |
+| Lockout after failed attempts | 5 attempts | `gp-security.xml` → `security.allowedFailedLoginsBeforeLockout=4`; recovery: `security.unlockAccountWaitingTime=5` minutes |
 | Audit logging enabled | all clinical + admin actions | `gp-audit.csv` (auditlog module) |
 | Audit log retention | ≥ 3 months | `gp-audit.csv` + backup policy in `docs/runbooks/` |
 | Audit logs readable only by ICT Unit | — | `ICT Auditor` role in `content-common/…/roles.csv`; no clinical privileges attached |
@@ -22,6 +22,15 @@ and must be closed before go-live sign-off.
 | **Session timeout — 10 minutes** | 10 min | **NOT a core GP.** Enforced in the O3 runtime config (`config-national.json`) *and* at the gateway; both are required, since the frontend timer alone does not invalidate a stolen session server-side. |
 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` |
 | Encrypted backups | — | `docs/runbooks/backup-restore.md` |
+
+OpenMRS **2.8.8** locks when `attempts > allowedFailedLoginCount`: **4 locks on
+failure 5**; changing it to 5 delays lockout until failure 6. The threshold is resolved
+from `var.security.login.allowed-failures-before-lockout` during packaging. Recovery stays
+at the existing five minutes. Initializer 2.12.0 updates existing properties when the XML
+changes; removing the old unsupported names from XML does not delete historical database
+rows. Those rows are inert for this core control. See the
+[verification record](../../../../../docs/security/account-lockout-verification.md)
+for deployment evidence and the authentication checks still pending.
 
 Do not "resolve" a **NOT a GP** row by adding a plausible-looking property name to a CSV.
 Initializer will load it, OpenMRS will ignore it, and the control will silently not exist.

@@ -893,6 +893,11 @@ sys.exit(1 if problems else 0)
 PYGRP
 ok "every obsGroup in a form has its own group concept"
 
+section "account lockout configuration (not runtime authentication)"
+python3 "$ROOT/scripts/validate/tests/account-lockout.test.py" \
+  || err "account lockout configuration regression"
+ok "fifth-failure threshold and existing recovery interval preserved"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2
