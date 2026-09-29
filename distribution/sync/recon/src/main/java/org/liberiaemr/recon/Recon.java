@@ -88,7 +88,7 @@ public final class Recon {
 		int hour = intEnv("SYNC_RECON_HOUR", 2);
 		Path state = Path.of(env("SYNC_RECON_STATE_FILE", "/opt/eip/.recon-state"));
 		long notBefore = 0;
-		while (true) {
+		while (!Thread.currentThread().isInterrupted()) {
 			long[] last = readState(state);
 			long now = System.currentTimeMillis() / 1000;
 			if (once || now >= notBefore && FacilityDigest.due(now, last[0], hour)) {
@@ -238,7 +238,7 @@ public final class Recon {
 			});
 			server.start();
 		}
-		while (true) {
+		while (!Thread.currentThread().isInterrupted()) {
 			try (Connection openmrs = db(require("OPENMRS_DB_NAME"), require("OPENMRS_DB_USER"),
 			    env("OPENMRS_DB_PASSWORD", ""));
 			        Connection mgmt = db(require("MGMT_DB_NAME"), require("MGMT_DB_USER"), env("MGMT_DB_PASSWORD", ""))) {
@@ -350,7 +350,12 @@ public final class Recon {
 	static boolean backlogEmpty() {
 		String body = prometheus("sum(artemis_message_count{queue=\"DB-SYNC-REC.DB-SYNC-RECEIVER\"})");
 		Matcher m = body == null ? null : Pattern.compile("\"value\":\\[[^,]+,\"([0-9.eE+-]+)\"\\]").matcher(body);
-		return m != null && m.find() && Double.parseDouble(m.group(1)) == 0;
+		try {
+			return m != null && m.find() && Double.parseDouble(m.group(1)) == 0;
+		}
+		catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	/** One instant query to central's Prometheus; null when it cannot be answered. */
@@ -418,7 +423,13 @@ public final class Recon {
 
 	static int intEnv(String name, int fallback) {
 		String v = env(name, "");
-		return v.isEmpty() ? fallback : Integer.parseInt(v.trim());
+		try {
+			return v.isEmpty() ? fallback : Integer.parseInt(v.trim());
+		}
+		catch (NumberFormatException e) {
+			log(name + " is '" + v + "', not a whole number; using " + fallback);
+			return fallback;
+		}
 	}
 
 	static void log(String message) {

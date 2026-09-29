@@ -40,7 +40,12 @@ public final class FacilityDigest {
 			return null;
 		}
 		Matcher ts = TS_SEC.matcher(last);
-		return ts.find() ? Long.valueOf(ts.group(1)) : null;
+		try {
+			return ts.find() ? Long.valueOf(ts.group(1)) : null;
+		}
+		catch (NumberFormatException e) {
+			return null;
+		}
 	}
 
 	private static String lastOffset(byte[] offsetFile) {

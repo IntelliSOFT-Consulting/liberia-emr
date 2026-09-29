@@ -146,23 +146,23 @@ public final class CentralCheck {
 			ps.setLong(1, UNLISTED_AFTER_SECONDS);
 			ps.executeUpdate();
 		}
-		Map<String, List<String[]>> byTable = new TreeMap<>();
+		Map<String, List<Gap>> byTable = new TreeMap<>();
 		try (PreparedStatement ps = mgmt.prepareStatement("SELECT facility, table_name, uuid, first_seen, confirmed"
 		        + " FROM liberiaemr_recon_missing ORDER BY last_checked LIMIT " + RECHECK_LIMIT)) {
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
-					byTable.computeIfAbsent(rs.getString(2), t -> new ArrayList<>()).add(new String[] { rs.getString(1),
-					        rs.getString(3), Long.toString(rs.getLong(4)), Integer.toString(rs.getInt(5)) });
+					byTable.computeIfAbsent(rs.getString(2), t -> new ArrayList<>())
+					        .add(new Gap(rs.getString(1), rs.getString(3), rs.getLong(4), rs.getInt(5) == 1));
 				}
 			}
 		}
-		for (Map.Entry<String, List<String[]>> t : byTable.entrySet()) {
+		for (Map.Entry<String, List<Gap>> t : byTable.entrySet()) {
 			if (!Tables.COMPARED.contains(t.getKey())) {
 				continue;
 			}
 			List<String> uuids = new ArrayList<>();
-			for (String[] gap : t.getValue()) {
-				uuids.add(gap[1]);
+			for (Gap gap : t.getValue()) {
+				uuids.add(gap.uuid);
 			}
 			Set<String> arrived = present(openmrs, t.getKey(), uuids);
 			Set<String> queued = inflight(mgmt, uuids);
@@ -170,26 +170,45 @@ public final class CentralCheck {
 			    "DELETE FROM liberiaemr_recon_missing WHERE facility = ? AND table_name = ? AND uuid = ?");
 			        PreparedStatement touch = mgmt.prepareStatement("UPDATE liberiaemr_recon_missing SET last_checked = ?,"
 			                + " confirmed = ? WHERE facility = ? AND table_name = ? AND uuid = ?")) {
-				for (String[] gap : t.getValue()) {
-					if (arrived.contains(gap[1])) {
-						close.setString(1, gap[0]);
+				for (Gap gap : t.getValue()) {
+					if (arrived.contains(gap.uuid)) {
+						close.setString(1, gap.facility);
 						close.setString(2, t.getKey());
-						close.setString(3, gap[1]);
+						close.setString(3, gap.uuid);
 						close.addBatch();
 						continue;
 					}
-					boolean confirmed = "1".equals(gap[3])
-					        || !queued.contains(gap[1]) && shouldConfirm(Long.parseLong(gap[2]), now, confirmHours, backlogEmpty);
+					boolean confirmed = gap.confirmed
+					        || !queued.contains(gap.uuid) && shouldConfirm(gap.firstSeen, now, confirmHours, backlogEmpty);
 					touch.setLong(1, now);
 					touch.setInt(2, confirmed ? 1 : 0);
-					touch.setString(3, gap[0]);
+					touch.setString(3, gap.facility);
 					touch.setString(4, t.getKey());
-					touch.setString(5, gap[1]);
+					touch.setString(5, gap.uuid);
 					touch.addBatch();
 				}
 				close.executeBatch();
 				touch.executeBatch();
 			}
+		}
+	}
+
+	/** An open gap as recheck reads it. */
+	private static final class Gap {
+
+		final String facility;
+
+		final String uuid;
+
+		final long firstSeen;
+
+		final boolean confirmed;
+
+		Gap(String facility, String uuid, long firstSeen, boolean confirmed) {
+			this.facility = facility;
+			this.uuid = uuid;
+			this.firstSeen = firstSeen;
+			this.confirmed = confirmed;
 		}
 	}
 
