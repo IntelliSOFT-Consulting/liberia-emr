@@ -173,18 +173,20 @@
   - name: Revoke the keys listed in ci_deploy_revoked_keys
     ansible.builtin.lineinfile:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
-      # Matched on the type and base64 body only, so the comment it carries does not matter.
-      regexp: "^{{ (item.split())[:2] | join(' ') | regex_escape }}(\\s|$)"
+      # Matched on the type and base64 body only, wherever they sit on the line, so neither the
+      # comment nor an options prefix (restrict,command="...") the old line carried matters.
+      regexp: "^(.*\\s)?{{ (item.split())[0] | regex_escape }}\\s+{{ (item.split())[1] | regex_escape }}(\\s|$)"
       state: absent
     loop: "{{ ci_deploy_revoked_keys | default([]) }}"
 
-  # Matched on the key's type and body with any comment, or none, EXCEPT the marker: a comment
-  # is not part of a key's identity, so an old line carrying a different comment is the same
-  # authorization and must go too, while the managed line is left for the task below.
+  # Matched on the key's type and body with any comment, or none, EXCEPT the marker, and with
+  # or without an options prefix: neither is part of a key's identity, and the pre-marker task
+  # wrote the value as given, options included. So an old line differing only in those is the
+  # same authorization and must go too, while the managed line is left for the task below.
   - name: Remove an unmarked copy of the CI deploy key from before it was managed
     ansible.builtin.lineinfile:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
-      regexp: "^{{ (ci_deploy_public_key.split())[:2] | join(' ') | regex_escape }}(\\s+(?!\\s)(?!{{ ci_key_marker | regex_escape }}$).*)?$"
+      regexp: "^(.*\\s)?{{ (ci_deploy_public_key.split())[0] | regex_escape }}\\s+{{ (ci_deploy_public_key.split())[1] | regex_escape }}(\\s+(?!\\s)(?!{{ ci_key_marker | regex_escape }}$).*)?$"
       state: absent
     when: ci_deploy_public_key | default('') | length > 0
 

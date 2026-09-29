@@ -1530,10 +1530,12 @@ jobs:
             top=\$(git rev-parse --show-toplevel)
             # Checked BEFORE moving anything: a fast-forward keeps a hand edit to any tracked file
             # the target commit does not touch, and HEAD matching says nothing about the files.
-            # Untracked files are fine (central.env is git-ignored), except a compose override.
-            if [ -n \"\$(git -C \"\$top\" status --porcelain --untracked-files=no)\" ]; then
-              echo \"checkout at \$top has local changes to tracked files; not starting this run's images under a compose file that differs from ${{ github.sha }}. Commit or discard them by hand:\" >&2
-              git -C \"\$top\" status --short --untracked-files=no >&2
+            # Untracked files count too: initdb/ is mounted as the MariaDB init directory, so a
+            # stray script there would run when the database volume is created. Git-ignored
+            # files (central.env) are not listed, so they stay allowed.
+            if [ -n \"\$(git -C \"\$top\" status --porcelain --untracked-files=all)\" ]; then
+              echo \"checkout at \$top has local changes or untracked files; not starting this run's images under a compose file that differs from ${{ github.sha }}. Commit or discard them by hand:\" >&2
+              git -C \"\$top\" status --short --untracked-files=all >&2
               exit 1
             fi
             # The one untracked file that is NOT fine: an override. With -f compose ignores it,
@@ -1677,9 +1679,10 @@ jobs:
             fi
             # reset --keep keeps a local edit to any file the two commits do not differ on, so
             # compose would start the old images under the edited file, not the recorded one.
-            if [ -n \"\$(git status --porcelain --untracked-files=no)\" ]; then
-              echo \"checkout has local changes to tracked files, so the rollback would not restore the recorded compose configuration. Roll back by hand:\" >&2
-              git status --short --untracked-files=no >&2
+            # Untracked files count too, as in the deploy step; ignored ones (central.env) do not.
+            if [ -n \"\$(git status --porcelain --untracked-files=all)\" ]; then
+              echo \"checkout has local changes or untracked files, so the rollback would not restore the recorded compose configuration. Roll back by hand:\" >&2
+              git status --short --untracked-files=all >&2
               exit 1
             fi
             git reset -q --keep '$checkout'
