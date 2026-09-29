@@ -96,9 +96,10 @@ the MOH did not name.
 with the root's MFL UID declared in its site package (`Attribute|MFL UID` in the site's
 locations CSV, `var.site.mfl-uid`). Otherwise the sync creates a *second* row for that
 facility, and the facility's records, which reference its own root, still have no match at
-central. Central's backend image, `liberia-emr-backend-central`, loads every site package's
-locations (LE-339, ADR 0012), so this holds for any site whose package declares its MFL UID.
-Check it before the first sync anyway:
+central. Central's backend image, `liberia-emr-backend-central`, loads the locations of every
+site package **it was built with** (LE-339, ADR 0012). So a site added since central's last
+deploy is not there yet: deploy a central build that includes every live site's package before
+the sync (deploy runbook, Central deployment). Then check each live facility:
 
 ```bash
 # At central: every live facility's root UUID must answer, and carry its MFL UID.

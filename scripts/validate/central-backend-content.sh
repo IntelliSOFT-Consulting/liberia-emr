@@ -39,6 +39,29 @@ done
 
 (( sites > 0 )) || { echo "FAIL: no content-packages/content-site-* found" >&2; exit 1; }
 
+# OpenMRS rejects a second non-retired location with a name another already has, whatever its
+# parent and case-insensitively (ADR 0009 §3). With every site's locations side by side a
+# clash between two site packages would only surface when central's Initializer ran, so check
+# the names the image actually ships, across every locations CSV in it.
+dups="$(docker run --rm --entrypoint sh "$image" -c "cat $CONFIG/locations/*.csv" \
+  | python3 -c '
+import csv, sys, collections
+seen = collections.Counter()
+for row in csv.reader(sys.stdin):
+    if not row or row[0] == "Uuid":
+        continue
+    retired = len(row) > 1 and row[1].strip().lower() in ("true", "1", "yes")
+    name = row[2].strip().lower() if len(row) > 2 else ""
+    if name and not retired:
+        seen[name] += 1
+print("\n".join(sorted(n for n, c in seen.items() if c > 1)))
+')"
+if [[ -n "$dups" ]]; then
+  echo "FAIL: $image ships locations whose names clash, which Initializer would reject:" >&2
+  sed 's/^/  /' <<<"$dups" >&2
+  fail=1
+fi
+
 # Central issues no facility-scoped identifier: the national MOH HRN auto-generation option
 # points at a site's ID source, which central does not load (ADR 0012).
 if grep -qxF "autogenerationoptions/autogenerationoptions-national.csv" <<<"$shipped"; then

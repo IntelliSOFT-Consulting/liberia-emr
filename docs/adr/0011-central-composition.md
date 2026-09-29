@@ -67,8 +67,9 @@ Rejected without further comparison.
   site packages. It is the last layer of a central build, where a facility build has its site
   layer, and it is never part of a facility build. `collect-frontend-config.sh` adds it only
   for `--site central`.
-- **`build-distribution.sh --site central`** builds `liberia-emr-frontend-central:<version>`.
-  It refuses `--demo` and `--no-frontend`. It checks the central compose file's
+- **`build-distribution.sh --site central`** builds `liberia-emr-frontend-central:<version>`
+  and, since LE-339, `liberia-emr-backend-central:<version>` ([ADR 0012](0012-central-site-locations.md)).
+  It refuses `--demo`; `--no-frontend` builds the central backend alone. It checks the central compose file's
   `SPA_CONFIG_URLS` against the collected order, just as a facility build checks the facility
   compose file. CI runs that check on every change without building the image
   (`scripts/validate/spa-config-urls.sh`), and the release matrix builds `central` alongside
