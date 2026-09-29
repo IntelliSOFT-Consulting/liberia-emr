@@ -83,11 +83,24 @@ PROMPT
 else
   # A release publishes the backend and frontend per site only (LE-360), so without
   # LIBERIAEMR_SITE compose would ask for an unsuffixed image no release has, and `pull`
-  # would fail on a missing tag instead of saying why.
-  if ! grep -qE '^[[:space:]]*LIBERIAEMR_SITE[[:space:]]*=[[:space:]]*[a-z]' "$ENV_FILE"; then
-    echo "refusing: ${ENV_FILE##*/} does not set LIBERIAEMR_SITE, e.g. LIBERIAEMR_SITE=careysburg" >&2
+  # would fail on a missing tag instead of saying why. It must also be this facility's own
+  # code: LIBERIAEMR_SITE picks the content baked into the images, FACILITY_CODE the identity
+  # sync publishes under, and a mismatch runs one site's content as another site.
+  env_value() {
+    sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$ENV_FILE" | tail -n 1 \
+      | sed -e 's/[[:space:]]*#.*$//' -e 's/[[:space:]]*$//' -e 's/^["'"'"']//' -e 's/["'"'"']$//'
+  }
+  site="$(env_value LIBERIAEMR_SITE)"
+  code="$(env_value FACILITY_CODE)"
+  if [[ ! "$site" =~ ^[a-z][a-z0-9-]*$ ]]; then
+    echo "refusing: ${ENV_FILE##*/} must set LIBERIAEMR_SITE to this facility's site, e.g. careysburg (got '${site}')" >&2
     echo "          A release publishes liberia-emr-backend-<site> and liberia-emr-frontend-<site>" >&2
     echo "          (see facility.env.example and docs/runbooks/deploy.md)." >&2
+    exit 1
+  fi
+  if [[ "$site" != "$code" ]]; then
+    echo "refusing: LIBERIAEMR_SITE ('${site}') and FACILITY_CODE ('${code}') differ in ${ENV_FILE##*/}" >&2
+    echo "          That would run ${site}'s content while sync publishes this database as ${code}." >&2
     exit 1
   fi
   cat <<'PROMPT'

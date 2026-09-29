@@ -25,6 +25,10 @@ env:
   # them from its output, so there is one list. Shared images come from the first facility
   # site in it (scripts/build/image-refs.sh).
   RELEASE_SITES: careysburg barnersville central
+  # The publish job promotes release candidates only once the full-stack and upgrade stages
+  # below really test them (IMPLEMENTATION.md section 8). Both are placeholders today, so
+  # promotion refuses to run: set this to "true" in the PR that implements them.
+  RELEASE_TESTS_READY: "false"
 
 jobs:
   guard:
@@ -161,6 +165,11 @@ jobs:
       # Promotes every candidate the build jobs pushed to the release tag, server-side: the
       # bytes that were tested are the bytes released, nothing is rebuilt. The repository list
       # comes from the same script the build jobs and the guard used.
+      - name: Refuse to publish images the release has not tested
+        if: env.RELEASE_TESTS_READY != 'true'
+        run: |
+          echo "::error::The full-stack and upgrade stages are still placeholders, so nothing has tested the candidate images. Implement them against the -rc.${{ github.run_id }} candidates, then set RELEASE_TESTS_READY to true (IMPLEMENTATION.md section 8)."
+          exit 1
       - name: Promote the release candidates to the release tag
         env:
           VERSION: ${{ github.event.inputs.version || github.ref_name }}

@@ -120,9 +120,9 @@ site's first MFL sync.
   it can reach a facility.
 - Central's navigation text now reads "National Central Server" instead of Careysburg's.
   Nothing else central users see changes.
-- **Not fixed here:** the release matrix builds Careysburg and Barnersville under the same
-  image names and tags, although their backend and frontend images differ by site layer. When
-  pushing is wired up (it is still a TODO in `release.yml`), the second leg will overwrite the
-  first. This needs site-qualified names, e.g. a `-<site>` suffix like `-central`, before the
-  first multi-site release. *(Fixed by LE-360: releases publish `liberia-emr-backend-<site>`
-  and `liberia-emr-frontend-<site>`; see `distribution/README.md`.)*
+- **Not fixed here, fixed since by LE-360:** the release matrix built Careysburg and Barnersville
+  under the same image names and tags, although their backend and frontend images differ by site
+  layer, so a multi-site release would have overwritten one site's images with the other's.
+  Releases now publish those two images per site, `liberia-emr-backend-<site>` and
+  `liberia-emr-frontend-<site>`, the way `-central` names central's frontend (see
+  `distribution/README.md`).
