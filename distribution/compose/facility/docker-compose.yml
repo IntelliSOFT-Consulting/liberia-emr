@@ -70,7 +70,10 @@ services:
     networks: [liberiaemr]
 
   backend:
-    image: ${REGISTRY}/liberia-emr-backend:${LIBERIAEMR_VERSION}
+    # LIBERIAEMR_SITE selects this site's own images (LE-360): a release publishes the two
+    # site-bearing images per site, e.g. liberia-emr-backend-careysburg. Unset, the unsuffixed
+    # name is used, which only CI and development builds produce (the dev deploy's :latest).
+    image: ${REGISTRY}/liberia-emr-backend${LIBERIAEMR_SITE:+-${LIBERIAEMR_SITE}}:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       db:
@@ -159,7 +162,8 @@ services:
     networks: [liberiaemr]
 
   frontend:
-    image: ${REGISTRY}/liberia-emr-frontend:${LIBERIAEMR_VERSION}
+    # Per site, like the backend above (LIBERIAEMR_SITE, LE-360).
+    image: ${REGISTRY}/liberia-emr-frontend${LIBERIAEMR_SITE:+-${LIBERIAEMR_SITE}}:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on:
       backend:

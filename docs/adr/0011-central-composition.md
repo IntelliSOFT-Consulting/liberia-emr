@@ -124,4 +124,5 @@ site's first MFL sync.
   image names and tags, although their backend and frontend images differ by site layer. When
   pushing is wired up (it is still a TODO in `release.yml`), the second leg will overwrite the
   first. This needs site-qualified names, e.g. a `-<site>` suffix like `-central`, before the
-  first multi-site release.
+  first multi-site release. *(Fixed by LE-360: releases publish `liberia-emr-backend-<site>`
+  and `liberia-emr-frontend-<site>`; see `distribution/README.md`.)*

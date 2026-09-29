@@ -81,6 +81,15 @@ PROMPT
     echo "           Do not start the sync profile against it from simulated data."
   fi
 else
+  # A release publishes the backend and frontend per site only (LE-360), so without
+  # LIBERIAEMR_SITE compose would ask for an unsuffixed image no release has, and `pull`
+  # would fail on a missing tag instead of saying why.
+  if ! grep -qE '^[[:space:]]*LIBERIAEMR_SITE[[:space:]]*=[[:space:]]*[a-z]' "$ENV_FILE"; then
+    echo "refusing: ${ENV_FILE##*/} does not set LIBERIAEMR_SITE, e.g. LIBERIAEMR_SITE=careysburg" >&2
+    echo "          A release publishes liberia-emr-backend-<site> and liberia-emr-frontend-<site>" >&2
+    echo "          (see facility.env.example and docs/runbooks/deploy.md)." >&2
+    exit 1
+  fi
   cat <<'PROMPT'
 Before continuing, confirm:
   * the upgrade test passed in CI for this exact release

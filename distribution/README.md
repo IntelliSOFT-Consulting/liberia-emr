@@ -50,8 +50,8 @@ compose files read it from the stack's `.env`.
 
 | Image | Built from | Runs in |
 | --- | --- | --- |
-| `liberia-emr-backend` | `backend/Dockerfile` | facility, central |
-| `liberia-emr-frontend` | `frontend/Dockerfile` | facility |
+| `liberia-emr-backend-<site>` | `backend/Dockerfile`, `--site <site>` | facility (`LIBERIAEMR_SITE`), central |
+| `liberia-emr-frontend-<site>` | `frontend/Dockerfile`, `--site <site>` | facility (`LIBERIAEMR_SITE`) |
 | `liberia-emr-frontend-central` | `frontend/Dockerfile`, `--site central` | central |
 | `liberia-emr-gateway` | `gateway/Dockerfile` | facility, central |
 | `liberia-emr-sync` | `sync/Dockerfile --target sender` | facility (`sync` profile) |
@@ -60,6 +60,14 @@ compose files read it from the stack's `.env`.
 | `liberia-emr-cert-expiry` | `monitoring/cert-expiry/Dockerfile` | central |
 
 Prometheus and Alertmanager run the upstream images, pinned by tag in the compose files.
+
+**Per-site names (LE-360).** The backend and frontend carry one site's content, so a release
+publishes them per site: `liberia-emr-backend-careysburg`, `liberia-emr-frontend-barnersville`,
+and so on. The other images are site-agnostic and published once, from the first facility site
+in `release.yml`'s `RELEASE_SITES`. `scripts/build/image-refs.sh` is the single list that
+`build-distribution.sh`, the release push and its duplicate check all read. A build also tags
+the unsuffixed `liberia-emr-backend` and `liberia-emr-frontend`, which CI's E2E stack and the dev
+server's `:latest` use; a release never pushes those.
 The central stack also names `liberia-emr-dhis2-export` under the `dhis2` profile; nothing in
 this repository builds that image yet.
 
