@@ -114,6 +114,12 @@
   # ci_key_marker is RESERVED: the tasks below treat the one line ending in it as the CI key.
   # This playbook never writes two, so a second means another key borrowed the comment, and
   # rotating or revoking would then hit the wrong line. Stop before touching the file.
+  #
+  # KNOWN LIMITATION: nothing records which line this playbook wrote, so ONE borrowed marker
+  # is not detectable. If another key ends in ci_key_marker while no CI key is present, it is
+  # taken for the CI key and replaced (or removed, when ci_deploy_public_key is unset). Never
+  # put this comment on any other key. Closing this fully would mean tracking the managed
+  # key in a state file on the server; judged not worth it for a namespaced, reserved string.
   - name: Check for {{ ansible_user }}'s authorized_keys
     ansible.builtin.stat:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
