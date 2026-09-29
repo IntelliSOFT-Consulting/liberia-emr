@@ -46,9 +46,12 @@ services:
       --performance-schema-consumer-events-statements-current=ON
     environment:
       MARIADB_DATABASE: ${MYSQL_DATABASE}
-      MARIADB_USER: ${MYSQL_USER}
-      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # The OpenMRS application user, created by initdb/05-openmrs-db-user.sh on the first
+      # boot only. Never MARIADB_USER/MARIADB_PASSWORD: the image creates that user with the
+      # binlog on, which writes the password to it in clear text (LE-361).
+      OPENMRS_DB_USER: ${MYSQL_USER}
+      OPENMRS_DB_PASSWORD: ${MYSQL_PASSWORD}
       # For initdb/10-sync-db-users.sh, which runs ONLY on the first boot of an empty
       # volume; unset passwords mean it does nothing.
       DEBEZIUM_DB_USER: ${DEBEZIUM_DB_USER:-debezium}
