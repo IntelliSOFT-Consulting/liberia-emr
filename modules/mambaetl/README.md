@@ -135,7 +135,7 @@ applies once the sender has created the tables.
 | Table | Grain | Meaning |
 | --- | --- | --- |
 | `mamba_fact_emr_ops_sync_queue` | one pending row in `debezium_event_queue` (`queue_name = 'event'`) or `sender_retry_queue` (`'retry'`), rebuilt on every run | what the sender has not yet delivered. `is_snapshot = 1` rows are the initial load |
-| `mamba_fact_emr_ops_sync_status` | one row | `sampled_at`, the management schema found, and whether each queue was readable. Readable `0` means "unknown", never "nothing pending": central, a stack without sync, a sender that has not started yet, or a missing grant |
+| `mamba_fact_emr_ops_sync_status` | one row | `sampled_at`, the management schema found, whether each queue was readable, and `sync_go_live_date` (the `liberiaemr.sync.goLiveDate` GP; NULL while sync is not live). Readable `0` means "unknown", never "nothing pending": central, a stack without sync, a sender that has not started yet, or a missing grant |
 
 Compute ages against `sampled_at`, not `NOW()`. The sender keeps no history, so the table is a
 stock at the last run, and a stopped sender shows an empty queue (sync-eip.md §5.8).

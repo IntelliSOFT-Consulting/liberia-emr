@@ -57,6 +57,16 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    `liberiaemr.sync.goLiveDate` at the facility plus a central lookup keyed by the root
    location uuid. Exclude records whose `date_created` is earlier than that date.
 
+   **Facility half done (LE-354).** Each site package declares `var.site.sync-go-live-date`
+   (empty until enrolment) and seeds it as the GP `liberiaemr.sync.goLiveDate`; the ETL copies
+   it into `mamba_fact_emr_ops_sync_status.sync_go_live_date`. A GP rather than a runtime
+   property, because the ETL reads it in SQL (runtime properties never reach the database),
+   and because the site package is the versioned, per-facility source that Initializer
+   re-applies on every start. Global properties are not synced, so **central's lookup is still
+   open**: it belongs with central's per-facility location content (LE-339), carrying the same
+   date per facility root. Until then, the first arrival at central
+   (`MIN(<entity>_hash.date_created)` over a facility's records) approximates it.
+
 3. **Facility-side record counts for the true denominator (EMR-OPS-005).** Central sees only
    the records that arrived, so its rate is conditional on arrival. The honest denominator
    is the facility's own count of records created in the period, which is exactly the

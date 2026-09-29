@@ -5,5 +5,10 @@
       <value>${var.location.facility-root.uuid}</value>
       <description>This facility's root location. Indicator reports default to it and are clamped to it and its sub-locations (ADR 0010 decision 5). Seeded from this site package on every start; ignored on a central instance.</description>
     </globalProperty>
+    <globalProperty>
+      <property>liberiaemr.sync.goLiveDate</property>
+      <value>${var.site.sync-go-live-date}</value>
+      <description>The day this facility's sync sender first started and sent its initial load, as YYYY-MM-DD; empty while sync is not live (LE-354). Records created earlier arrived in the initial load, so the sync timeliness indicator (EMR-OPS-005) leaves them out. The reporting ETL copies it into mamba_fact_emr_ops_sync_status. Seeded from this site package on every start.</description>
+    </globalProperty>
   </globalProperties>
 </config>

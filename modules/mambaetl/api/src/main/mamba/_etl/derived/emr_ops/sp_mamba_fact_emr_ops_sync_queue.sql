@@ -23,6 +23,9 @@
 -- "nothing pending" from "not readable" (central, a stack without sync, a facility whose
 -- sender has not created its tables yet, or a missing grant). The management schema is found
 -- through the grant itself: the one schema in which this user can see the queue's columns.
+-- It also carries sync_go_live_date, the facility's liberiaemr.sync.goLiveDate global
+-- property (site package variable site.sync-go-live-date), or NULL when it is empty or not a
+-- valid YYYY-MM-DD date. NULL means sync is not live here, and the backlog is not applicable.
 --
 -- Reads use READ COMMITTED, so the copy takes no shared locks on the sender's rows.
 --
@@ -52,10 +55,20 @@ CREATE TABLE IF NOT EXISTS mamba_fact_emr_ops_sync_status
     sampled_at           DATETIME(3) NOT NULL,
     mgmt_schema          VARCHAR(64) NULL,
     event_queue_readable TINYINT     NOT NULL,
-    retry_queue_readable TINYINT     NOT NULL
+    retry_queue_readable TINYINT     NOT NULL,
+    sync_go_live_date    DATE        NULL
 );
 
 SET @mamba_sync_sampled_at = NOW(3);
+
+-- Parsed in a SET, not in the REPLACE below, so a malformed value becomes NULL with a warning
+-- instead of failing the run. Date arithmetic is what rejects an impossible date: on MariaDB
+-- 10.11 STR_TO_DATE, and CAST inside a subquery, both let 2026-02-31 through, and the strict
+-- REPLACE then fails the run on it. It also turns 0000-00-00 into NULL.
+SET @mamba_sync_go_live_date = (SELECT DATE(gp.property_value + INTERVAL 0 DAY)
+                                FROM mamba_source_db.global_property gp
+                                WHERE gp.property = 'liberiaemr.sync.goLiveDate'
+                                  AND gp.property_value REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
 
 SET @mamba_sync_mgmt_db = (SELECT MIN(TABLE_SCHEMA)
                            FROM information_schema.COLUMNS
@@ -106,8 +119,8 @@ IF @mamba_sync_retry_readable THEN
 END IF;
 
 REPLACE INTO mamba_fact_emr_ops_sync_status (id, sampled_at, mgmt_schema, event_queue_readable,
-                                             retry_queue_readable)
+                                             retry_queue_readable, sync_go_live_date)
 VALUES (1, @mamba_sync_sampled_at, @mamba_sync_mgmt_db, @mamba_sync_event_readable,
-        @mamba_sync_retry_readable);
+        @mamba_sync_retry_readable, @mamba_sync_go_live_date);
 
 -- $END
