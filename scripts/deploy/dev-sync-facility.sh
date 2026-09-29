@@ -113,14 +113,16 @@ case "$STEP" in
     # The sender reads its certificates at start; a run that issued new ones needs a fresh one.
     compose up -d --force-recreate sync
     deadline=$((SECONDS + 600))
-    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "Connected to MySQL binlog" >/dev/null; do
+    # A first load reads every existing record before it streams, which can take a while; its
+    # start is as good a sign as the stream itself that the sender is working.
+    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -a -E "Connected to MySQL binlog|Snapshot step 1" >/dev/null; do
       if docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "refusing to start" >/dev/null; then
         docker logs --tail 20 liberiaemr-facility-sync-1 >&2; exit 1
       fi
       (( SECONDS < deadline )) || { docker logs --tail 40 liberiaemr-facility-sync-1 >&2; exit 1; }
       sleep 10
     done
-    log "sender reading the binary log"
+    log "sender running: loading existing records, then streaming new ones"
     ;;
   credentials)
     # The sender's OpenMRS account, for the workflow to create; it masks the password.
