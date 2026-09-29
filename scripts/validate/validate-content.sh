@@ -302,8 +302,11 @@ python3 - "$PKG_DIR" "$FILTER_CHAIN" <<'PY' || err "UUIDs declared under differe
 import csv, glob, hashlib, json, os, re, sys, uuid as uuidlib
 
 pkg_dir, chain = sys.argv[1], sys.argv[2].split()
-ALLOWED = {  # (domain, uuid) -> why the rename is accepted
-    ("conceptreferencerange", "13a9cfe1-b3ea-49d0-b97a-db99d9cbcb80"):
+# Each entry is exact: the two names, and one of them must come from content-demo. Any other
+# name for the same UUID still fails.
+ALLOWED = {  # (domain, uuid, {name, name}) -> why the rename is accepted
+    ("conceptreferencerange", "13a9cfe1-b3ea-49d0-b97a-db99d9cbcb80",
+     frozenset({"Temp Celsius >=3mos", "Temp Celsius >3mos"})):
         "upstream demo 1.9.2 labels the >= 3 months temperature range 'Temp Celsius >3mos'; "
         "national's '>=3mos' matches the criterion. Label only: limits and criterion agree.",
 }
@@ -374,6 +377,11 @@ def rows_for(pkg):
             out.append(("ampathforms", form_uuid(name, version), str(name), rel(f)))
     return out
 
+def allowed(domain, uuid, a, b):
+    demo = "content-packages/content-demo/"
+    return ((domain, uuid, frozenset({a[0], b[0]})) in ALLOWED
+            and (a[1].startswith(demo) or b[1].startswith(demo)))
+
 cache, found = {}, {}
 for comp, layers in compositions.items():
     first = {}
@@ -382,7 +390,7 @@ for comp, layers in compositions.items():
             cache[pkg] = rows_for(pkg)
         for domain, uuid, name, origin in cache[pkg]:
             owner = first.setdefault((domain, uuid), (name, origin))
-            if owner[0] != name and (domain, uuid) not in ALLOWED:
+            if owner[0] != name and not allowed(domain, uuid, owner, (name, origin)):
                 found.setdefault((domain, uuid, owner, (name, origin)), []).append(comp)
 
 for (domain, uuid, (n1, o1), (n2, o2)), comps in found.items():
