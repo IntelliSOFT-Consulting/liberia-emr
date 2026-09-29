@@ -1141,10 +1141,13 @@ jobs:
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site careysburg
 
+      # The backend and frontend, and every site-agnostic image the stacks pull: the gateway and
+      # the sync sender, receiver, broker and exporters (scripts/build/image-refs.sh). Without
+      # the sync images a dev server started with the sync profile has nothing to pull.
       - name: Tag and push :latest alongside :${{ github.sha }}
         run: |
-          for service in backend frontend gateway; do
-            image="${REGISTRY}/liberia-emr-${service}"
+          for name in liberia-emr-backend liberia-emr-frontend $(scripts/build/image-refs.sh --role shared); do
+            image="${REGISTRY}/${name}"
             docker tag "${image}:${{ github.sha }}" "${image}:latest"
             docker push "${image}:${{ github.sha }}"
             docker push "${image}:latest"
@@ -1253,6 +1256,31 @@ jobs:
           echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+
+      # The compose file on the server has to match the images being deployed, as for central
+      # dev: a checkout left behind keeps old service definitions (a facility server ran without
+      # the binary log sync reads for weeks this way). Fast-forward only; a checkout with local
+      # changes is left as it is, with a warning, and the images still deploy. The "Enable sync
+      # on dev" workflow keeps such a change in a stash and brings the checkout up to date.
+      - name: Bring the server's checkout to this commit
+        run: |
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
+            set -e
+            cd "${{ secrets.DEV_COMPOSE_DIR }}"
+            top=$(git rev-parse --show-toplevel)
+            if [ -n "$(git -C "$top" status --porcelain --untracked-files=no)" ]; then
+              echo "::warning::the checkout at $top has local changes, so it stays where it is; run Enable sync on dev, or commit or discard them:"
+              git -C "$top" status --short
+              exit 0
+            fi
+            git -C "$top" fetch -q origin main
+            if git -C "$top" merge-base --is-ancestor ${{ github.sha }} HEAD; then
+              echo "checkout already at or past ${{ github.sha }}"
+            else
+              git -C "$top" merge -q --ff-only ${{ github.sha }}
+              echo "checkout now at $(git -C "$top" rev-parse --short HEAD)"
+            fi
+          '
 
       # Overrides LIBERIAEMR_VERSION inline rather than editing the
       # server's persistent facility.env, so this doesn't silently change
