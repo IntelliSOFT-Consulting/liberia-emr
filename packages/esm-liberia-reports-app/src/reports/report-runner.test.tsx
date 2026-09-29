@@ -25,7 +25,7 @@ jest.mock('react-i18next', () => {
 const facilityContext = {
   instanceRole: 'facility',
   facilityLocation: { uuid: 'facility-careysburg', display: 'Careysburg Health Center' },
-  etlLastRun: { startedAt: '2026-09-27T09:58:00.000+0000', completedAt: '2026-09-27T10:00:00.000+0000' },
+  etlLastRun: { startedAt: '2026-09-27T09:58:00.000+0000', completedAt: '2026-09-27T10:00:00.000+0000', status: 'SUCCESS' },
 };
 
 const saved: Array<{ name: string; blob: Blob }> = [];
@@ -365,7 +365,7 @@ describe('report runner safeguards', () => {
 });
 
 describe('report runner at central', () => {
-  const central = { instanceRole: 'central', facilityLocation: null, etlLastRun: { completedAt: '2026-09-27T10:00:00.000+0000' } };
+  const central = { instanceRole: 'central', facilityLocation: null, etlLastRun: { completedAt: '2026-09-27T10:00:00.000+0000', status: 'SUCCESS' } };
 
   it('defaults to national, sends no location, and warns that figures lag the facilities', async () => {
     const backend = given({ context: central });

@@ -173,7 +173,7 @@ describe('instance role', () => {
       toReportingContext({
         instanceRole: 'facility',
         facilityLocation: { uuid: 'f', display: 'Careysburg' },
-        etlLastRun: { completedAt: '2026-09-27T10:00:00.000+0000' },
+        etlLastRun: { completedAt: '2026-09-27T10:00:00.000+0000', status: 'SUCCESS' },
       }),
     ).toMatchObject({
       role: 'facility',
