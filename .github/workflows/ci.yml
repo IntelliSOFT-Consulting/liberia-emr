@@ -67,7 +67,8 @@ jobs:
   # The path list is an ALLOW list and deliberately over-broad: content, the
   # whole distribution tree (Dockerfiles, compose, distro.properties), the
   # build scripts that fetch and sanitise the OCL exports, the QA script
-  # itself, the reactor pom, and this workflow. modules/ is in the list too:
+  # itself, the indicator-report check the job also runs (qa/reporting/),
+  # the reactor pom, and this workflow. modules/ is in the list too:
   # the backend image builds the in-tree OMOD into itself, and that module
   # carries a liquibase changeset and its own global properties, so a change
   # there changes what a clean database ends up holding.
@@ -118,7 +119,7 @@ jobs:
           echo "Changed files since ${BASE_SHA}:"
           sed 's/^/  /' <<<"$files"
 
-          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|qa/reporting/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "metadata=true" >> "$GITHUB_OUTPUT"
             echo "-> metadata could have changed; the clean-database gate will run."
           else
@@ -454,8 +455,10 @@ jobs:
             --version 0.0.0-ci --site careysburg --no-frontend
       # Loading metadata into an empty database is the cheapest way to catch a broken CSV,
       # an unresolved ${var.*} or a forward reference between layers.
+      # --keep-stack: on a pass the stack stays up for the indicator-report check below, which
+      # needs exactly this — a facility stack with a clean database and nothing else in it.
       - name: Load all metadata into an empty database
-        run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend
+        run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend --keep-stack
       # run-clean-install.sh saves the whole initializer.log on failure, but only prints a
       # 40-line excerpt — enough to name the rejected file, rarely enough to explain it. The
       # rest is lost when the runner is torn down, and recovering it costs a full re-run of
@@ -468,6 +471,30 @@ jobs:
           name: initializer-log
           path: qa/upgrade/initializer-failure.log
           if-no-files-found: ignore
+      # LE-336: the reporting ETL's definition of done (ADR 0010, Consequences, "QA gate") on
+      # the stack just installed. Here and not in the End-to-end job because the expected values
+      # count every patient in the database, and the demo stack has patients of its own.
+      # run-stack-check.sh loads the Careysburg fixtures and asserts, in order: setupEtl()
+      # deployed as the ETL user (every routine's definer, no SUPER, no global grant, the
+      # MariaDB flags on); a full run succeeds with an empty _mamba_etl_error_log; all 42
+      # Careysburg rows of expected-values.csv match (compare-reports.py); a late, back-dated
+      # row is picked up by an incremental run and the rows still match; no liberiaemr_etl event
+      # is in the binlog. Measured locally at 48 seconds; each step's time lands in the job summary.
+      # Central's check is too costly here (its own image and a second dictionary import) and is
+      # run by hand: docs/runbooks/reporting-etl.md section 10.
+      - name: Indicator reports match their expected values on the clean stack
+        run: |
+          qa/reporting/run-stack-check.sh --role facility --site careysburg -- \
+            -f distribution/compose/facility/docker-compose.yml \
+            --env-file qa/upgrade/clean-install.env
+      - name: Tear down the clean-install stack
+        if: always()
+        run: |
+          if [[ -f qa/upgrade/clean-install.env ]]; then
+            docker compose -f distribution/compose/facility/docker-compose.yml \
+              --env-file qa/upgrade/clean-install.env down -v || true
+          fi
+          rm -rf qa/upgrade/clean-install.env qa/upgrade/.ci-certs
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 

@@ -1084,7 +1084,7 @@ Therefore, per facility:
 The broker is never exposed beyond mTLS-authenticated facilities, and its management
 interface is not exposed at all.
 
-### 7.4 Data at rest: five copies, not one
+### 7.4 Data at rest: six copies, not one
 
 PHI exists at rest in more places than the OpenMRS database, and each is a full or partial
 copy of the clinical record:
@@ -1095,6 +1095,7 @@ copy of the clinical record:
 | **Facility binlog** | Every change, up to six months (§1.3) | Often overlooked: it is a rolling plaintext change log of the whole record |
 | **Sender management database** | Retry payloads (§1.5) | Clinical content, indefinitely if a message is stuck |
 | **Broker journal at central** | In-flight messages | Clinical content |
+| **Reporting ETL schema `liberiaemr_etl`**, at every facility and at central | A flattened copy of the clinical record: names, addresses, identifiers, encounters, obs, orders (ADR 0010) | In the same MariaDB volume as `openmrs`, so full-disk encryption and every database backup carry it. Kept out of the binlog. Rebuildable, so a restore may drop it and re-flatten ([reporting-etl.md](../runbooks/reporting-etl.md)) |
 | **Backups of any of the above** | Everything | Control D3 |
 
 This table is the **canonical enumeration** for control D3: the SOP mapping and §7.8 cite it
@@ -1166,7 +1167,7 @@ not an afterthought.
 | D2: Mutual TLS | Per-facility client certificate on `sync`; broker authorises on certificate subject; revocation enforced at central. **Requires the §1.4 change.** Certificate lifecycle is the MOH ICT Unit's |
 | C1 / B3: Audit | Sync outcomes, rejected messages, dead-letter access and every cross-facility access; readable by the ICT Auditor role only |
 | C3: No PHI in logs | Log UUID, entity type and outcome. Never a name, an identifier value or an observation value: including in error and dead-letter logs, which is where it usually leaks |
-| D3: Encrypted backups | Extends to all five copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
+| D3: Encrypted backups | Extends to all six copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
 | D4: No secrets in the repo | Facility credentials and keys live in `.env` and mounted files; already enforced in CI |
 | **New**: Payload encryption | PGP keys per facility, receiver key custody and rotation owned by MOH ICT (§7.7) |
 | **New**: Facility disk encryption | Not currently in the SOP mapping. §7.4 makes it necessary; raise it with MOH ICT |

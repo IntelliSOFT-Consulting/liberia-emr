@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Clean-install test: empty database -> Initializer loads all metadata -> O3 launches.
 #
-#   qa/upgrade/run-clean-install.sh [--version 1.0.0] [--no-frontend]
+#   qa/upgrade/run-clean-install.sh [--version 1.0.0] [--no-frontend] [--project-name P] [--keep-stack]
 #
 # This is the cheaper half of the release gate. It catches broken CSVs, unresolved
 # ${var.*} references and forward references between layers. It does NOT catch upgrade
@@ -35,11 +35,19 @@ VERSION="${LIBERIAEMR_VERSION:-1.0.0-SNAPSHOT}"
 FRONTEND="true"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-}"
 
+# --keep-stack leaves the stack, its env file and its certificates in place after a PASS, so a
+# later step can test the same clean database (CI's indicator-report check, LE-336). The caller
+# then owns the teardown: `docker compose -f distribution/compose/facility/docker-compose.yml
+# --env-file qa/upgrade/clean-install.env [-p <project>] down -v`, and remove the env file and
+# qa/upgrade/.ci-certs. A FAILED run is always torn down, as before.
+KEEP_STACK="false"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version)     VERSION="$2"; shift 2 ;;
     --no-frontend) FRONTEND="false"; shift ;;
     --project-name) PROJECT_NAME="$2"; shift 2 ;;
+    --keep-stack)  KEEP_STACK="true"; shift ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -48,7 +56,13 @@ dc() {
   docker compose -f "$COMPOSE" --env-file "$ENV_FILE" ${PROJECT_NAME:+-p "$PROJECT_NAME"} "$@"
 }
 
+PASSED="false"
 cleanup() {
+  if [[ "$KEEP_STACK" == "true" && "$PASSED" == "true" ]]; then
+    echo "== --keep-stack: the stack is still up; tear it down with: =="
+    echo "   docker compose -f $COMPOSE --env-file $ENV_FILE${PROJECT_NAME:+ -p $PROJECT_NAME} down -v"
+    return
+  fi
   dc down -v >/dev/null 2>&1 || true
   rm -f "$ENV_FILE"
   rm -rf "$ROOT/qa/upgrade/.ci-certs"
@@ -391,5 +405,6 @@ else
   echo "== frontend and gateway == SKIPPED (--no-frontend)"
 fi
 
+PASSED="true"
 echo
 echo "clean install passed at ${VERSION}"
