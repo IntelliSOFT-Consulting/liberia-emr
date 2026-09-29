@@ -40,7 +40,7 @@ jobs:
           docker exec liberiaemr-facility-db-1 sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(\"log_bin=\",@@log_bin,\" format=\",@@binlog_format,\" sync_binlog=\",@@sync_binlog,\" server_id=\",@@server_id); SELECT CONCAT(\"schema \",schema_name) FROM information_schema.schemata WHERE schema_name LIKE \"openmrs%\"; SELECT CONCAT(\"db user \",user) FROM mysql.user WHERE user NOT IN (\"root\",\"mariadb.sys\",\"healthcheck\"); SELECT CONCAT(\"openmrs user \",u.username,\" role \",r.role) FROM openmrs.users u JOIN openmrs.user_role r ON r.user_id=u.user_id WHERE r.role LIKE \"Sync%\";"' 2>&1 | sed 's/^/  /'
           echo "== reach central broker ${CENTRAL}:61617"
           timeout 6 bash -c "</dev/tcp/${CENTRAL}/61617" 2>/dev/null && echo "  reachable" || echo "  NOT reachable"
-          echo "== sudo without password: $(sudo -n true 2>/dev/null && echo yes || echo no)"
+          echo "== passwordless sudo: $(sudo -n true 2>/dev/null && echo yes || echo no)"
           EOF
 
   central:
@@ -74,6 +74,6 @@ jobs:
           echo "== database"
           docker exec liberiaemr-central-db-1 sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(\"schema \",schema_name) FROM information_schema.schemata WHERE schema_name LIKE \"openmrs%\"; SELECT CONCAT(\"db user \",user) FROM mysql.user WHERE user NOT IN (\"root\",\"mariadb.sys\",\"healthcheck\"); SELECT CONCAT(\"openmrs user \",u.username,\" role \",r.role) FROM openmrs.users u JOIN openmrs.user_role r ON r.user_id=u.user_id WHERE r.role LIKE \"Sync%\";"' 2>&1 | sed 's/^/  /'
           echo "== listening on 61617: $(ss -ltn 2>/dev/null | grep -c ':61617 ' || true)"
-          echo "== sudo without password: $(sudo -n true 2>/dev/null && echo yes || echo no)"
+          echo "== passwordless sudo: $(sudo -n true 2>/dev/null && echo yes || echo no)"
           sudo -n ufw status 2>/dev/null | sed 's/^/  ufw: /' | head -12 || true
           EOF
