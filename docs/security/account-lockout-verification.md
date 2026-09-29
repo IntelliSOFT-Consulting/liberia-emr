@@ -27,12 +27,16 @@ by this core lockout mechanism; no database cleanup migration is needed for enfo
 
 ## AUTOMATED
 
-`python3 scripts/validate/tests/account-lockout.test.py`: **4 tests passed**. This runs
-inside `scripts/validate/validate-content.sh` and checks the supported property/variable
-wiring, the threshold, recovery value, duplicate definitions across content layers,
-obsolete keys, and conflicting threshold overrides. These are **configuration regression
-tests, not authentication behavior tests**. A temporary mutation from threshold `4` to `5`
-was rejected by the boundary test; no mutation was left in the repository.
+`scripts/validate/validate-content.sh`, section *account lockout configuration (not runtime
+authentication)*, **passed**. It checks that both lockout properties are defined once, in
+national `gp-security.xml`; that the threshold is wired to
+`var.security.login.allowed-failures-before-lockout` and every declaration of that variable
+is `4`; that recovery is `5`; and that the retired property and variable names are not
+shipped. These are **configuration checks, not authentication behavior tests**. Eight
+mutations, each applied to a throwaway copy of the content packages, were each rejected:
+threshold `4`→`5`, recovery `5`→`10`, a site-layer threshold override, a competing site
+global property, a reintroduced `security.validTime`, a reintroduced max-attempts variable,
+a hard-coded threshold, and a missing national declaration. No mutation touched the repository.
 
 National content `mvn -o -B -f content-packages/content-liberia-national/pom.xml package`
 passed; the packaged XML resolves the threshold to `4` and recovery to `5`.
