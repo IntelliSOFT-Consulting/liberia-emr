@@ -37,9 +37,14 @@ facility exec -T db sh -c 'cd /var/lib/mysql && mariadb-binlog -vv binlog.[0-9]*
   | grep -i 'IDENTIFIED BY' | sed 's/IDENTIFIED BY.*/IDENTIFIED BY <cut>/I'
 ```
 
-Each line names an account whose password is in the binlog. If there are none, the files that
-held them have already expired; still rotate if the volume or a copy of it has ever left the
-host, and skip section 3.
+Each line names an account whose password is in the binlog: those are the accounts to rotate.
+
+If there are none, the files that held them have already expired, but a copy of the volume
+taken earlier still holds them. If the volume or a copy of it has ever left the host, rotate
+by the table instead: the OpenMRS user always, and the Debezium and sync management users if
+they exist. List them with
+`facility exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "SELECT user FROM mysql.user"'`.
+Then skip section 3: there is nothing left to purge.
 
 ## 2. Rotate
 
@@ -75,8 +80,9 @@ the env file. Do this at a quiet time; the EMR is down for a few minutes.
    SHOW MASTER STATUS;
    ```
 
-   Use the account names in the env file if they differ, and leave out an account section 1 did
-   not list. `FLUSH BINARY LOGS` starts a new binlog file; note its name from
+   Use the account names in the env file if they differ, and rotate exactly the accounts
+   section 1 chose: the ones it listed, or, when the binlogs have expired, every affected
+   account that exists. `FLUSH BINARY LOGS` starts a new binlog file; note its name from
    `SHOW MASTER STATUS` (for example `binlog.000042`). Every older file may hold an old password.
 4. Put the new passwords in the env file, then `facility up -d`.
 5. Check: the EMR login page works and `facility logs backend` shows no `Access denied`; with
@@ -122,7 +128,13 @@ whole database). Its saved position moves only when it reads an OpenMRS change, 
 ## 4. Copies
 
 Any copy of the `db-data` volume taken before the purge (a backup of the volume, a snapshot, a
-disk image) still holds the old binlogs. After the rotation the passwords in it no longer work,
-so it needs no special handling beyond the encryption and retention in
+disk image) still holds the old binlogs. Against the live database the passwords in it no
+longer work, so while it stays a copy it needs only the encryption and retention in
 [backup-restore.md](backup-restore.md). Put the new passwords in the MOH secret store copy of
 the env file, as that runbook requires.
+
+**Restoring such a copy brings the old passwords back.** It restores the old account records
+along with the binlogs that hold their passwords, so the leaked credentials work again. Before
+the restored database goes back into service, run this runbook on it again from section 1:
+rotate to the env file's current passwords, never the ones the copy holds, and purge.
+`backup-restore.md` points here from its restore steps.

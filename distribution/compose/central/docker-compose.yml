@@ -29,8 +29,10 @@ services:
       # The OpenMRS application user, created by initdb/05-openmrs-db-user.sh on the first
       # boot only, as at a facility. Never MARIADB_USER/MARIADB_PASSWORD: with a binlog on,
       # the image's CREATE USER writes the password to it in clear text (LE-361).
-      OPENMRS_DB_USER: ${MYSQL_USER}
-      OPENMRS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      # :? because initdb runs once: a volume initialised without them has no application
+      # user, and fixing the env file afterwards does not create it.
+      OPENMRS_DB_USER: ${MYSQL_USER:?set in central.env}
+      OPENMRS_DB_PASSWORD: ${MYSQL_PASSWORD:?set in central.env}
       # For initdb/10-sync-mgmt-db.sh, which runs ONLY on the first boot of an empty
       # volume; an unset password means it does nothing.
       SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}

@@ -18,8 +18,11 @@ esc() {
 }
 
 if [ -z "${OPENMRS_DB_USER:-}" ] || [ -z "${OPENMRS_DB_PASSWORD:-}" ]; then
-  echo "initdb: OPENMRS_DB_USER or OPENMRS_DB_PASSWORD unset; skipping the OpenMRS application user" >&2
-  exit 0
+  # Fail the first boot rather than accept a volume with no application user: initdb never
+  # runs again, so setting the values later would not create it. Compose already refuses to
+  # start without them; this covers a container started some other way.
+  echo "initdb: OPENMRS_DB_USER and OPENMRS_DB_PASSWORD are required; set MYSQL_USER and MYSQL_PASSWORD, delete the half-initialised db-data volume, and start again" >&2
+  exit 1
 fi
 
 DB="${MARIADB_DATABASE:-openmrs}"
