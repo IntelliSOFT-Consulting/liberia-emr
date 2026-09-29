@@ -115,13 +115,17 @@ The fixtures' readings are then:
 
 ### Interim form matches
 
-Three forms have no variable that holds their runtime uuid (rmncah-nutrition gaps note, gap
-11). Until they do, the SQL matches them on `form.name` **and** `form.version`, and each
-place is marked `INTERIM` in the SQL:
+A form with no `var.form.*` variable holding its runtime uuid is matched on `form.name`
+**and** `form.version`, and the place is marked `INTERIM` in the SQL. One is left:
 
-- `1. ANC Form` v1.1 in `sp_mamba_fact_rmncah_anc_visit`;
-- `3. Family Planning` v1.0 in `sp_mamba_fact_rmncah_family_planning`;
-- `OPD Consultation Form` v2.0 in `sp_mamba_fact_nutrition_anthropometry`.
+- `3. Family Planning` v1.0 in `sp_mamba_fact_rmncah_family_planning`.
+
+`1. ANC Form` v1.1 (`sp_mamba_fact_rmncah_anc_visit`) and `OPD Consultation Form` v2.0
+(`sp_mamba_fact_nutrition_anthropometry`) are matched on `${var.form.anc-national.uuid}` and
+`${var.form.opd-consultation.uuid}` (rmncah-nutrition gaps note, gap 11, fixed by LE-344).
+A `var.form.*` value is the uuid Initializer derives from the form's name and version, and
+`validate-content.sh` checks that, so the token and the old name/version match select the
+same rows.
 
 The Triage form needs no match, because Triage is its own encounter type.
 

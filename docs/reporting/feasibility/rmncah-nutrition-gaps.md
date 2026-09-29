@@ -107,6 +107,9 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       and `869443be-61f3-397f-be1c-ee3dcb591149` (Triage Form v2.0).
     * `1. ANC Form` v1.1 (`bd1ae06c-f522-34dd-816f-1235c89bebee`) has no variable at all.
     * **Ask:** set these variables to the derived values, as the MCH README already requires.
+    * **Fixed (LE-344):** both variables now hold the derived UUIDs, `var.form.anc-national.uuid`
+      is declared, and the ETL matches both forms on those tokens. `validate-content.sh` now
+      fails on any `var.form.*` that is not the derived UUID of a form.
 12. **The L&D encounter type is not the one the MCH config expects.**
     * All four labour forms and the partograph save under the national `Labor & Delivery` type
       (`659775fb-05e4-427f-8d9f-7e4cabe19962`).
