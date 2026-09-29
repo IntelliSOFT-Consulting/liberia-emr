@@ -49,8 +49,9 @@ jobs:
     needs: guard
     strategy:
       matrix:
-        # central builds only liberia-emr-frontend-central; it runs the facility images of
-        # the same version otherwise (docs/adr/0011-central-composition.md).
+        # central builds liberia-emr-backend-central (every site's locations, LE-339) and
+        # liberia-emr-frontend-central; it runs the facility gateway and sync images of the
+        # same version otherwise (docs/adr/0011, docs/adr/0012).
         site: [careysburg, barnersville, central]
     # Without this the release images ship without the MOH's curated CIEL
     # collections, and build-distribution.sh only WARNS about that — so the

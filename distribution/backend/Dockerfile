@@ -62,6 +62,11 @@ RUN set -eu; \
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \
+      # content-central's backend layer holds nothing of its own yet, and an empty directory
+      # may not survive into its ZIP; the site locations are added below instead.
+      if [ "$pkg" = "liberiaemr-central" ] && [ ! -d /tmp/pkg/configuration/backend_configuration ]; then \
+        continue; \
+      fi; \
       [ -d /tmp/pkg/configuration/backend_configuration ] \
         || { echo "no backend_configuration in ${pkg}" >&2; exit 1; }; \
       # The demo layer loads last, which is right for values a trainee should see and wrong
@@ -75,6 +80,34 @@ RUN set -eu; \
       fi; \
       cp -R /tmp/pkg/configuration/backend_configuration/. /openmrs_config/; \
     done; \
+    # Central (LE-339, ADR 0012): records from EVERY facility reference that facility's own
+    # locations, and location rows are not synced, so central loads the locations/ of every
+    # site package in the build context and nothing else of theirs (no ID sequences, cash
+    # points, queues or facility global properties). Sites are discovered, not listed, so a
+    # new site package reaches central without editing this file. A file name two sites share
+    # would silently shadow one of them, so that fails the build.
+    if [ "${SITE_PACKAGE}" = "liberiaemr-central" ]; then \
+      sites=0; \
+      mkdir -p /openmrs_config/locations; \
+      for zip in /build/zips/liberiaemr-site-*.zip; do \
+        [ -f "$zip" ] || continue; \
+        echo "central: adding the locations of $(basename "$zip")"; \
+        rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
+        (cd /tmp/pkg && jar xf "$zip"); \
+        src=/tmp/pkg/configuration/backend_configuration/locations; \
+        [ -d "$src" ] || { echo "no locations/ in $(basename "$zip")" >&2; exit 1; }; \
+        for f in "$src"/*; do \
+          [ -f "$f" ] || continue; \
+          case "$(basename "$f")" in .*) continue ;; esac; \
+          dest="/openmrs_config/locations/$(basename "$f")"; \
+          [ ! -e "$dest" ] || { echo "two layers ship $(basename "$f")" >&2; exit 1; }; \
+          cp "$f" "$dest"; \
+        done; \
+        sites=$((sites + 1)); \
+      done; \
+      [ "$sites" -ge 1 ] || { echo "central: no site package in the build context" >&2; exit 1; }; \
+      echo "central: locations from ${sites} site package(s)"; \
+    fi; \
     rm -rf /tmp/pkg; \
     # A resolved configuration must never contain demo content.
     if [ -d /openmrs_config/demo ]; then echo "demo content leaked into the build" >&2; exit 1; fi

@@ -19,6 +19,7 @@ Format: Context → Decision → Consequences → Status.
 | [0009](0009-mfl-facility-locations.md) | The Master Facility List is the source of truth for facility locations | Accepted |
 | [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** |
 | [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
+| [0012](0012-central-site-locations.md) | Central loads the locations of every site package | Accepted |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
 implementation. The number is reserved and has no file until the decision is written; the

@@ -8,9 +8,11 @@
 # Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry :<version>
 #
 # --site central builds the central composition: content-central in the site layer's place
-# (docs/adr/0011-central-composition.md). Today that is one image, liberia-emr-frontend-central.
-# Central runs the facility release's backend, gateway and sync images of the same version
-# until its own backend layer exists (LE-339), so a central build does not rebuild them.
+# (docs/adr/0011-central-composition.md). That is two images: liberia-emr-frontend-central and
+# liberia-emr-backend-central, whose content adds the locations/ of EVERY site package, so a
+# record from any facility resolves at central (LE-339, docs/adr/0012-central-site-locations.md).
+# Central runs the facility release's gateway and sync images of the same version, so a
+# central build does not rebuild them.
 #
 # A mutable git checkout is never mounted into a production container.
 #
@@ -45,8 +47,6 @@ done
 
 if [[ "$SITE" == "central" ]]; then
   [[ "$DEMO" == "false" ]] || { echo "there is no demo build of central" >&2; exit 2; }
-  [[ "$FRONTEND" == "true" ]] \
-    || { echo "--no-frontend leaves nothing to build for central" >&2; exit 2; }
 fi
 
 case "$VERSION" in
@@ -275,23 +275,29 @@ compose="$ROOT/distribution/compose/facility/docker-compose.yml"
 [[ "$SITE" == "central" ]] && compose="$ROOT/distribution/compose/central/docker-compose.yml"
 "$ROOT/scripts/validate/spa-config-urls.sh" "$compose" "$ROOT/distribution/frontend/config/.config-urls"
 
-# The central composition differs from a facility's only in its frontend image for now, so
-# that is all it builds. The -central name keeps it from overwriting the facility frontend of
-# the same version, the way -demo does for a training build.
+# The central composition differs from a facility's in its frontend and backend images. The
+# -central name keeps them from overwriting the facility images of the same version, the way
+# -demo does for a training build. Its backend takes content-central in the site layer's
+# place, and the Dockerfile adds every site package's locations/ to it (LE-339).
+site_package="liberiaemr-site-${SITE}"
 if [[ "$SITE" == "central" ]]; then
   suffix="-central"
-  echo "== backend, gateway and sync == SKIPPED (central runs the facility release's images until LE-339)"
+  site_package="liberiaemr-central"
+  echo "== gateway and sync == SKIPPED (central runs the facility release's images)"
 fi
 
-if [[ "$SITE" != "central" ]]; then
-  echo "== backend =="
-  docker build \
-    -f "$ROOT/distribution/backend/Dockerfile" \
-    --build-arg "SITE_PACKAGE=liberiaemr-site-${SITE}" \
-    --build-arg "DEMO_PACKAGE=${demo_package}" \
-    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
-    -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
-    "$ROOT"
+echo "== backend =="
+docker build \
+  -f "$ROOT/distribution/backend/Dockerfile" \
+  --build-arg "SITE_PACKAGE=${site_package}" \
+  --build-arg "DEMO_PACKAGE=${demo_package}" \
+  --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+  -t "${REGISTRY}/liberia-emr-backend${suffix}:${VERSION}" \
+  "$ROOT"
+
+# LE-339: a central backend must carry every site's locations and nothing else of theirs.
+if [[ "$SITE" == "central" ]]; then
+  "$ROOT/scripts/validate/central-backend-content.sh" "${REGISTRY}/liberia-emr-backend-central:${VERSION}"
 fi
 
 if [[ "$FRONTEND" == "true" ]]; then
@@ -315,7 +321,7 @@ fi
 
 if [[ "$SITE" == "central" ]]; then
   echo
-  echo "built ${VERSION} (central: liberia-emr-frontend-central)"
+  echo "built ${VERSION} (central: liberia-emr-backend-central, liberia-emr-frontend-central)"
   exit 0
 fi
 

@@ -96,8 +96,9 @@ the MOH did not name.
 with the root's MFL UID declared in its site package (`Attribute|MFL UID` in the site's
 locations CSV, `var.site.mfl-uid`). Otherwise the sync creates a *second* row for that
 facility, and the facility's records, which reference its own root, still have no match at
-central. How central loads every site's locations is open in **LE-339**; until it is decided,
-check each live facility by hand:
+central. Central's backend image, `liberia-emr-backend-central`, loads every site package's
+locations (LE-339, ADR 0012), so this holds for any site whose package declares its MFL UID.
+Check it before the first sync anyway:
 
 ```bash
 # At central: every live facility's root UUID must answer, and carry its MFL UID.

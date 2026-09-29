@@ -73,8 +73,10 @@ Rejected without further comparison.
   compose file. CI runs that check on every change without building the image
   (`scripts/validate/spa-config-urls.sh`), and the release matrix builds `central` alongside
   the sites.
-- **For now, the frontend is the only difference.** Central runs the facility release's
-  backend, gateway and sync images of the same version. A central build does not rebuild them.
+- **Central's frontend and backend differ from a facility's.** Its backend,
+  `liberia-emr-backend-central`, adds every site package's locations (LE-339,
+  [ADR 0012](0012-central-site-locations.md)). Central runs the facility release's gateway and
+  sync images of the same version; a central build does not rebuild them.
 - **The central frontend layers** are core, national, mch, opd, then central.
 - **`config-central.json`** does three things:
   - It keeps the non-site settings central used to get from `config-site.json`: the login
@@ -94,8 +96,8 @@ inside `"@liberiaemr/esm-liberia-login-app"` → `"chooseLocation"`:
 
 ## LE-339: how this extends to central's backend
 
-The same layer carries central's backend content when LE-339 is decided. The recommended
-direction, left for LE-339 to confirm:
+**Decided in [ADR 0012](0012-central-site-locations.md) (29 September 2026), as recommended
+here.** The direction this ADR set out:
 
 - `content-central` gains `backend_configuration/`.
 - `--site central` also builds `liberia-emr-backend-central` with
