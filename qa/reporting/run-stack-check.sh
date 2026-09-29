@@ -10,8 +10,9 @@
 #   2. a full run on the fixtures succeeds, with an empty _mamba_etl_error_log, and every
 #      report row matches expected-values.csv (compare-reports.py);
 #   3. one late row added after that run (load-fixtures.py load-late-row), back-dated so core's
-#      timestamp test would miss it, is picked up by the next incremental run: the encounter,
-#      its obs, its visit and its anthropometry fact all appear. The reports still match;
+#      timestamp test would miss it, is picked up by the next incremental run: the encounter
+#      (found as a new key), its visit, and its anthropometry fact with the obs's weight all
+#      appear. The reports still match;
 #   4. at a facility, the binlog holds no liberiaemr_etl event, while it does hold the
 #      fixtures' openmrs rows (so the check cannot pass on an empty or disabled binlog).
 #
@@ -270,19 +271,21 @@ while IFS='=' read -r name value; do
   esac
 done < <(python3 "$HERE/load-fixtures.py" late-row-uuids)
 [[ -n "$late_visit" && -n "$late_encounter" && -n "$late_obs" ]] || fail "load-fixtures.py late-row-uuids printed no UUIDs"
+# The obs is checked through the anthropometry fact, which carries its value. Core's
+# mamba_z_encounter_obs holds only the concepts of flat-table configs, and there are none yet.
 counts_sql="SELECT CONCAT_WS(' ',
   (SELECT COUNT(*) FROM mamba_dim_encounter WHERE uuid = '${late_encounter}'),
-  (SELECT COUNT(*) FROM mamba_z_encounter_obs z JOIN openmrs.obs o ON o.obs_id = z.obs_id WHERE o.uuid = '${late_obs}'),
   (SELECT COUNT(*) FROM mamba_fact_emr_ops_visit f JOIN openmrs.visit v ON v.visit_id = f.visit_id WHERE v.uuid = '${late_visit}'),
   (SELECT COUNT(*) FROM mamba_fact_nutrition_anthropometry f JOIN openmrs.encounter e ON e.encounter_id = f.encounter_id
-    WHERE e.uuid = '${late_encounter}' AND f.weight_kg = 11.2));"
+    JOIN openmrs.obs o ON o.encounter_id = e.encounter_id AND o.uuid = '${late_obs}'
+    WHERE e.uuid = '${late_encounter}' AND f.weight_kg = o.value_numeric));"
 before_counts="$(root_sql <<< "$counts_sql")"
-[[ "$before_counts" == "0 0 0 0" ]] || fail "the late row is in the ETL before any run: ${before_counts}"
+[[ "$before_counts" == "0 0 0" ]] || fail "the late row is in the ETL before any run: ${before_counts}"
 run_etl incremental
 after_counts="$(root_sql <<< "$counts_sql")"
-[[ "$after_counts" == "1 1 1 1" ]] \
-  || fail "the incremental run missed the late row (encounter, obs, visit fact, anthropometry fact: ${after_counts})"
-echo "   the encounter, its obs, its visit and its anthropometry row are in the ETL"
+[[ "$after_counts" == "1 1 1" ]] \
+  || fail "the incremental run missed the late row (encounter, visit fact, anthropometry fact with the obs's weight: ${after_counts})"
+echo "   the encounter, its visit, and its anthropometry row with the obs's weight are in the ETL"
 found_new="$(etl_sql <<< "SELECT last_run_new FROM mamba_etl_liberia_incremental_state WHERE etl_table = 'mamba_dim_encounter';")"
 [[ "$found_new" =~ ^[1-9] ]] || fail "mamba_dim_encounter's incremental state lists no new key (${found_new:-no row})"
 echo "   found as new by key: ${found_new} encounter (its date_created predates the run)"
