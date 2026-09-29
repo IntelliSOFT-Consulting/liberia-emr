@@ -19,7 +19,12 @@ json() { python3 -c "import json,sys; d=json.load(sys.stdin); print(eval(sys.arg
 role="$(api "$BASE/role?v=custom:(uuid,display)&limit=100" | json "next((r['uuid'] for r in d['results'] if r['display'] == arg[0]), '')" "$ROLE")"
 [ -n "$role" ] || { echo "no role '$ROLE' at $1; the national content package defines it" >&2; exit 1; }
 
-existing="$(api "$BASE/user?q=$USERNAME&v=custom:(uuid,username)" | json "next((u['uuid'] for u in d['results'] if u['username'] == arg[0]), '')" "$USERNAME")"
+case "$USERNAME" in admin|daemon) echo "refusing to repurpose the $USERNAME account for sync" >&2; exit 1 ;; esac
+users="$(api "$BASE/user?q=$USERNAME&v=custom:(uuid,username,roles:(display))")"
+existing="$(json "next((u['uuid'] for u in d['results'] if u['username'] == arg[0]), '')" "$USERNAME" <<<"$users")"
+others="$(json "','.join(r['display'] for u in d['results'] if u['username'] == arg[0] for r in u['roles'] if r['display'] != arg[1])" "$USERNAME" "$ROLE" <<<"$users")"
+# An account that already does something else is someone's; it is never changed here.
+[ -z "$others" ] || { echo "$USERNAME already holds other roles ($others); use an account of its own for sync" >&2; exit 1; }
 body="$(ROLE_UUID="$role" python3 -c 'import json,os; print(json.dumps({"password": os.environ["SERVICE_PASSWORD"], "roles": [os.environ["ROLE_UUID"]]}))')"
 if [ -z "$existing" ]; then
   body="$(USERNAME="$USERNAME" BODY="$body" python3 -c 'import json,os; b=json.loads(os.environ["BODY"]); b["username"]=os.environ["USERNAME"]; b["person"]={"names":[{"givenName":"Sync","familyName":"Service"}],"gender":"U"}; print(json.dumps(b))')"

@@ -24,8 +24,13 @@ compose() { REGISTRY="$REGISTRY" LIBERIAEMR_VERSION=latest docker compose -f doc
 log() { echo "[central] $*"; }
 # Adds a setting only when the env file lacks it; an existing value is never changed.
 setting() {
-  if grep -q "^$1=" "$ENV_FILE"; then log "kept $1"; else printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"; log "added $1"; fi
+  if grep -q "^$1=" "$ENV_FILE"; then log "kept $1"; return; fi
+  [ -z "$(tail -c1 "$ENV_FILE")" ] || echo >> "$ENV_FILE"
+  printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"; log "added $1"
 }
+value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -1; }
+# Replaces a setting's value; only ever used on the receiver's account, below.
+replace() { sed -i "/^$1=/d" "$ENV_FILE"; setting "$1" "$2"; }
 healthy() { # container seconds
   local deadline=$((SECONDS + $2))
   until [ "$(docker inspect -f '{{.State.Health.Status}}' "$1" 2>/dev/null)" = healthy ]; do
@@ -54,6 +59,13 @@ case "$STEP" in
     log "checkout at $(git -C "$top" rev-parse --short HEAD)"
     setting BROKER_CERTS_DIR /etc/liberiaemr/broker-certs
     setting RECEIVER_CERTS_DIR /etc/liberiaemr/receiver-certs
+    # The receiver signs in with an account of its own, never an operator's.
+    case "$(value SYNC_REST_USER)" in
+      ""|admin|daemon)
+        replace SYNC_REST_USER sync-receiver
+        replace SYNC_REST_PASSWORD "Dv$(openssl rand -hex 18)7q"
+        log "the receiver now signs in as sync-receiver, not an operator account" ;;
+    esac
     compose config -q
     compose pull -q
     compose up -d db
@@ -61,10 +73,16 @@ case "$STEP" in
     docker exec "$DB" bash /docker-entrypoint-initdb.d/10-sync-mgmt-db.sh
     docker exec "$DB" bash /docker-entrypoint-initdb.d/20-identity-db.sh
     services="$(compose config --services | grep -vx sync-receiver | tr '\n' ' ')"
+    before="$(docker inspect -f '{{.Id}}' liberiaemr-central-backend-1 2>/dev/null || true)"
     # shellcheck disable=SC2086 # one word per service
     compose up -d $services
-    # The module creates the identity tables at start, and the schema is new.
-    compose restart backend
+    # The broker reads its certificates at start; a run that issued new ones needs a fresh one.
+    compose up -d --force-recreate artemis cert-expiry
+    # The module creates the identity tables at start, and the schema is new: a backend that
+    # up -d left running has to start again.
+    if [ "$(docker inspect -f '{{.Id}}' liberiaemr-central-backend-1)" = "$before" ]; then
+      compose restart backend
+    fi
     healthy liberiaemr-central-backend-1 900
     healthy liberiaemr-central-artemis-1 300
     # nginx keeps the address a recreated backend had; a restart looks it up again.
@@ -72,10 +90,10 @@ case "$STEP" in
     log "broker, monitoring and the EMR are up"
     ;;
   receiver)
-    compose up -d sync-receiver
+    compose up -d --force-recreate sync-receiver
     deadline=$((SECONDS + 300))
-    until docker logs liberiaemr-central-sync-receiver-1 2>&1 | grep -q "Started Application"; do
-      if docker logs liberiaemr-central-sync-receiver-1 2>&1 | grep -q "refusing to start"; then
+    until docker logs liberiaemr-central-sync-receiver-1 2>&1 | grep -a "Started Application" >/dev/null; do
+      if docker logs liberiaemr-central-sync-receiver-1 2>&1 | grep -a "refusing to start" >/dev/null; then
         docker logs --tail 20 liberiaemr-central-sync-receiver-1 >&2; exit 1
       fi
       (( SECONDS < deadline )) || { docker logs --tail 30 liberiaemr-central-sync-receiver-1 >&2; exit 1; }

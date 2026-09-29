@@ -20,13 +20,14 @@ ENV_FILE=facility.env
 DB=liberiaemr-facility-db-1
 BACKUPS="$HOME/liberiaemr-backups"
 
-compose() { LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file "$ENV_FILE" "$@"; }
+compose() { LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file "$ENV_FILE" --profile sync "$@"; }
 log() { echo "[facility] $*"; }
 value() { sed -n "s/^$1=//p" "$ENV_FILE" | tail -1; }
 # Adds a setting only when the env file lacks it or leaves it empty; a value is never changed.
 setting() {
   if [ -n "$(value "$1")" ]; then log "kept $1"; return; fi
   sed -i "/^$1=/d" "$ENV_FILE"
+  [ -z "$(tail -c1 "$ENV_FILE")" ] || echo >> "$ENV_FILE"
   printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"
   log "added $1"
 }
@@ -44,8 +45,12 @@ case "$STEP" in
     top="$(git rev-parse --show-toplevel)"
     changes="$(git -C "$top" status --porcelain --untracked-files=no)"
     if [ -n "$changes" ]; then
-      log "local change in the checkout, kept in a stash by the next step:"; echo "$changes"
-      git -C "$top" diff --stat
+      log "local change in the checkout:"; echo "$changes"
+      git -C "$top" diff | head -80
+      if git -C "$top" diff --name-only | grep -q -E '(^|/)(docker-compose[^/]*\.ya?ml|initdb/)'; then
+        log "it changes the compose setup itself; decide what to keep before running this"; exit 1
+      fi
+      log "the next step keeps it in a named stash"
     fi
     [ -f "$ENV_FILE" ] || { log "no $ENV_FILE in $PWD"; exit 1; }
     for k in MYSQL_USER MYSQL_PASSWORD MYSQL_ROOT_PASSWORD; do
@@ -100,9 +105,11 @@ case "$STEP" in
     ;;
   sender)
     compose up -d
+    # The sender reads its certificates at start; a run that issued new ones needs a fresh one.
+    compose up -d --force-recreate sync
     deadline=$((SECONDS + 600))
-    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -q "Connected to MySQL binlog"; do
-      if docker logs liberiaemr-facility-sync-1 2>&1 | grep -q "refusing to start"; then
+    until docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "Connected to MySQL binlog" >/dev/null; do
+      if docker logs liberiaemr-facility-sync-1 2>&1 | grep -a "refusing to start" >/dev/null; then
         docker logs --tail 20 liberiaemr-facility-sync-1 >&2; exit 1
       fi
       (( SECONDS < deadline )) || { docker logs --tail 40 liberiaemr-facility-sync-1 >&2; exit 1; }

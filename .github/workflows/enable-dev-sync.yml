@@ -68,7 +68,8 @@ jobs:
           [ "$HAS_HUB" = true ] || missing="$missing DOCKERHUB_USERNAME/DOCKERHUB_TOKEN"
           for v in FAC_HOST:DEV_HOST FAC_USER:DEV_USER FAC_DIR:DEV_COMPOSE_DIR CEN_HOST:CENTRAL_DEV_HOST \
                    CEN_USER:CENTRAL_DEV_USER CEN_DIR:CENTRAL_DEV_COMPOSE_DIR FAC_ADMIN:DEV_OPENMRS_ADMIN_PASSWORD; do
-            [ -n "${!v%%:*}" ] || missing="$missing ${v#*:}"
+            name="${v%%:*}"
+            [ -n "${!name}" ] || missing="$missing ${v#*:}"
           done
           if [ -n "$missing" ]; then
             echo "::error::Set these repository secrets (Settings > Secrets and variables > Actions), then run again:$missing"
