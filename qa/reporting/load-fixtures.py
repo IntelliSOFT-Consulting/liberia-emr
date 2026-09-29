@@ -14,8 +14,8 @@ marked (given name "Qa", family name "Rpt <key>", identifiers containing "QA").
 
 The fixture files hold no UUID. Metadata is referenced as ${var.*} (resolved from the content
 variables.properties in the build's filter order, then the patient's site package), CIEL
-concepts without a variable as CIEL:<id>, and forms whose variable does not hold the runtime
-identity as form:<name>@<version> (Initializer's derivation). Each fixture row's own UUID is
+concepts without a variable as CIEL:<id>, and forms without a variable as
+form:<name>@<version> (Initializer's derivation). Each fixture row's own UUID is
 derived from its key, so a reload produces identical UUIDs and the expected values can be
 matched by key.
 """

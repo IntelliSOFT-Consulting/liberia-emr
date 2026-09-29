@@ -233,8 +233,9 @@ properties are readable over REST.
 
 - Empty placeholders go in `distribution/env/*.env.example`.
 - These are separate from the `DHIS2_*` variables, which belong to the HMIS export.
-- `scripts/validate/no-secrets.sh` only flags a value of 12 or more characters from
-  `[A-Za-z0-9/+_-]` after a `password` key. It is a backstop, not a guarantee.
+- `scripts/validate/no-secrets.sh` flags any literal value, whatever its length, assigned to
+  a password, secret, token or API-key key in a config file (LE-340). Known throwaways are
+  listed in `scripts/validate/no-secrets.allowlist`. It is a backstop, not a guarantee.
 
 ### 8. A full pull on every run, daily
 

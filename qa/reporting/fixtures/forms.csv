@@ -2,11 +2,11 @@ key,form,encounter_type,if_missing,purpose
 anc-initial-v1.2,${var.form.anc-initial.uuid},${var.encountertype.anc-initial.uuid},fail,current MCH ANC Initial Visit
 anc-initial-v1.1,form:ANC Initial Visit@1.1,${var.encountertype.anc-initial.uuid},create-retired,old version of the same form; exists on upgraded databases only so the loader creates it retired (old/new form version edge case)
 anc-followup-v1.0,${var.form.anc-followup.uuid},${var.encountertype.anc-followup.uuid},fail,MCH ANC Follow-up Visit
-anc-national-v1.1,form:1. ANC Form@1.1,${var.encountertype.consultation.uuid},fail,national ANC form family; saves under the shared Consultation encounter type (its variable-free JSON uuid is ignored by Initializer)
-fp-v2.2,${var.form.family-planning.uuid},${var.encountertype.family-planning.uuid},fail,current 3. Family Planning (MCH)
+anc-national-v1.1,${var.form.anc-national.uuid},${var.encountertype.consultation.uuid},fail,national ANC form family; saves under the shared Consultation encounter type
+fp-v2.2,${var.form.family-planning.uuid},${var.encountertype.mch-family-planning.uuid},fail,current 3. Family Planning (MCH)
 fp-national-v1.0,form:3. Family Planning@1.0,${var.encountertype.consultation.uuid},fail,older version of 3. Family Planning (national); saves under the shared Consultation encounter type
 ld-first-second-v1.2,${var.form.first-and-second-stage-of-labor-and-delivery.uuid},${var.encountertype.labor-delivery.uuid},fail,1. First and Second Stage of Labor and Delivery
 pnc-mother-v1.0,${var.form.pnc-visit.uuid},${var.encountertype.mch-pnc.uuid},fail,Mother PNC
 immunization-v1.1,${var.form.immunization.uuid},${var.encountertype.consultation.uuid},fail,Immunization; saves under the shared Consultation encounter type
-triage-v2.0,form:Triage Form@2.0,${var.encountertype.triage.uuid},fail,Triage Form (var.form.triage.uuid holds the ignored JSON literal so the derived identity is used)
-opd-v2.0,form:OPD Consultation Form@2.0,${var.encountertype.consultation.uuid},fail,OPD Consultation Form (var.form.opd-consultation.uuid holds the ignored JSON literal); shared Consultation encounter type
+triage-v2.0,${var.form.triage.uuid},${var.encountertype.triage.uuid},fail,Triage Form
+opd-v2.0,${var.form.opd-consultation.uuid},${var.encountertype.consultation.uuid},fail,OPD Consultation Form; shared Consultation encounter type

@@ -223,6 +223,22 @@
       }
     }
   },
+  "_comment_reports": [
+    "MOH indicator report runner (LE-335). reportUuids is the list offered, in this order;",
+    "a report left out is not shown. Set here, not in config-central.json: central loads this",
+    "layer too, and the app reads its facility or central role from the reports module at",
+    "runtime. mflCodeAttributeTypeUuid lets the central picker find a facility by MFL code."
+  ],
+  "@liberiaemr/esm-liberia-reports-app": {
+    "reportUuids": [
+      "${var.report.rmncah.uuid}",
+      "${var.report.nutrition.uuid}",
+      "${var.report.malaria.uuid}",
+      "${var.report.ncd.uuid}",
+      "${var.report.emr-ops.uuid}"
+    ],
+    "mflCodeAttributeTypeUuid": "${var.locationattributetype.mfl-code.uuid}"
+  },
   "liberia-obs-widget": {
     "displayMode": "table",
     "title": "TB Screening",
