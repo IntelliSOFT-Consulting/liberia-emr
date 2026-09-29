@@ -1,0 +1,79 @@
+# Read-only check of sync on the two dev servers: what runs, which sync settings are present,
+# and whether the facility can reach central's broker. Changes nothing. Prints setting names,
+# and values only for the few that are not secret (codes, addresses, directories).
+name: Dev sync check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  facility:
+    name: Facility dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+      - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DEV_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Inspect
+        run: |
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" \
+            "COMPOSE_DIR='${{ secrets.DEV_COMPOSE_DIR }}' ENV_FILE=facility.env CENTRAL='${{ secrets.CENTRAL_DEV_HOST }}' bash -s" <<'EOF'
+          set -u
+          cd "$COMPOSE_DIR" || { echo "no compose dir"; exit 1; }
+          echo "== host: $(hostname), public ip $(curl -s --max-time 5 ifconfig.me || echo unknown)"
+          echo "== checkout: $(git rev-parse --short HEAD 2>/dev/null) $(git status --porcelain 2>/dev/null | wc -l) local changes"
+          echo "== containers"; docker ps -a --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep liberiaemr || true
+          echo "== sync settings in $ENV_FILE (names; values only where not secret)"
+          for k in FACILITY_CODE ARTEMIS_URL COMPOSE_PROFILES SYNC_SNAPSHOT_MODE SYNC_CERTS_DIR DB_SERVER_ID DEBEZIUM_SERVER_ID SYNC_RECON_SINCE; do
+            v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); echo "  $k=${v:-<unset>}"; done
+          for k in DEBEZIUM_DB_PASSWORD SYNC_MGMT_DB_PASSWORD SYNC_REST_USER SYNC_REST_PASSWORD; do
+            v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); [ -n "$v" ] && echo "  $k=<set>" || echo "  $k=<unset>"; done
+          d=$(sed -n 's/^SYNC_CERTS_DIR=//p' "$ENV_FILE" | tail -1); d=${d:-/etc/liberiaemr/sync-certs}
+          echo "== sync certificate dir $d"; ls -la "$d" 2>&1 | sed 's/^/  /' | head -12
+          echo "== database"
+          docker exec liberiaemr-facility-db-1 sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(\"log_bin=\",@@log_bin,\" format=\",@@binlog_format,\" sync_binlog=\",@@sync_binlog,\" server_id=\",@@server_id); SELECT CONCAT(\"schema \",schema_name) FROM information_schema.schemata WHERE schema_name LIKE \"openmrs%\"; SELECT CONCAT(\"db user \",user) FROM mysql.user WHERE user NOT IN (\"root\",\"mariadb.sys\",\"healthcheck\"); SELECT CONCAT(\"openmrs user \",u.username,\" role \",r.role) FROM openmrs.users u JOIN openmrs.user_role r ON r.user_id=u.user_id WHERE r.role LIKE \"Sync%\";"' 2>&1 | sed 's/^/  /'
+          echo "== reach central broker ${CENTRAL}:61617"
+          timeout 6 bash -c "</dev/tcp/${CENTRAL}/61617" 2>/dev/null && echo "  reachable" || echo "  NOT reachable"
+          echo "== sudo without password: $(sudo -n true 2>/dev/null && echo yes || echo no)"
+          EOF
+
+  central:
+    name: Central dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY }}
+      - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.CENTRAL_DEV_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Inspect
+        run: |
+          ssh "${{ secrets.CENTRAL_DEV_USER }}@${{ secrets.CENTRAL_DEV_HOST }}" \
+            "COMPOSE_DIR='${{ secrets.CENTRAL_DEV_COMPOSE_DIR }}' ENV_FILE='${{ secrets.CENTRAL_DEV_ENV_FILE }}' bash -s" <<'EOF'
+          set -u
+          cd "$COMPOSE_DIR" || { echo "no compose dir"; exit 1; }
+          ENV_FILE=${ENV_FILE:-../../env/central.env}
+          echo "== host: $(hostname), public ip $(curl -s --max-time 5 ifconfig.me || echo unknown)"
+          echo "== checkout: $(git rev-parse --short HEAD 2>/dev/null) $(git status --porcelain 2>/dev/null | wc -l) local changes"
+          echo "== containers"; docker ps -a --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep liberiaemr || true
+          echo "== sync settings in $ENV_FILE (names; values only where not secret)"
+          for k in BROKER_CERTS_DIR RECEIVER_CERTS_DIR ARTEMIS_BIND_ADDR SYNC_CONFLICT_WINDOW LIBERIAEMR_SYNC_MONITORING_URL; do
+            v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); echo "  $k=${v:-<unset>}"; done
+          for k in SYNC_MGMT_DB_PASSWORD SYNC_REST_USER SYNC_REST_PASSWORD; do
+            v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); [ -n "$v" ] && echo "  $k=<set>" || echo "  $k=<unset>"; done
+          for k in BROKER_CERTS_DIR RECEIVER_CERTS_DIR; do
+            d=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); [ -n "$d" ] || continue
+            echo "== $k $d"; ls -la "$d" 2>&1 | sed 's/^/  /' | head -12; done
+          echo "== database"
+          docker exec liberiaemr-central-db-1 sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(\"schema \",schema_name) FROM information_schema.schemata WHERE schema_name LIKE \"openmrs%\"; SELECT CONCAT(\"db user \",user) FROM mysql.user WHERE user NOT IN (\"root\",\"mariadb.sys\",\"healthcheck\"); SELECT CONCAT(\"openmrs user \",u.username,\" role \",r.role) FROM openmrs.users u JOIN openmrs.user_role r ON r.user_id=u.user_id WHERE r.role LIKE \"Sync%\";"' 2>&1 | sed 's/^/  /'
+          echo "== listening on 61617: $(ss -ltn 2>/dev/null | grep -c ':61617 ' || true)"
+          echo "== sudo without password: $(sudo -n true 2>/dev/null && echo yes || echo no)"
+          sudo -n ufw status 2>/dev/null | sed 's/^/  ufw: /' | head -12 || true
+          EOF

@@ -1,0 +1,207 @@
+# Turns sync on across the dev pair in one pass: central dev (liberiaemrcentraldev) receives
+# from the facility dev server (liberiaemrfacilitydev). Every step can be run again: settings a
+# server already has are kept, certificates are issued only when either side lacks them, and
+# accounts are updated rather than duplicated.
+#
+# Needs these repository secrets. The run stops before touching a server if any is missing.
+#   DEV_SSH_PRIVATE_KEY, DEV_HOST, DEV_USER, DEV_COMPOSE_DIR           (the facility deploy's)
+#   CENTRAL_DEV_SSH_PRIVATE_KEY, CENTRAL_DEV_HOST, CENTRAL_DEV_USER,
+#   CENTRAL_DEV_COMPOSE_DIR, CENTRAL_DEV_ENV_FILE (optional)           (the central deploy's)
+#   DOCKERHUB_USERNAME, DOCKERHUB_TOKEN                                (to publish the sync images)
+#   DEV_OPENMRS_ADMIN_PASSWORD         the facility dev EMR's admin password
+#   CENTRAL_DEV_OPENMRS_ADMIN_PASSWORD central's; optional when it is the same
+#
+# The certificates are throwaway dev material (scripts/security/gen-sync-certs.sh), issued on
+# the runner and copied to each server over SSH; the dev CA is kept on central, readable by
+# root only, so a later run reuses it. Never point this at a production server.
+name: Enable sync on dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      facility:
+        description: Facility code of the facility dev server
+        default: careysburg
+        required: true
+  # Runs before this workflow is on main: push the commit to this branch to start it.
+  push:
+    branches: [ops/enable-dev-sync-run]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enable-dev-sync
+  cancel-in-progress: false
+
+env:
+  REGISTRY: intellisoftdev
+  FACILITY: ${{ inputs.facility || 'careysburg' }}
+
+jobs:
+  enable:
+    name: Enable sync on the dev pair
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      FAC_HOST: ${{ secrets.DEV_HOST }}
+      FAC_USER: ${{ secrets.DEV_USER }}
+      FAC_DIR: ${{ secrets.DEV_COMPOSE_DIR }}
+      CEN_HOST: ${{ secrets.CENTRAL_DEV_HOST }}
+      CEN_USER: ${{ secrets.CENTRAL_DEV_USER }}
+      CEN_DIR: ${{ secrets.CENTRAL_DEV_COMPOSE_DIR }}
+      CEN_ENV: ${{ secrets.CENTRAL_DEV_ENV_FILE }}
+      FAC_ADMIN: ${{ secrets.DEV_OPENMRS_ADMIN_PASSWORD }}
+      CEN_ADMIN: ${{ secrets.CENTRAL_DEV_OPENMRS_ADMIN_PASSWORD || secrets.DEV_OPENMRS_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check every secret this needs is set
+        env:
+          HAS_FAC_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY != '' }}
+          HAS_CEN_KEY: ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY != '' }}
+          HAS_HUB: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        run: |
+          missing=""
+          [ "$HAS_FAC_KEY" = true ] || missing="$missing DEV_SSH_PRIVATE_KEY"
+          [ "$HAS_CEN_KEY" = true ] || missing="$missing CENTRAL_DEV_SSH_PRIVATE_KEY"
+          [ "$HAS_HUB" = true ] || missing="$missing DOCKERHUB_USERNAME/DOCKERHUB_TOKEN"
+          for v in FAC_HOST:DEV_HOST FAC_USER:DEV_USER FAC_DIR:DEV_COMPOSE_DIR CEN_HOST:CENTRAL_DEV_HOST \
+                   CEN_USER:CENTRAL_DEV_USER CEN_DIR:CENTRAL_DEV_COMPOSE_DIR FAC_ADMIN:DEV_OPENMRS_ADMIN_PASSWORD; do
+            [ -n "${!v%%:*}" ] || missing="$missing ${v#*:}"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Set these repository secrets (Settings > Secrets and variables > Actions), then run again:$missing"
+            exit 1
+          fi
+          [[ "$FACILITY" =~ ^[a-z0-9][a-z0-9-]{1,31}$ ]] || { echo "::error::'$FACILITY' is not a facility code"; exit 1; }
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+            ${{ secrets.CENTRAL_DEV_SSH_PRIVATE_KEY }}
+
+      - name: Trust both hosts, and name the remote helpers
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$FAC_HOST" "$CEN_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          cat >> "$GITHUB_ENV" <<'EOF'
+          BASH_ENV=/home/runner/remote.sh
+          EOF
+          cat > /home/runner/remote.sh <<'EOF'
+          central() { # step [VAR=value ...]
+            local step="$1"; shift
+            ssh "$CEN_USER@$CEN_HOST" "COMPOSE_DIR='$CEN_DIR' ENV_FILE='${CEN_ENV:-../../env/central.env}' REGISTRY='$REGISTRY' $* bash -s $step" \
+              < scripts/deploy/dev-sync-central.sh
+          }
+          facility() { # step [VAR=value ...]
+            local step="$1"; shift
+            ssh "$FAC_USER@$FAC_HOST" "COMPOSE_DIR='$FAC_DIR' FACILITY='$FACILITY' CENTRAL_HOST='$CEN_HOST' $* bash -s $step" \
+              < scripts/deploy/dev-sync-facility.sh
+          }
+          EOF
+
+      - name: Pre-flight on both servers (backups; nothing changes)
+        run: |
+          central preflight
+          facility preflight
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish the sync images the servers pull
+        run: |
+          dbsync="$(grep -E '^sync\.dbsync=' distribution/distro.properties | cut -d= -f2)"
+          build() { # image dockerfile context [target]
+            docker build -q -f "$2" ${4:+--target "$4"} --build-arg "DBSYNC_VERSION=$dbsync" \
+              -t "$REGISTRY/$1:latest" -t "$REGISTRY/$1:$GITHUB_SHA" "$3" >/dev/null
+            docker push -q "$REGISTRY/$1:latest"; docker push -q "$REGISTRY/$1:$GITHUB_SHA"
+            echo "published $REGISTRY/$1"
+          }
+          build liberia-emr-sync distribution/sync/Dockerfile distribution/sync sender
+          build liberia-emr-sync-receiver distribution/sync/Dockerfile distribution/sync receiver
+          build liberia-emr-broker distribution/broker/Dockerfile distribution/broker
+          build liberia-emr-cert-expiry distribution/monitoring/cert-expiry/Dockerfile distribution/monitoring/cert-expiry
+
+      - name: Issue and install the sync certificates
+        run: |
+          have_central="$(ssh "$CEN_USER@$CEN_HOST" "sudo test -f /etc/liberiaemr/broker-certs/public/certs/$FACILITY.pem && sudo test -f /etc/liberiaemr/receiver-certs/client.p12 && echo yes" || true)"
+          have_facility="$(ssh "$FAC_USER@$FAC_HOST" "sudo test -f /etc/liberiaemr/sync-certs/client.p12 && echo yes" || true)"
+          if [ "$have_central" = yes ] && [ "$have_facility" = yes ]; then
+            echo "both servers already hold certificates for $FACILITY; keeping them"
+            exit 0
+          fi
+          sudo apt-get install -y -qq gnupg >/dev/null 2>&1 || true
+          pki="$RUNNER_TEMP/pki"; mkdir -p "$pki/ca"
+          # Reuse the dev CA central already keeps, so earlier certificates stay valid.
+          ssh "$CEN_USER@$CEN_HOST" "sudo test -f /etc/liberiaemr/sync-ca/ca.pem && sudo tar -C /etc/liberiaemr/sync-ca -cf - ." \
+            | tar -C "$pki/ca" -xf - 2>/dev/null || true
+          scripts/security/gen-sync-certs.sh --out "$pki" --broker-host "$CEN_HOST" --facilities "$FACILITY"
+          put() { # user host local-dir remote-dir owner mode
+            tar -C "$3" -cf - . | ssh "$1@$2" "sudo mkdir -p '$4' && sudo find '$4' -mindepth 1 -delete && sudo tar -C '$4' -xf - --no-same-owner && sudo chown -R $5 '$4' && sudo chmod $6 '$4'"
+            echo "installed $4 on $2"
+          }
+          put "$CEN_USER" "$CEN_HOST" "$pki/broker"   /etc/liberiaemr/broker-certs   1001:0   750
+          put "$CEN_USER" "$CEN_HOST" "$pki/receiver" /etc/liberiaemr/receiver-certs 999:999  750
+          put "$CEN_USER" "$CEN_HOST" "$pki/ca"       /etc/liberiaemr/sync-ca        root:root 700
+          put "$CEN_USER" "$CEN_HOST" "$pki/admin"    /etc/liberiaemr/sync-admin     root:root 700
+          put "$FAC_USER" "$FAC_HOST" "$pki/facility-$FACILITY" /etc/liberiaemr/sync-certs 999:999 750
+          # The expiry exporter (uid 10001) reads public/ only.
+          ssh "$CEN_USER@$CEN_HOST" "sudo chmod 755 /etc/liberiaemr/broker-certs && sudo chmod -R a+rX /etc/liberiaemr/broker-certs/public"
+          rm -rf "$pki"
+
+      - name: Central, start the EMR with the broker and monitoring
+        run: central base
+
+      - name: Central, the receiver's account
+        run: |
+          creds="$(central credentials)"
+          user="${creds%%$'\t'*}"; pass="${creds#*$'\t'}"
+          echo "::add-mask::$pass"
+          [ -n "$user" ] && [ -n "$pass" ] || { echo "::error::central.env has no SYNC_REST_USER / SYNC_REST_PASSWORD"; exit 1; }
+          OPENMRS_ADMIN_PASSWORD="$CEN_ADMIN" SERVICE_PASSWORD="$pass" \
+            scripts/deploy/dev-sync-user.sh "https://$CEN_HOST" "$user" "Sync Receiver"
+
+      - name: Central, start the receiver
+        run: central receiver
+
+      - name: Facility, turn on the binary log and add the sync settings
+        run: |
+          pass="Dv$(openssl rand -hex 18)7q"
+          echo "::add-mask::$pass"
+          facility base "SYNC_REST_USER=sync-sender" "SYNC_REST_PASSWORD='$pass'"
+
+      - name: Facility, the sender's account
+        run: |
+          creds="$(facility credentials)"
+          user="${creds%%$'\t'*}"; pass="${creds#*$'\t'}"
+          echo "::add-mask::$pass"
+          OPENMRS_ADMIN_PASSWORD="$FAC_ADMIN" SERVICE_PASSWORD="$pass" \
+            scripts/deploy/dev-sync-user.sh "https://$FAC_HOST" "$user" "Sync Sender"
+
+      - name: Facility reaches central's broker
+        run: |
+          if ssh "$FAC_USER@$FAC_HOST" "timeout 8 bash -c '</dev/tcp/$CEN_HOST/61617'"; then
+            echo "the facility reaches $CEN_HOST:61617"
+          else
+            ip="$(ssh "$FAC_USER@$FAC_HOST" "curl -4 -s --max-time 5 ifconfig.me" || true)"
+            echo "::error::The facility cannot reach $CEN_HOST:61617. The broker is up on central, so a firewall in between blocks it: allow TCP 61617 from ${ip:-the facility server} in the hosting provider's firewall for central, then run this again."
+            exit 1
+          fi
+
+      - name: Facility, start the sender
+        run: facility sender
+
+      - name: Prove a record travels (registers a test patient, then voids it)
+        run: |
+          FACILITY_ADMIN_PASSWORD="$FAC_ADMIN" CENTRAL_ADMIN_PASSWORD="$CEN_ADMIN" \
+            scripts/deploy/dev-sync-proof.sh "https://$FAC_HOST" "https://$CEN_HOST" 2700
+
+      - name: What runs now
+        if: always()
+        run: |
+          central status || true
+          facility status || true
