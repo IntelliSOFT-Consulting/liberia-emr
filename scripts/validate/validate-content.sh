@@ -562,58 +562,88 @@ PY
 ok "all intra-file concept answer dependencies are declared before use"
 
 section "AMPATH form UUID consistency"
-# Initializer's AmpathFormsLoader computes the form entity UUID deterministically from:
+# Initializer's AmpathFormsLoader (2.12.0) IGNORES a form JSON's "uuid" field. It derives the
+# Form UUID from the form's name and version:
 #   Utils.generateUuidFromObjects("794c4598-ab82-47ca-8d18-483a8abe6f4f", formName, formVersion)
-# It does NOT use arbitrary UUIDs. Any variable referenced as the form's UUID must match this derivation.
+#   = UUID.nameUUIDFromBytes("794c4598-…_<name>_<version>".getBytes())
+# so a version bump is a NEW form. A var.form.*.uuid is the repository alias for that runtime
+# UUID, and the frontend, the ETL, the reports and qa/ key on it. Two rules, checked in every
+# package (site packages included, since one may override a variable):
+#   1. A form whose "uuid" is ${var.X}: every declaration of var.X equals the form's derivation.
+#   2. Every var.form.*.uuid declaration equals the derivation of SOME form in the packages.
+#      This catches a variable that holds a form JSON's ignored literal (how the OPD and Triage
+#      variables were first written), and one left behind by a version bump. A variable
+#      declared ahead of its form goes in PENDING_FORMS below; remove it once the form exists.
 python3 - "$PKG_DIR" <<'PY' || err "form UUID variable mismatch (see above)"
-import glob, hashlib, json, os, re, sys, uuid
+import collections, glob, hashlib, json, os, re, sys, uuid
 
 pkg_dir = sys.argv[1]
 AMPATH_FORMS_UUID = "794c4598-ab82-47ca-8d18-483a8abe6f4f"
+PENDING_FORMS = {
+    # Delivery Summary is "not written" (content-liberia-mch ampathforms/README.md).
+    "var.form.delivery-summary.uuid",
+}
 
 def java_uuid(seed):
-    md5 = hashlib.md5(seed.encode("utf-8")).digest()
-    b = bytearray(md5)
+    """java.util.UUID.nameUUIDFromBytes: MD5, then version 3 and the IETF variant."""
+    b = bytearray(hashlib.md5(seed.encode("utf-8")).digest())
     b[6] = (b[6] & 0x0f) | 0x30
     b[8] = (b[8] & 0x3f) | 0x80
     return str(uuid.UUID(bytes=bytes(b)))
 
-variables = {}
-for vf in glob.glob(f"{pkg_dir}/*/configuration/variables.properties"):
-    for line in open(vf):
+def rel(path):
+    return os.path.relpath(path, os.path.dirname(pkg_dir))
+
+# Every declaration, not a merged map: a layer that re-declares a variable wrongly must not
+# hide behind another layer's correct value, or the other way round.
+declared = collections.defaultdict(list)          # var name -> [(value, "file:line")]
+for vf in sorted(glob.glob(f"{pkg_dir}/*/configuration/variables.properties")):
+    for n, line in enumerate(open(vf, encoding="utf-8"), start=1):
         s = line.strip()
         if s and not s.startswith("#") and "=" in s:
             k, v = s.split("=", 1)
-            variables[k.strip()] = v.strip()
+            declared[k.strip()].append((v.strip(), f"{rel(vf)}:{n}"))
 
 problems = []
+derived = {}                                      # derived uuid -> form label
 for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/ampathforms/*.json")):
     try:
-        d = json.load(open(jf))
-        name = d.get("name")
-        version = d.get("version")
-        uuid_ref = d.get("uuid")
-        if not (name and version and uuid_ref):
-            continue
-        m = re.match(r"\$\{([^}]+)\}", uuid_ref)
-        if not m:
-            continue
-        var_name = m.group(1)
-        declared_uuid = variables.get(var_name)
-        if not declared_uuid:
-            problems.append(f"{jf[len(pkg_dir)+1:]}: references undefined variable ${{{var_name}}}")
-            continue
-        computed_uuid = java_uuid(f"{AMPATH_FORMS_UUID}_{name}_{version}")
-        if declared_uuid != computed_uuid:
-            problems.append(f"{jf[len(pkg_dir)+1:]}: form '{name}' (v{version}) has ${{{var_name}}}={declared_uuid}, expected {computed_uuid}")
+        d = json.load(open(jf, encoding="utf-8"))
     except Exception as e:
-        problems.append(f"{jf[len(pkg_dir)+1:]}: error {e}")
+        problems.append(f"{rel(jf)}: could not be read ({e})")
+        continue
+    if not isinstance(d, dict):
+        continue
+    name, version, uuid_ref = d.get("name"), d.get("version"), d.get("uuid")
+    if not name or version is None:
+        continue
+    # Jackson hands the loader a String, Integer or Double; each prints as Python's str() does.
+    computed = java_uuid(f"{AMPATH_FORMS_UUID}_{name}_{version}")
+    label = f"{rel(jf)} ('{name}' v{version})"
+    derived[computed] = label
+    m = re.fullmatch(r"\$\{([^}]+)\}", uuid_ref if isinstance(uuid_ref, str) else "")
+    if not m:
+        continue
+    var_name = m.group(1)
+    if var_name not in declared:
+        problems.append(f"{label}: references undefined variable ${{{var_name}}}")
+    for value, where in declared.get(var_name, []):
+        if value != computed:
+            problems.append(f"{where}: {var_name}={value}, but {label} derives {computed}")
+
+for var_name, decls in sorted(declared.items()):
+    if not re.fullmatch(r"var\.form\..+\.uuid", var_name) or var_name in PENDING_FORMS:
+        continue
+    for value, where in decls:
+        if value not in derived:
+            problems.append(f"{where}: {var_name}={value} is not the derived UUID of any form "
+                            f"(the runtime UUID comes from name + version, not the JSON uuid literal)")
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)
 sys.exit(1 if problems else 0)
 PY
-ok "all form UUID variables match Initializer deterministic derivation"
+ok "every var.form.*.uuid is the UUID Initializer derives from its form's name and version"
 
 section "obsGroup group concepts"
 # An obsGroup's concept is the form engine's ONLY handle on a saved group: it maps a stored
