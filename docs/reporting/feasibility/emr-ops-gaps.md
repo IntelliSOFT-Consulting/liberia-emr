@@ -98,8 +98,13 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
 
 8. **Install or drop the auditlog module.** *Done:* the backend image now builds the
    module from a pinned upstream commit and `gp-audit.xml` configures it (control C1 in
-   `docs/security/moh-ict-sop-mapping.md`). It records entity changes, not logins, so it
-   does not close the login gap above.
+   `docs/security/moh-ict-sop-mapping.md`), and the ICT Unit reads it in the **Audit log**
+   page over `/ws/rest/v1/liberiaemr/auditlog` (control B3, LE-371;
+   `docs/runbooks/audit-log.md`). It records entity changes, not logins or reads, so it does
+   not close the login gap above: a sign-in shows only as an update to the user's
+   `lastLoginTimestamp` property, and a failed one to an existing account as its
+   `loginAttempts` going up (seen on a demo stack; an unknown username leaves nothing). The same endpoint could
+   count changes for an indicator, but no indicator here needs it.
 
 9. **DHIS2 exporter with a transmission log (EMR-OPS-014).** When the exporter is built,
    it must persist each push: org unit, dataset, period, import summary status, counts and
