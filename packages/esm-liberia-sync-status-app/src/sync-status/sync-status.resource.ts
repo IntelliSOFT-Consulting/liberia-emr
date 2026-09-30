@@ -5,6 +5,10 @@ export interface FacilityStatus {
   code: string;
   recordsReceived: number;
   receivedLastDay: number;
+  /** Across the past week; unlike recordsReceived it survives a broker restart. */
+  receivedLastWeek?: number;
+  /** When its records last arrived (epoch seconds); null when not in the past week. */
+  lastReceived?: number | null;
   silent: boolean;
   certificateExpires: number | null;
   /** When the facility last sent its reconciliation digest; null until it has. */

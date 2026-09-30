@@ -18,6 +18,19 @@ import { useIdentityStatus, useSyncStatus } from './sync-status.resource';
 import { useMflStatus } from '../mfl-sync/mfl-sync.resource';
 import styles from './sync-status.scss';
 
+/** "12 minutes ago", in the reader's language, for an epoch time in seconds. */
+function ago(epochSeconds: number, language: string): string {
+  const seconds = Math.max(0, Date.now() / 1000 - epochSeconds);
+  const format = new Intl.RelativeTimeFormat(language || 'en', { numeric: 'auto' });
+  if (seconds < 3600) {
+    return format.format(-Math.round(seconds / 60), 'minute');
+  }
+  if (seconds < 86400) {
+    return format.format(-Math.round(seconds / 3600), 'hour');
+  }
+  return format.format(-Math.round(seconds / 86400), 'day');
+}
+
 /** Where the MFL sync is set up, the page that runs it is one click away. */
 const MflSyncLink: React.FC = () => {
   const { t } = useTranslation();
@@ -41,7 +54,7 @@ const MflSyncLink: React.FC = () => {
  * sender on a queued record, so central cannot say which facility one came from.
  */
 const SyncStatus: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { status, error, isLoading } = useSyncStatus();
   const { identity } = useIdentityStatus();
 
@@ -186,8 +199,9 @@ const SyncStatus: React.FC = () => {
             <TableRow>
               <TableHeader>{t('facility', 'Facility')}</TableHeader>
               <TableHeader>{t('sending', 'Sending')}</TableHeader>
+              <TableHeader>{t('lastReceived', 'Last received')}</TableHeader>
               <TableHeader>{t('recordsLastDay', 'Records in the last day')}</TableHeader>
-              <TableHeader>{t('recordsTotal', 'Records received in total')}</TableHeader>
+              <TableHeader>{t('recordsLastWeek', 'Records in the last 7 days')}</TableHeader>
               <TableHeader>{t('certificateExpires', 'Certificate expires')}</TableHeader>
               <TableHeader>{t('recordsChecked', 'Records checked')}</TableHeader>
             </TableRow>
@@ -205,8 +219,17 @@ const SyncStatus: React.FC = () => {
                     <Tag type="gray">{t('quiet', 'Nothing in the last day')}</Tag>
                   )}
                 </TableCell>
+                <TableCell>
+                  {facility.lastReceived ? (
+                    <span title={formatDate(new Date(facility.lastReceived * 1000))}>
+                      {ago(facility.lastReceived, i18n?.language)}
+                    </span>
+                  ) : (
+                    t('notInLastWeek', 'Not in the last 7 days')
+                  )}
+                </TableCell>
                 <TableCell>{facility.receivedLastDay}</TableCell>
-                <TableCell>{facility.recordsReceived}</TableCell>
+                <TableCell>{facility.receivedLastWeek ?? t('unknown', 'Unknown')}</TableCell>
                 <TableCell>
                   {facility.certificateExpires
                     ? formatDate(new Date(facility.certificateExpires * 1000), { time: false })
