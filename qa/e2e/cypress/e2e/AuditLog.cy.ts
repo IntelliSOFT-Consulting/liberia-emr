@@ -149,6 +149,20 @@ const waitForDownload = (prefix: string, attempts = 40): Cypress.Chainable<strin
 
 const openAppMenu = () => cy.get('[aria-label="App Menu"], [aria-label="Open menu"]', { timeout: 30000 }).first().click();
 
+// Opens the app menu until the named entry is visible. For the ICT Auditor the home page's queue
+// widget fails with a 403 whose toast can land just as the menu opens and close it again (seen in
+// CI, not locally), so one click is not enough; a user without the entry never gets here.
+const openAppMenuTo = (entry: string, attempts = 4) => {
+  openAppMenu();
+  cy.wait(2000);
+  cy.get('body').then(($body) => {
+    const shown = $body.find('a').filter((_, a) => Cypress.$(a).is(':visible') && a.textContent?.trim() === entry);
+    if (!shown.length && attempts > 1) {
+      openAppMenuTo(entry, attempts - 1);
+    }
+  });
+};
+
 describe('Audit log', () => {
   let locationUuid: string;
 
@@ -193,7 +207,7 @@ describe('Audit log', () => {
     loginAs(auditor);
     loadAuditLogApp();
     cy.visit('/openmrs/spa/home');
-    openAppMenu();
+    openAppMenuTo('Audit log');
     cy.contains('a', 'Audit log', { timeout: 30000 }).should('be.visible').click();
     cy.url().should('include', '/openmrs/spa/audit-log');
     cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
