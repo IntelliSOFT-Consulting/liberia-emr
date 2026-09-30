@@ -21,12 +21,19 @@ import styles from './sync-status.scss';
 /** "12 minutes ago", in the reader's language, for an epoch time in seconds. */
 function ago(epochSeconds: number, language: string): string {
   const seconds = Math.max(0, Date.now() / 1000 - epochSeconds);
-  const format = new Intl.RelativeTimeFormat(language || 'en', { numeric: 'auto' });
-  if (seconds < 3600) {
-    return format.format(-Math.round(seconds / 60), 'minute');
+  let format: Intl.RelativeTimeFormat;
+  try {
+    format = new Intl.RelativeTimeFormat(language || 'en', { numeric: 'auto' });
+  } catch {
+    format = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
   }
-  if (seconds < 86400) {
-    return format.format(-Math.round(seconds / 3600), 'hour');
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return format.format(-minutes, 'minute');
+  }
+  const hours = Math.round(seconds / 3600);
+  if (hours < 24) {
+    return format.format(-hours, 'hour');
   }
   return format.format(-Math.round(seconds / 86400), 'day');
 }

@@ -63,10 +63,12 @@ public class SyncStatusService {
 
 	/**
 	 * When each facility's records last arrived, to within five minutes: the latest moment in the
-	 * past week at which its counter had gone up. Absent for a facility silent for longer.
+	 * past week at which its counter had gone up. Absent for a facility silent for longer. The
+	 * 10-minute windows overlap the 5-minute steps, so a record sent between two scrapes at a step
+	 * boundary is still seen.
 	 */
 	private static final String LAST_RECEIVED = "max_over_time((timestamp(increase(" + FACILITY_ADDRESS
-	        + "[5m]) > 0))[7d:5m])";
+	        + "[10m]) > 0))[7d:5m])";
 
 	private final ObjectMapper mapper = new ObjectMapper();
 	
