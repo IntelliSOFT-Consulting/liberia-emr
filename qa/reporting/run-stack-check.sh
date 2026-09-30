@@ -14,7 +14,9 @@
 #      (found as a new key), its visit, and its anthropometry fact with the obs's weight all
 #      appear. The reports still match;
 #   4. at a facility, the binlog holds no liberiaemr_etl event, while it does hold the
-#      fixtures' openmrs rows (so the check cannot pass on an empty or disabled binlog).
+#      fixtures' openmrs rows (so the check cannot pass on an empty or disabled binlog);
+#   5. at central, every CPI link's facility_location_uuid is the Health Facility the ETL
+#      attributes the record to, never the County at the root of the scaffold.
 #
 #   qa/reporting/run-stack-check.sh --role facility --site careysburg -- <docker compose args>
 #   qa/reporting/run-stack-check.sh --role central -- <docker compose args>
@@ -257,6 +259,33 @@ run_etl full
 
 step "every report matches expected-values.csv (${INSTANCE})"
 compare
+
+# ---------------------------------------------------------------------------------------------
+if [[ "$ROLE" == "central" ]]; then
+  step "every CPI link names the record's Health Facility, as the ETL does"
+  # IdentityService (Java) and mamba_dim_location_hierarchy (SQL) each take the nearest
+  # ancestor-or-self tagged Health Facility; with --admin-hierarchy the root of each tree is a
+  # County, which is what patient_link used to hold. Aggregates only: no patient row is printed.
+  links="$(root_sql <<'SQL'
+SELECT CONCAT_WS(' ',
+  COUNT(*),
+  SUM(l.facility_location_uuid IS NULL),
+  SUM(h.facility_location_id IS NULL OR fh.uuid IS NULL OR fh.uuid <> l.facility_location_uuid),
+  SUM(h.county_location_id IS NOT NULL AND ch.uuid = l.facility_location_uuid))
+FROM openmrs_identity.patient_link l
+  JOIN mamba_dim_person_cpi pc ON pc.patient_uuid = l.patient_uuid
+  JOIN mamba_fact_emr_ops_patient f ON f.client_id = pc.person_id
+  LEFT JOIN mamba_dim_location_hierarchy h ON h.location_id = f.location_id
+  LEFT JOIN mamba_dim_location_hierarchy fh ON fh.location_id = h.facility_location_id
+  LEFT JOIN mamba_dim_location_hierarchy ch ON ch.location_id = h.county_location_id;
+SQL
+)"
+  read -r total unset differ county <<<"$links"
+  [[ "${total:-0}" -gt 0 ]] || fail "no CPI link joins a patient in the ETL"
+  [[ "$unset" == "0" && "$differ" == "0" && "$county" == "0" ]] \
+    || fail "of ${total} links, ${unset} have no facility, ${differ} differ from the ETL's facility, ${county} name the county"
+  echo "   all ${total} links name the Health Facility the ETL attributes the record to; none names a county"
+fi
 
 # ---------------------------------------------------------------------------------------------
 step "an incremental run picks up a late row"

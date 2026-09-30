@@ -416,7 +416,10 @@ It asserts, in order:
    in `mamba_fact_emr_ops_visit`, and in `mamba_fact_nutrition_anthropometry` with the obs's
    weight. The reports still match;
 5. at a facility, no binlog event names `liberiaemr_etl`, while the fixtures' `openmrs.encounter`
-   rows are there, which shows the binlog is on.
+   rows are there, which shows the binlog is on;
+6. at central, after the full run, every `openmrs_identity.patient_link` row names a facility,
+   the same Health Facility that `mamba_dim_location_hierarchy` attributes the record to, and
+   never the County at the root of the scaffold. Counts only.
 
 **Facility, as CI runs it** (`.github/workflows/ci.yml`, job *Initializer against a clean
 database*), from the repository root:

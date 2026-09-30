@@ -10,6 +10,16 @@
 --                               live visit. A patient has no encounter location of its own.
 --   facility_location_id        from mamba_dim_location_hierarchy
 --
+-- Why not openmrs_identity.patient_link.facility_location_uuid at central? It now holds the same
+-- thing, the nearest Health Facility above that identifier's location (IdentityService,
+-- FacilityOfOrigin), but reading it would buy nothing and cost three things: a facility has no
+-- patient_link, so the facility role needs this derivation anyway and the two roles would count
+-- one record by two rules; the link is fixed when the CPI is minted, while this is rebuilt from
+-- live identifiers every run, so a corrected identifier location or a re-parented ward shows here
+-- at once; and a record whose identifiers carry no location still gets its first visit's
+-- location here, where the link has NULL. (For a voided record whose identifiers are all voided
+-- the link keeps the location it had; such records are not in this table.)
+--
 -- Facility definitions:
 --   is_probable_duplicate  1 when another live record at the same facility shares the
 --                          normalised given + family name, birthdate and gender, or a live
