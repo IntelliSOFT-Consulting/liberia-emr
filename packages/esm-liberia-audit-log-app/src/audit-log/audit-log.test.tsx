@@ -131,7 +131,9 @@ function given({ privileged = true, list }: { privileged?: boolean; list?: Failu
         totalCount: 120,
         startIndex: start,
         limit,
-        results: entries.map(({ changes, lastState, children, ...summary }) => summary),
+        results: entries
+          .filter((entry) => !params.get('type') || entry.type === params.get('type'))
+          .map(({ changes, lastState, children, ...summary }) => summary),
       };
       return Promise.resolve({ data: page });
     }
@@ -211,6 +213,21 @@ describe('audit log page', () => {
       'href',
       '/openmrs/ws/rest/v1/liberiaemr/auditlog/export?from=2026-09-01&to=2026-09-30&user=ict.auditor&type=org.openmrs.Location&action=UPDATED&limit=50000',
     );
+  });
+
+  it('shows only the new page’s entries once filters change the result', async () => {
+    given();
+    renderWithSwr(<AuditLog />);
+    await settle();
+    expect(screen.getAllByTestId('audit-row')).toHaveLength(3);
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'org.openmrs.GlobalProperty' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    await settle();
+
+    const rows = screen.getAllByTestId('audit-row');
+    expect(rows).toHaveLength(1);
+    expect(within(rows[0]).getByText('liberiaemr.email.password')).toBeInTheDocument();
   });
 
   it('pages on the server', async () => {

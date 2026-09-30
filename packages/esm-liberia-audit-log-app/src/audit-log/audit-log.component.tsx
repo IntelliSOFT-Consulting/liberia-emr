@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   Checkbox,
-  DataTable,
   InlineLoading,
   InlineNotification,
   Pagination,
@@ -115,8 +114,6 @@ const AuditLog: React.FC = () => {
     { key: 'user', header: t('user', 'User') },
   ];
   const entries = result?.results ?? [];
-  const rows = entries.map((entry) => ({ id: entry.uuid, ...entry }));
-  const byUuid = new Map(entries.map((entry) => [entry.uuid, entry]));
   const total = result?.totalCount ?? 0;
 
   return (
@@ -215,65 +212,51 @@ const AuditLog: React.FC = () => {
             {entries.length === 0 ? (
               <p className={styles.empty}>{t('noEntries', 'No audit log entries match these filters.')}</p>
             ) : (
-              <DataTable rows={rows} headers={headers} size="sm" useZebraStyles>
-                {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
-                  <TableContainer>
-                    <Table {...getTableProps()} aria-label={t('auditLog', 'Audit log')}>
-                      <TableHead>
-                        <TableRow>
-                          {tableHeaders.map((header) => {
-                            const { key, ...headerProps } = getHeaderProps({ header });
-                            return (
-                              <TableHeader key={key} {...headerProps}>
-                                {header.header}
-                              </TableHeader>
-                            );
-                          })}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tableRows.map((row) => {
-                          const entry = byUuid.get(row.id);
-                          const { key, ...rowProps } = getRowProps({ row });
-                          return (
-                            <TableRow
-                              key={key}
-                              {...rowProps}
-                              data-testid="audit-row"
-                              className={selected === row.id ? styles.selectedRow : styles.row}
-                              onClick={() => setSelected(row.id)}
-                            >
-                              <TableCell>
-                                <button
-                                  type="button"
-                                  className={styles.linkButton}
-                                  onClick={() => setSelected(row.id)}
-                                  aria-label={t('openEntry', 'Open entry {{identifier}}', {
-                                    identifier: entry.identifier,
-                                  })}
-                                >
-                                  {formatDate(entry.dateCreated)}
-                                </button>
-                              </TableCell>
-                              <TableCell>
-                                <ActionTag action={entry.action} />
-                              </TableCell>
-                              <TableCell title={entry.type}>
-                                {entry.typeName}
-                                {entry.parentUuid ? (
-                                  <span className={styles.helper}> {t('childEntry', '(part of another entry)')}</span>
-                                ) : null}
-                              </TableCell>
-                              <TableCell>{entry.identifier}</TableCell>
-                              <TableCell>{userLabel(entry, t('system', 'System'))}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </DataTable>
+              // A plain table rendered from the server's page: Carbon's DataTable keeps its own copy of
+              // the rows and, for one render after the filters change, hands back rows of the old page.
+              <TableContainer>
+                <Table size="sm" useZebraStyles aria-label={t('auditLog', 'Audit log')}>
+                  <TableHead>
+                    <TableRow>
+                      {headers.map((header) => (
+                        <TableHeader key={header.key}>{header.header}</TableHeader>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {entries.map((entry) => (
+                      <TableRow
+                        key={entry.uuid}
+                        data-testid="audit-row"
+                        className={selected === entry.uuid ? styles.selectedRow : styles.row}
+                        onClick={() => setSelected(entry.uuid)}
+                      >
+                        <TableCell>
+                          <button
+                            type="button"
+                            className={styles.linkButton}
+                            onClick={() => setSelected(entry.uuid)}
+                            aria-label={t('openEntry', 'Open entry {{identifier}}', { identifier: entry.identifier })}
+                          >
+                            {formatDate(entry.dateCreated)}
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <ActionTag action={entry.action} />
+                        </TableCell>
+                        <TableCell title={entry.type}>
+                          {entry.typeName}
+                          {entry.parentUuid ? (
+                            <span className={styles.helper}> {t('childEntry', '(part of another entry)')}</span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>{entry.identifier}</TableCell>
+                        <TableCell>{userLabel(entry, t('system', 'System'))}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
             <Pagination
               page={page}

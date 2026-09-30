@@ -19,8 +19,8 @@ import AuthenticationPage from '../pages/AuthenticationPage';
 
 const MODULE = '@liberiaemr/esm-liberia-audit-log-app';
 const DIST = '../../packages/esm-liberia-audit-log-app/dist';
-// cy.intercept's fixture paths are relative to cypress/fixtures.
-const DIST_FIXTURE = '../../../../packages/esm-liberia-audit-log-app/dist';
+// The same directory for the readDist task, which runs from qa/e2e.
+const DIST_DIR = '../../packages/esm-liberia-audit-log-app/dist';
 const OVERLAY = '__e2e__/esm-liberia-audit-log-app';
 const REST = '/openmrs/ws/rest/v1';
 const AUDIT = `${REST}/liberiaemr/auditlog`;
@@ -28,7 +28,7 @@ const AUDIT = `${REST}/liberiaemr/auditlog`;
 // Throwaway accounts on a disposable demo stack, created by this spec with a password generated
 // per run: nothing here is a credential of any real server.
 const run = `${Date.now()}`;
-const password = `Le${Cypress._.random(100000, 999999)}!aB`;
+const password = `Audit-${Cypress._.random(100000, 999999)}-e2E!${Cypress._.random(1000, 9999)}`;
 const auditor = { username: `e2e-ict-auditor-${run}`, password };
 const clerk = { username: `e2e-no-audit-${run}`, password };
 const gpName = `liberiaemr.e2e.auditMarker${run}`;
@@ -45,8 +45,15 @@ const admin = (): Cypress.Chainable<Auth> =>
     return { username: USERNAME, password: PASSWORD };
   });
 
+/**
+ * A REST call as this user alone. cy.request sends the browser's cookies, and OpenMRS answers a
+ * request carrying an authenticated JSESSIONID as that session's user whatever the Authorization
+ * header says; so the session cookie goes first, or every call would run as whoever called last.
+ */
 const api = (auth: Auth, method: string, url: string, body?: Cypress.RequestBody, failOnStatusCode = true) =>
-  cy.request({ method, url, body, auth, failOnStatusCode, headers: { Accept: 'application/json' } });
+  cy
+    .clearCookie('JSESSIONID')
+    .then(() => cy.request({ method, url, body, auth, failOnStatusCode, headers: { Accept: 'application/json' } }));
 
 const asAdmin = (method: string, url: string, body?: Cypress.RequestBody) =>
   admin().then((auth) => api(auth, method, url, body));
@@ -54,13 +61,14 @@ const asAdmin = (method: string, url: string, body?: Cypress.RequestBody) =>
 /** A user with the given roles (by name), created through REST as the admin. */
 const createUser = (user: Auth, roleNames: Array<string>) => {
   const roles: Array<string> = [];
-  roleNames.forEach((name) =>
-    asAdmin('GET', `${REST}/role?q=${encodeURIComponent(name)}&v=custom:(uuid,display)`).then(({ body }) => {
+  // The role resource has no search by name; list them all (a few dozen) and pick by name.
+  asAdmin('GET', `${REST}/role?v=custom:(uuid,display)&limit=100`).then(({ body }) => {
+    roleNames.forEach((name) => {
       const role = body.results.find((candidate: { display: string }) => candidate.display === name);
       expect(role, `role ${name}`).to.exist;
       roles.push(role.uuid);
-    }),
-  );
+    });
+  });
   return cy.then(() =>
     asAdmin('POST', `${REST}/user`, {
       username: user.username,
@@ -110,11 +118,18 @@ const loadAuditLogApp = () =>
           res.body = registry;
         });
       });
-      cy.intercept('GET', `**/openmrs/spa/${OVERLAY}/*`, (req) => {
-        const file = new URL(req.url).pathname.split('/').pop() ?? '';
-        req.reply({
-          fixture: `${DIST_FIXTURE}/${file}`,
-          headers: { 'content-type': file.endsWith('.json') ? 'application/json' : 'application/javascript' },
+      // Served from memory: a .js fixture would be evaluated by Cypress, not sent as text.
+      cy.task<Record<string, string>>('readDist', DIST_DIR, { log: false }).then((files) => {
+        cy.intercept('GET', `**/openmrs/spa/${OVERLAY}/*`, (req) => {
+          const file = new URL(req.url).pathname.split('/').pop() ?? '';
+          if (!(file in files)) {
+            req.reply({ statusCode: 404, body: '' });
+            return;
+          }
+          req.reply({
+            body: files[file],
+            headers: { 'content-type': file.endsWith('.json') ? 'application/json' : 'application/javascript' },
+          });
         });
       });
     });
@@ -139,9 +154,9 @@ describe('Audit log', () => {
 
   before(() => {
     createUser(auditor, ['ICT Auditor']);
-    // An ordinary facility account (content-common): it can sign in and choose a location, but
-    // holds no audit privilege.
-    createUser(clerk, ['Records Officer']);
+    // A national role that can sign in to O3 (it holds Get People, which the app shell needs to
+    // show a signed-in user) but holds no audit privilege.
+    createUser(clerk, ['Sync Conflict Reviewer']);
 
     // The changes the auditor must find: a global property set and then changed, and a location
     // renamed. Both through REST as the admin, as an administrator would.
@@ -159,7 +174,8 @@ describe('Audit log', () => {
         expect(status).to.eq(200);
         const entry = body.results.find((row: { identifier: string }) => row.identifier === gpName);
         expect(entry, 'the global property update').to.exist;
-        expect(entry.user.username).to.eq('admin');
+        // The demo admin has system ID "admin" and an empty username.
+        expect(entry.user.username || entry.user.systemId).to.eq('admin');
         api(auditor, 'GET', `${AUDIT}/${entry.uuid}`).then(({ body: detail }) => {
           const change = detail.changes.find((c: { property: string }) => c.property === 'propertyValue');
           expect(change.previous).to.eq(oldValue);
@@ -168,6 +184,9 @@ describe('Audit log', () => {
         });
       },
     );
+    // The role reads the audit log, not patient records.
+    api(auditor, 'GET', `${REST}/patient?q=a`, undefined, false).its('status').should('eq', 403);
+    api(auditor, 'GET', `${REST}/encounter?q=a`, undefined, false).its('status').should('be.oneOf', [400, 403]);
   });
 
   it('shows the ICT Auditor the menu entry and the change, with its old and new values', () => {
@@ -177,6 +196,10 @@ describe('Audit log', () => {
     openAppMenu();
     cy.contains('a', 'Audit log', { timeout: 30000 }).should('be.visible').click();
     cy.url().should('include', '/openmrs/spa/audit-log');
+    cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
+    // The home page's service queue widget, which the role cannot read, leaves a 403 toast over
+    // the page; a reload clears it.
+    cy.reload();
     cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
 
     cy.intercept('GET', `${AUDIT}?*`).as('list');
