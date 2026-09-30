@@ -61,6 +61,15 @@ public class SyncStatusService {
 	private static final String SILENT_FACILITIES = "increase(" + FACILITY_ADDRESS + "[3d]) == 0"
 	        + " and on(address) present_over_time(artemis_routed_message_count[1h] offset 3d)";
 
+	/**
+	 * When each facility's records last arrived, to within five minutes: the latest moment in the
+	 * past week at which its counter had gone up. Absent for a facility silent for longer. The
+	 * 10-minute windows overlap the 5-minute steps, so a record sent between two scrapes at a step
+	 * boundary is still seen.
+	 */
+	private static final String LAST_RECEIVED = "max_over_time((timestamp(increase(" + FACILITY_ADDRESS
+	        + "[10m]) > 0))[7d:5m])";
+
 	private final ObjectMapper mapper = new ObjectMapper();
 	
 	/**
@@ -86,6 +95,11 @@ public class SyncStatusService {
 		try {
 			Map<String, Double> total = instant(base, FACILITY_ADDRESS, "address");
 			Map<String, Double> lastDay = instant(base, "increase(" + FACILITY_ADDRESS + "[24h])", "address");
+			// The broker's counter starts again at zero whenever the broker restarts, so its raw
+			// value is only "since the last restart". increase() adds up across restarts; these two
+			// are what the page shows instead.
+			Map<String, Double> lastWeek = instant(base, "increase(" + FACILITY_ADDRESS + "[7d])", "address");
+			Map<String, Double> lastReceived = instant(base, LAST_RECEIVED, "address");
 			Map<String, Double> silent = instant(base, SILENT_FACILITIES, "address");
 			Map<String, Double> certExpiry = instant(base, "sync_cert_not_after_seconds{kind=\"facility\"}", "identity");
 			// Reconciliation (distribution/sync/recon/): when the facility's records were last
@@ -104,6 +118,9 @@ public class SyncStatusService {
 				facility.put("code", code);
 				facility.put("recordsReceived", e.getValue().longValue());
 				facility.put("receivedLastDay", round(lastDay.get("sync.facility." + code)));
+				facility.put("receivedLastWeek", round(lastWeek.get("sync.facility." + code)));
+				Double received = lastReceived.get("sync.facility." + code);
+				facility.put("lastReceived", received == null ? null : Long.valueOf(received.longValue()));
 				// The same rule as the alert, so an operator reading the page and an operator
 				// reading their mail are told the same thing about the same facility.
 				facility.put("silent", silent.containsKey("sync.facility." + code));

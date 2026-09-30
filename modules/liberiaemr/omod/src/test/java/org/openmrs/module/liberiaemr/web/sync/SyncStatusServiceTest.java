@@ -85,6 +85,10 @@ public class SyncStatusServiceTest {
 		assertEquals("careysburg", facilities.get(2).get("code"));
 		assertEquals(12L, ((Number) facilities.get(2).get("recordsReceived")).longValue());
 		assertEquals(5L, ((Number) facilities.get(2).get("receivedLastDay")).longValue());
+		// The raw counter says 12, since the broker's last restart; the week says 7577.
+		assertEquals(7577L, ((Number) facilities.get(2).get("receivedLastWeek")).longValue());
+		assertEquals(Long.valueOf(1790690000L), facilities.get(2).get("lastReceived"));
+		assertEquals(null, facilities.get(1).get("lastReceived"));
 		// barnersville matches the silent alert. bong has sent nothing today either, but it was
 		// enrolled this week, so neither the alert nor the page calls it silent.
 		assertEquals(Boolean.TRUE, facilities.get(0).get("silent"));
@@ -133,6 +137,18 @@ public class SyncStatusServiceTest {
 	}
 	
 	private static String answerFor(String query) {
+		if (query.contains("max_over_time(")) {
+			// When each facility last sent: careysburg recently, barnersville days ago; bong,
+			// silent all week, has no series.
+			return samples("address", "sync.facility.careysburg", "1790690000", "sync.facility.barnersville",
+			    "1790400000");
+		}
+		if (query.contains("increase(") && query.contains("[7d])")) {
+			// Across the week, including records sent before the broker last restarted, which
+			// the raw counter no longer shows.
+			return samples("address", "sync.facility.careysburg", "7577", "sync.facility.barnersville", "3",
+			    "sync.facility.bong", "4");
+		}
 		if (query.contains("increase(") && query.contains("[24h]")) {
 			return samples("address", "sync.facility.careysburg", "5", "sync.facility.barnersville", "0",
 			    "sync.facility.bong", "0");
