@@ -67,6 +67,14 @@ public class AuditLogRedactionTest {
 		String redacted = (String) AuditLogRedaction.value("org.openmrs.User", "5", "userProperties", value);
 		assertEquals("{\"lastLoginTimestamp\":\"1727700000000\",\"apiKey\":\"[redacted]\",\"password\":null}", redacted);
 		assertEquals("{not json", AuditLogRedaction.redactJsonObject("{not json"));
+		// Read back from the stored JSON, a map-valued property is a map, not a string.
+		java.util.Map<String, Object> map = new java.util.LinkedHashMap<String, Object>();
+		map.put("lastLoginTimestamp", "1727700000000");
+		map.put("resetToken", "t1");
+		java.util.Map<?, ?> redactedMap = (java.util.Map<?, ?>) AuditLogRedaction.value("org.openmrs.User", "5",
+		    "userProperties", map);
+		assertEquals("1727700000000", redactedMap.get("lastLoginTimestamp"));
+		assertEquals(AuditLogRedaction.REDACTED, redactedMap.get("resetToken"));
 		assertEquals("[\"a\"]", AuditLogRedaction.redactJsonObject("[\"a\"]"));
 	}
 }

@@ -426,8 +426,9 @@ public class AuditLogStoreTest extends BaseModuleContextSensitiveTest {
 		row("policy", "org.openmrs.GlobalProperty", "security.passwordMinimumLength", "UPDATED", ADMIN,
 		    "2026-09-04 08:00:00", "{\"propertyValue\":[\"12\",\"8\"]}", null);
 		row("usr", "org.openmrs.User", "5", "UPDATED", ADMIN, "2026-09-04 08:00:00",
-		    "{\"secretAnswer\":[\"a\",\"b\"],\"userProperties\":[\"{\\\"lastLoginTimestamp\\\":\\\"2\\\","
-		            + "\\\"resetToken\\\":\\\"t2\\\"}\",\"{\\\"lastLoginTimestamp\\\":\\\"1\\\"}\"]}",
+		    // As the module stores a login: userProperties as JSON objects, previous and current.
+		    "{\"secretAnswer\":[\"a\",\"b\"],\"userProperties\":[{\"lastLoginTimestamp\":\"2\","
+		            + "\"resetToken\":\"t2\"},{\"lastLoginTimestamp\":\"1\"}]}",
 		    null);
 
 		Map<String, Object> gp = ((List<Map<String, Object>>) store.get("gp").get("changes")).get(0);
@@ -446,9 +447,10 @@ public class AuditLogStoreTest extends BaseModuleContextSensitiveTest {
 		List<Map<String, Object>> usr = (List<Map<String, Object>>) store.get("usr").get("changes");
 		assertEquals("secretAnswer", usr.get(0).get("property"));
 		assertEquals(AuditLogRedaction.REDACTED, usr.get(0).get("current"));
-		String properties = (String) usr.get(1).get("current");
-		assertThat(properties, containsString("lastLoginTimestamp"));
-		assertThat(properties, not(containsString("t2")));
+		Map<String, Object> properties = (Map<String, Object>) usr.get(1).get("current");
+		assertEquals("2", properties.get("lastLoginTimestamp"));
+		assertEquals(AuditLogRedaction.REDACTED, properties.get("resetToken"));
+		assertEquals("1", ((Map<String, Object>) usr.get(1).get("previous")).get("lastLoginTimestamp"));
 	}
 
 	// --- types ------------------------------------------------------------------------------------

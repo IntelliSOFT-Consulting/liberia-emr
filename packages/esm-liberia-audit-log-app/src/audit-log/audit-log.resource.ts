@@ -28,8 +28,11 @@ export interface AuditEntry {
   childCount?: number;
 }
 
-/** A recorded value: text, a list (a collection's members) or nothing. */
-export type AuditValue = string | number | boolean | Array<unknown> | null;
+/**
+ * A recorded value: text, a list (a collection's members), a map (a user's properties, say) or
+ * nothing.
+ */
+export type AuditValue = string | number | boolean | Array<unknown> | Record<string, unknown> | null;
 
 export interface AuditChange {
   property: string;
@@ -146,13 +149,18 @@ export function statusOf(error: AuditLogError | undefined): number | undefined {
   return error?.response?.status;
 }
 
-/** A recorded value as text: a list's members joined, nothing as an empty string. */
-export function displayValue(value: AuditValue): string {
+/** A recorded value as text: a list's members joined, a map as "key: value" pairs, nothing as ''. */
+export function displayValue(value: AuditValue | unknown): string {
   if (value === null || value === undefined) {
     return '';
   }
   if (Array.isArray(value)) {
-    return value.map((item) => (item === null || item === undefined ? '' : String(item))).join(', ');
+    return value.map((item) => displayValue(item)).join(', ');
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => `${key}: ${displayValue(item)}`)
+      .join(', ');
   }
   return String(value);
 }

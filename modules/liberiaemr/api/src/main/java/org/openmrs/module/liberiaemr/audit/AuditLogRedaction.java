@@ -12,6 +12,7 @@ package org.openmrs.module.liberiaemr.audit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -102,7 +103,23 @@ public final class AuditLogRedaction {
 		if (value instanceof String) {
 			return redactJsonObject((String) value);
 		}
+		if (value instanceof Map) {
+			return redactMap((Map<?, ?>) value);
+		}
 		return value;
+	}
+
+	/**
+	 * The module stores a map-valued property (a user's properties, for one) as a JSON object, which
+	 * reads back as a map: replace its secret-looking keys' values.
+	 */
+	static Map<Object, Object> redactMap(Map<?, ?> map) {
+		Map<Object, Object> copy = new LinkedHashMap<Object, Object>();
+		for (Map.Entry<?, ?> entry : map.entrySet()) {
+			boolean secret = entry.getKey() != null && isSecretName(entry.getKey().toString()) && entry.getValue() != null;
+			copy.put(entry.getKey(), secret ? REDACTED : entry.getValue());
+		}
+		return copy;
 	}
 
 	/** True when {@link #value} would hide this property of this row. */
@@ -111,8 +128,7 @@ public final class AuditLogRedaction {
 	}
 
 	/**
-	 * The module stores a map-valued property (a user's properties, for one) as a JSON object in a
-	 * string. Replace the secret-looking keys' values in it; anything else is returned as is.
+	 * The same for a JSON object held in a string. Replace the secret-looking keys' values in it; anything else is returned as is.
 	 */
 	static String redactJsonObject(String value) {
 		String trimmed = value.trim();

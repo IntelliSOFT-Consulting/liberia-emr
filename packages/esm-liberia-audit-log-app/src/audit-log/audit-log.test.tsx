@@ -298,9 +298,13 @@ describe('audit log resource', () => {
     );
   });
 
-  it('shows lists and nothing as text', () => {
+  it('shows lists, maps and nothing as text', () => {
     expect(displayValue(['a', null, 'b'])).toBe('a, , b');
     expect(displayValue(null)).toBe('');
     expect(displayValue(12)).toBe('12');
+    // A user's properties, as a login records them.
+    expect(displayValue({ lastLoginTimestamp: '1790726360042', loginAttempts: '0', lockoutTimestamp: '' })).toBe(
+      'lastLoginTimestamp: 1790726360042, loginAttempts: 0, lockoutTimestamp: ',
+    );
   });
 });
