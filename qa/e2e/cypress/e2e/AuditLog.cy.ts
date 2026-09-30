@@ -224,7 +224,8 @@ describe('Audit log', () => {
     cy.wait('@list').its('request.url').should('include', 'type=org.openmrs.GlobalProperty').and('include', 'user=admin');
 
     cy.contains('[data-testid="audit-row"]', gpName, { timeout: 30000 }).should('be.visible');
-    cy.get(`button[aria-label="Open entry ${gpName}"]`).click();
+    // Scoped to the visible row: in CI the label matched two elements (a second, hidden one).
+    cy.contains('[data-testid="audit-row"]', gpName).find(`button[aria-label="Open entry ${gpName}"]`).first().click();
     cy.get('[data-testid="audit-detail"]', { timeout: 30000 }).within(() => {
       cy.contains('[data-testid="audit-change"]', 'propertyValue').within(() => {
         cy.contains(oldValue).should('be.visible');
