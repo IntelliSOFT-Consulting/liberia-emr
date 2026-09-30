@@ -34,7 +34,7 @@ public final class AuditLogCsv {
 	public static String row(Map<String, Object> row) {
 		Map<String, Object> user = (Map<String, Object>) row.get("user");
 		return line(new String[] { text(row.get("dateCreated")), text(row.get("action")), text(row.get("type")),
-		        text(row.get("identifier")), user == null ? "" : text(user.get("username")),
+		        text(row.get("identifier")), user == null ? "" : login(user),
 		        user == null ? "" : text(user.get("uuid")), text(row.get("uuid")), text(row.get("parentUuid")),
 		        values(row) });
 	}
@@ -57,6 +57,12 @@ public final class AuditLogCsv {
 			}
 		}
 		return String.join(" | ", parts);
+	}
+
+	/** The username, or the system ID of an account that has none (the demo admin, for one). */
+	static String login(Map<String, Object> user) {
+		String username = text(user.get("username"));
+		return username.isEmpty() ? text(user.get("systemId")) : username;
 	}
 
 	private static String text(Object value) {

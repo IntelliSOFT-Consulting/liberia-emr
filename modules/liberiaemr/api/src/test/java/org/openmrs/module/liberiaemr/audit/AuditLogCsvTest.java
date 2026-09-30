@@ -61,6 +61,16 @@ public class AuditLogCsvTest {
 	}
 
 	@Test
+	public void namesAnAccountWithoutAUsernameByItsSystemId() {
+		Map<String, Object> user = new LinkedHashMap<String, Object>();
+		user.put("username", "");
+		user.put("systemId", "admin");
+		assertEquals("admin", AuditLogCsv.login(user));
+		user.put("username", "ict.officer");
+		assertEquals("ict.officer", AuditLogCsv.login(user));
+	}
+
+	@Test
 	public void flattensALastState() {
 		Map<String, Object> name = new LinkedHashMap<String, Object>();
 		name.put("property", "name");
