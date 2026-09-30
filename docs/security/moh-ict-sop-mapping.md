@@ -75,15 +75,17 @@ update's previous and new values and a deleted item's last state, and export CSV
 - **Who can read it.** Every call needs `Get Audit Logs`, checked on the server and failing
   closed; the menu entry needs `View Audit Log`. The `ICT Auditor` role holds both and no
   clinical privilege; it deliberately does not hold `Get Items`, which resolves ANY object by
-  class and id, and the viewer does not need it.
+  class and id, and the viewer does not need it. `qa/e2e/cypress/e2e/AuditLog.cy.ts` checks on
+  every CI run that a user without the role sees no menu entry and gets `403`.
 - **`Get People` is the one read privilege it holds, and only because O3 needs it.** O3's
   navigation sends a signed-in user back to the login page unless their session includes
   their own person record, which the server includes only for holders of `Get People`
   (seen on a demo stack: an ICT Auditor without it could not get past login). It lets the
-  role read person names and demographics over REST; it does not reach patients, encounters,
-  observations or orders (`Get Patients` and the rest, which the role does not hold, and
-  `AuditLog.cy.ts` checks it gets `403` reading patients). `qa/e2e/cypress/e2e/AuditLog.cy.ts` checks on
-  every CI run that a user without the role sees no menu entry and gets `403`.
+  role read person records over REST, which for a patient means their name, sex, birth date
+  and address, the same demographics the audit log already shows. It does not reach
+  patients, visits, encounters, observations or orders (`Get Patients` and the rest, which
+  the role does not hold; `AuditLog.cy.ts` checks it gets `403` reading patients). **Review
+  this grant at sign-off**: the alternative is a separate, non-O3 way to read the log.
 - **Credential material is never shown**, whatever `auditlog.exceptions` says: rows of
   `LoginCredential` and of liberiaemr's `PasswordResetToken` are left out of every read, and a
   password, salt, token or key, or any value of a global property named like one, is shown
