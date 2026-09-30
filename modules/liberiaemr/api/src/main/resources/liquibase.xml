@@ -332,4 +332,46 @@
 		<customChange class="org.openmrs.module.liberiaemr.identity.FacilityOfOriginBackfill"/>
 	</changeSet>
 
+	<!--
+		The audit log viewer (MOH ICT SOP B3) pages auditlog_audit_log, the auditlog module's table,
+		by date, type and parent row. The module creates no index on any of them, so every filtered
+		page and every child count was a full scan of a table that grows without limit. These are
+		indexes only: the table and its rows stay the auditlog module's.
+
+		onFail="CONTINUE", not MARK_RAN: this module is only aware of auditlog, which may be installed
+		later. Until the table exists the change set is skipped and tried again on the next start.
+	-->
+	<changeSet id="liberiaemr-2026-09-30-auditlog-date-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_date_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.date_created for the audit log viewer's date filter</comment>
+		<createIndex indexName="liberiaemr_auditlog_date_idx" tableName="auditlog_audit_log">
+			<column name="date_created"/>
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-30-auditlog-type-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_type_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.type for the audit log viewer's type filter and type list</comment>
+		<createIndex indexName="liberiaemr_auditlog_type_idx" tableName="auditlog_audit_log">
+			<column name="type"/>
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-30-auditlog-parent-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_parent_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.parent_auditlog_id for the audit log viewer's child rows</comment>
+		<createIndex indexName="liberiaemr_auditlog_parent_idx" tableName="auditlog_audit_log">
+			<column name="parent_auditlog_id"/>
+		</createIndex>
+	</changeSet>
+
 </databaseChangeLog>

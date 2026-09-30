@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.47.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "audit-log"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "audit-log-app-menu-item",
+      "component": "auditLogAppMenuItem",
+      "slot": "app-menu-slot",
+      "privileges": ["View Audit Log"],
+      "online": true,
+      "offline": false
+    }
+  ]
+}

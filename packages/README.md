@@ -9,7 +9,8 @@ tracking records for patches to community code (**Modify + PR**).
 | [`esm-liberia-login-app/`](esm-liberia-login-app/) | `@liberiaemr/esm-liberia-login-app` | `10.0.0` | Replaces core `@openmrs/esm-login-app`; adds forgot/reset password |
 | [`esm-liberia-patient-chart-extension/`](esm-liberia-patient-chart-extension/) | `@liberiaemr/esm-liberia-patient-chart-extension` | `1.0.1-pre.53` | Configurable obs-by-encounter widget (TB Screening today) |
 | [`esm-liberia-sync-status-app/`](esm-liberia-sync-status-app/) | `@liberiaemr/esm-liberia-sync-status-app` | `1.0.0-pre.98` | National sync status page, shown at central only |
-| [`esm-liberia-reports-app/`](esm-liberia-reports-app/) | `@liberiaemr/esm-liberia-reports-app` | not yet | MOH indicator report runner (LE-335) |
+| [`esm-liberia-reports-app/`](esm-liberia-reports-app/) | `@liberiaemr/esm-liberia-reports-app` | `1.0.0-pre.155` | MOH indicator report runner |
+| [`esm-liberia-audit-log-app/`](esm-liberia-audit-log-app/) | `@liberiaemr/esm-liberia-audit-log-app` | not yet: pinned after its first publish | The ICT Unit's audit log viewer (MOH ICT SOP B3) |
 | [`modify-pr/`](modify-pr/) | — | — | Sidecars tracking each patch to a community component and its upstream PR |
 
 A module reaches the image only through its pin: `distribution/frontend/Dockerfile` runs
@@ -27,6 +28,7 @@ Two workflows touch these packages.
 | login app | `yarn install --frozen-lockfile`, `yarn test`, `yarn build` |
 | sync status app | `yarn install --frozen-lockfile`, `yarn typescript`, `yarn test`, `yarn build` |
 | reports app | `yarn install --frozen-lockfile`, `yarn typescript`, `yarn test`, `yarn build` |
+| audit log app | `yarn install --frozen-lockfile`, `yarn lint`, `yarn typescript`, `yarn test`, `yarn build` |
 | e-partograph | nothing yet — the step is an `echo "TODO: …"` |
 | patient chart extension | not listed |
 
@@ -35,7 +37,7 @@ on a GitHub release, and on manual dispatch. It loops over every `packages/*` wh
 `package.json` is not `"private": true`:
 
 1. **Build** (every trigger): `yarn install --frozen-lockfile`, `yarn lint` (only if the
-   `package.json` names `"eslint"` — today only the login app), `yarn typescript`,
+   `package.json` names `"eslint"`), `yarn typescript`,
    `yarn build`. It does **not** run the tests.
 2. **Pre-release** (push to `main` only): publishes `<base version>-pre.<run number>` with
    dist-tag `next`. Every package in the loop gets the same run number, so the pre-releases

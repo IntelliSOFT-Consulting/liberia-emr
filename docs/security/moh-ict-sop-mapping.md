@@ -57,21 +57,41 @@ until both are in place this control is partial, not enforced.
 | --- | --- | --- | --- |
 | B1 | Role-based access control | `content-common/…/roles.csv`, `content-liberia-national/…/roles.csv` | Enforced |
 | B2 | Least privilege by job function | Roles map to actual facility job functions | Enforced |
-| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds `View Audit Log` and the auditlog module's `Get Audit Logs` | **Partial** — no working in-app viewer; see the note below |
+| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds `View Audit Log`, the auditlog module's `Get Audit Logs`, and `Get People`, without which O3 will not sign anyone in (see below). Read in the **Audit log** page (`packages/esm-liberia-audit-log-app`) over `/ws/rest/v1/liberiaemr/auditlog` (`modules/liberiaemr`) | Implemented — see the note below |
 | B4 | Named accounts, no shared logins | — | **Open** — operational policy, not configuration; belongs in the go-live runbook and training |
 
 B3 is easy to get wrong by granting the auditor "read everything" for convenience. Reading
 audit logs and reading patient records are different permissions, and the SOP grants the
 first, not the second.
 
-**There is no working in-app viewer yet.** The module's only viewer is a legacy UI page,
-`/openmrs/module/auditlog/viewAuditLog.form`, and on core 2.8.8 it returns 404: the omod ships
-no `webModuleApplicationContext.xml`, so its controller never reaches the web dispatcher. The
-module has no REST resource either. Until a viewer exists the ICT Unit reads
-`auditlog_audit_log` with read-only database access, which is outside this role. The role
-holds `Get Audit Logs`, the module's service privilege for listing entries, so a viewer built
-on the module's API needs no role change; it deliberately does not hold `Get Items`, which
-resolves ANY object by class and id.
+**The viewer.** The module's own viewer is a legacy UI page,
+`/openmrs/module/auditlog/viewAuditLog.form`, which returns 404 on core 2.8.8 (the omod ships
+no `webModuleApplicationContext.xml`), and the module has no REST resource. So since LE-371 the
+ICT Unit reads the log in the O3 **Audit log** page, served by a read-only REST resource in
+`modules/liberiaemr`: filter by date, user, type and action, page on the server, see an
+update's previous and new values and a deleted item's last state, and export CSV (at most
+50,000 rows per file). How to use it: [audit-log.md](../runbooks/audit-log.md).
+
+- **Who can read it.** Every call needs `Get Audit Logs`, checked on the server and failing
+  closed; the menu entry needs `View Audit Log`. The `ICT Auditor` role holds both and no
+  clinical privilege; it deliberately does not hold `Get Items`, which resolves ANY object by
+  class and id, and the viewer does not need it. `qa/e2e/cypress/e2e/AuditLog.cy.ts` checks on
+  every CI run that a user without the role sees no menu entry and gets `403`.
+- **`Get People` is the one read privilege it holds, and only because O3 needs it.** O3's
+  navigation sends a signed-in user back to the login page unless their session includes
+  their own person record, which the server includes only for holders of `Get People`
+  (seen on a demo stack: an ICT Auditor without it could not get past login). It lets the
+  role read person records over REST, which for a patient means their name, sex, birth date
+  and address, the same demographics the audit log already shows. It does not reach
+  patients, visits, encounters, observations or orders (`Get Patients` and the rest, which
+  the role does not hold; `AuditLog.cy.ts` checks it gets `403` reading patients). **Review
+  this grant at sign-off**: the alternative is a separate, non-O3 way to read the log.
+- **Credential material is never shown**, whatever `auditlog.exceptions` says: rows of
+  `LoginCredential` and of liberiaemr's `PasswordResetToken` are left out of every read, and a
+  password, salt, token or key, or any value of a global property named like one, is shown
+  as redacted.
+- **Without the auditlog module** the page and API say the log is not recorded (`503`) and
+  the rest of the system runs: liberiaemr is only aware of auditlog, it does not require it.
 
 Whoever reads the log sees more than metadata. An entry records the old and new value of
 every changed property, for example a patient's previous and corrected name. Treat the audit
@@ -99,13 +119,18 @@ salt; so a password change is not audited.
 - **Not covered:** writes that bypass Hibernate (direct SQL, Liquibase, the reporting ETL,
   and at central the sync receiver, which writes through its own JPA layer), and reads —
   who viewed a chart is not recorded. Logins appear only indirectly, as an update to the
-  user's `lastLoginTimestamp` property.
+  user's `lastLoginTimestamp` property; a failed login to an existing account, as its
+  `loginAttempts` going up. A failed login with an unknown username leaves nothing.
 - **Stays local.** `auditlog_audit_log` is not in `eip.watchedTables`, which CI pins to an
   exact list, so a facility's audit log is not synced; central's log covers central users
   only. It is in the facility binlog like any `openmrs` table, which the binlog disk sizing
   must allow for.
-- **Volume:** grows without bound. A first boot that imported the concept dictionary wrote
-  about 114,000 rows (30 MB); day-to-day volume follows clinical activity.
+- **Volume:** grows without bound; nothing purges it, and no retention decision exists to
+  purge by (C2). A first boot that imported the concept dictionary wrote about 114,000 rows
+  (30 MB); day-to-day volume follows clinical activity. liberiaemr adds indexes on the date,
+  type and parent columns so the viewer stays usable as it grows.
+- **Reading it:** the **Audit log** page (B3), [audit-log.md](../runbooks/audit-log.md),
+  which also lists what an empty result does and does not prove.
 
 ---
 
@@ -201,10 +226,8 @@ certificate. Disk encryption is what makes theft a hardware loss rather than a b
 5. **D3**: backup encryption implemented and a restore rehearsed, covering all six copies
    of clinical data at rest enumerated in [sync architecture](../architecture/sync-eip.md)
    §7.4, not only the OpenMRS database.
-6. **B3**: an audit log viewer the ICT Auditor role can use, since the auditlog module's
-   own page does not load on core 2.8.8.
-7. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each
+6. **D2 / D6 / D8**: mutual TLS, broker authorisation and certificate revocation, each
    proven by a negative test rather than by configuration review.
-8. **D7**: facility disk encryption accepted as a control and an owner named.
+7. **D7**: facility disk encryption accepted as a control and an owner named.
 
 Nothing on this list is closed by editing a CSV.
