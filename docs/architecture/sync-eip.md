@@ -567,7 +567,10 @@ configuration change, and it should not be presented as one.
 **As built.** The identity service is part of the liberiaemr module and runs on the OpenMRS
 scheduler at central, every `liberiaemr.identity.intervalSeconds` (60 by default; `IdentityAssignmentTask`). It mints a CPI (a UUID, with the
 `LR-XXXXX-XXXXX-C` form beside it) for every patient in the replica that has none, records the
-facility as the top of the location tree the record's identifier was issued at, then applies
+facility the record came from (`patient_link.facility_location_uuid`: the nearest
+ancestor-or-self of its preferred live identifier's location tagged Health Facility, compared by
+the `var.locationtag.health-facility.uuid` tag UUID, the rule of the ETL's
+`mamba_dim_location_hierarchy`; NULL when no such ancestor exists), then applies
 rule 4 of §2.2: an exact match on the National ID identifier type links the new CPI as an alias
 of the existing person's, provided sex agrees and date of birth agrees within
 `liberiaemr.identity.dobToleranceDays` (year only when either date is estimated); a match that

@@ -113,12 +113,15 @@ public class IdentityService {
 					return result;
 				}
 				int assigned = 0, linked = 0, forReview = 0;
-				for (Map<String, Object> patient : query(connection,
+				List<Map<String, Object>> pending = query(connection,
 				    "SELECT p.patient_id, per.uuid, per.gender, per.birthdate, per.birthdate_estimated "
 				            + "FROM patient p JOIN person per ON per.person_id = p.patient_id "
 				            + "LEFT JOIN " + SCHEMA + ".patient_link l ON l.patient_uuid = per.uuid "
-				            + "WHERE l.link_id IS NULL AND p.voided = 0 ORDER BY p.patient_id LIMIT " + batch)) {
-					int cpiId = mint(connection, patient);
+				            + "WHERE l.link_id IS NULL AND p.voided = 0 ORDER BY p.patient_id LIMIT " + batch);
+				FacilityOfOrigin facilities = pending.isEmpty() ? null
+				        : FacilityOfOrigin.load(connection, FacilityOfOrigin.healthFacilityTagUuid());
+				for (Map<String, Object> patient : pending) {
+					int cpiId = mint(connection, patient, facilities);
 					assigned++;
 					String outcome = linkOnNationalId(connection, patient, cpiId, nationalIdType, tolerance);
 					if (BASIS_NATIONAL_ID.equals(outcome)) {
@@ -257,8 +260,12 @@ public class IdentityService {
 		});
 	}
 
-	/** Mints a CPI for the patient, records the event and the link. */
-	private int mint(Connection connection, Map<String, Object> patient) throws SQLException {
+	/**
+	 * Mints a CPI for the patient, records the event and the link, with the facility the record
+	 * came from (FacilityOfOrigin). This is the only writer of facility_location_uuid, apart from
+	 * the backfill FacilityOfOrigin also runs.
+	 */
+	private int mint(Connection connection, Map<String, Object> patient, FacilityOfOrigin facilities) throws SQLException {
 		int patientId = ((Number) patient.get("patient_id")).intValue();
 		String patientUuid = (String) patient.get("uuid");
 		Timestamp now = new Timestamp(System.currentTimeMillis());
@@ -278,7 +285,7 @@ public class IdentityService {
 		    cpiId, EVENT_MINTED, "Record received at central", now);
 		insert(connection, "INSERT INTO " + SCHEMA
 		        + ".patient_link (patient_uuid, cpi_id, facility_location_uuid, basis, date_created) VALUES (?, ?, ?, ?, ?)",
-		    patientUuid, cpiId, facilityLocation(connection, patientId), BASIS_NEW, now);
+		    patientUuid, cpiId, facilities.facilityOfRecord(connection, patientId), BASIS_NEW, now);
 		return cpiId;
 	}
 
@@ -433,25 +440,6 @@ public class IdentityService {
 			}
 		} while (tree.size() > before);
 		return tree;
-	}
-
-	/** The facility a record came from: the top of the location tree its identifier was issued at. */
-	private String facilityLocation(Connection connection, int patientId) throws SQLException {
-		List<Map<String, Object>> rows = query(connection, "SELECT location_id FROM patient_identifier WHERE patient_id = ? "
-		        + "AND voided = 0 AND location_id IS NOT NULL ORDER BY preferred DESC, patient_identifier_id", patientId);
-		if (rows.isEmpty()) {
-			return null;
-		}
-		int id = ((Number) rows.get(0).get("location_id")).intValue();
-		for (int hop = 0; hop < 10; hop++) {
-			Map<String, Object> location = query(connection, "SELECT uuid, parent_location FROM location WHERE location_id = ?", id)
-			        .get(0);
-			if (location.get("parent_location") == null) {
-				return (String) location.get("uuid");
-			}
-			id = ((Number) location.get("parent_location")).intValue();
-		}
-		return null;
 	}
 
 	private String locationName(Connection connection, String uuid) throws SQLException {

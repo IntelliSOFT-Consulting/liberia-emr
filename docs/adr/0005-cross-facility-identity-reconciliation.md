@@ -45,6 +45,16 @@ means a clinician sees no history for a patient who has one.
    one row; an incorrect merge destroys the evidence needed to detect it. This property is
    what makes an imperfect matcher safe to run in production.
 
+   *As built* (`openmrs_identity.patient_link`): the facility is stored as
+   `facility_location_uuid`, the location UUID of the nearest ancestor-or-self of the
+   record's preferred live identifier location that carries the **Health Facility** tag
+   (compared by the tag's UUID, `var.locationtag.health-facility.uuid`), the same rule as the
+   ETL's `mamba_dim_location_hierarchy.facility_location_id`. It is NULL when no such ancestor
+   exists. It is set when the CPI is minted, and never by linking or review. Links minted before
+   LE-370 held the root of the location tree, which under the MFL hierarchy
+   ([ADR 0009](0009-mfl-facility-locations.md)) is the county or the country; a liquibase
+   changeset recomputed them with the same rule.
+
 3. **Three bands, not a threshold.** High confidence → auto-link. Middle → **human review
    queue**, with no link until a person decides. Low → new CPI. A matcher with only "match"
    and "no match" has chosen which direction to be silently wrong in.

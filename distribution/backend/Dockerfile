@@ -144,6 +144,10 @@ FROM maven:3.9-eclipse-temurin-17 AS module
 ARG LIBERIAEMR_VERSION=
 
 WORKDIR /build
+# The module's content UUIDs (liberiaemr-uuids.properties: the Health Facility tag the identity
+# service resolves a record's facility with) are filtered in from the national layer's
+# variables.properties (ADR 0010 decision 7), and the api build fails if one is unresolved.
+COPY content-packages/content-liberia-national/configuration/variables.properties /build/content-packages/content-liberia-national/configuration/variables.properties
 COPY modules/liberiaemr /build/liberiaemr
 # Tests run in CI's own backend-module job; repeating them here would add minutes to every
 # image build for a signal the pipeline already has.
@@ -160,7 +164,8 @@ RUN set -eu; \
         org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
         -DnewVersion="${LIBERIAEMR_VERSION}" -DgenerateBackupPoms=false; \
     fi; \
-    mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests clean package; \
+    mvn -B -q -f /build/liberiaemr/pom.xml -DskipTests \
+      -Dliberiaemr.content.dir=/build/content-packages clean package; \
     ls /build/liberiaemr/omod/target/*.omod; \
     if ls /build/liberiaemr/omod/target/*SNAPSHOT*.omod >/dev/null 2>&1 \
        && [ -n "${LIBERIAEMR_VERSION}" ]; then \
