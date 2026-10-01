@@ -37,6 +37,17 @@ function activity(type: string) {
   window.dispatchEvent(new Event(type, { bubbles: true }));
 }
 
+/** The listener reads key and newValue. A plain event carries those without a StorageEvent init argument. */
+function dispatchStorageChange(newValue: string | null) {
+  const storageEvent = new Event('storage');
+  Object.defineProperties(storageEvent, {
+    key: { value: HUMAN_ACTIVITY_STORAGE_KEY },
+    newValue: { value: newValue },
+    storageArea: { value: localStorage },
+  });
+  window.dispatchEvent(storageEvent);
+}
+
 async function flush() {
   await Promise.resolve();
   await Promise.resolve();
@@ -186,13 +197,7 @@ describe('SessionIdle', () => {
     await advance(9 * 60 * 1000);
     const peerActivity = String(Date.now());
     localStorage.setItem(HUMAN_ACTIVITY_STORAGE_KEY, peerActivity);
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: HUMAN_ACTIVITY_STORAGE_KEY,
-        newValue: peerActivity,
-        storageArea: localStorage,
-      }),
-    );
+    dispatchStorageChange(peerActivity);
 
     await advance(9 * 60 * 1000);
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
@@ -204,13 +209,7 @@ describe('SessionIdle', () => {
   it('logs out when another tab clears the shared timestamp after idle logout', async () => {
     render(<SessionIdle />);
     localStorage.removeItem(HUMAN_ACTIVITY_STORAGE_KEY);
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: HUMAN_ACTIVITY_STORAGE_KEY,
-        newValue: null,
-        storageArea: localStorage,
-      }),
-    );
+    dispatchStorageChange(null);
 
     await flush();
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/session`, { method: 'DELETE' });
