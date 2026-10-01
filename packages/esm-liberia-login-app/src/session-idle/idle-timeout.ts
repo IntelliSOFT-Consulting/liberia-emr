@@ -56,11 +56,19 @@ export function readHumanActivity(now = Date.now()): HumanActivityRead {
 }
 
 export function recordHumanActivity(at: number): void {
-  localStorage.setItem(HUMAN_ACTIVITY_STORAGE_KEY, String(at));
+  try {
+    localStorage.setItem(HUMAN_ACTIVITY_STORAGE_KEY, String(at));
+  } catch {
+    // Leave the timestamp unset. The next read is missing or invalid, and the watcher fails closed.
+  }
 }
 
 export function clearHumanActivity(): void {
-  localStorage.removeItem(HUMAN_ACTIVITY_STORAGE_KEY);
+  try {
+    localStorage.removeItem(HUMAN_ACTIVITY_STORAGE_KEY);
+  } catch {
+    // Cleanup must not interrupt logout when storage is unavailable.
+  }
 }
 
 function parseMinutes(value: unknown): number | null {

@@ -245,4 +245,23 @@ describe('SessionIdle', () => {
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
     expect(stamp()).toBeNull();
   });
+
+  it('stays mounted when the initial activity write throws and then fails closed', async () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+
+    try {
+      expect(() => render(<SessionIdle />)).not.toThrow();
+      expect(stamp()).toBeNull();
+
+      await advance(15_000 - 1);
+      expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+
+      await advance(1);
+      expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/session`, { method: 'DELETE' });
+    } finally {
+      setItem.mockRestore();
+    }
+  });
 });

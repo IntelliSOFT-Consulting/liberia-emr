@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   HUMAN_ACTIVITY_STORAGE_KEY,
   clearHumanActivity,
@@ -72,5 +72,31 @@ describe('human activity timestamp', () => {
     recordHumanActivity(50);
     clearHumanActivity();
     expect(localStorage.getItem(HUMAN_ACTIVITY_STORAGE_KEY)).toBeNull();
+  });
+
+  it('does not throw when localStorage.setItem throws', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    try {
+      expect(() => recordHumanActivity(1_700_000_000_000)).not.toThrow();
+      expect(readHumanActivity(1_700_000_000_000)).toEqual({ status: 'missing' });
+    } finally {
+      setItem.mockRestore();
+    }
+  });
+
+  it('does not throw when localStorage.removeItem throws', () => {
+    recordHumanActivity(50);
+    const removeItem = vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+    try {
+      expect(() => clearHumanActivity()).not.toThrow();
+      expect(localStorage.getItem(HUMAN_ACTIVITY_STORAGE_KEY)).toBe('50');
+    } finally {
+      removeItem.mockRestore();
+      localStorage.removeItem(HUMAN_ACTIVITY_STORAGE_KEY);
+    }
   });
 });
