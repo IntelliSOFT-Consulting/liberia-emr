@@ -72,6 +72,18 @@ RUN node /app/patch-patient-orders.cjs
 COPY patch-service-queues-location.cjs /app/patch-service-queues-location.cjs
 RUN node /app/patch-service-queues-location.cjs
 
+# Patient search app 11.1.0 has no ExtensionSlot where a custom app can add Remote Search
+# (patients on the central server). This patch adds three slots - results (header dropdown,
+# /search page, workspaces), toggle (Refine Search sidebar) and summary (/search heading) -
+# and relabels the local heading to "LOCAL SEARCH - N MATCHES", in chunks 8383, 4959 and
+# 5882. It asserts every anchor and fails the build if the pinned bundle changed.
+# It also installs the built esm-liberia-remote-search-app (packages/esm-liberia-remote-search-app,
+# build it and copy its dist to esm-liberia-remote-search-app-dist first) into the SPA and
+# registers it in importmap.json and routes.registry.json.
+COPY esm-liberia-remote-search-app-dist/ /app/esm-liberia-remote-search-app-dist/
+COPY patch-patient-search-remote.cjs /app/patch-patient-search-remote.cjs
+RUN node /app/patch-patient-search-remote.cjs
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime configuration + branding
 # ---------------------------------------------------------------------------

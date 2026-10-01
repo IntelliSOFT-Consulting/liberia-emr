@@ -127,6 +127,14 @@ services:
       LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
       LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
       LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
+      # Remote Search of the central server (liberiaemr module). All three come from the
+      # environment only: the URL must be https, and the service account is never read from a
+      # global property. Unset means Remote Search is off and its toggle hides itself.
+      # LIBERIAEMR_REMOTE_ALLOWED_HOSTS is only for a URL left in the global property.
+      LIBERIAEMR_REMOTE_URL: ${LIBERIAEMR_REMOTE_URL:-}
+      LIBERIAEMR_REMOTE_USER: ${LIBERIAEMR_REMOTE_USER:-}
+      LIBERIAEMR_REMOTE_PASSWORD: ${LIBERIAEMR_REMOTE_PASSWORD:-}
+      LIBERIAEMR_REMOTE_ALLOWED_HOSTS: ${LIBERIAEMR_REMOTE_ALLOWED_HOSTS:-}
       # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4). startup-init.sh maps
       # OMRS_EXTRA_A_B__C to runtime property a.b_c and re-applies it on every start. The
       # schema name is fixed: binlog-ignore-db above and the initdb grants name it too. The

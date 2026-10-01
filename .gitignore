@@ -100,3 +100,4 @@ qa/e2e/cypress/downloads/
 #Ansible
 ansible/inventory.ini
 ansible/central-server.vars.yml
+distribution/frontend/esm-liberia-remote-search-app-dist/
