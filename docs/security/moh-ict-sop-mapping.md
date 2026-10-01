@@ -160,16 +160,18 @@ without the other:
 | Facility / central production | unset → `false` | 404 at the edge | `false` |
 | Dev, staging, local | `true` | proxied to the backend | `true` |
 
-The default is `false` in three independent places — the gateway image (`ENV
-LEGACY_ADMIN_UI=false`), the facility compose file (`${LEGACY_ADMIN_UI:-false}`) and the
-env template — so an environment that never mentions the variable is blocked. Central is
-stronger still: it hard-codes `false` and has no opt-out at all.
+The default is `false` in four independent places — the gateway image (`ENV
+LEGACY_ADMIN_UI=false`), the facility and central compose files (`${LEGACY_ADMIN_UI:-false}`)
+and the env template — so an environment that never mentions the variable is blocked.
+Central used to hard-code `false` with no opt-out; LE-376 gave it the same switch once a
+central dev server existed (LE-368).
 
-Only two places set it to `true`, both non-production and both setting it on the deploy
-command rather than in a server's persistent `facility.env`, so it cannot travel with a
-copied env file into a facility:
+Only three places set it to `true`, all non-production and all setting it on the deploy
+command rather than in a server's persistent env file, so it cannot travel with a copied
+env file into a facility or central production server:
 
 - `deploy-dev` in `.github/workflows/ci.yml` (dev host, `main` pushes only)
+- `deploy-central-dev` in `.github/workflows/ci.yml` (central dev host, `main` pushes only)
 - `deploy-staging` in `.github/workflows/release.yml` (documented; the job is still a stub)
 
 A production deploy follows `docs/runbooks/deploy.md` and sets nothing, which is what
