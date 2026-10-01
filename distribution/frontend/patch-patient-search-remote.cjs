@@ -1,8 +1,10 @@
 'use strict';
 
 // Patient search app 11.1.0 has no ExtensionSlot where a custom app could add "Remote Search"
-// (patients held on the central server). This patch adds three slots to the compiled bundle and
-// installs esm-liberia-remote-search-app, which fills them:
+// (patients held on the central server). This patch adds three slots to the compiled bundle for
+// esm-liberia-remote-search-app, which fills them. That app is NOT installed here: it is pinned in
+// distro.properties (spa.frontendModules) like every other app and assembled with the rest. Until
+// it is pinned the slots stay empty and the feature does not appear:
 //
 //   patient-search-remote-results-slot   header dropdown, and below the local results on the
 //                                        /search page and in the "Add patient to ..." workspaces
@@ -26,14 +28,10 @@ const originalDirName = `openmrs-esm-patient-search-app-${version}`;
 const patchedDirName = `${originalDirName}-${revision}`;
 // Overridable so the patch can be exercised against a copy outside the image.
 const spaDir = process.env.SPA_DIR || '/app/spa';
-const remoteDistSrc = process.env.REMOTE_SEARCH_DIST || '/app/esm-liberia-remote-search-app-dist';
 const moduleDir = path.join(spaDir, originalDirName);
 const lock = '__liberiaEmrPatientSearchRemote';
 
 const remoteAppName = '@liberiaemr/esm-liberia-remote-search-app';
-const remoteAppVersion = '1.0.0';
-const remoteAppDir = `liberiaemr-esm-liberia-remote-search-app-${remoteAppVersion}`;
-const remoteAppEntry = 'liberiaemr-esm-liberia-remote-search-app.js';
 
 if (!fs.existsSync(moduleDir)) {
   throw new Error(
@@ -42,20 +40,14 @@ if (!fs.existsSync(moduleDir)) {
   );
 }
 
-// Once the app is published to npm, `openmrs assemble` lists it in importmap.json itself and there is
-// nothing to install from the local dist: only the patient-search chunks need patching.
+// The app arrives through spa.frontendModules in distro.properties. Say so when it is not there yet
+// (a new package has no published version before its first merge), because the slots added below
+// then render nothing.
 const importMapPath = path.join(spaDir, 'importmap.json');
-const remoteAppPublished = fs.existsSync(importMapPath) && fs.readFileSync(importMapPath, 'utf8').includes(`"${remoteAppName}"`);
-console.log(
-  remoteAppPublished
-    ? `INFO ${remoteAppName} is already in importmap.json: skipping the local install, patching chunks only.`
-    : `INFO ${remoteAppName} is not in importmap.json: installing it from ${remoteDistSrc}.`,
-);
-
-if (!remoteAppPublished && !fs.existsSync(path.join(remoteDistSrc, remoteAppEntry))) {
-  throw new Error(
-    `${remoteAppEntry} not found in ${remoteDistSrc}. Build packages/esm-liberia-remote-search-app ` +
-      'and copy its dist to distribution/frontend/esm-liberia-remote-search-app-dist first.',
+if (!fs.existsSync(importMapPath) || !fs.readFileSync(importMapPath, 'utf8').includes(`"${remoteAppName}"`)) {
+  console.log(
+    `WARN ${remoteAppName} is not in importmap.json: pin it in distro.properties (spa.frontendModules) ` +
+      'for Remote Search to appear. Patching the patient-search chunks only.',
   );
 }
 
@@ -216,43 +208,14 @@ patchChunk('5882.js', [
 ]);
 
 // -----------------------------------------------------------------------------
-// Install esm-liberia-remote-search-app (built locally, until it is published to npm)
+// importmap: follow the renamed patient-search directory
 // -----------------------------------------------------------------------------
 let importMapStr = fs.readFileSync(importMapPath, 'utf8');
 assertOneOccurrence(importMapStr, originalDirName, 'importmap.json patient-search entry');
-// The renamed directory (below) busts browser caches, so the importmap follows it in both modes.
+// The renamed directory (below) busts browser caches, so the importmap follows it.
 importMapStr = importMapStr.replace(originalDirName, () => patchedDirName);
-
-if (remoteAppPublished) {
-  JSON.parse(importMapStr);
-  fs.writeFileSync(importMapPath, importMapStr);
-} else {
-  const remoteDestDir = path.join(spaDir, remoteAppDir);
-  fs.mkdirSync(remoteDestDir, { recursive: true });
-  fs.cpSync(remoteDistSrc, remoteDestDir, { recursive: true });
-
-  if (!/"imports"\s*:\s*\{/.test(importMapStr)) {
-    throw new Error('importmap.json has no "imports" object.');
-  }
-  importMapStr = importMapStr.replace(
-    /"imports"\s*:\s*\{/,
-    () => `"imports": {\n    "${remoteAppName}": "./${remoteAppDir}/${remoteAppEntry}",`,
-  );
-  JSON.parse(importMapStr); // fail here, not in the browser
-  fs.writeFileSync(importMapPath, importMapStr);
-
-  // `openmrs build` wrote routes.registry.json before this app existed, so its extensions have to
-  // be registered here. They are read from the app's own built routes.json so the two cannot drift.
-  const registryPath = path.join(spaDir, 'routes.registry.json');
-  if (!fs.existsSync(registryPath)) {
-    throw new Error(`routes.registry.json not found at ${registryPath}; cannot register ${remoteAppName}.`);
-  }
-  const remoteRoutes = JSON.parse(fs.readFileSync(path.join(remoteDistSrc, 'routes.json'), 'utf8'));
-  const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-  registry[remoteAppName] = remoteRoutes;
-  fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf8');
-  console.log(`OK  Registered ${remoteAppName} (${(remoteRoutes.extensions || []).length} extensions)`);
-}
+JSON.parse(importMapStr); // fail here, not in the browser
+fs.writeFileSync(importMapPath, importMapStr);
 
 // Rename so browsers do not serve the previous build of the patient-search app from cache.
 // A directory from an earlier image layer cannot be renamed on the overlay filesystem

@@ -77,10 +77,8 @@ RUN node /app/patch-service-queues-location.cjs
 # /search page, workspaces), toggle (Refine Search sidebar) and summary (/search heading) -
 # and relabels the local heading to "LOCAL SEARCH - N MATCHES", in chunks 8383, 4959 and
 # 5882. It asserts every anchor and fails the build if the pinned bundle changed.
-# It also installs the built esm-liberia-remote-search-app (packages/esm-liberia-remote-search-app,
-# build it and copy its dist to esm-liberia-remote-search-app-dist first) into the SPA and
-# registers it in importmap.json and routes.registry.json.
-COPY esm-liberia-remote-search-app-dist/ /app/esm-liberia-remote-search-app-dist/
+# The app that fills those slots, esm-liberia-remote-search-app, is assembled with the other
+# apps from the spa.frontendModules pin in distro.properties; it is not copied in here.
 COPY patch-patient-search-remote.cjs /app/patch-patient-search-remote.cjs
 RUN node /app/patch-patient-search-remote.cjs
 
