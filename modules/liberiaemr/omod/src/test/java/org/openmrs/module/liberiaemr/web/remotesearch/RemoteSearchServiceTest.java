@@ -435,6 +435,27 @@ public class RemoteSearchServiceTest {
 		}
 	}
 
+	// --- the password can come from a mounted secret file -----------------------------------------
+
+	private static String secretFile(String content) throws Exception {
+		java.io.File file = java.io.File.createTempFile("remote-secret", ".txt");
+		file.deleteOnExit();
+		java.nio.file.Files.write(file.toPath(), content.getBytes("UTF-8"));
+		return file.getPath();
+	}
+
+	@Test
+	public void aSecretFileIsReadVerbatimApartFromItsTrailingNewline() throws Exception {
+		assertEquals("pa ss$word", RemoteSearchService.readSecretFile(secretFile("pa ss$word\n")));
+		assertEquals("pa ss$word", RemoteSearchService.readSecretFile(secretFile("pa ss$word\r\n")));
+		assertEquals(" spaced ", RemoteSearchService.readSecretFile(secretFile(" spaced ")));
+	}
+
+	@Test
+	public void anUnreadableSecretFileGivesAnEmptyPasswordNotAFallback() {
+		assertEquals("", RemoteSearchService.readSecretFile("/no/such/file"));
+	}
+
 	@Test
 	public void validatesUuids() {
 		assertTrue(service.isValidUuid(" " + NEW_UUID + " "));

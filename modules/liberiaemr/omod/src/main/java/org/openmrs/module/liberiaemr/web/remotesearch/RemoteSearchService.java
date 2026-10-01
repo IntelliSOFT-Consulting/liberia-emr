@@ -61,6 +61,8 @@ public class RemoteSearchService {
 	public static final String ENV_REMOTE_URL = "LIBERIAEMR_REMOTE_URL";
 	public static final String ENV_REMOTE_USER = "LIBERIAEMR_REMOTE_USER";
 	public static final String ENV_REMOTE_PASSWORD = "LIBERIAEMR_REMOTE_PASSWORD";
+	/** A path to a file holding the password, which wins over the plain variable (as for the MFL and SMTP secrets). */
+	public static final String ENV_REMOTE_PASSWORD_FILE = "LIBERIAEMR_REMOTE_PASSWORD_FILE";
 
 	/**
 	 * Fallback for the URL only, and only for a host on LIBERIAEMR_REMOTE_ALLOWED_HOSTS. The service
@@ -824,8 +826,32 @@ public class RemoteSearchService {
 		return value == null ? "" : value.trim();
 	}
 
+	/**
+	 * The service account's password. A mounted secret file (LIBERIAEMR_REMOTE_PASSWORD_FILE) wins over
+	 * the plain variable, which anyone with host access can read from docker inspect or /proc. A file
+	 * that is named but cannot be read gives an empty password, so central refuses the request, instead
+	 * of quietly falling back to a different secret.
+	 */
 	protected String getRemotePassword() {
+		String path = System.getenv(ENV_REMOTE_PASSWORD_FILE);
+		if (path != null && !path.trim().isEmpty()) {
+			return readSecretFile(path.trim());
+		}
 		String value = System.getenv(ENV_REMOTE_PASSWORD);
 		return value == null ? "" : value.trim();
+	}
+
+	/** Only a trailing newline is stripped: `echo secret > file` is how these files get written. */
+	static String readSecretFile(String path) {
+		try {
+			return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
+			    java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\r?\\n$", "");
+		}
+		catch (java.io.IOException e) {
+			// Never log anything read out of the file.
+			log.error("{} is set to '{}' but could not be read; Remote Search cannot sign in. Reason: {}",
+			    ENV_REMOTE_PASSWORD_FILE, path, e.getMessage());
+			return "";
+		}
 	}
 }
