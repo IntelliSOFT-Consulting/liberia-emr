@@ -280,34 +280,12 @@ RUN set -eu; \
     ls "/build/auditlog/omod/target/auditlog-${version}.omod"
 
 # ---------------------------------------------------------------------------
-# Stage 2c — 10-minute servlet session timeout (MOH ICT SOP A7)
-# ---------------------------------------------------------------------------
-# OpenMRS 2.8.8 does not set session-timeout. Tomcat then uses 30 minutes.
-# startup.sh copies /openmrs/distribution/openmrs_core/openmrs.war into Tomcat
-# on every boot, so a patch of the expanded webapps tree would be overwritten.
-#
-# The script fails the build if a future OpenMRS web.xml already has
-# session-timeout, drops session-config, or no longer matches the 2.8.8
-# cookie-config/http-only block. That is deliberate: an upgrade must not
-# silently ship an unknown timeout. http-only is left in place.
-FROM openmrs/openmrs-core:2.8.8 AS openmrs-platform
-
-FROM eclipse-temurin:17-jdk AS session-timeout
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=openmrs-platform /openmrs/distribution/openmrs_core/openmrs.war /tmp/openmrs.war
-COPY distribution/backend/session-timeout/patch_session_timeout.py /tmp/patch_session_timeout.py
-RUN python3 /tmp/patch_session_timeout.py /tmp/openmrs.war \
-    && python3 /tmp/patch_session_timeout.py --verify /tmp/openmrs.war
-
-# ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
 # Must match war.openmrs in distribution/distro.properties — this image IS the platform, so
 # a drift here silently ships a different OpenMRS than the one the pins were tested against.
 # TODO: pin to this tag's digest as well, so the tag cannot be moved under us.
-FROM openmrs-platform
+FROM openmrs/openmrs-core:2.8.8
 
 ARG LIBERIAEMR_VERSION=1.0.0-SNAPSHOT
 LABEL org.opencontainers.image.title="LiberiaEMR Backend" \
@@ -331,11 +309,21 @@ USER root
 RUN printf '#!/bin/sh\nexec /usr/bin/mysql "$@"\n' > /usr/local/bin/mariadb \
     && chmod 0755 /usr/local/bin/mariadb \
     && /usr/local/bin/mariadb --version
-# The platform stage still has the unpatched WAR. Replace it before startup.sh
-# copies the distribution WAR into Tomcat. 1001 is the image's runtime user.
-COPY --from=session-timeout /tmp/openmrs.war /openmrs/distribution/openmrs_core/openmrs.war
-RUN chown 1001:0 /openmrs/distribution/openmrs_core/openmrs.war \
-    && chmod 644 /openmrs/distribution/openmrs_core/openmrs.war
+# MOH ICT SOP A7. OpenMRS 2.8.8 omits session-timeout, so Tomcat's conf/web.xml
+# default of 30 minutes applies. startup.sh recopies the WAR and does not replace
+# conf/. An application-level session-timeout would override this default.
+RUN set -eu; \
+    tomcat_web=/usr/local/tomcat/conf/web.xml; \
+    grep -q '<session-timeout>30</session-timeout>' "$tomcat_web"; \
+    sed -i 's/<session-timeout>30<\/session-timeout>/<session-timeout>10<\/session-timeout>/' "$tomcat_web"; \
+    grep -q '<session-timeout>10</session-timeout>' "$tomcat_web"; \
+    tmp=$(mktemp -d); \
+    (cd "$tmp" && jar xf /openmrs/distribution/openmrs_core/openmrs.war WEB-INF/web.xml); \
+    if grep -q '<session-timeout>' "$tmp/WEB-INF/web.xml"; then \
+      echo "OpenMRS WEB-INF/web.xml defines session-timeout; Tomcat conf/web.xml will not apply" >&2; \
+      exit 1; \
+    fi; \
+    rm -rf "$tmp"
 USER 1001
 
 # OMODs resolved from distro.properties by scripts/build/build-distribution.sh into

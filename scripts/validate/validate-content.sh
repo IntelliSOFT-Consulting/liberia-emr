@@ -898,8 +898,8 @@ ok "every obsGroup in a form has its own group concept"
 
 section "session inactivity timeout"
 # MOH ICT SOP A7. The contractual maximum is 10 minutes of human inactivity.
-# The login app clamps at runtime; these checks stop the configuration and the
-# backend patch from drifting away from that control.
+# The login app clamps at runtime. The backend image sets Tomcat's default
+# session timeout to 10 minutes and fails if OpenMRS defines its own.
 python3 - "$ROOT" <<'PY' || err "session inactivity timeout (see above)"
 import json, os, re, sys
 
@@ -993,16 +993,19 @@ for dirpath, dirnames, filenames in os.walk(gp_root):
                 problems.append(f"{rel(path)}: {prop} looks like a session-timeout global property; do not invent one")
 
 dockerfile = open(os.path.join(root, "distribution/backend/Dockerfile"), encoding="utf-8").read()
-if "patch_session_timeout.py" not in dockerfile or "COPY --from=session-timeout" not in dockerfile:
-    problems.append("backend Dockerfile does not apply patch_session_timeout.py to the distribution WAR")
+if "/usr/local/tomcat/conf/web.xml" not in dockerfile \
+        or "<session-timeout>30</session-timeout>" not in dockerfile \
+        or "<session-timeout>10</session-timeout>" not in dockerfile:
+    problems.append("backend Dockerfile must change Tomcat conf/web.xml session-timeout from 30 to 10")
+if "jar xf" not in dockerfile or "WEB-INF/web.xml" not in dockerfile \
+        or "defines session-timeout" not in dockerfile:
+    problems.append("backend Dockerfile must fail the build when OpenMRS WEB-INF/web.xml defines session-timeout")
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)
 sys.exit(1 if problems else 0)
 PY
-python3 "$ROOT/distribution/backend/session-timeout/patch_session_timeout.py" --self-test \
-  || err "session-timeout patch self-test failed"
-ok "10-minute human-idle config and servlet session-timeout patch"
+ok "10-minute human-idle config and Tomcat session timeout"
 
 echo
 if [[ $fail -ne 0 ]]; then

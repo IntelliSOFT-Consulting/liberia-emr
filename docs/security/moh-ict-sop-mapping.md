@@ -24,7 +24,7 @@ one is a contract breach. Never scaffold a looser default (IMPLEMENTATION.md §1
 | A4 | Password expiry | 90 days | — | **Open** |
 | A5 | No reuse of last 3 passwords | history = 3 | — | **Open** |
 | A6 | Lockout after failed attempts | 5 attempts | `gp-security.csv` → `security.loginAttemptsBeforeLockout` | Enforced |
-| A7 | Session timeout | 10 minutes of human inactivity | Login-app idle watcher and OpenMRS WAR `session-timeout` — see below | **Partial** |
+| A7 | Session timeout | 10 minutes of human inactivity | Login-app idle watcher and Tomcat `conf/web.xml` `session-timeout` — see below | **Partial** |
 
 ### A4 / A5 — password expiry and history
 
@@ -73,12 +73,11 @@ does not contain the watcher. `packages.yml` publishes `10.0.0-pre.<run>` only a
 this change is on `main`. The pin has to move to that exact version in a follow-up.
 Until then a frontend image built from `distro.properties` does not run the watcher.
 
-**Server.** The backend image sets `<session-timeout>10</session-timeout>` in the
-OpenMRS WAR's `WEB-INF/web.xml` before Tomcat deploys it. The unit is whole minutes of
-HTTP-session inactivity. Tomcat's default, which this replaces, is 30. The image build
-fails if a later OpenMRS `web.xml` already contains `session-timeout`, drops
-`session-config`, or changes that block, so an upgrade cannot silently ship a different
-timeout. The existing `<http-only>true</http-only>` cookie flag is kept.
+**Server.** OpenMRS 2.8.8 does not set `session-timeout`, so Tomcat uses the default in
+`/usr/local/tomcat/conf/web.xml`. The backend image changes that value from 30 minutes to
+10. `startup.sh` recopies the WAR and does not replace `conf/`. An application-level
+`<session-timeout>` in the OpenMRS `WEB-INF/web.xml` would override this default, so the
+image build fails if one appears. The OpenMRS descriptor itself is not modified.
 
 **Why both.** A frontend-only timer leaves the server session alive when the browser
 never runs the watcher, including a stolen cookie sitting unused. A server-only timer
