@@ -154,6 +154,14 @@ check "receiver still gets it: the broker kept it for the subscription (E11)" 'R
 
 check "facility cannot send to another facility's address (D6)" 'RESULT REFUSED' 'SENT' \
   "$(probe facility-careysburg "$URL" send sync.facility.barnersville)"
+check "facility can send its reconciliation digest to its own queue" 'RESULT SENT' '' \
+  "$(probe facility-careysburg "$URL" send queue://recon.facility.careysburg)"
+check "facility cannot send a digest as another facility (D6)" 'RESULT REFUSED' 'SENT' \
+  "$(probe facility-careysburg "$URL" send queue://recon.facility.barnersville)"
+check "facility cannot read digests, its own or others' (E7)" 'RESULT REFUSED' 'CONSUMER_CREATED' \
+  "$(probe facility-careysburg "$URL" consume queue://recon.facility.careysburg)"
+check "receiver can read the digests" 'RESULT CONSUMER_CREATED' '' \
+  "$(probe receiver "$URL" consume queue://recon.facility.careysburg)"
 check "facility cannot send to the sync topic directly (D6)" 'RESULT REFUSED' 'SENT' \
   "$(probe facility-careysburg "$URL" send "$TOPIC")"
 check "facility cannot consume the sync topic (E7)" 'RESULT REFUSED' 'CONSUMER_CREATED' \

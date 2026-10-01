@@ -67,7 +67,8 @@ jobs:
   # The path list is an ALLOW list and deliberately over-broad: content, the
   # whole distribution tree (Dockerfiles, compose, distro.properties), the
   # build scripts that fetch and sanitise the OCL exports, the QA script
-  # itself, the reactor pom, and this workflow. modules/ is in the list too:
+  # itself, the indicator-report check the job also runs (qa/reporting/),
+  # the reactor pom, and this workflow. modules/ is in the list too:
   # the backend image builds the in-tree OMOD into itself, and that module
   # carries a liquibase changeset and its own global properties, so a change
   # there changes what a clean database ends up holding.
@@ -118,7 +119,7 @@ jobs:
           echo "Changed files since ${BASE_SHA}:"
           sed 's/^/  /' <<<"$files"
 
-          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(content-packages/|distribution/|modules/|qa/upgrade/|qa/reporting/|scripts/build/|pom\.xml$|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "metadata=true" >> "$GITHUB_OUTPUT"
             echo "-> metadata could have changed; the clean-database gate will run."
           else
@@ -454,8 +455,10 @@ jobs:
             --version 0.0.0-ci --site careysburg --no-frontend
       # Loading metadata into an empty database is the cheapest way to catch a broken CSV,
       # an unresolved ${var.*} or a forward reference between layers.
+      # --keep-stack: on a pass the stack stays up for the indicator-report check below, which
+      # needs exactly this — a facility stack with a clean database and nothing else in it.
       - name: Load all metadata into an empty database
-        run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend
+        run: ./qa/upgrade/run-clean-install.sh --version 0.0.0-ci --no-frontend --keep-stack
       # run-clean-install.sh saves the whole initializer.log on failure, but only prints a
       # 40-line excerpt — enough to name the rejected file, rarely enough to explain it. The
       # rest is lost when the runner is torn down, and recovering it costs a full re-run of
@@ -468,6 +471,30 @@ jobs:
           name: initializer-log
           path: qa/upgrade/initializer-failure.log
           if-no-files-found: ignore
+      # LE-336: the reporting ETL's definition of done (ADR 0010, Consequences, "QA gate") on
+      # the stack just installed. Here and not in the End-to-end job because the expected values
+      # count every patient in the database, and the demo stack has patients of its own.
+      # run-stack-check.sh loads the Careysburg fixtures and asserts, in order: setupEtl()
+      # deployed as the ETL user (every routine's definer, no SUPER, no global grant, the
+      # MariaDB flags on); a full run succeeds with an empty _mamba_etl_error_log; all 42
+      # Careysburg rows of expected-values.csv match (compare-reports.py); a late, back-dated
+      # row is picked up by an incremental run and the rows still match; no liberiaemr_etl event
+      # is in the binlog. Measured locally at 48 seconds; each step's time lands in the job summary.
+      # Central's check is too costly here (its own image and a second dictionary import) and is
+      # run by hand: docs/runbooks/reporting-etl.md section 10.
+      - name: Indicator reports match their expected values on the clean stack
+        run: |
+          qa/reporting/run-stack-check.sh --role facility --site careysburg -- \
+            -f distribution/compose/facility/docker-compose.yml \
+            --env-file qa/upgrade/clean-install.env
+      - name: Tear down the clean-install stack
+        if: always()
+        run: |
+          if [[ -f qa/upgrade/clean-install.env ]]; then
+            docker compose -f distribution/compose/facility/docker-compose.yml \
+              --env-file qa/upgrade/clean-install.env down -v || true
+          fi
+          rm -rf qa/upgrade/clean-install.env qa/upgrade/.ci-certs
       - name: API tests
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
@@ -633,6 +660,8 @@ jobs:
             --build-arg "DBSYNC_VERSION=${dbsync_version}" -t lemr-sync:ci distribution/sync
           docker build -f distribution/monitoring/cert-expiry/Dockerfile \
             -t lemr-cert-expiry:ci distribution/monitoring/cert-expiry
+          docker build -f distribution/monitoring/sync-capture/Dockerfile \
+            -t lemr-sync-capture:ci distribution/monitoring/sync-capture
       - name: Compose keeps the sync security wiring
         run: qa/sync/verify-compose-wiring.sh
       # The binlog Debezium reads is kept for up to 99 days; a CREATE USER logged there is a
@@ -722,6 +751,14 @@ jobs:
         run: |
           docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
             prom/prometheus:v2.53.4 test rules /m/tests/rules-central-test.yml
+      - name: Facility alert rules behave (promtool unit tests)
+        run: |
+          docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint promtool \
+            prom/prometheus:v2.53.4 test rules /m/tests/rules-facility-test.yml
+      - name: Capture exporter tells a stalled sender from a quiet one
+        run: |
+          docker run --rm -v "$PWD/distribution/monitoring:/m:ro" --entrypoint sh \
+            lemr-sync-capture:ci /m/tests/sync-capture-test.sh /usr/local/bin/sync-capture.sh
       - name: Expiry exporter reads issued material
         run: |
           set -euo pipefail
@@ -763,6 +800,14 @@ jobs:
       - name: Install Cypress test dependencies
         working-directory: qa/e2e
         run: npm ci
+      # AuditLog.cy.ts adds this build to the served SPA while the app is not yet pinned in
+      # distro.properties (a new package has no published version before its first merge); once
+      # it is pinned the spec uses the served one and this build goes unused.
+      - name: Build the audit log app for AuditLog.cy.ts
+        working-directory: packages/esm-liberia-audit-log-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
 
       # --demo: the priority journeys log in as admin/Admin123, which only content-demo
       # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —
@@ -984,6 +1029,14 @@ jobs:
           yarn typescript
           yarn test
           yarn build
+      - name: Verify audit log app
+        working-directory: packages/esm-liberia-audit-log-app
+        run: |
+          yarn install --frozen-lockfile
+          yarn lint
+          yarn typescript
+          yarn test
+          yarn build
 
   backend-module:
     name: Build LiberiaEMR Module
@@ -1131,10 +1184,13 @@ jobs:
           ./scripts/build/build-distribution.sh \
             --version ${{ github.sha }} --site careysburg
 
+      # The backend and frontend, and every site-agnostic image the stacks pull: the gateway and
+      # the sync sender, receiver, broker and exporters (scripts/build/image-refs.sh). Without
+      # the sync images a dev server started with the sync profile has nothing to pull.
       - name: Tag and push :latest alongside :${{ github.sha }}
         run: |
-          for service in backend frontend gateway; do
-            image="${REGISTRY}/liberia-emr-${service}"
+          for name in liberia-emr-backend liberia-emr-frontend $(scripts/build/image-refs.sh --role shared); do
+            image="${REGISTRY}/${name}"
             docker tag "${image}:${{ github.sha }}" "${image}:latest"
             docker push "${image}:${{ github.sha }}"
             docker push "${image}:latest"
@@ -1243,6 +1299,31 @@ jobs:
           echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+
+      # The compose file on the server has to match the images being deployed, as for central
+      # dev: a checkout left behind keeps old service definitions (a facility server ran without
+      # the binary log sync reads for weeks this way). Fast-forward only; a checkout with local
+      # changes is left as it is, with a warning, and the images still deploy. The "Enable sync
+      # on dev" workflow keeps such a change in a stash and brings the checkout up to date.
+      - name: Bring the server's checkout to this commit
+        run: |
+          ssh "${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}" '
+            set -e
+            cd "${{ secrets.DEV_COMPOSE_DIR }}"
+            top=$(git rev-parse --show-toplevel)
+            if [ -n "$(git -C "$top" status --porcelain --untracked-files=no)" ]; then
+              echo "::warning::the checkout at $top has local changes, so it stays where it is; run Enable sync on dev, or commit or discard them:"
+              git -C "$top" status --short
+              exit 0
+            fi
+            git -C "$top" fetch -q origin main
+            if git -C "$top" merge-base --is-ancestor ${{ github.sha }} HEAD; then
+              echo "checkout already at or past ${{ github.sha }}"
+            else
+              git -C "$top" merge -q --ff-only ${{ github.sha }}
+              echo "checkout now at $(git -C "$top" rev-parse --short HEAD)"
+            fi
+          '
 
       # Overrides LIBERIAEMR_VERSION inline rather than editing the
       # server's persistent facility.env, so this doesn't silently change
@@ -1413,9 +1494,13 @@ jobs:
   #   - it skips cleanly until its secrets exist. Create, under Settings > Secrets and
   #     variables > Actions: CENTRAL_DEV_SSH_PRIVATE_KEY (a CI-only deploy key),
   #     CENTRAL_DEV_HOST (liberiaemrcentraldev.intellisoftkenya.com), CENTRAL_DEV_USER,
-  #     CENTRAL_DEV_COMPOSE_DIR (the directory holding the central docker-compose.yml), and
-  #     optionally CENTRAL_DEV_ENV_FILE (the env file there; default central.env).
-  # No LEGACY_ADMIN_UI: the central compose file has no such switch.
+  #     CENTRAL_DEV_COMPOSE_DIR (distribution/compose/central inside a git checkout of this
+  #     repo, owned by CENTRAL_DEV_USER), and optionally CENTRAL_DEV_ENV_FILE (relative to
+  #     that directory; default ../../env/central.env, where ansible/central-server.yaml and
+  #     docs/runbooks/deploy.md put it).
+  # LEGACY_ADMIN_UI=true is passed on the deploy command, as deploy-dev does and for the
+  # same reason (LE-376): central dev needs Manage Modules and the legacy scheduler. It is
+  # never written to central.env, so it cannot travel into a production central server.
   # ---------------------------------------------------------------------
   deploy-central-dev:
     name: Update central dev environment
@@ -1438,6 +1523,7 @@ jobs:
       backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
       frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
       gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
+      checkout_sha: ${{ steps.previous-checkout.outputs.checkout_sha }}
     steps:
       - name: Check the central dev secrets exist
         id: configured
@@ -1489,24 +1575,72 @@ jobs:
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
       # The compose file on the server has to match the images being deployed: an old checkout
-      # names the facility frontend, and lacks newer services and settings. When the compose
-      # directory sits in a git checkout (the Ansible playbook clones one), fast-forward it to
-      # this exact commit first. It never rewrites local history: a checkout that cannot
-      # fast-forward stops the deploy for a human.
+      # names the facility frontend, and lacks newer services and settings. So the compose
+      # directory MUST sit in a git checkout (the Ansible playbook clones one); anything else
+      # stops here, before the server is touched, rather than deploying against a compose
+      # file nobody can identify. The commit is recorded so a rollback can restore it.
+      - name: Record the checkout the compose file comes from
+        if: steps.configured.outputs.configured == 'true'
+        id: previous-checkout
+        run: |
+          sha=$(ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "git -C '$CENTRAL_DEV_COMPOSE_DIR' rev-parse HEAD" 2>&1) || true
+          if ! echo "$sha" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "::error::$CENTRAL_DEV_COMPOSE_DIR on the central dev server is not a readable git checkout, so CI cannot keep its compose file in step with the images: $sha. Clone the repository there as $CENTRAL_DEV_USER (ansible/central-server.yaml does)."
+            exit 1
+          fi
+          echo "checkout at $sha"
+          echo "checkout_sha=$sha" >> "$GITHUB_OUTPUT"
+      # Fast-forward the checkout to this exact commit. It never rewrites local history: a
+      # checkout that cannot fast-forward, or that is already past this commit (a newer deploy
+      # or a manual change got there first), stops the deploy for a human rather than start
+      # this run's images under a different compose file.
+      #
+      # -f docker-compose.yml names the tracked file. Without it compose would prefer an
+      # untracked compose.yaml, compose.yml or docker-compose.yaml placed beside it, and
+      # would load any override file, and none of the checks here would notice.
+      #
+      # REGISTRY is passed explicitly, as rollback-central-dev's retags already assume: the
+      # images come from where this workflow published them, not from whatever central.env
+      # says (central.env.example still names ghcr.io). Shell variables win over --env-file.
+      # The env file defaults to where the playbook and deploy.md put it, relative to the
+      # compose directory.
       - name: Pull and restart backend, frontend and gateway on the central dev server
         if: steps.configured.outputs.configured == 'true'
         run: |
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
             cd '$CENTRAL_DEV_COMPOSE_DIR'
-            if top=\$(git rev-parse --show-toplevel 2>/dev/null); then
-              git -C \"\$top\" fetch -q origin main
-              git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
-                || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
-              echo \"checkout \$top now at \$(git -C \"\$top\" rev-parse --short HEAD)\"
+            top=\$(git rev-parse --show-toplevel)
+            # Checked BEFORE moving anything: a fast-forward keeps a hand edit to any tracked file
+            # the target commit does not touch, and HEAD matching says nothing about the files.
+            # Untracked files count too: initdb/ is mounted as the MariaDB init directory, so a
+            # stray script there would run when the database volume is created. Git-ignored
+            # files (central.env) are not listed, so they stay allowed.
+            if [ -n \"\$(git -C \"\$top\" status --porcelain --untracked-files=all)\" ]; then
+              echo \"checkout at \$top has local changes or untracked files; not starting this run's images under a compose file that differs from ${{ github.sha }}. Commit or discard them by hand:\" >&2
+              git -C \"\$top\" status --short --untracked-files=all >&2
+              exit 1
             fi
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' pull backend frontend gateway
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+            # The one untracked file that is NOT fine: an override. With -f compose ignores it,
+            # but a manual docker compose up here would apply it, so its presence means this
+            # server is meant to run something other than the tracked file. Stop for a human.
+            for f in docker-compose.override.yml docker-compose.override.yaml compose.override.yml compose.override.yaml; do
+              if [ -e \"\$f\" ]; then
+                echo \"\$PWD/\$f exists: a manual docker compose up here would apply it on top of ${{ github.sha }}'s compose file. Remove it, or commit what it does, before CI deploys here\" >&2
+                exit 1
+              fi
+            done
+            git -C \"\$top\" fetch -q origin main
+            git -C \"\$top\" merge -q --ff-only ${{ github.sha }} \
+              || { echo 'checkout at '\$top' cannot fast-forward to ${{ github.sha }}; fix it by hand' >&2; exit 1; }
+            head=\$(git -C \"\$top\" rev-parse HEAD)
+            if [ \"\$head\" != '${{ github.sha }}' ]; then
+              echo \"checkout at \$top is at \$head, past ${{ github.sha }}; not starting this run's images under a newer compose file. Fix it by hand\" >&2
+              exit 1
+            fi
+            echo \"checkout \$top now at \$head\"
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
@@ -1579,16 +1713,20 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$CENTRAL_DEV_HOST" >> ~/.ssh/known_hosts
       # As rollback-dev: pull each previous image by digest, re-tag it as :latest locally,
-      # and restart WITHOUT pulling, so compose uses the known-good images.
-      - name: Roll back to the previously-running images
+      # and restart WITHOUT pulling, so compose uses the known-good images. The checkout goes
+      # back too, so those images start under the compose file they ran with, not the one
+      # this deploy fast-forwarded to. `reset --keep` only moves the branch back to a commit
+      # it already contains, and refuses rather than discard a local change.
+      - name: Roll back to the previously-running images and compose file
         run: |
           backend="${{ needs.deploy-central-dev.outputs.backend_digest }}"
           frontend="${{ needs.deploy-central-dev.outputs.frontend_digest }}"
           gateway="${{ needs.deploy-central-dev.outputs.gateway_digest }}"
-          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway"; do
+          checkout="${{ needs.deploy-central-dev.outputs.checkout_sha }}"
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "checkout:$checkout"; do
             svc="${pair%%:*}"; digest="${pair#*:}"
             if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
-              echo "::error::No previous digest captured for ${svc}; cannot roll back automatically. Manual intervention required on the central dev server."
+              echo "::error::No previous ${svc} captured; cannot roll back automatically. Manual intervention required on the central dev server."
               exit 1
             fi
           done
@@ -1596,23 +1734,72 @@ jobs:
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
           echo "  gateway:  $gateway"
+          echo "  checkout: $checkout"
+          # The compose file goes back FIRST, and each image is tagged under the name THAT file
+          # gives its service: an older compose file may name a different image (the facility
+          # frontend, before the central one existed), and tagging a fixed name would leave
+          # compose starting whatever that other name points at. python3 is on the server
+          # because Ansible, which provisions it, needs it.
           ssh "$CENTRAL_DEV_USER@$CENTRAL_DEV_HOST" "
             set -e
-            docker pull '$backend'
-            docker pull '$frontend'
-            docker pull '$gateway'
-            docker tag '$backend'  '${{ env.REGISTRY }}/liberia-emr-backend-central:latest'
-            docker tag '$frontend' '${{ env.REGISTRY }}/liberia-emr-frontend-central:latest'
-            docker tag '$gateway'  '${{ env.REGISTRY }}/liberia-emr-gateway:latest'
             cd '$CENTRAL_DEV_COMPOSE_DIR'
-            LIBERIAEMR_VERSION=latest docker compose --env-file '${CENTRAL_DEV_ENV_FILE:-central.env}' up -d --no-deps backend frontend gateway
+            # As the deploy step: -f keeps an override out of compose config and compose up,
+            # but one added since the deploy means the server is not in the recorded state.
+            # (No backticks in these comments: they sit inside a double-quoted ssh string.)
+            for f in docker-compose.override.yml docker-compose.override.yaml compose.override.yml compose.override.yaml; do
+              if [ -e \"\$f\" ]; then
+                echo \"\$PWD/\$f exists: the server is not in the state this deploy recorded. Remove it and roll back by hand\" >&2
+                exit 1
+              fi
+            done
+            # Only undo the deploy THIS run made. reset --keep refuses to discard a local edit, but it
+            # would happily move a clean checkout back from a newer deploy that landed during
+            # the smoke test (a manual one, say), and start old images over it.
+            head=\$(git rev-parse HEAD)
+            if [ \"\$head\" != '${{ github.sha }}' ]; then
+              echo \"checkout is at \$head, not ${{ github.sha }} which this run deployed: something moved it since. Not rolling back over it; check the server by hand\" >&2
+              exit 1
+            fi
+            # reset --keep keeps a local edit to any file the two commits do not differ on, so
+            # compose would start the old images under the edited file, not the recorded one.
+            # Untracked files count too, as in the deploy step; ignored ones (central.env) do not.
+            if [ -n \"\$(git status --porcelain --untracked-files=all)\" ]; then
+              echo \"checkout has local changes or untracked files, so the rollback would not restore the recorded compose configuration. Roll back by hand:\" >&2
+              git status --short --untracked-files=all >&2
+              exit 1
+            fi
+            git reset -q --keep '$checkout'
+            echo \"checkout back at \$(git rev-parse HEAD)\"
+            compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
+            config=\$(compose config --format json)
+            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway'; do
+              svc=\${pair%%=*}; digest=\${pair#*=}
+              name=\$(printf '%s' \"\$config\" | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"services\"][sys.argv[1]][\"image\"])' \"\$svc\")
+              docker pull \"\$digest\"
+              docker tag \"\$digest\" \"\$name\"
+              echo \"\$svc: \$digest tagged as \$name\"
+            done
+            compose up -d --no-deps backend frontend gateway
           "
+      # Same bar as the smoke test: the SPA answering is not enough, since the frontend serves
+      # it with the backend down. A rollback that leaves the backend unhealthy fails here.
       - name: Verify the rollback came back up
         run: |
           url="https://$CENTRAL_DEV_HOST/openmrs/spa/"
           for i in $(seq 1 20); do
             code=$(curl -sk -o /dev/null -w '%{http_code}' "$url" || echo 000)
-            [ "$code" = "200" ] && { echo "ok: rollback restored service ($url -> 200)"; exit 0; }
+            if [ "$code" = "200" ]; then
+              echo "ok: rollback restored the SPA ($url -> 200)"
+              health="https://$CENTRAL_DEV_HOST/openmrs/health/started"
+              for j in $(seq 1 60); do
+                hc=$(curl -sk -o /dev/null -w '%{http_code}' "$health" || echo 000)
+                [ "$hc" = "200" ] && { echo "ok: rollback restored the backend ($health -> 200)"; exit 0; }
+                echo "backend attempt $j: got $hc, retrying in 15s..."
+                sleep 15
+              done
+              echo "::error::Rollback brought the SPA back but $health never returned 200; the central backend is still down and needs a human now." >&2
+              exit 1
+            fi
             echo "attempt $i: got $code, retrying in 15s..."
             sleep 15
           done

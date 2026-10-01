@@ -194,5 +194,12 @@
         <webservicesRestVersion>3.0.0</webservicesRestVersion>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <!--
+            Where the content layers live, relative to each submodule. The api's content UUIDs
+            (liberiaemr-uuids.properties) are filtered in from the national layer's
+            variables.properties (ADR 0010 decision 7). The backend image's module stage
+            overrides this with -Dliberiaemr.content.dir.
+        -->
+        <liberiaemr.content.dir>${project.basedir}/../../../content-packages</liberiaemr.content.dir>
     </properties>
 </project>

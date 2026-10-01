@@ -18,6 +18,11 @@ scrape_configs:
     static_configs:
       - targets: ["sync-receiver:8080"]
 
+  # Reconciliation, beside the receiver in the same container (distribution/sync/recon/).
+  - job_name: sync-recon
+    static_configs:
+      - targets: ["sync-receiver:9103"]
+
   - job_name: cert-expiry
     static_configs:
       - targets: ["cert-expiry:9101"]

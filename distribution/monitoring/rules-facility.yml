@@ -38,3 +38,25 @@ groups:
           severity: critical
         annotations:
           summary: "Sync sender cannot reach the facility database"
+
+  # From the capture exporter (monitoring/sync-capture/): the one failure the sender's own
+  # metrics cannot show, a sender that is up but no longer reading the binlog.
+  - name: sync-capture
+    rules:
+      - alert: SyncCaptureStalled
+        expr: sync_capture_stalled_seconds > 900 and on() up{job="sync-sender"} == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sync sender is running but has stopped capturing changes"
+          description: "New records have been saved at the facility for over 15 minutes while the sender's binlog position has not moved, so none of them is being sent. Look for an error repeating in the sender's log (for example 'bogus data in log event' after a power cut). The records are safe in the facility database and are sent once capture resumes, provided the binlog still holds them. NEVER a reason to stop clinical work."
+
+      - alert: SyncCaptureCheckBlind
+        expr: up{job="sync-capture"} == 0 or sync_capture_db_readable == 0 or (time() - sync_capture_last_run_seconds) > 600 or sync_capture_unverified_seconds > 1800
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The sync capture check cannot see the facility"
+          description: "The capture exporter is down, cannot read the database with the Debezium account, has stopped refreshing, or has had no saved sender position to read for half an hour while records were being saved, so a stalled sender would go unnoticed."

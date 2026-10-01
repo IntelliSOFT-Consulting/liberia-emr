@@ -23,6 +23,7 @@
   - central-server.vars.yml
   vars:
     central_env_file: "{{ repo_dest }}/distribution/env/central.env"
+    ci_key_marker: liberia-emr-ci-deploy:ansible-managed
 
   tasks:
   # -----------------------------------------------------------------
@@ -95,13 +96,58 @@
       append: true
 
   # -----------------------------------------------------------------
-  # CI deploy key (LE-368). Only when ci_deploy_public_key is set: the
-  # private half is the CENTRAL_DEV_SSH_PRIVATE_KEY repository secret.
+  # CI deploy key (LE-368). The private half is the
+  # CENTRAL_DEV_SSH_PRIVATE_KEY repository secret.
+  #
+  # The key is written with a fixed comment, ci_key_marker, and every
+  # task finds it by that marker, so there is exactly one CI key:
+  # changing ci_deploy_public_key REPLACES the old key (a rotation
+  # revokes), and unsetting it REMOVES it. Other keys in the file are
+  # never touched. Whatever comment the key came with is dropped; a key
+  # carrying authorized_keys options is refused rather than mangled.
   # -----------------------------------------------------------------
   - name: Look up {{ ansible_user }}'s home directory
     ansible.builtin.getent:
       database: passwd
       key: "{{ ansible_user }}"
+
+  # ci_key_marker is RESERVED: the tasks below treat the one line ending in it as the CI key.
+  # This playbook never writes two, so a second means another key borrowed the comment, and
+  # rotating or revoking would then hit the wrong line. Stop before touching the file.
+  #
+  # KNOWN LIMITATION: nothing records which line this playbook wrote, so ONE borrowed marker
+  # is not detectable. If another key ends in ci_key_marker while no CI key is present, it is
+  # taken for the CI key and replaced (or removed, when ci_deploy_public_key is unset). Never
+  # put this comment on any other key. Closing this fully would mean tracking the managed
+  # key in a state file on the server; judged not worth it for a namespaced, reserved string.
+  - name: Check for {{ ansible_user }}'s authorized_keys
+    ansible.builtin.stat:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+    register: ci_authorized_keys_stat
+
+  - name: Read {{ ansible_user }}'s authorized_keys
+    ansible.builtin.slurp:
+      src: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+    register: ci_authorized_keys
+    when: ci_authorized_keys_stat.stat.exists
+
+  - name: Refuse to manage the CI key when more than one line carries its marker
+    ansible.builtin.assert:
+      that: ci_marked_lines | length <= 1
+      fail_msg: >-
+        {{ ci_marked_lines | length }} lines in authorized_keys end in the reserved comment
+        "{{ ci_key_marker }}", which marks the ONE CI deploy key. Another key is using it;
+        change that key's comment by hand, then re-run.
+    vars:
+      ci_marked_lines: >-
+        {{ (ci_authorized_keys.content | b64decode).splitlines()
+           | select('search', '\s' ~ (ci_key_marker | regex_escape) ~ '$') | list
+           if ci_authorized_keys_stat.stat.exists else [] }}
+
+  - name: Refuse a CI deploy key that is not a plain "type base64 [comment]" key
+    ansible.builtin.assert:
+      that: ci_deploy_public_key is match('^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]+( .*)?$')
+      fail_msg: ci_deploy_public_key must be a plain public key line, e.g. "ssh-ed25519 AAAA... comment", with no options before it.
     when: ci_deploy_public_key | default('') | length > 0
 
   - name: Create {{ ansible_user }}'s .ssh directory
@@ -112,19 +158,78 @@
       mode: "0700"
     when: ci_deploy_public_key | default('') | length > 0
 
-  - name: Authorize the CI deploy key
+  # Before these tasks managed the key by marker, it was appended as-is, and that line is not
+  # recognisable later. Two ways it goes: the unmarked copy of the CURRENT key is dropped just
+  # below (the marked line replaces it), and any key listed in ci_deploy_revoked_keys is
+  # removed whatever its comment or marker. A server whose key is rotated, or whose
+  # ci_deploy_public_key is unset, in the same run as this upgrade must list the old key
+  # there, or its unmarked line stays authorized: the marker-based revocation below cannot
+  # see it.
+  # Every entry is checked before ANY is removed. A partial entry would be a pattern, not a
+  # key: a bare "ssh-ed25519" would match, and remove, every Ed25519 key in the file,
+  # operators' included. So each must be a whole plain key line, body and all.
+  - name: Refuse a ci_deploy_revoked_keys entry that is not a whole plain public key
+    ansible.builtin.assert:
+      that: ci_deploy_revoked_keys | default([]) | reject('match', '^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]{16,}( .*)?$') | list | length == 0
+      fail_msg: >-
+        Every ci_deploy_revoked_keys entry must be a complete public key line, e.g.
+        "ssh-ed25519 AAAA... comment". Not a plain key:
+        {{ ci_deploy_revoked_keys | default([]) | reject('match', '^(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+ [A-Za-z0-9+/=]{16,}( .*)?$') | list }}
+
+  - name: Revoke the keys listed in ci_deploy_revoked_keys
     ansible.builtin.lineinfile:
       path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
-      line: "{{ ci_deploy_public_key }}"
+      # Matched on the type and base64 body only, wherever they sit on the line, so neither the
+      # comment nor an options prefix (restrict,command="...") the old line carried matters.
+      regexp: "^(.*\\s)?{{ (item.split())[0] | regex_escape }}\\s+{{ (item.split())[1] | regex_escape }}(\\s|$)"
+      state: absent
+    loop: "{{ ci_deploy_revoked_keys | default([]) }}"
+
+  # Matched on the key's type and body with any comment, or none, EXCEPT the marker, and with
+  # or without an options prefix: neither is part of a key's identity, and the pre-marker task
+  # wrote the value as given, options included. So an old line differing only in those is the
+  # same authorization and must go too, while the managed line is left for the task below.
+  - name: Remove an unmarked copy of the CI deploy key from before it was managed
+    ansible.builtin.lineinfile:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+      regexp: "^(.*\\s)?{{ (ci_deploy_public_key.split())[0] | regex_escape }}\\s+{{ (ci_deploy_public_key.split())[1] | regex_escape }}(\\s+(?!\\s)(?!{{ ci_key_marker | regex_escape }}$).*)?$"
+      state: absent
+    when: ci_deploy_public_key | default('') | length > 0
+
+  - name: Authorize the CI deploy key, replacing any earlier one
+    ansible.builtin.lineinfile:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+      regexp: "\\s{{ ci_key_marker | regex_escape }}$"
+      line: "{{ (ci_deploy_public_key.split())[:2] | join(' ') }} {{ ci_key_marker }}"
       create: true
       owner: "{{ ansible_user }}"
       mode: "0600"
     when: ci_deploy_public_key | default('') | length > 0
 
+  - name: Revoke the CI deploy key when ci_deploy_public_key is unset
+    ansible.builtin.lineinfile:
+      path: "{{ getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+      regexp: "\\s{{ ci_key_marker | regex_escape }}$"
+      state: absent
+    when: ci_deploy_public_key | default('') | length == 0
+
   # -----------------------------------------------------------------
   # Repo
   # -----------------------------------------------------------------
+  # The checkout belongs to {{ ansible_user }}, not root: CI logs in as that user and runs
+  # `git fetch`/`merge` in it, which a root-owned .git refuses. The recursive chown also
+  # repairs a checkout an earlier run of this playbook cloned as root. Safe to repeat: the
+  # central containers only mount files from here read-only, so nothing in it is written as
+  # another user.
+  - name: Give {{ ansible_user }} the checkout directory
+    ansible.builtin.file:
+      path: "{{ repo_dest }}"
+      state: directory
+      owner: "{{ ansible_user }}"
+      recurse: true
+
   - name: Clone liberia-emr
+    become: false
     ansible.builtin.git:
       repo: "{{ repo_url }}"
       dest: "{{ repo_dest }}"
@@ -198,13 +303,23 @@
       path: "{{ central_env_file }}"
     register: central_env_stat
 
+  # {{ ansible_user }} owns it because CI runs `docker compose --env-file` as that user. 0600
+  # keeps the secrets in it from every other account; root (this playbook) reads it anyway.
   - name: Copy central.env.example to central.env
     ansible.builtin.copy:
       src: "{{ repo_dest }}/distribution/env/central.env.example"
       dest: "{{ central_env_file }}"
       remote_src: true
-      mode: "0640"
+      owner: "{{ ansible_user }}"
+      mode: "0600"
     when: not central_env_stat.stat.exists
+
+  - name: Keep central.env readable by {{ ansible_user }} only
+    ansible.builtin.file:
+      path: "{{ central_env_file }}"
+      owner: "{{ ansible_user }}"
+      mode: "0600"
+    when: central_env_stat.stat.exists
 
   - name: Fail here if central.env needs real values filled in
     ansible.builtin.fail:
@@ -216,6 +331,6 @@
   # ASSUMPTIONS note at the top of this file.
   - name: Bring up db, backend, frontend, gateway
     ansible.builtin.command: >
-      docker compose --env-file {{ central_env_file }} up -d db backend frontend gateway
+      docker compose -f docker-compose.yml --env-file {{ central_env_file }} up -d db backend frontend gateway
     args:
       chdir: "{{ repo_dest }}/distribution/compose/central"

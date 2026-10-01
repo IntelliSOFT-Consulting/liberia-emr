@@ -1,0 +1,120 @@
+@use '@carbon/react/scss/spacing';
+@use '@carbon/react/scss/type';
+
+.container {
+  margin: spacing.$spacing-05;
+}
+
+.heading {
+  @include type.type-style('heading-04');
+  margin-bottom: spacing.$spacing-03;
+}
+
+.subheading {
+  @include type.type-style('heading-compact-02');
+  margin: spacing.$spacing-05 0 spacing.$spacing-03;
+}
+
+.explainer {
+  @include type.type-style('body-01');
+  margin-bottom: spacing.$spacing-05;
+  max-width: 64rem;
+}
+
+.helper {
+  @include type.type-style('helper-text-01');
+  color: var(--cds-text-helper, #6f6f6f);
+}
+
+.empty {
+  @include type.type-style('body-01');
+  margin: spacing.$spacing-05 0;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: spacing.$spacing-05;
+  align-items: end;
+  margin-bottom: spacing.$spacing-03;
+}
+
+.filterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-03;
+  grid-column: 1 / -1;
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-06;
+  margin-top: spacing.$spacing-05;
+}
+
+.tableColumn {
+  flex: 3 1 36rem;
+  min-width: 0;
+}
+
+.detailColumn {
+  flex: 2 1 24rem;
+  min-width: 0;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.selectedRow {
+  cursor: pointer;
+
+  td {
+    background-color: var(--cds-layer-selected, #e0e0e0) !important;
+  }
+}
+
+.linkButton {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--cds-link-primary, #0f62fe);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.detail {
+  border: 1px solid var(--cds-border-subtle, #e0e0e0);
+  padding: spacing.$spacing-05;
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: spacing.$spacing-02 spacing.$spacing-05;
+  margin-bottom: spacing.$spacing-05;
+
+  dt {
+    @include type.type-style('label-01');
+    color: var(--cds-text-secondary, #525252);
+  }
+}
+
+.value {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.child {
+  border-top: 1px solid var(--cds-border-subtle, #e0e0e0);
+  padding-top: spacing.$spacing-03;
+  margin-top: spacing.$spacing-03;
+}

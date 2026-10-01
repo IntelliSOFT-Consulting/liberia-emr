@@ -76,6 +76,14 @@ PGP_PASSWORD="$PGP_PASSWORD" envsubst "$vars" \
   < /app/receiver-application.properties.template > /app/config/application.properties
 unset PGP_PASSWORD
 
+# Compares the facilities' reconciliation digests with this database (sync-eip.md 5.5) and
+# serves the result on :9103/metrics. Restarted if it exits; SYNC_RECON=false turns it off.
+if [ "${SYNC_RECON:-true}" = true ]; then
+  export SYNC_RECON_CONFIRM_HOURS SYNC_RECON_CHECK_SECONDS SYNC_RECON_PROMETHEUS_URL
+  # shellcheck disable=SC2086 # TLS_ARGS is deliberately word-split
+  ( while :; do java ${SYNC_RECON_JAVA_OPTS:--Xmx512m} $TLS_ARGS -jar /app/recon.jar central; sleep 300; done ) &
+fi
+
 # Only ever run with &: exec makes the background pid the JVM's.
 receiver_jvm() {
   # shellcheck disable=SC2086 # JAVA_OPTS and TLS_ARGS are deliberately word-split

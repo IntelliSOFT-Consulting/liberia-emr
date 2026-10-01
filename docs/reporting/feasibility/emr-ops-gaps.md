@@ -25,9 +25,9 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
 | Receiver state (central `openmrs_mgmt`) | `receiver_sync_msg` (`date_created` = arrival at the receiver), `receiver_synced_msg` (`date_sent` = sender's `metadata.dateSent`, stamped when it serialised the message; `date_received`), `receiver_retry_queue`, `receiver_conflict_queue`, `site_info`. `receiver_sync_msg` and `receiver_synced_msg` are **transient**: `CleanerProcessor` deletes a synced message once cache eviction and indexing are done. **There is no archive table in 4.0.0.** `sync-eip.md` and `sync-module-evaluation.md` said "synced-message archiving"; corrected by LE-354 (`sync-eip.md` §5.8). |
 | Durable per-record receipt time | **The per-entity hash tables at central** (`encounter_hash`, `patient_hash`, `visit_hash`, `obs_hash`, …): `identifier` = entity uuid; `date_created` = `LocalDateTime.now()` when central first applied the record (`OpenmrsLoadProducer`); `date_changed` = the latest update, overwritten each time. |
 | Does central keep the facility's `date_created`? | **Yes.** dbsync writes through its own JPA entities: `BaseCreatableEntity` maps `date_created` from the payload, and `BaseChangeableDataEntity` does the same for `date_changed`. The OpenMRS `AuditableInterceptor` is not involved, so central holds the facility values. |
-| Facility of origin at central | Not on the replica rows. dbsync keeps `metadata.sourceIdentifier` only inside payloads that are later deleted, and `SyncStatusService` notes that it records no sender on queued or failed records. Use the root of `encounter.location_id` / `visit.location_id`, or `openmrs_identity.patient_link.facility_location_uuid` (the root of the identifier location, set by `IdentityService`). |
+| Facility of origin at central | Not on the replica rows. dbsync keeps `metadata.sourceIdentifier` only inside payloads that are later deleted, and `SyncStatusService` notes that it records no sender on queued or failed records. Use the root of `encounter.location_id` / `visit.location_id`, or `openmrs_identity.patient_link.facility_location_uuid` (the nearest location tagged Health Facility at or above the identifier location, set by `IdentityService`; until LE-370 it held the root of that tree, which under the MFL hierarchy is the county). |
 | Login events | **Not persisted.** Core writes only the last login as `user_property` `lastLoginTimestamp` (epoch ms, `HibernateContextDAO.setLastLoginTime`). The authentication module 2.3.0 keeps active logins in memory (`UserLoginTracker`) and emits `UserLogin` INFO events with marker `AUTHENTICATION_EVENT`. Its README documents an opt-in log4j2 JDBC appender, which this repo does not configure. No `authentication.*` property is set anywhere in the repo. |
-| Audit log | `gp-audit.xml` (content-liberia-national) sets `auditlog.auditingStrategy=ALL` and `auditlog.storeLastStateOfDeletedItems`, **but the auditlog module is not pinned in `distribution/distro.properties`**, so those GPs configure nothing. Even when installed, auditlog records object changes, not logins. |
+| Audit log | `gp-audit.xml` (content-liberia-national) sets `auditlog.auditingStrategy=ALL` and `auditlog.storeLastStateOfDeletedItems`, which at the time of this review configured nothing: the module was not in the image (since installed, see gap 8). Even when installed, auditlog records object changes, not logins. |
 | DHIS2 | No push exists. `dhis2-export` in the central compose names an image that nothing builds (profile `dhis2`, off). `integration/dhis2/mappings/` is blocked on the MOH. |
 | MPI | The CPI service in the liberiaemr module (central only): `openmrs_identity.cpi`, `patient_link` (`patient_uuid`, `cpi_id`, `facility_location_uuid`, `basis`, `national_id`), `cpi_event`, `match_review`. Only the deterministic National ID rule is built. Fellegi–Sunter scoring is not. |
 
@@ -96,10 +96,15 @@ Everything here was checked in source at the pinned versions: dbsync `4.0.0`, op
    user's person, which syncs so central sees it, or whether it stays in the training
    register. Until then, 009 uses active clinical-role accounts as a proxy denominator.
 
-8. **Install or drop the auditlog module.** `gp-audit.xml` configures a module the
-   distribution does not ship, so the "audit logging enabled" control in the global
-   properties README is not met. This is not an indicator gap, but it came up here and it
-   affects the MOH security controls.
+8. **Install or drop the auditlog module.** *Done:* the backend image now builds the
+   module from a pinned upstream commit and `gp-audit.xml` configures it (control C1 in
+   `docs/security/moh-ict-sop-mapping.md`), and the ICT Unit reads it in the **Audit log**
+   page over `/ws/rest/v1/liberiaemr/auditlog` (control B3, LE-371;
+   `docs/runbooks/audit-log.md`). It records entity changes, not logins or reads, so it does
+   not close the login gap above: a sign-in shows only as an update to the user's
+   `lastLoginTimestamp` property, and a failed one to an existing account as its
+   `loginAttempts` going up (seen on a demo stack; an unknown username leaves nothing). The same endpoint could
+   count changes for an indicator, but no indicator here needs it.
 
 9. **DHIS2 exporter with a transmission log (EMR-OPS-014).** When the exporter is built,
    it must persist each push: org unit, dataset, period, import summary status, counts and
@@ -180,9 +185,11 @@ diagnosis checks, and `validate-content.sh` does not validate the Members column
 ## 3. Facility versus central definition of each feasible row
 
 All of these are direct SQL datasets in `liberiaemrreports`, and none needs a flat table.
-The "facility" of a row at central is the root of the location hierarchy above
-`encounter.location_id` (or `visit.location_id`). This is the same walk that
-`IdentityService.facilityLocation` does.
+The "facility" of a row at central is the nearest location tagged Health Facility at or above
+`encounter.location_id` (or `visit.location_id`), not the root of the hierarchy, which under the
+MFL tree (ADR 0009) is a county. The ETL's `mamba_dim_location_hierarchy.facility_location_id`
+and `IdentityService`'s `patient_link.facility_location_uuid` (FacilityOfOrigin) apply the same
+rule.
 
 | Code | Facility (sender) | Central (receiver) |
 | --- | --- | --- |

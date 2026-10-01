@@ -14,17 +14,23 @@ fails it.
 | [go-live.md](go-live.md) | Go-live checklist and cutover |
 | [sync-operations.md](sync-operations.md) | Enrol facilities, rotate certificates and keys, handle sync alerts |
 | [binlog-credentials.md](binlog-credentials.md) | Rotate the database passwords a facility's first boot wrote to its binlog, then purge those binlogs — ⚠ SQL rehearsed on a throwaway database only |
+| [audit-log.md](audit-log.md) | Give the ICT Unit access to the audit log, find and read who changed what, export CSV, and what the log does not record — ⚠ rehearsed on local throwaway stacks and in CI only |
 | [mfl-sync.md](mfl-sync.md) | Provision the MFL account, run the first facility-list sync at central, read runs, rotate credentials — ⚠ not yet rehearsed against the live MFL |
 | [jira-automation.md](jira-automation.md) | Jira Automation rules that move LE issues from branch, PR and dev deploy |
 | [dak-to-iniz.md](dak-to-iniz.md) | Turn a DAK data dictionary row into loaded metadata — ⚠ not yet rehearsed |
 | [release-module.md](release-module.md) | Cut and publish a `liberiaemr` module version to Repsy |
+| [reporting-etl.md](reporting-etl.md) | Operate the reporting ETL: settings, database flags and grants, run status and errors, full rebuilds, facility versus central, core upgrades, adding an indicator — ⚠ rehearsed on local throwaway stacks only |
 | [reporting-etl-existing-database.md](reporting-etl-existing-database.md) | Turn on the reporting ETL on a database created before it — ⚠ not yet rehearsed |
 
 Every runbook must have been **rehearsed** before go-live. An untested restore procedure is
-a document, not a capability. Five procedures here have not been executed end to end, and each
+a document, not a capability. Seven procedures here have not been executed end to end, and each
 says so at the top: `dak-to-iniz.md`, because the DAK itself is not in this repository;
+`audit-log.md`, run on a local throwaway demo stack and by CI's E2E suite but not on a live
+facility, at central, or against a production-sized log;
 the enrolment, rotation, upgrade and account sections of `sync-operations.md`, which wait for
 MOH-issued material; `mfl-sync.md`, which CI exercises only against a stub MFL;
 `binlog-credentials.md`, whose SQL was rehearsed on a throwaway database but not with a live
-sender; and `reporting-etl-existing-database.md`, which has not yet met a database from before
-the ETL.
+sender; `reporting-etl-existing-database.md`, which has not yet met a database from before
+the ETL; and `reporting-etl.md`, whose commands were run on local throwaway facility and
+central stacks (the facility check also runs in CI) but not on a live facility or the central
+server.

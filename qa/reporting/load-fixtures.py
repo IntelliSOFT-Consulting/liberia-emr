@@ -6,6 +6,10 @@ database, for the RPT 10 checks of the indicator reports (LE-336). See qa/report
   qa/reporting/load-fixtures.py sql --site careysburg|barnersville|all [--out FILE]
   qa/reporting/load-fixtures.py load --site careysburg|barnersville|all --db-container NAME [--database openmrs]
   qa/reporting/load-fixtures.py prepare-central --db-container NAME [--database openmrs] [--admin-hierarchy]
+  qa/reporting/load-fixtures.py load-late-row --db-container NAME [--database openmrs] [--print]
+  qa/reporting/load-fixtures.py late-row-uuids
+
+`load-late-row` adds one row after `load`, for the incremental-run check in run-stack-check.sh.
 
 `lint` needs nothing but the repository. `load` and `prepare-central` pipe SQL into
 `docker exec -i NAME sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" DB'`, the same access the
@@ -475,6 +479,62 @@ def load_sql(ds, vs, sites):
     ])
 
 
+# The late row for the incremental-run check (run-stack-check.sh): one Triage encounter with a
+# weight, on an already-loaded patient, in a visit of its own. It is dated 20 July 2026, after
+# both report periods, so no expected value changes. Its date_created is its encounter time, well
+# before the ETL run that must pick it up: core 3.0.0's timestamp test would miss it, and only
+# the key-based test in core_overrides/ (LE-363) finds it.
+LATE = {"key": "C-LATE1-1", "patient": "C-WHZ1", "datetime": "2026-07-20 09:00:00",
+        "encounter_type": "${var.encountertype.triage.uuid}", "form": "triage-v2.0",
+        "location": "${var.location.opd.uuid}", "concept": "${var.concept.ciel.weight.uuid}", "value": "11.2"}
+
+
+def late_uuids():
+    day = LATE["datetime"][:10]
+    return OrderedDict([("visit", fixture_uuid("visit", "%s/%s" % (LATE["patient"], day))),
+                        ("encounter", fixture_uuid("encounter", LATE["key"])),
+                        ("obs", fixture_uuid("obs", LATE["key"] + "/1"))])
+
+
+def increment_sql(ds, vs):
+    """The late row, guarded: the fixtures must be loaded, and the late row not yet."""
+    p = LATE["patient"]
+    site = ds.patients[p]["site"]
+    when = parse_dt(LATE["datetime"])
+    u = late_uuids()
+    person = id_of("person", fixture_uuid("person", p))
+    loc = id_of("location", vs.resolve(LATE["location"], site))
+    return "\n".join([
+        "-- LE-336 incremental-run check: one late fixture row (synthetic, no PHI). Do not commit.",
+        SESSION,
+        """DELIMITER //
+BEGIN NOT ATOMIC
+  IF NOT EXISTS (SELECT 1 FROM person WHERE uuid = %s) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'LE-336 late row: load the fixtures first';
+  END IF;
+  IF EXISTS (SELECT 1 FROM encounter WHERE uuid = %s) THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'LE-336 late row: already loaded';
+  END IF;
+END //
+DELIMITER ;""" % (q(fixture_uuid("person", p)), q(u["encounter"])),
+        "START TRANSACTION;",
+        "INSERT INTO visit (patient_id, visit_type_id, date_started, date_stopped, location_id, creator, date_created, voided, uuid) "
+        "VALUES (%s, %s, %s, %s, %s, @creator, %s, 0, %s);"
+        % (person, id_of("visit_type", vs.resolve("${var.visittype.outpatient.uuid}")), q(when), q(LATE["datetime"][:10] + " 23:59:59"),
+           id_of("location", vs.get("var.location.facility-root.uuid", site)), q(when), q(u["visit"])),
+        "INSERT INTO encounter (encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, visit_id, uuid) "
+        "VALUES (%s, %s, %s, %s, %s, @creator, %s, 0, %s, %s);"
+        % (id_of("encounter_type", vs.resolve(LATE["encounter_type"])), person, loc, id_of("form", vs.resolve(ds.forms[LATE["form"]]["form"])),
+           q(when), q(when), id_of("visit", u["visit"]), q(u["encounter"])),
+        "INSERT INTO obs (person_id, concept_id, encounter_id, obs_datetime, location_id, value_numeric, creator, date_created, voided, uuid, status) "
+        "VALUES (%s, %s, %s, %s, %s, %s, @creator, %s, 0, %s, 'FINAL');"
+        % (person, id_of("concept", vs.resolve(LATE["concept"])), id_of("encounter", u["encounter"]), q(when), loc, LATE["value"],
+           q(when), q(u["obs"])),
+        "COMMIT;",
+        "",
+    ])
+
+
 def site_locations(vs, site):
     """The site package's own location rows, resolved: (uuid, name, description, parent name, tags, address)."""
     path = os.path.join(PKG, SITES[site], "configuration", "backend_configuration", "locations")
@@ -549,6 +609,11 @@ def main():
     c.add_argument("--admin-hierarchy", action="store_true",
                    help="also create County/District parents from the site variables (until the MFL sync provides them)")
     c.add_argument("--print", action="store_true", help="print the SQL instead of running it")
+    i = sub.add_parser("load-late-row", help="add the one late row the incremental-run check needs (after load)")
+    i.add_argument("--db-container", required=True)
+    i.add_argument("--database", default="openmrs")
+    i.add_argument("--print", action="store_true", help="print the SQL instead of running it")
+    sub.add_parser("late-row-uuids", help="print the late row's visit, encounter and obs UUIDs as name=uuid lines")
     a = ap.parse_args()
 
     try:
@@ -558,6 +623,18 @@ def main():
         if a.cmd == "lint":
             print("ok: %d patients, %d encounters, %d obs, %d diagnoses, %d orders; no UUID literal; every reference resolves"
                   % (len(ds.patients), len(ds.encounters), len(ds.obs), len(ds.diagnoses), len(ds.orders)))
+            return
+        if a.cmd == "late-row-uuids":
+            for name, value in late_uuids().items():
+                print("%s=%s" % (name, value))
+            return
+        if a.cmd == "load-late-row":
+            sql = increment_sql(ds, vs)
+            if a.print:
+                sys.stdout.write(sql)
+            else:
+                run_sql(a.db_container, a.database, sql)
+                print("ok: LE-336 late row loaded (%s, %s)" % (LATE["key"], LATE["datetime"]))
             return
         if a.cmd == "prepare-central":
             sql = prepare_central_sql(ds, vs, a.admin_hierarchy)

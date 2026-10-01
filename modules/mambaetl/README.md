@@ -143,6 +143,30 @@ applies once the sender has created the tables.
 
 Compute ages against `sampled_at`, not `NOW()`. The sender keeps no history, so the table is a
 stock at the last run, and a stopped sender shows an empty queue (sync-eip.md §5.8).
+## EMR-Ops tables
+
+These come from the `emr_ops` section. The reports read no `openmrs` table and no UUID, so the
+identity and encounter-type logic of EMR-OPS-007, 008 and 015 lives here. Each file's header
+comment explains its columns.
+
+| Table | Grain | Serves |
+| --- | --- | --- |
+| `mamba_fact_emr_ops_visit` | one live visit, incremental | EMR-OPS-015 (two or more visits) |
+| `mamba_dim_emr_ops_encounter_type` | one encounter type, rebuilt each run; `is_system_type` for the eight system types | EMR-OPS-008 |
+| `mamba_fact_emr_ops_patient` | one live patient record, rebuilt each run | EMR-OPS-007 and 015 |
+
+`mamba_fact_emr_ops_patient` carries both definitions the matrix gives:
+
+- **Facility:** `is_probable_duplicate` (same name, birthdate and sex, or a shared identifier, at
+  the same facility) and `hrn_consistent` (exactly one live MOH Health Record Number, no voided
+  one).
+- **Central**, from `openmrs_identity` as `mamba_dim_person_cpi` reads it: `link_basis`,
+  `same_facility_link` (the CPI service linked the record to another at the same facility) and
+  `person_national_id_consistent` (all of the person's records carry one National ID, or the
+  group was linked on it). The National ID is stored only as a SHA-256 `national_id_key`.
+
+A record's `location_id` is the location of its preferred live identifier, the one
+`IdentityService` reads, else of its first visit; a patient has no encounter location.
 
 ## Running it locally
 

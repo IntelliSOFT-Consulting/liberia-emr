@@ -1,0 +1,90 @@
+Treat an unmapped class as "no metadata" again, so building the implicitly-audited type
+set cannot fail the first save after an auditlog global property changes.
+
+openmrs-module-auditlog (master ba96ba5, and the 1.1 release) asks
+SessionFactory.getClassMetadata(Class) for arbitrary classes and treats null as "not an
+entity". Hibernate 3 returned null; Hibernate 5 (core 2.x) throws MappingException
+instead. DAOUtils.getAssociationTypesToAuditInternal() does this for the element type of
+every collection property, so the first entity with a value collection (for example a
+collection of String) throws "Unknown entity: java.lang.String".
+
+That method runs when AuditLogHelper builds its implicitly-audited type cache: under the
+ALL_EXCEPT strategy with a non-empty auditlog.exceptions, the first time an excluded or
+unaudited type is saved after the cache was reset, which every change to auditlog.* does.
+The exception escapes onSave() and fails that save. The cache is left half-built and
+non-null, so no later save fails, which is why only one save per boot was lost.
+
+On a LiberiaEMR clean install that save was the OCL importer's startImport() for the FIRST
+dictionary zip, in a daemon thread whose exception openmrs-core's
+Daemon.runInDaemonThreadAndWait() swallows. Initializer logged only "OCL import did not
+start successfully", the whole zip was skipped (678 concepts of LIB/mch in CI), and every
+drug, concept set, program and report set that referenced them was rejected.
+
+The fix makes DAOUtils.getClassMetadata() return null on MappingException, as every caller
+assumes, and routes the two direct calls through it. It also stops casting a OneToOneType
+to CollectionType, which would throw ClassCastException for any entity with a one-to-one
+property once the cache build got that far.
+
+Applied by distribution/backend/Dockerfile (stage 2b). Tracked in
+packages/modify-pr/.patches/0004-openmrs-module-auditlog-unmapped-class-metadata.md.
+
+--- a/api/src/main/java/org/openmrs/module/auditlog/api/db/DAOUtils.java
++++ b/api/src/main/java/org/openmrs/module/auditlog/api/db/DAOUtils.java
+@@ -20,6 +20,7 @@
+ import java.util.Set;
+ 
+ import org.hibernate.EntityMode;
++import org.hibernate.MappingException;
+ import org.hibernate.SessionFactory;
+ import org.hibernate.engine.spi.SessionFactoryImplementor;
+ import org.hibernate.metadata.ClassMetadata;
+@@ -57,14 +58,16 @@
+ 			foundAssocTypes = new HashSet<Class<?>>();
+ 		}
+ 		
+-		ClassMetadata cmd = getSessionFactory().getClassMetadata(clazz);
++		ClassMetadata cmd = getClassMetadata(clazz);
+ 		if (cmd != null) {
+ 			for (Type type : cmd.getPropertyTypes()) {
+ 				//If this is a OneToOne or a collection type
+ 				if (type.isCollectionType() || OneToOneType.class.isAssignableFrom(type.getClass())) {
+-					CollectionType collType = (CollectionType) type;
++					// A OneToOneType is not a CollectionType: casting it unconditionally threw
++					// ClassCastException for every entity with a one-to-one property.
++					CollectionType collType = null;
+ 					boolean isManyToManyColl = false;
+-					if (collType.isCollectionType()) {
++					if (type.isCollectionType()) {
+ 						collType = (CollectionType) type;
+ 						isManyToManyColl = ((SessionFactoryImplementor) getSessionFactory()).getCollectionPersister(
+ 						    collType.getRole()).isManyToMany();
+@@ -76,7 +79,7 @@
+ 					}
+ 					
+ 					//Ignore non persistent types
+-					if (getSessionFactory().getClassMetadata(assocType) == null) {
++					if (getClassMetadata(assocType) == null) {
+ 						continue;
+ 					}
+ 					
+@@ -150,8 +153,19 @@
+ 		return foundSubclasses;
+ 	}
+ 	
++	/**
++	 * @return the metadata of a mapped entity class, or null for any other class. Callers rely on
++	 *         the null: Hibernate 3 returned it, but Hibernate 5 (OpenMRS 2.x) throws
++	 *         MappingException for an unmapped class, such as the String elements of a value
++	 *         collection.
++	 */
+ 	public static ClassMetadata getClassMetadata(Class<?> clazz) {
+-		return getSessionFactory().getClassMetadata(clazz);
++		try {
++			return getSessionFactory().getClassMetadata(clazz);
++		}
++		catch (MappingException e) {
++			return null;
++		}
+ 	}
+ 	
+ 	public static SessionFactory getSessionFactory() {

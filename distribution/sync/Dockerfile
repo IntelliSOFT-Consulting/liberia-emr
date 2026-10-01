@@ -28,6 +28,10 @@ RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends patch \
 
 RUN mvn -B -q -DskipTests -pl api,sender-app,receiver-app -am package
 
+# Reconciliation (recon/): ours, built and tested here, run beside both apps.
+COPY recon/ /recon/
+RUN mvn -B -q -f /recon/pom.xml package
+
 
 # Shared runtime base for both apps: JRE, envsubst for config rendering (shell rendering
 # would evaluate backticks and $( ) inside credential values, an injection path from the
@@ -60,6 +64,7 @@ LABEL org.opencontainers.image.title="LiberiaEMR Sync Sender" \
       lr.gov.moh.liberiaemr.dbsync.version="${DBSYNC_VERSION}"
 
 COPY --from=build --chown=eip:eip /src/sender-app/target/dbsync-sender-*-exe.jar /app/sender.jar
+COPY --from=build --chown=eip:eip /recon/target/recon.jar /app/recon.jar
 COPY --chown=eip:eip application.properties.template docker-entrypoint.sh sync-security.sh /app/
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
@@ -81,6 +86,7 @@ RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends mariadb
 USER eip
 
 COPY --from=build --chown=eip:eip /src/receiver-app/target/dbsync-receiver-*-exe.jar /app/receiver.jar
+COPY --from=build --chown=eip:eip /recon/target/recon.jar /app/recon.jar
 COPY --chown=eip:eip receiver-application.properties.template docker-entrypoint-receiver.sh sync-security.sh /app/
 COPY --chown=eip:eip conflict-decisions.sh /app/
 

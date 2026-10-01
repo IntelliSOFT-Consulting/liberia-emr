@@ -314,4 +314,64 @@
 		</addColumn>
 	</changeSet>
 
+	<!--
+		Links minted before this change hold the ROOT of the identifier location's tree as their
+		facility, which under the MFL hierarchy (ADR 0009) is the county or the country. This
+		recomputes every link with the rule new links are minted with: the nearest ancestor-or-self
+		tagged Health Facility (IdentityService, FacilityOfOrigin). It is Java, not SQL, so the rule
+		exists once in the module; it writes only rows whose value changes, so it is idempotent.
+		Like the changesets above it is skipped, and not marked ran, where the identity schema is
+		missing: every facility. It touches only openmrs_identity, which no binlog reader follows.
+	-->
+	<changeSet id="liberiaemr-2026-09-30-identity-facility-of-origin" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<tableExists schemaName="openmrs_identity" tableName="patient_link"/>
+		</preConditions>
+		<comment>Recompute patient_link.facility_location_uuid as the nearest Health Facility, not the tree's root.</comment>
+		<customChange class="org.openmrs.module.liberiaemr.identity.FacilityOfOriginBackfill"/>
+	</changeSet>
+
+	<!--
+		The audit log viewer (MOH ICT SOP B3) pages auditlog_audit_log, the auditlog module's table,
+		by date, type and parent row. The module creates no index on any of them, so every filtered
+		page and every child count was a full scan of a table that grows without limit. These are
+		indexes only: the table and its rows stay the auditlog module's.
+
+		onFail="CONTINUE", not MARK_RAN: this module is only aware of auditlog, which may be installed
+		later. Until the table exists the change set is skipped and tried again on the next start.
+	-->
+	<changeSet id="liberiaemr-2026-09-30-auditlog-date-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_date_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.date_created for the audit log viewer's date filter</comment>
+		<createIndex indexName="liberiaemr_auditlog_date_idx" tableName="auditlog_audit_log">
+			<column name="date_created"/>
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-30-auditlog-type-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_type_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.type for the audit log viewer's type filter and type list</comment>
+		<createIndex indexName="liberiaemr_auditlog_type_idx" tableName="auditlog_audit_log">
+			<column name="type"/>
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-09-30-auditlog-parent-index" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="auditlog_audit_log"/>
+			<not><indexExists indexName="liberiaemr_auditlog_parent_idx"/></not>
+		</preConditions>
+		<comment>Index auditlog_audit_log.parent_auditlog_id for the audit log viewer's child rows</comment>
+		<createIndex indexName="liberiaemr_auditlog_parent_idx" tableName="auditlog_audit_log">
+			<column name="parent_auditlog_id"/>
+		</createIndex>
+	</changeSet>
+
 </databaseChangeLog>

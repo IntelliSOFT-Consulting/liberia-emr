@@ -19,13 +19,15 @@ err() { echo "FAIL: $*" >&2; fail=$((fail+1)); }
 find_src() { find "$PKG_DIR" -path '*/target' -prune -o "$@" -print; }
 grep_src() { grep --exclude-dir=target "$@"; }
 
-# In-tree module sources that carry ${var.*} tokens (ADR 0010 decision 7): the reports module's
-# resources and the ETL module's SQL and configs. A module that does not exist yet contributes
-# nothing. The UUID-literal check further down globs the same directories, plus the reports
-# module's Java; keep the two lists in step.
+# In-tree module sources that carry ${var.*} tokens (ADR 0010 decision 7): the liberiaemr api's
+# resources (liberiaemr-uuids.properties), the reports module's resources and the ETL module's
+# SQL and configs. A module that does not exist yet contributes nothing. The UUID-literal check
+# further down globs the same directories, plus the reports module's Java; keep the two lists
+# in step.
 module_token_dirs() {
   local d
-  for d in "$ROOT"/modules/liberiaemrreports/*/src/main/resources \
+  for d in "$ROOT"/modules/liberiaemr/api/src/main/resources \
+           "$ROOT"/modules/liberiaemrreports/*/src/main/resources \
            "$ROOT"/modules/mambaetl/*/src/main/mamba; do
     [[ -d "$d" ]] && echo "$d"
   done
@@ -440,7 +442,8 @@ import glob, os, re, sys
 
 root = sys.argv[1]
 # module_token_dirs above, plus the reports module's Java.
-dirs = sorted(glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/resources")
+dirs = sorted(glob.glob(f"{root}/modules/liberiaemr/api/src/main/resources")
+              + glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/resources")
               + glob.glob(f"{root}/modules/mambaetl/*/src/main/mamba")
               + glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/java"))
 dashed = re.compile(r"(?<![0-9A-Za-z])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![0-9A-Za-z])")
