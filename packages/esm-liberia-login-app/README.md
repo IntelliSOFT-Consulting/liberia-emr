@@ -44,9 +44,15 @@ Pages (all rendered by one `root` router): `login`, `login/confirm`, `login/loca
 | `password-changer` | `user-panel-slot` |
 | `two-factor-authentication` | `user-panel-slot` (online only) |
 | `location-changer` | `top-nav-info-slot` |
+| `session-idle-watcher` | `top-nav-info-slot` (no visible UI; human-idle logout) |
 
 Modals: `change-password-modal`, `totp-enrollment-modal`. The two-factor page and modal call
 `/ws/rest/v1/auth/totp/enrollment` and `…/enrollment/verify`.
+
+`session-idle-watcher` renders nothing. It stays mounted with the top navigation while the
+user is signed in, and after the configured human-idle period it calls `performLogout()`
+(`DELETE /ws/rest/v1/session`) and returns to the login page. Fetch and XHR do not reset
+it. Activity in any tab updates one `localStorage` timestamp, `liberiaemr.lastHumanActivityAt`.
 
 ## Configuration
 
@@ -68,6 +74,8 @@ both site `config-site.json` files), which this module does not read.
 | `logo.src` / `logo.alt` | `''` / `Logo` | Empty `src` uses the OpenMRS logo |
 | `footer.additionalLogos` | `[]` | `{src, alt}` entries |
 | `showPasswordOnSeparateScreen` | `true` | |
+| `showPasswordReset` | `true` | |
+| `session.idleTimeoutMinutes` | `10` | Minutes of human inactivity before logout. Unit: minutes, not milliseconds. Above 10 is clamped to 10. Missing or invalid becomes 10. A shorter positive value is honored. The built config is a string such as `"10"`. |
 | `background.image` / `background.color` | `''` / `''` | The image wins if both are set |
 | `announcements` | `[]` | `{title, text, kind}` banners above the form |
 | `twoFactorAuth.enabled` | `false` | Shows the two-factor link |
@@ -126,4 +134,6 @@ Tests live beside the code (`*.test.tsx`). None yet cover the forgot / reset / M
   `10.0.0-pre.<run>` to npm tag `next` on a merge to `main`, and the release tag to `latest`
   on a GitHub release. See [`packages/README.md`](../README.md#ci-and-publishing).
 - **Pin**: `spa.frontendModules.@liberiaemr/esm-liberia-login-app` in
-  `distribution/distro.properties`. Publishing does not change it.
+  `distribution/distro.properties`. Publishing does not change it. The human-idle watcher
+  is not in the pinned `10.0.0-pre.143` build. After `packages.yml` publishes
+  `10.0.0-pre.<run>` from `main`, re-pin to that exact version. Do not invent the run number.
