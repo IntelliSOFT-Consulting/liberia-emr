@@ -133,6 +133,11 @@ public class RemoteSearchService {
 		return !getRemoteUrl().isEmpty();
 	}
 
+	/** Whether this facility already holds a patient with this UUID. A seam so the search can be tested without a Context. */
+	protected boolean existsLocally(String uuid) {
+		return Context.getPatientService().getPatientByUuid(uuid) != null;
+	}
+
 	public boolean isValidUuid(String value) {
 		return value != null && UUID_PATTERN.matcher(value.trim()).matches();
 	}
@@ -161,7 +166,7 @@ public class RemoteSearchService {
 					// A patient that syncs between sites shares one UUID; if it is already here the
 					// local search shows it, and listing it again would only be a duplicate row.
 					String uuid = result.path("uuid").asText("");
-					if (isValidUuid(uuid) && Context.getPatientService().getPatientByUuid(uuid) != null) {
+					if (isValidUuid(uuid) && existsLocally(uuid)) {
 						alreadyLocal++;
 						continue;
 					}
@@ -245,7 +250,7 @@ public class RemoteSearchService {
 	// ---------------------------------------------------------------------------------------------
 
 	/** Dates as OpenMRS REST returns them ("1990-01-01T00:00:00.000+0000"), or a bare date. */
-	private Date parseDate(String value) throws Exception {
+	Date parseDate(String value) throws Exception {
 		try {
 			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(value);
 		}
@@ -269,7 +274,7 @@ public class RemoteSearchService {
 	}
 
 	/** Reads every page of a central list endpoint (read-only). */
-	private List<JsonNode> fetchAll(String url) throws Exception {
+	List<JsonNode> fetchAll(String url) throws Exception {
 		List<JsonNode> all = new ArrayList<>();
 		String separator = url.contains("?") ? "&" : "?";
 		for (int page = 0; page < MAX_PAGES; page++) {
@@ -513,7 +518,7 @@ public class RemoteSearchService {
 		return value != null ? value : fallback;
 	}
 
-	private boolean applyObsValue(Obs obs, Concept concept, JsonNode value) throws Exception {
+	boolean applyObsValue(Obs obs, Concept concept, JsonNode value) throws Exception {
 		if (value.isMissingNode() || value.isNull()) {
 			return false;
 		}
@@ -690,7 +695,7 @@ public class RemoteSearchService {
 		return baseUrl;
 	}
 
-	private JsonNode executeGet(String urlStr) throws Exception {
+	JsonNode executeGet(String urlStr) throws Exception {
 		HttpURLConnection connection = (HttpURLConnection) new URL(urlStr).openConnection();
 		connection.setRequestMethod("GET");
 		connection.setConnectTimeout(TIMEOUT_MS);
@@ -718,7 +723,7 @@ public class RemoteSearchService {
 		}
 	}
 
-	private String getRemoteUrl() {
+	protected String getRemoteUrl() {
 		String value = System.getenv(ENV_REMOTE_URL);
 		if (value == null || value.trim().isEmpty()) {
 			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_URL, "");
@@ -730,7 +735,7 @@ public class RemoteSearchService {
 		return value;
 	}
 
-	private String getRemoteUser() {
+	protected String getRemoteUser() {
 		String value = System.getenv(ENV_REMOTE_USER);
 		if (value == null || value.trim().isEmpty()) {
 			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_USER, "");
@@ -738,7 +743,7 @@ public class RemoteSearchService {
 		return value == null ? "" : value.trim();
 	}
 
-	private String getRemotePassword() {
+	protected String getRemotePassword() {
 		String value = System.getenv(ENV_REMOTE_PASSWORD);
 		if (value == null || value.trim().isEmpty()) {
 			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_PASSWORD, "");
