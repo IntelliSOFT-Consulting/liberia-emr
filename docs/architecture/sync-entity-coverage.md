@@ -2,6 +2,7 @@
 
 **Date:** 18 August 2026 · **Ticket:** LE-22
 **Verified against:** `openmrs-dbsync` `TableToSyncEnum` (master), release 4.0.0
+**Last reviewed against the build:** 1 October 2026
 
 What actually synchronises facility → central, in what order, what is covered out of the box,
 and what needs custom work. Companion to [Sync & EIP architecture](sync-eip.md) and the
@@ -111,16 +112,16 @@ behind a conflict. The receiver must **park** an event whose dependency is absen
 when the dependency lands, rather than rejecting it or stalling the stream behind it.
 
 dbsync ships retry queues (`ReceiverRetryQueueItem`) and a conflict queue
-(`ConflictQueueItem`) that cover this shape. **Confirm the exact parking and retry semantics
-during the Step 0/3 spike** rather than assuming, and alert on any message parked longer
-than a configured age, because a long-parked dependency means something upstream was lost and
+(`ConflictQueueItem`) that cover this shape. **The exact parking and retry semantics are not
+yet confirmed** (the spike settled streaming and snapshots, not parking; §6), and no alert
+exists yet for a message parked longer than a configured age, because a long-parked dependency means something upstream was lost and
 it is the earliest visible symptom.
 
 ### 2.4 Deletes, voids and merges
 
 Debezium emits create, update and delete events (`c`/`u`/`d`), so hard deletes are captured,
 and voiding is an ordinary update whose `voided`/`date_voided` columns participate in the
-receiver's conflict logic. Two cases still need explicit verification in the spike:
+receiver's conflict logic. Two cases are still unverified:
 
 - **A facility-side patient merge** is a burst of updates and voids that syncs like any other
   change; the identity layer at central must then collapse the losing record's link into an
@@ -137,9 +138,12 @@ Entities 27 to 30 and 32 are metadata. They are supported by dbsync, but in our 
 they are **delivered by the content-package build, not by sync.** Providers (31) are data:
 each facility creates its own, and they reach central by sync.
 
-Facility and central run the same `liberia-emr-backend` image, so they hold identical
-metadata with identical UUIDs, every UUID declared once in `variables.properties` and
-referenced as `${var.*}` (ADR 0003). This satisfies dbsync's stated assumption that "metadata
+Facility and central images are built from the same national content packages, so shared
+metadata holds identical UUIDs, every UUID declared once in `variables.properties` and
+referenced as `${var.*}` (ADR 0003). Central is its own build (the `-central` images,
+[ADR 0011](../adr/0011-central-composition.md)) and loads the locations of every site package,
+so it holds every location a facility can reference
+([ADR 0012](../adr/0012-central-site-locations.md)). This satisfies dbsync's stated assumption that "metadata
 is already centrally managed", by a stronger mechanism than metadata sharing: it is baked
 into an immutable image rather than applied by an operator.
 
@@ -163,19 +167,19 @@ the upgrade rehearsal in `qa/upgrade/`.
 
 ## 5. What must be built (not covered by any entity)
 
-| Item | Why it is not an entity | Where |
-| --- | --- | --- |
-| **Central Person Identifier (CPI) and link table** | Identity is central-side state, not facility data | [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md), [architecture](sync-eip.md) §2 |
-| **Duplicate review queue** | A workflow, not a record | ADR 0005 |
-| **Cross-facility query** | A FHIR read path, Sprint 4 | [ADR 0007](../adr/0007-pulled-record-scope.md), [architecture](sync-eip.md) §6 |
-| **Reconciliation parity report** | Hash tables exist; the periodic facility-vs-central report does not | [architecture](sync-eip.md) §5.5 |
-| **Heartbeat / silence alerting** | Detecting a facility that has stopped syncing | [architecture](sync-eip.md) F7 |
+| Item | Why it is not an entity | Where | Status |
+| --- | --- | --- | --- |
+| **Central Person Identifier (CPI) and link table** | Identity is central-side state, not facility data | [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md), [architecture](sync-eip.md) §2 | Built, through the National ID rule (§2.5 As built) |
+| **Duplicate review queue** | A workflow, not a record | ADR 0005 | Doubtful matches are stored in `match_review`; no page and no MOH owner yet |
+| **Cross-facility query** | A FHIR read path, Sprint 4 | [ADR 0007](../adr/0007-pulled-record-scope.md), [architecture](sync-eip.md) §6 | Not built; ADR 0007 is still Proposed |
+| **Reconciliation parity report** | Hash tables exist; the periodic facility-vs-central report did not | [architecture](sync-eip.md) §5.5 | Built for existence (`SyncRecordsMissing`); content comparison not built |
+| **Heartbeat / silence alerting** | Detecting a facility that has stopped syncing | [architecture](sync-eip.md) F7 | `SyncFacilitySilent` built; no heartbeat, so "nothing recorded" and "no contact" look the same |
 
 ---
 
 ## 6. Verification checklist
 
-Before Sprint 3 closes, each of these is a test, not an assertion:
+Each of these is a test, not an assertion:
 
 - [x] All 34 entities enumerated against our enabled route set; disabled ones explicitly listed (§1.1, `eip.watchedTables`, asserted in CI)
 - [ ] Per-patient ordering proven under retry and partial drain
