@@ -152,10 +152,24 @@ in `qa/upgrade/`.
 **What breaking it does (observed for locations on 30 September 2026, LE-339):** the receiver
 does not fail or park the record. It inserts a placeholder row with the missing UUID (for a
 location: name `[Default]`, retired, retire reason `[placeholder]`, no parent, no tags) and
-applies the record against it. The retry and conflict queues stay empty and nothing alerts, so
-the record is silently misattributed. Other metadata types are untested and probably behave the
-same way. Detecting placeholders at central is LE-373. `qa/sync/verify-second-facility.sh`
-checks locations, and its `--negative-control` reproduces the placeholder.
+applies the record against it. The retry and conflict queues stay empty, so the record is
+silently misattributed. Each type was tested on dbsync 4.0.0 (LE-373, 1 October 2026):
+
+| Missing at central | What the receiver does |
+| --- | --- |
+| location, concept, encounter type, visit type, encounter role, relationship type | Placeholder row: retired, retire reason `[placeholder]`, no name; the record applies |
+| programme | Placeholder named `[Default] - <uuid>`, retired (the table has no retire reason); the enrolment applies |
+| patient identifier type, person attribute type | No placeholder; the record parks in the retry queue (`ReceiverErrors`) and applies once the metadata is loaded |
+
+A placeholder concept's datatype and class are dbsync's shared `PLACEHOLDER_CONCEPT_DATATYPE_LIGHT`
+and `PLACEHOLDER_CONCEPT_CLASS_LIGHT` rows, present on every install. The reconciliation check at
+central counts placeholders on every pass (`sync_placeholder_metadata`) and
+`SyncPlaceholderMetadata` alerts on any. Repairing one in place is runbook
+`sync-operations.md` section 17. `qa/sync/verify-second-facility.sh` checks every facility
+location, and its `--negative-control` reproduces a placeholder.
+
+The first one found in practice was on the dev pair: two partograph concepts given new uuids in
+content after both dev databases had loaded the old ones (LE-373).
 
 ---
 

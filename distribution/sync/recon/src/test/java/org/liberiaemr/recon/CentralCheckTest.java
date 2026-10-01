@@ -45,6 +45,35 @@ public class CentralCheckTest {
 		assertTrue(CentralCheck.shouldConfirm(firstSeen, firstSeen + 6 * 3600, 6, true));
 	}
 
+	@Test
+	public void placeholdersAreCountedPerTableWithoutDbsyncsSharedRows() {
+		for (String table : CentralCheck.PLACEHOLDER_TABLES.keySet()) {
+			String sql = CentralCheck.placeholderQuery(table);
+			assertTrue(sql, sql.startsWith("SELECT COUNT(*) FROM `" + table + "` WHERE "));
+			assertTrue(sql, sql.endsWith(" AND uuid NOT LIKE 'PLACEHOLDER%'"));
+		}
+		assertTrue(CentralCheck.placeholderQuery("location").contains("retire_reason = '[placeholder]'"));
+		assertTrue("program has no retire_reason column",
+		    CentralCheck.placeholderQuery("program").contains("name LIKE '[Default]%'"));
+		assertEquals(Arrays.asList("location", "concept", "encounter_type", "visit_type", "encounter_role",
+		    "relationship_type", "program"), new java.util.ArrayList<>(CentralCheck.PLACEHOLDER_TABLES.keySet()));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void onlyKnownTablesAreQueried() {
+		CentralCheck.placeholderQuery("patient; DROP TABLE x");
+	}
+
+	@Test
+	public void everyPlaceholderTableIsASeriesEvenAtZero() {
+		Map<String, Long> counts = new java.util.LinkedHashMap<>();
+		counts.put("location", 0L);
+		counts.put("concept", 2L);
+		assertEquals("# TYPE sync_placeholder_metadata gauge\n" + "sync_placeholder_metadata{table=\"location\"} 0\n"
+		        + "sync_placeholder_metadata{table=\"concept\"} 2\n",
+		    CentralCheck.placeholderMetrics(counts));
+	}
+
 	private static Digest.Entry entry(String uuid) {
 		return new Digest.Entry("person", uuid, "2026-09-25");
 	}

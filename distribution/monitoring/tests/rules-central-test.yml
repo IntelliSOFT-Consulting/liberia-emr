@@ -244,3 +244,22 @@ tests:
             exp_annotations:
               summary: "No reconciliation digest from careysburg for three days"
               description: "Nothing is checking that this facility's records all arrived. Its sender runs the digest every night; see its logs for lines starting [recon]."
+
+  - name: a placeholder metadata row at central alerts at once, per table
+    interval: 1m
+    input_series:
+      - series: 'sync_placeholder_metadata{job="sync-recon",instance="sync-receiver:9103",table="concept"}'
+        values: '0x5 2x10'
+      - series: 'sync_placeholder_metadata{job="sync-recon",instance="sync-receiver:9103",table="location"}'
+        values: '0x15'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: SyncPlaceholderMetadata
+        exp_alerts: []
+      - eval_time: 7m
+        alertname: SyncPlaceholderMetadata
+        exp_alerts:
+          - exp_labels: {severity: critical, job: sync-recon, instance: "sync-receiver:9103", table: concept}
+            exp_annotations:
+              summary: "Central holds 2 placeholder concept rows"
+              description: "A facility sent records that reference concept metadata central does not have. The receiver applied them anyway, against a nameless retired placeholder with that uuid, so they are misattributed in the national record and its reports. Usually central's content is older than a facility's, or a content change gave shipped metadata a new uuid. The sync runbook's section on placeholder metadata says how to find and repair them."
