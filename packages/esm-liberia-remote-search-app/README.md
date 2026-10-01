@@ -1,73 +1,99 @@
-# esm-liberia-sync-status-app
+# esm-liberia-remote-search-app
 
 **Build class: Custom Build** (IMPLEMENTATION.md §3).
 
-The national **sync status** page: which facilities are sending records to central, and
-what is waiting at central — without a terminal. Nothing clinical: counts, facility codes and
-dates only. The operator's view of it is
-[`docs/runbooks/sync-operations.md` §13](../../docs/runbooks/sync-operations.md).
+**Remote Search** in the patient search: when a clinician cannot find a patient at their
+facility, they switch on Remote Search, find the patient on the central server, and import them
+with **Import & Open**. The import copies the patient and their visits, encounters and
+observations to the facility; the central server is only ever read.
+
+The backend is `RemoteSearchController` / `RemoteSearchService` in `modules/liberiaemr`.
 
 ## What it shows
 
-It reads `GET /ws/rest/v1/liberiaemr/syncstatus` (`SyncStatusController` in
-`modules/liberiaemr`) and refreshes every 60 seconds.
+- **Remote Search section** below the local results: in the header search dropdown, on the full
+  `/search` page, and in the "Add patient to…" workspaces (queue, appointment). Matches use the
+  same patient banner as local results, each with an **Import & Open** button. Inside a
+  workspace, importing hands the patient to that workflow instead of opening the chart.
+- **Toggle**: in the Refine Search sidebar, in the tablet/phone "Add additional search criteria"
+  dialog, and inline in the dropdown and workspaces. Off by default; see the configuration below.
+- **Summary** above the `/search` results (`N local · M from remote search`).
+- **States**: searching, too few characters, no matches, all matches already at this facility,
+  central unreachable, and offline.
 
-- **Central tiles**: records waiting to be applied, retrying, conflicts, records set aside
-  (dead letters), and whether the receiver and broker are running.
-- **Facilities table**: code, sending state (`Sending`, `Nothing in the last day`, or
-  `Nothing for 3 days` when the backend marks it silent), records in the last day, total
-  received, certificate expiry.
-- **Banners**: firing sync alerts; a warning when central's monitoring cannot be reached
-  (`available: false`), which says nothing about sync itself.
-
-Retries and conflicts are national totals: dbsync records no sender on a queued record, so
-central cannot attribute one to a facility.
-
-The same bundle ships to facilities. Where the backend answers `enabled: false`, or any
-error, the page says the view is available only at central and the menu item renders
-nothing. A `403` gets its own message: the user needs the **View Sync Status** privilege
-(`content-common` `privileges-common.csv`).
+The whole UI stays hidden when the app is disabled in config, when the backend reports no central
+server configured (`enabled: false`), or when the user lacks the privilege.
 
 ## Where it is mounted
 
-| | Name | Where |
-| --- | --- | --- |
-| Page | `root` | route `sync-status` |
-| Extension | `sync-status-app-menu-item` | `app-menu-slot`, online only |
+The patient-search app (11.1.0) has no slot for this, so
+`distribution/frontend/patch-patient-search-remote.cjs` adds three extension slots to its compiled
+bundle at image build. This app fills them:
 
-Backend dependencies (`routes.json`): `webservices.rest >=2.47.0`. The `liberiaemr` module is
-deliberately not declared: builds stamp it with the distribution version, and CI and dev
-builds (`0.0.0-ci`) never satisfy a `>=1.0.0` floor. The app shell then raises an
-"unresolved backend dependencies" alert on every page, which broke the E2E suite. Without
-the module the endpoint does not answer, and the page shows its "not available" notice.
+| Extension | Component | Slot |
+| --- | --- | --- |
+| `liberia-remote-search-toggle` | `remoteSearchToggle` | `patient-search-remote-toggle-slot` |
+| `liberia-remote-search-results` | `remoteSearchResults` | `patient-search-remote-results-slot` |
+| `liberia-remote-search-summary` | `remoteSearchSummary` | `patient-search-remote-summary-slot` |
+
+The patch asserts that every anchor occurs exactly once, so an upstream bump of the
+patient-search app fails the image build instead of shipping without the feature. When
+`spa.core` or the patient-search version changes, re-derive the anchors in the patch.
+
+## Backend
+
+| Call | Needs | Purpose |
+| --- | --- | --- |
+| `GET /ws/rest/v1/liberiaemr/remotesearch/status` | Get Patients | whether central is configured |
+| `GET /ws/rest/v1/liberiaemr/remotesearch?q=` | Get Patients | search central; leaves out patients already here and returns `alreadyLocalCount` |
+| `POST /ws/rest/v1/liberiaemr/importpatient` `{ "remoteUuid" }` | Add Patients | copy the patient and their clinical history |
+
+The central URL and service account are **backend** settings, not this app's: `LIBERIAEMR_REMOTE_URL`
+(https only), `LIBERIAEMR_REMOTE_USER` and `LIBERIAEMR_REMOTE_PASSWORD` (or
+`LIBERIAEMR_REMOTE_PASSWORD_FILE`), set in the deployment environment. See
+`distribution/env/facility.env.example`. With none set, Remote Search is off and the toggle hides.
 
 ## Configuration
 
-None. The module defines no config schema; the feature switch is the backend's `enabled`.
+`@liberiaemr/esm-liberia-remote-search-app` in the frontend config (`config-schema.ts`):
+
+| Key | Default | |
+| --- | --- | --- |
+| `enabled` | `true` | Master switch for all Remote Search UI. |
+| `remoteSearchLabel` | `Remote Search` | The section and toggle name. |
+| `emptyStateHint` | `Can't find the patient…` | Hint shown beside the off toggle. |
+| `importButtonLabel` | `Import & Open` | |
+| `defaultToggleOn` | `false` | Whether the toggle starts on. |
+| `rememberToggleState` | `false` | Keep the toggle position across page loads (`localStorage`). |
+| `resetToggleOnClose` | `true` | Return the toggle to `defaultToggleOn` when the search is closed. |
+| `minimumQueryLength` | `2` | Characters before central is searched; never below 2. |
+
+Messages shown to clinicians. Empty uses the built-in translated text; set one to replace it
+(`{{query}}`, `{{count}}` are filled in where noted in `config-schema.ts`):
+`searchingMessage`, `noResultsMessage`, `alreadyLocalMessage`, `minCharactersMessage`,
+`unavailableTitle`, `unavailableMessage`, `offlineMessage`, `importSuccessMessage`.
 
 ## Development
 
 ```bash
 yarn install
-yarn start:local  # openmrs develop on port 8084 against localhost:8085
-yarn test         # jest + @openmrs/esm-framework/mock
-yarn verify       # yarn typescript && yarn test
+yarn start        # openmrs develop
+yarn start:dev    # against the dev server, port 8085
+yarn typescript
 yarn build
 ```
 
-The tests (`src/sync-status/sync-status.test.tsx`) cover the facility list and silent
-marking, the facility-server message, the `403` message, the monitoring-unreachable warning
-and firing alerts. `qa/sync/verify-sync-status.sh` exercises the backend endpoint.
-
-`yarn lint` calls `eslint`, which is not a dependency of this package.
+The package has no unit tests yet. `yarn lint` calls `eslint`, which is not a dependency of
+this package, so CI skips it.
 
 ## Build and publish
 
-- **CI gate** (`ci.yml`, job `frontend`): `yarn install --frozen-lockfile`,
-  `yarn typescript`, `yarn test`, `yarn build` on every PR.
-- **`packages.yml`**: `tsc` and build on changes to `packages/**` (no lint); publishes
-  `1.0.0-pre.<run>` to npm tag `next` on a merge to `main`, and the release tag to `latest`
-  on a GitHub release. See [`packages/README.md`](../README.md#ci-and-publishing).
-- **Pin:** `spa.frontendModules.@liberiaemr/esm-liberia-sync-status-app` in
-  `distribution/distro.properties`. The frontend image installs that exact version from npm;
-  re-pin deliberately after each publish.
+- **`packages.yml`**: `yarn install --frozen-lockfile`, `tsc` and build on changes to `packages/**`;
+  publishes `1.0.0-pre.<run>` to npm tag `next` on a merge to `main`, and the release tag to
+  `latest` on a GitHub release. See [`packages/README.md`](../README.md#ci-and-publishing). The
+  lockfile is Yarn 1, as CI's.
+- **Pin:** `spa.frontendModules.@liberiaemr/esm-liberia-remote-search-app` in
+  `distribution/distro.properties`. It is **not pinned yet**: a new package has no published
+  version before its first merge, and a pin to one that is not on npm fails `openmrs assemble`.
+  The follow-up PR uncomments it with the published pre-release. Until then the patch's slots stay
+  empty and Remote Search does not appear in the image.
