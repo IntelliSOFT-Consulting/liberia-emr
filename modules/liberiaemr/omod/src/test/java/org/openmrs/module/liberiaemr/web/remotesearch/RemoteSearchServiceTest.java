@@ -388,6 +388,53 @@ public class RemoteSearchServiceTest {
 		assertFalse(service.samePerson(new Patient(), centralPerson("F", "1990-01-01T00:00:00.000+0000", "Doe")));
 	}
 
+	// --- credentials only go to the configured central --------------------------------------------
+
+	@Test
+	public void refusesToCallAnyUrlOutsideTheConfiguredCentral() throws Exception {
+		try {
+			service.executeGet("http://127.0.0.1:1/ws/rest/v1/patient");
+			fail("expected a refusal");
+		}
+		catch (IllegalStateException expected) {
+			assertTrue(requests.isEmpty());
+		}
+	}
+
+	@Test
+	public void refusesWhenNoCentralIsConfigured() throws Exception {
+		remoteUrl = "";
+		try {
+			service.executeGet(base + "/ws/rest/v1/patient");
+			fail("expected a refusal");
+		}
+		catch (IllegalStateException expected) {
+			assertTrue(requests.isEmpty());
+		}
+	}
+
+	@Test
+	public void doesNotFollowARedirect() throws Exception {
+		central.removeContext("/");
+		central.createContext("/", new HttpHandler() {
+
+			@Override
+			public void handle(HttpExchange exchange) throws IOException {
+				requests.add(exchange.getRequestURI().toString());
+				exchange.getResponseHeaders().add("Location", "http://127.0.0.1:1/elsewhere");
+				exchange.sendResponseHeaders(302, -1);
+				exchange.close();
+			}
+		});
+		try {
+			service.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID);
+			fail("a redirect is not a 200");
+		}
+		catch (IllegalStateException expected) {
+			assertEquals(1, requests.size());
+		}
+	}
+
 	@Test
 	public void validatesUuids() {
 		assertTrue(service.isValidUuid(" " + NEW_UUID + " "));

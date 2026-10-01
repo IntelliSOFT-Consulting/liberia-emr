@@ -62,9 +62,12 @@ public class RemoteSearchService {
 	public static final String ENV_REMOTE_USER = "LIBERIAEMR_REMOTE_USER";
 	public static final String ENV_REMOTE_PASSWORD = "LIBERIAEMR_REMOTE_PASSWORD";
 
+	/**
+	 * Fallback for the URL only, and only for a host on LIBERIAEMR_REMOTE_ALLOWED_HOSTS. The service
+	 * account's user name and password come from the environment alone: a global property is
+	 * readable and editable over REST, which is no place for a credential.
+	 */
 	public static final String GP_REMOTE_URL = "liberiaemr.remoteSearch.url";
-	public static final String GP_REMOTE_USER = "liberiaemr.remoteSearch.user";
-	public static final String GP_REMOTE_PASSWORD = "liberiaemr.remoteSearch.password";
 
 	/** Global property naming the facility's location, used when a central identifier location is unknown here. */
 	public static final String GP_FACILITY_LOCATION = "liberiaemr.facility.locationUuid";
@@ -754,7 +757,14 @@ public class RemoteSearchService {
 	}
 
 	JsonNode executeGet(String urlStr) throws Exception {
+		// The credentials go only to the vetted central URL, whatever a caller builds.
+		String base = getRemoteUrl();
+		if (base.isEmpty() || !urlStr.startsWith(base + "/")) {
+			throw new IllegalStateException("Refusing to call a URL outside the configured central server");
+		}
 		HttpURLConnection connection = (HttpURLConnection) new URL(urlStr).openConnection();
+		// A redirect could carry the credentials to another host.
+		connection.setInstanceFollowRedirects(false);
 		connection.setRequestMethod("GET");
 		connection.setConnectTimeout(TIMEOUT_MS);
 		connection.setReadTimeout(TIMEOUT_MS);
@@ -781,31 +791,41 @@ public class RemoteSearchService {
 		}
 	}
 
+	/**
+	 * @return the central instance root, or "" (feature off) when none is set or the one set breaks
+	 *         {@link RemoteEndpointPolicy}: https only, no user info, and a global-property URL must
+	 *         name an allowed host
+	 */
 	protected String getRemoteUrl() {
 		String value = System.getenv(ENV_REMOTE_URL);
-		if (value == null || value.trim().isEmpty()) {
+		boolean fromEnvironment = value != null && !value.trim().isEmpty();
+		if (!fromEnvironment) {
 			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_URL, "");
 		}
 		value = value == null ? "" : value.trim();
 		while (value.endsWith("/")) {
 			value = value.substring(0, value.length() - 1);
 		}
+		if (value.isEmpty()) {
+			return "";
+		}
+		try {
+			RemoteEndpointPolicy.fromEnvironment(System.getenv()).check(value, fromEnvironment);
+		}
+		catch (IllegalArgumentException e) {
+			log.error("Remote search is switched off: {}", e.getMessage());
+			return "";
+		}
 		return value;
 	}
 
 	protected String getRemoteUser() {
 		String value = System.getenv(ENV_REMOTE_USER);
-		if (value == null || value.trim().isEmpty()) {
-			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_USER, "");
-		}
 		return value == null ? "" : value.trim();
 	}
 
 	protected String getRemotePassword() {
 		String value = System.getenv(ENV_REMOTE_PASSWORD);
-		if (value == null || value.trim().isEmpty()) {
-			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_PASSWORD, "");
-		}
 		return value == null ? "" : value.trim();
 	}
 }
