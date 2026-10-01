@@ -101,7 +101,8 @@ The dependency chain that must hold:
                           └─▶ orders ─▶ {drug,test,referral}_order
 
   Referenced metadata (concept, location) must EXIST at central first, and is
-  delivered by the content-package image, not by sync. Providers and users sync. See §3.
+  delivered by the content-package image, not by sync. Providers and users sync. See §3:
+  a missing reference does not park, it becomes a placeholder.
 ```
 
 ### 2.3 Out-of-order arrival
@@ -144,9 +145,17 @@ is already centrally managed", by a stronger mechanism than metadata sharing: it
 into an immutable image rather than applied by an operator.
 
 **The rule this creates:** facility and central must never run different content-package
-versions across an upgrade boundary. A concept or location UUID that exists at a facility but
-not at central is a sync failure at the receiver. This belongs in the deploy runbook and in
-the upgrade rehearsal in `qa/upgrade/`.
+versions across an upgrade boundary. Central's backend carries every site package's locations
+for the same reason (ADR 0012). This belongs in the deploy runbook and in the upgrade rehearsal
+in `qa/upgrade/`.
+
+**What breaking it does (observed for locations on 30 September 2026, LE-339):** the receiver
+does not fail or park the record. It inserts a placeholder row with the missing UUID (for a
+location: name `[Default]`, retired, retire reason `[placeholder]`, no parent, no tags) and
+applies the record against it. The retry and conflict queues stay empty and nothing alerts, so
+the record is silently misattributed. Other metadata types are untested and probably behave the
+same way. Detecting placeholders at central is LE-373. `qa/sync/verify-second-facility.sh`
+checks locations, and its `--negative-control` reproduces the placeholder.
 
 ---
 
@@ -182,5 +191,5 @@ Before Sprint 3 closes, each of these is a test, not an assertion:
 - [ ] Out-of-order dependency parking observed and recovering
 - [x] `Order` subclass defect reproduced or disproven on 4.0.0 (disproven for `DrugOrder` and `TestOrder`, `qa/sync/verify-e2e-push.sh`; `ReferralOrder` not creatable, §4)
 - [x] `UserModel` payload inspected and confirmed to carry no credential material (§4)
-- [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses, but no check covers the whole set)
+- [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses; `qa/sync/verify-second-facility.sh` covers every facility location; nothing covers the rest of the set, and a gap shows up as a placeholder, not a failure, §3)
 - [ ] Complex obs behaviour confirmed, and sized if in use
