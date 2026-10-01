@@ -698,10 +698,9 @@ public class RemoteSearchService {
 		connection.setRequestProperty("Accept", "application/json");
 
 		String user = getRemoteUser();
-		String password = getRemotePassword();
 
 		if (!user.isEmpty()) {
-			String auth = user + ":" + password;
+			String auth = user + ":" + getRemotePassword();
 			String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes("UTF-8"));
 			connection.setRequestProperty("Authorization", "Basic " + encodedAuth);
 		}
