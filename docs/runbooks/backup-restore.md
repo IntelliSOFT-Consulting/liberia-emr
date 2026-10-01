@@ -11,7 +11,7 @@ on this schedule, not only on the audit module's own settings.
 
 | Item | Contains | Frequency |
 | --- | --- | --- |
-| MariaDB database | all patient data; at central also the `openmrs_mgmt` sync schema and the `openmrs_identity` schema (CPIs and links, which nothing else holds) | daily, plus before every upgrade |
+| MariaDB database | all patient data; at central also the `openmrs_mgmt` sync schema and the `openmrs_identity` schema (CPIs and links, which nothing else holds). Every instance also holds `liberiaemr_etl`, the reporting ETL schema: a **full flattened copy of the clinical record**, so a dump that includes it needs the same encryption. It can be rebuilt from `openmrs`, so a backup may leave it out ([reporting-etl.md](reporting-etl.md)) | daily, plus before every upgrade |
 | `openmrs-data` volume | attachments, uploaded files | daily |
 | `sync-queue` volume | undelivered sync messages | daily |
 | `facility.env` | connection secrets | on change — **store in the MOH secret store, never in git** |
@@ -39,6 +39,9 @@ point of the two-artefact model.
    [binlog-credentials.md](binlog-credentials.md), run that runbook on the restored database
    before step 6: the backup brings the old, leaked passwords back into force.
 6. Verify: login, patient search, a chart, MCH enrolments, sync queue draining.
+   Then force one full run of the reporting ETL, whether or not the backup held
+   `liberiaemr_etl`: an incremental run never removes rows that the restored database no
+   longer holds ([reporting-etl.md](reporting-etl.md), "Forcing a full rebuild").
 7. Record the restore in the operations log.
 
 ## To build

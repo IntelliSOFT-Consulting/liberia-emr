@@ -97,6 +97,16 @@ PGP_PASSWORD="$PGP_PASSWORD" envsubst "$vars" \
   < /app/application.properties.template > /app/config/application.properties
 unset PGP_PASSWORD
 
+# Nightly reconciliation digest (sync-eip.md 5.5), over the broker with this facility's
+# certificate. Restarted if it exits; SYNC_RECON=false turns it off.
+if [ -n "$ARTEMIS_URL" ] && [ "${SYNC_RECON:-true}" = true ]; then
+  [ "$SYNC_SNAPSHOT_MODE" != schema_only ] || [ -n "${SYNC_RECON_SINCE:-}" ] \
+    || echo "WARNING: SYNC_SNAPSHOT_MODE=schema_only without SYNC_RECON_SINCE; records held before enrolment will be reported missing at central" >&2
+  export SYNC_RECON_HOUR SYNC_RECON_GRACE_MINUTES SYNC_RECON_RECENT_DAYS SYNC_RECON_SWEEP_DAYS SYNC_RECON_SINCE
+  # shellcheck disable=SC2086 # TLS_ARGS is deliberately word-split
+  ( while :; do java ${SYNC_RECON_JAVA_OPTS:--Xmx384m} $TLS_ARGS -jar /app/recon.jar facility; sleep 300; done ) &
+fi
+
 # shellcheck disable=SC2086 # JAVA_OPTS and TLS_ARGS are deliberately word-split
 exec java ${JAVA_OPTS:--Xmx1g} $TLS_ARGS -jar /app/sender.jar \
   --spring.config.location=file:/app/config/application.properties

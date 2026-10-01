@@ -46,6 +46,16 @@
         <auto-create-queues>false</auto-create-queues>
         <auto-delete-queues>false</auto-delete-queues>
       </address-setting>
+      <address-setting match="recon.facility.#">
+        <!-- One small digest a facility a night; one central fails to record is set aside. -->
+        <address-full-policy>PAGE</address-full-policy>
+        <max-size-bytes>52428800</max-size-bytes>
+        <dead-letter-address>DLA</dead-letter-address>
+        <max-delivery-attempts>5</max-delivery-attempts>
+        <auto-create-addresses>false</auto-create-addresses>
+        <auto-create-queues>false</auto-create-queues>
+        <auto-delete-queues>false</auto-delete-queues>
+      </address-setting>
       <address-setting match="#">
         <auto-create-addresses>false</auto-create-addresses>
         <auto-create-queues>false</auto-create-queues>

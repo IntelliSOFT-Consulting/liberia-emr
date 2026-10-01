@@ -36,8 +36,15 @@
 		</require_module>
 	</require_modules>
 	
+	<!--
+		auditlog: aware of, never required. The audit log viewer's endpoint
+		(/ws/rest/v1/liberiaemr/auditlog) reads the auditlog module's table when the module runs,
+		and answers 503 when it does not; this module starts either way. Being aware of it also
+		starts auditlog first, so its table exists before our liquibase indexes it.
+	-->
 	<aware_of_modules>
 		<aware_of_module>org.openmrs.module.legacyui</aware_of_module>
+		<aware_of_module>org.openmrs.module.auditlog</aware_of_module>
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->

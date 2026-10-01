@@ -137,3 +137,33 @@ groups:
           severity: warning
         annotations:
           summary: "Certificate expiry exporter is down"
+
+  # Reconciliation (distribution/sync/recon/): the only check that finds records lost on the way
+  # rather than preventing the loss (sync-eip.md 5.5, risk F8).
+  - name: sync-reconciliation
+    rules:
+      - alert: SyncRecordsMissing
+        expr: sync_recon_missing_records > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Facility {{ $labels.facility }} holds {{ $value }} records central does not"
+          description: "Its reconciliation digest lists records that are still not at central hours later, with nothing queued that could deliver them. They are safe at the facility. The Sync status page shows it; the sync runbook's section on records missing at central says how to find them and send them again."
+
+      - alert: SyncReconDigestLate
+        expr: time() - sync_recon_digest_taken_seconds > 3 * 86400
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No reconciliation digest from {{ $labels.facility }} for three days"
+          description: "Nothing is checking that this facility's records all arrived. Its sender runs the digest every night; see its logs for lines starting [recon]."
+
+      - alert: SyncReconDown
+        expr: up{job="sync-recon"} == 0 or (time() - sync_recon_last_run_seconds) > 3600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sync reconciliation is not running at central"
+          description: "Digests wait on the broker and no gap is found or cleared. It runs inside the sync-receiver container; see its logs for lines starting [recon]."

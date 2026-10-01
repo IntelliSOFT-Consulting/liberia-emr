@@ -160,8 +160,9 @@
 			<!--
 				prepare-agent sets surefire's argLine (nothing else in this build sets one), and report
 				writes target/site/jacoco/jacoco.xml at the end of `test`, so `package`, `verify` and
-				the reactor build all leave it for the sonar step. A module with no tests (omod) has no
-				execution data and its report is skipped.
+				the reactor build all leave it for the sonar step. Both api and omod have tests (omod's is
+				ReportingContextControllerTest), so each writes its own report; a module that ever ends up
+				with no tests has no execution data, and jacoco skips its report rather than failing.
 			-->
 			<plugin>
 				<groupId>org.jacoco</groupId>

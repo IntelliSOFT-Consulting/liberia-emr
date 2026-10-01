@@ -19,13 +19,15 @@ err() { echo "FAIL: $*" >&2; fail=$((fail+1)); }
 find_src() { find "$PKG_DIR" -path '*/target' -prune -o "$@" -print; }
 grep_src() { grep --exclude-dir=target "$@"; }
 
-# In-tree module sources that carry ${var.*} tokens (ADR 0010 decision 7): the reports module's
-# resources and the ETL module's SQL and configs. A module that does not exist yet contributes
-# nothing. The UUID-literal check further down globs the same directories, plus the reports
-# module's Java; keep the two lists in step.
+# In-tree module sources that carry ${var.*} tokens (ADR 0010 decision 7): the liberiaemr api's
+# resources (liberiaemr-uuids.properties), the reports module's resources and the ETL module's
+# SQL and configs. A module that does not exist yet contributes nothing. The UUID-literal check
+# further down globs the same directories, plus the reports module's Java; keep the two lists
+# in step.
 module_token_dirs() {
   local d
-  for d in "$ROOT"/modules/liberiaemrreports/*/src/main/resources \
+  for d in "$ROOT"/modules/liberiaemr/api/src/main/resources \
+           "$ROOT"/modules/liberiaemrreports/*/src/main/resources \
            "$ROOT"/modules/mambaetl/*/src/main/mamba; do
     [[ -d "$d" ]] && echo "$d"
   done
@@ -440,7 +442,8 @@ import glob, os, re, sys
 
 root = sys.argv[1]
 # module_token_dirs above, plus the reports module's Java.
-dirs = sorted(glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/resources")
+dirs = sorted(glob.glob(f"{root}/modules/liberiaemr/api/src/main/resources")
+              + glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/resources")
               + glob.glob(f"{root}/modules/mambaetl/*/src/main/mamba")
               + glob.glob(f"{root}/modules/liberiaemrreports/*/src/main/java"))
 dashed = re.compile(r"(?<![0-9A-Za-z])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![0-9A-Za-z])")
@@ -894,16 +897,21 @@ PYGRP
 ok "every obsGroup in a form has its own group concept"
 
 section "account lockout configuration (not runtime authentication)"
-# MOH ICT SOP A6: lock on the fifth consecutive failure, recover after five minutes. OpenMRS
-# 2.8.8 locks when failures EXCEED security.allowedFailedLoginsBeforeLockout, so the value is 4;
-# 5 would lock on the sixth. security.unlockAccountWaitingTime is in minutes.
+# MOH ICT SOP A6: lock on the fifth consecutive failure. OpenMRS 2.8.8 locks when failures
+# EXCEED security.allowedFailedLoginsBeforeLockout, so the value is 4; 5 would lock on the
+# sixth. security.unlockAccountWaitingTime is the recovery interval in minutes. A retry while
+# locked resets lockoutTimestamp; this check cannot see that runtime behavior.
 #
-# Each property is defined once, in national gp-security.xml: a second definition anywhere else
-# competes with it, and whichever Initializer applies last is the one enforced. Every
-# declaration of the threshold variable must be 4, because "variables across layers"
-# deliberately lets a site override a shared key, and here that would silently loosen a
-# contractual control. The retired names are not read by core; shipping them again looks
-# compliant and enforces nothing.
+# security.validTime is read by core. It is password-reset activation-key validity in
+# milliseconds, not lockout duration. 300000 (5 minutes) is shipped explicitly so a clean
+# install does not fall back to core's 600000 ms default while an upgraded database keeps
+# another value. security.loginAttemptsBeforeLockout is not read by the 2.8.8 lockout
+# mechanism; shipping it looks compliant and enforces nothing.
+#
+# Each of the three properties is defined once, in national gp-security.xml. A second
+# definition anywhere else competes, and whichever Initializer applies last is enforced.
+# Every declaration of the threshold variable must be 4, because a site layer may override
+# a shared key and would otherwise silently loosen the control.
 #
 # This checks shipped configuration only. What has been verified at runtime is recorded in
 # docs/security/account-lockout-verification.md.
@@ -915,8 +923,9 @@ pkg_dir = sys.argv[1]
 rel = lambda p: os.path.relpath(p, os.path.dirname(pkg_dir))
 VARIABLE = "var.security.login.allowed-failures-before-lockout"
 EXPECTED = {"security.allowedFailedLoginsBeforeLockout": "${" + VARIABLE + "}",
-            "security.unlockAccountWaitingTime": "5"}
-RETIRED_GPS = ("security.loginAttemptsBeforeLockout", "security.validTime")
+            "security.unlockAccountWaitingTime": "5",
+            "security.validTime": "300000"}
+RETIRED_GPS = ("security.loginAttemptsBeforeLockout",)
 RETIRED_VAR = "var.security.login.max-attempts"
 NATIONAL = "content-packages/content-liberia-national/configuration"
 AUTHORITY = f"{NATIONAL}/backend_configuration/globalproperties/gp-security.xml"
@@ -963,7 +972,7 @@ for p in problems:
     print(f"       {p}", file=sys.stderr)
 sys.exit(1 if problems else 0)
 PY
-ok "lockout on the fifth failure, 5-minute recovery, defined once; retired names absent"
+ok "lockout on the fifth failure, 5-minute recovery, activation-key validity 300000 ms; obsolete lockout name absent"
 
 echo
 if [[ $fail -ne 0 ]]; then

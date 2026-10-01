@@ -38,7 +38,12 @@
     <globalProperty>
       <property>security.unlockAccountWaitingTime</property>
       <value>5</value>
-      <description>Lockout recovery interval in minutes; preserves the existing 5-minute policy.</description>
+      <description>Lockout recovery interval in minutes. While the account is locked, another authentication attempt resets lockoutTimestamp and starts this interval again.</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.validTime</property>
+      <value>300000</value>
+      <description>Password-reset activation-key validity in milliseconds (5 minutes). Not account-lockout duration.</description>
     </globalProperty>
   </globalProperties>
 </config>

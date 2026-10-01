@@ -75,6 +75,83 @@ describe('sync status page', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
+  it('says which facilities have records that never reached central', () => {
+    givenStatus({
+      enabled: true,
+      available: true,
+      facilities: [
+        {
+          code: 'careysburg',
+          recordsReceived: 12,
+          receivedLastDay: 5,
+          silent: false,
+          certificateExpires: null,
+          lastChecked: 1790300000,
+          recordsMissing: 3,
+        },
+        {
+          code: 'barnersville',
+          recordsReceived: 9,
+          receivedLastDay: 2,
+          silent: false,
+          certificateExpires: null,
+          lastChecked: 1790300000,
+          recordsMissing: 0,
+        },
+        { code: 'bong', recordsReceived: 4, receivedLastDay: 0, silent: false, certificateExpires: null },
+      ],
+      central: null,
+      alerts: [],
+    });
+
+    render(<SyncStatus />);
+
+    // The test renderer leaves {{count}} and {{date}} unfilled; the app fills them in.
+    expect(screen.getByText(/missing at central$/)).toBeInTheDocument();
+    expect(screen.getByText(/^All arrived/)).toBeInTheDocument();
+    expect(screen.getByText('Not checked yet')).toBeInTheDocument();
+  });
+
+  it('says when each facility last sent, in a way a broker restart cannot reset', () => {
+    const now = Math.floor(Date.now() / 1000);
+    givenStatus({
+      enabled: true,
+      available: true,
+      facilities: [
+        {
+          code: 'careysburg',
+          // The broker restarted: its raw counter says 11, the week says 7577.
+          recordsReceived: 11,
+          receivedLastDay: 7577,
+          receivedLastWeek: 7577,
+          lastReceived: now - 12 * 60,
+          silent: false,
+          certificateExpires: null,
+        },
+        {
+          code: 'bong',
+          recordsReceived: 0,
+          receivedLastDay: 0,
+          receivedLastWeek: 0,
+          lastReceived: null,
+          silent: false,
+          certificateExpires: null,
+        },
+      ],
+      central: null,
+      alerts: [],
+    });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('Last received')).toBeInTheDocument();
+    expect(screen.getByText('12 minutes ago')).toBeInTheDocument();
+    expect(screen.getByText('Not in the last 7 days')).toBeInTheDocument();
+    expect(screen.getAllByText('7577')).toHaveLength(2);
+    expect(screen.queryByText('Records received in total')).not.toBeInTheDocument();
+    expect(screen.queryByText('11')).not.toBeInTheDocument();
+  });
+
   it('says so on a facility server, where there is no national view', () => {
     givenStatus({ enabled: false });
 

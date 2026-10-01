@@ -70,6 +70,55 @@ recorded, with its per-location changes, in `liberiaemr_mfl_sync_run` and
 There is no global property for the credentials or the allowed hosts: global properties are
 readable over REST.
 
+### Audit log viewer
+Backs the ICT Unit's audit log page (MOH ICT SOP control B3, `docs/runbooks/audit-log.md`):
+a read-only view of `auditlog_audit_log`, the table the auditlog module writes (control C1).
+Every call needs **Get Audit Logs**, the auditlog module's own privilege, which the national
+`ICT Auditor` role holds; otherwise `403`. Nothing here writes.
+
+| Call | Returns |
+|---|---|
+| `GET /ws/rest/v1/liberiaemr/auditlog` | One page, newest first: `{totalCount, startIndex, limit, results[]}` |
+| `GET /ws/rest/v1/liberiaemr/auditlog/{uuid}` | One entry with its values and child entries; `404` if unknown |
+| `GET /ws/rest/v1/liberiaemr/auditlog/types` | `{results: [{type, name}]}`, the audited classes, for the type filter |
+| `GET /ws/rest/v1/liberiaemr/auditlog/export` | The same filters as CSV, streamed, newest first |
+
+Filters, all optional, the same on the list and the export:
+
+| Parameter | Meaning |
+|---|---|
+| `from`, `to` | `yyyy-MM-dd` (a whole day, `to` inclusive) or `yyyy-MM-ddTHH:mm:ss`, server time |
+| `user` | The user who made the change: username, system ID or user UUID |
+| `type` | A class name (`org.openmrs.Location`) or its simple name (`Location`) |
+| `action` | `CREATED`, `UPDATED`, `DELETED`, or several comma-separated |
+| `topLevelOnly` | `true` leaves out child entries (a person's name, saved with the person) |
+| `startIndex`, `limit` | Paging for the list: `limit` 1 to 200, default 50 |
+
+A list entry is `{uuid, dateCreated, action, type, typeName, identifier, user: {uuid,
+username, systemId} | null, parentUuid, hasValues, childCount}`. The detail adds `changes`
+(`[{property, previous, current, redacted}]`) to an update, `lastState` (`[{property,
+value, redacted}]`) to a delete when `auditlog.storeLastStateOfDeletedItems` is on, and
+`children`, each with its own values. A create records no values.
+
+The export's `limit` defaults to and is capped at 50,000 rows. `X-Total-Count` says how many
+matched, `X-Row-Cap` the cap applied, and `X-Truncated` whether the file stops short.
+
+**Without the auditlog module** this module still starts: config.xml is only *aware of*
+auditlog. Every call then answers `503`, after the privilege check (a non-superuser cannot
+hold a privilege the absent module has not created, so still gets `403`).
+
+**Credential material is never returned**, whatever `auditlog.exceptions` says. Rows of
+`LoginCredential` (password hashes and salts) and of this module's `PasswordResetToken` are
+left out of every list, count, detail and export. A property whose name ends in a secret
+word (`password`, `salt`, `token`, `apiKey`, …) shows `[redacted]`, and so does every value
+of a global property named like one (`liberiaemr.email.password`); password *policy* global
+properties such as `security.passwordMinimumLength` stay readable.
+
+It reads the table through JDBC with bound parameters, not the auditlog module's
+`AuditLogService`, which has no user filter or count, and which this module could not link
+against without requiring auditlog. Liquibase adds three indexes to the table (date, type,
+parent entry), skipped and retried on each start until the table exists.
+
 ### Password Reset Flow
 The module introduces a secure, automated password reset flow for users. It integrates with an external SMTP server (e.g., Gmail) to send time-limited password reset tokens to registered users.
 

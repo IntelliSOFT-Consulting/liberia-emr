@@ -1,9 +1,11 @@
 # Indicator-report fixtures and expected values
 
 This directory holds the synthetic dataset and the hand-computed expected values for the 21
-*Feasible now* indicators of the MOH indicator reports (LE-336, parent LE-326). The tests that
-compare report output with these values, and the ETL runbook, come later, once the ETL module
-(RPT 5), the reports module (RPT 11) and the report definitions (RPT 8) exist.
+*Feasible now* indicators of the MOH indicator reports (LE-336, parent LE-326), and the
+scripts that compare a stack's reports with them. CI runs the Careysburg comparison on a clean
+facility stack (`run-stack-check.sh`, in the *Initializer against a clean database* job);
+central's is run by hand. How and why is in the ETL runbook,
+[docs/runbooks/reporting-etl.md](../../docs/runbooks/reporting-etl.md) section 10.
 
 The indicator definitions come from the feasibility matrix, `docs/reporting/feasibility/*.csv`
 and the `*-gaps.md` files beside it. The deployment model and location attribution come from
@@ -19,7 +21,10 @@ and the `*-gaps.md` files beside it. The deployment model and location attributi
 | `fixtures/diagnoses.csv` | CSV | 30 `encounter_diagnosis` rows, as written by the O3 Visit Note |
 | `fixtures/orders.csv` | CSV | 33 orders: 12 drug orders and 21 test orders |
 | `expected-values.csv` | CSV, 14 columns | 336 rows: 21 indicators × 2 periods × 8 instance and scope pairs |
-| `load-fixtures.py` | Python 3, standard library only | Lints the fixtures, prints the SQL, or loads it into a stack's database |
+| `load-fixtures.py` | Python 3, standard library only | Lints the fixtures, prints the SQL, or loads it into a stack's database. `load-late-row` adds the one row the incremental-run check needs |
+| `compare-reports.py` | Python 3, standard library only | Runs the five reports on a stack through reportingrest and compares them with `expected-values.csv`; `--dump` writes every data set it read |
+| `compare-instances.py` | Python 3, standard library only | From two `--dump` files, checks that a facility's reports equal central's reports scoped to it, every column, EMR-OPS-007 and 015 excepted |
+| `run-stack-check.sh` | bash | The ETL's definition of done on a fresh stack: loads the fixtures, runs the ETL in full and then incrementally, compares the reports, and checks the ETL user, its error log and the binlog |
 
 The `purpose` column explains each row that exists for a particular indicator or edge case.
 
