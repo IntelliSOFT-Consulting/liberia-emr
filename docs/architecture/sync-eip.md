@@ -1,7 +1,8 @@
 # Sync & EIP architecture
 
-**Status:** Draft for review by Paul (IntelliSOFT) and the MOH ICT Unit.
-**Target sign-off:** 21 August 2026 (LE-22).
+**Status:** The design of record for the built sync layer, kept current with it (last
+reviewed 1 October 2026). Its MOH decisions are tracked in §8: ADR 0005 is accepted, ADR 0007
+is still Proposed.
 **Implements:** Sprint 3 (outbound push), Sprint 4 (cross-facility query).
 
 This is the design the sync layer is built from. It exists because the sync layer is the
@@ -98,7 +99,7 @@ Three stated limitations that bear directly on our scope:
 
 These are addressed in §1.8. They are the most important open items in this document, and
 they are engineering-schedule risks rather than MOH decisions, which means they are ours,
-not the MOH's, and they will not be resolved by the 21 August sign-off meeting.
+not the MOH's, and they were never for the MOH sign-off to resolve.
 
 ### 1.2 Shape
 
@@ -290,8 +291,13 @@ the locations of every site package, so it holds every location a facility can r
 ([ADR 0012](../adr/0012-central-site-locations.md)). Providers are facility data and sync like
 any other row. This satisfies DB-sync's stated assumption that metadata is centrally
 managed, by a stronger mechanism than metadata sharing. It also creates a rule: **facility and
-central must never run different content-package versions**, or the receiver will reject rows
-referencing UUIDs it does not have.
+central must never run different content-package versions**, because the receiver does not
+reject a row referencing metadata it lacks. For most metadata types it inserts a retired
+placeholder row with the missing UUID and applies the record against it, with nothing in the
+retry or conflict queues; a missing patient identifier type or person attribute type is the
+exception, and parks the record in the retry queue. Found on dbsync 4.0.0 on 30 September and
+1 October 2026 (LE-373); the behaviour by type, its detection and its repair are in
+[entity coverage](sync-entity-coverage.md) §3.
 
 **Not pushed:** anything from `content-demo`; anything from a facility running the demo
 stack (`docker-compose.demo.yml` has no `sync` service, and that is deliberate: fabricated
@@ -770,6 +776,12 @@ when the dependency arrives; it does not reject it, and it does not stall the st
 behind it. Parked messages older than a configured age are an alert: they mean something
 upstream was dropped, and they are the earliest visible symptom of it.
 
+**As built.** A missing *metadata* reference mostly does not park: the receiver applies the
+record against a placeholder row instead (§1.6). Parking of a missing *clinical* dependency,
+such as a visit whose patient has not landed, is not yet observed
+([entity coverage](sync-entity-coverage.md) §6), and no alert watches how long a message has
+been parked.
+
 ### 5.4 Retry: retryable versus poison
 
 The distinction that matters:
@@ -792,7 +804,8 @@ times to `DLQ` instead of dropping it, the messages behind it keep applying, and
 `SyncDeadLetters` fires (runbook section 7); `qa/sync/verify-receiver-failure.sh` and
 `qa/sync/verify-hardening.sh` prove it. The retryable side is not as specified above: the sender
 and receiver each retry on a fixed 30-minute interval (`db-event.retry.interval`,
-`inbound.retry.interval`), with no backoff or jitter.
+`inbound.retry.interval`), with no backoff or jitter. The requirement above stands; the gap
+is risk E16.
 
 ### 5.5 Reconciliation: because retries do not prove completeness
 
@@ -917,7 +930,7 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F6 | **Poison message blocks the queue head** | One malformed or unsupported entity | The facility appears to be retrying forever and never drains | Bounded retries then dead-letter, and the stream continues (§5.4). BUILT at the broker: 10 delivery attempts, then `DLQ` and `SyncDeadLetters` |
 | F7 | **Central never notices a facility has gone quiet** | Facility down, sender crashed, or nothing to send | An outage that nobody is counting is an outage nobody fixes | Facilities send a heartbeat; central alerts on silence, per facility, distinguishing "no data" from "no contact" |
 | F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional**. BUILT for existence: a nightly digest over the broker, compared at central (§5.5); content comparison is still to come |
-| F9 | **Reconnection storm** | Regional outage ends; all facilities return at once | Receiver overwhelmed; the first facilities to reconnect starve the rest | Jittered backoff and per-facility rate limiting at central (§7.6) |
+| F9 | **Reconnection storm** | Regional outage ends; all facilities return at once | Receiver overwhelmed; the first facilities to reconnect starve the rest | Jittered backoff and per-facility rate limiting at central (§7.6). NOT BUILT: fixed-interval retries and no per-facility limit (E16) |
 | F10 | **Facility server stolen or dies outright** | Physical | Loss of the local record and its credentials | Facility backups (existing runbook), full-disk encryption (§7.4), certificate revocation at central (§7.2) |
 | F11 | **Power cut tears or drops the binlog tail** | Facility loses power with `sync_binlog=0` | The sender stops at the torn event and retries forever, or a committed change never reaches the binlog and never syncs (**silent gap**) | `--sync-binlog=1` with `innodb_flush_log_at_trx_commit=1` on the facility database, so no acknowledged commit is lost or torn; the outage drill asserts both. An unacknowledged commit cut off mid-write can still leave a partial tail event, which the sender may stop on. `SyncCaptureStalled` raises that at the facility; the runbook's section 16 recovers from it. FOUND 2026-09-25 on a lab stack after a forced Docker restart |
 
@@ -1155,9 +1168,11 @@ The behaviour that only ever gets exercised in production, and the one this depl
 exercise constantly:
 
 - **Backoff is jittered** (§5.4). Facilities restored by the same regional event must not
-  reconnect in lockstep against a receiver that is itself just starting.
+  reconnect in lockstep against a receiver that is itself just starting. Not built: retries
+  run on a fixed interval (E16).
 - **Central rate-limits per facility** so that one facility draining a two-week backlog
-  cannot starve another facility's live sync. Fairness here is an availability control.
+  cannot starve another facility's live sync. Fairness here is an availability control. Not
+  built: nothing at central limits a facility (E16).
 - **Backlog drain is resumable.** An interruption mid-drain resumes at the offset, and does
   not restart the backlog.
 - **Certificate expiry is checked ahead of time and alerted on well before it happens.**
@@ -1203,20 +1218,22 @@ not an afterthought.
 
 ---
 
-## 8. Open questions for MOH ICT (sign-off by 21 August)
+## 8. Questions for MOH ICT
 
-| # | Question | Blocks |
-| --- | --- | --- |
-| 1 | Central-assigned CPI accepted, or National ID to become mandatory at registration? | ADR 0005, Sprint 3 |
-| 2 | Named MOH role owning the duplicate review queue, with an expected turnaround | ADR 0005, go-live |
-| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 |
-| 4 | Sensitive categories excluded from cross-facility visibility, if any | ADR 0007, content packages |
-| 5 | Lawful basis, and whether patient consent is captured at query time | ADR 0007 |
-| 6 | Certificate lifecycle ownership, in writing (control D2) | Sprint 3 |
-| 7 | Maximum tolerated facility outage: sets binlog retention and queue disk sizing | §1.3, hardware spec |
-| 8 | Audit retention for cross-facility access (≥3 months, likely longer) | Control C2 |
-| 9 | Full-disk encryption on facility servers: accepted as a control, and whose responsibility to apply and verify? | §7.4, control register |
-| 10 | Confirmation that facility hardware will be sized for the §5.9 retention window, including facilities not yet built | F2, hardware spec |
+Status as the repository records it on 1 October 2026.
+
+| # | Question | Blocks | Status |
+| --- | --- | --- | --- |
+| 1 | Central-assigned CPI accepted, or National ID to become mandatory at registration? | ADR 0005, Sprint 3 | Answered: the central-assigned CPI, ADR 0005 accepted (LE-22) |
+| 2 | Named MOH role owning the duplicate review queue, with an expected turnaround | ADR 0005, go-live | Open |
+| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 | Open: ADR 0007 Proposed |
+| 4 | Sensitive categories excluded from cross-facility visibility, if any | ADR 0007, content packages | Open: ADR 0007 Proposed |
+| 5 | Lawful basis, and whether patient consent is captured at query time | ADR 0007 | Open: ADR 0007 Proposed |
+| 6 | Certificate lifecycle ownership, in writing (control D2) | Sprint 3 | Open: D2 Partial |
+| 7 | Maximum tolerated facility outage: sets binlog retention and queue disk sizing | §1.3, hardware spec | Open; MariaDB caps retention at 99 days meanwhile (F1) |
+| 8 | Audit retention for cross-facility access (≥3 months, likely longer) | Control C2 | Open |
+| 9 | Full-disk encryption on facility servers: accepted as a control, and whose responsibility to apply and verify? | §7.4, control register | Open |
+| 10 | Confirmation that facility hardware will be sized for the §5.9 retention window, including facilities not yet built | F2, hardware spec | Open |
 
 Question 7 is the one that quietly sets the most: it fixes binlog retention, facility disk
 size and the acceptance test in §5.9. An answer of "we don't know" should be treated as the
@@ -1241,10 +1258,11 @@ can invalidate the Sprint 3 plan.
 | E9 | Facility disk encryption is not in the SOP mapping, and facility servers are physically exposed | Raise with MOH ICT; add to the control register (§7.4) | High |
 | E10 | Nothing detects a facility that has silently stopped syncing | Per-facility heartbeat and silence alerting (F7). PARTLY BUILT: the `SyncFacilitySilent` alert and the sync status page both read the broker's per-facility message counts, so a facility that stops sending is noticed within three days. A heartbeat would tell "nothing recorded" apart from "no contact"; the broker cannot. A sender that is up but has stopped reading the binlog, the silent case the sender's own metrics miss, raises `SyncCaptureStalled` at the facility within 15 minutes of records waiting (`monitoring/sync-capture/`). | Medium |
 | E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4). BUILT: the broker declares the receiver's subscription queue, so messages wait from its first start whether or not the receiver has connected; `qa/sync/verify-hardening.sh` checks it | **Highest**: defeats every other durability control |
-| E12 | Facility and central drift onto different content-package versions | Same image both sides; assert UUID parity in the upgrade rehearsal (§1.6) | Medium |
+| E12 | Facility and central drift onto different content-package versions, and the receiver fills each gap with placeholder metadata rather than failing (§1.6) | Same national packages both sides, with central carrying every site's locations (ADR 0012); assert UUID parity in the upgrade rehearsal; detect placeholders at central (LE-373) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; reconciliation verifies that records exist at central (§5.5), not yet that their content matches | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
 | E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
+| E16 | Retries run on a fixed 30-minute interval with no backoff or jitter, and central has no per-facility rate limit, so facilities restored together reconnect together and one facility's backlog can starve another's live sync (F9) | Jittered, capped backoff (§5.4) and per-facility fairness at central (§7.6). Neither is configured today; establish whether dbsync or the broker can provide them before writing our own | Medium |
 
 ## 10. Before route one
 
