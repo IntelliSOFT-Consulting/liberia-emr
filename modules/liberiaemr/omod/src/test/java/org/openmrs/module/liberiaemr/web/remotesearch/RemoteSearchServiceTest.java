@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -32,6 +33,8 @@ import org.junit.Test;
 import org.openmrs.Concept;
 import org.openmrs.ConceptDatatype;
 import org.openmrs.Obs;
+import org.openmrs.Patient;
+import org.openmrs.PersonName;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.RemoteSearchException;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.SearchOutcome;
 
@@ -336,6 +339,53 @@ public class RemoteSearchServiceTest {
 	@Test
 	public void numericValueThatIsNotANumberIsSkipped() throws Exception {
 		assertFalse(service.applyObsValue(new Obs(), conceptOf(ConceptDatatype.NUMERIC_UUID), json("{\"uuid\":\"x\"}")));
+	}
+
+	// --- is a shared identifier the same person? --------------------------------------------------
+
+	private static Patient localPatient(String gender, int year, String familyName) {
+		Patient patient = new Patient();
+		patient.setGender(gender);
+		patient.setBirthdate(new GregorianCalendar(year, 0, 1).getTime());
+		patient.addName(new PersonName("Given", null, familyName));
+		return patient;
+	}
+
+	private static JsonNode centralPerson(String gender, String birthdate, String familyName) throws Exception {
+		return json("{\"gender\":\"" + gender + "\",\"birthdate\":\"" + birthdate
+		        + "\",\"names\":[{\"givenName\":\"Other\",\"familyName\":\"" + familyName + "\"}]}");
+	}
+
+	@Test
+	public void sameGenderBirthdateAndFamilyNameIsTheSamePerson() throws Exception {
+		assertTrue(service.samePerson(localPatient("F", 1990, "Doe"),
+		    centralPerson("F", "1990-01-01T00:00:00.000+0000", "doe")));
+	}
+
+	@Test
+	public void aSharedIdentifierAloneDoesNotMakeTwoPatientsTheSame() throws Exception {
+		Patient john = localPatient("M", 1984, "Smith");
+
+		// Jane Doe on central, John Smith here, both holding the same OpenMRS ID.
+		assertFalse(service.samePerson(john, centralPerson("F", "1990-01-01T00:00:00.000+0000", "Doe")));
+	}
+
+	@Test
+	public void anyOneDifferingDetailMeansADifferentPerson() throws Exception {
+		Patient local = localPatient("F", 1990, "Doe");
+
+		assertFalse(service.samePerson(local, centralPerson("M", "1990-01-01T00:00:00.000+0000", "Doe")));
+		assertFalse(service.samePerson(local, centralPerson("F", "1991-01-01T00:00:00.000+0000", "Doe")));
+		assertFalse(service.samePerson(local, centralPerson("F", "1990-01-01T00:00:00.000+0000", "Roe")));
+	}
+
+	@Test
+	public void missingDetailsAreNeverTreatedAsAMatch() throws Exception {
+		Patient local = localPatient("F", 1990, "Doe");
+
+		assertFalse(service.samePerson(local, json("{}")));
+		assertFalse(service.samePerson(local, json("{\"gender\":\"F\",\"names\":[{\"familyName\":\"Doe\"}]}")));
+		assertFalse(service.samePerson(new Patient(), centralPerson("F", "1990-01-01T00:00:00.000+0000", "Doe")));
 	}
 
 	@Test

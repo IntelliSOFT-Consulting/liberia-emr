@@ -209,9 +209,12 @@ public class RemoteSearchService {
 
 			// The same person can already be here under a different UUID (registered locally, or
 			// imported from another route). Open that record rather than creating a second one.
-			Patient duplicate = findLocalByIdentifier(remotePatient.path("identifiers"));
+			// An identifier alone is not proof: OpenMRS ID is generated from the same sequence at every
+			// facility, so two unrelated patients can share one. Demographics must agree too.
+			Patient duplicate = findLocalByIdentifier(remotePatient.path("identifiers"), remotePatient.path("person"));
 			if (duplicate != null) {
-				log.info("Remote patient {} matches local patient {} by identifier", uuid, duplicate.getUuid());
+				log.info("Remote patient {} matches local patient {} by identifier and demographics", uuid,
+						duplicate.getUuid());
 				return duplicate.getUuid();
 			}
 
@@ -647,6 +650,15 @@ public class RemoteSearchService {
 				continue;
 			}
 
+			// Another local patient already holds this value (OpenMRS ID is generated per facility and can
+			// repeat across them). Importing it would clash or blur two people, so the patient is
+			// imported without it and keeps their other identifiers.
+			if (heldByAnotherPatient(type, idNode.path("identifier").asText())) {
+				log.warn("Skipping central identifier of type {}: its value is already held by another local patient",
+						type.getName());
+				continue;
+			}
+
 			PatientIdentifier identifier = new PatientIdentifier();
 			identifier.setIdentifier(idNode.path("identifier").asText());
 			identifier.setIdentifierType(type);
@@ -654,6 +666,11 @@ public class RemoteSearchService {
 			identifier.setPreferred(idNode.path("preferred").asBoolean(false));
 			p.addIdentifier(identifier);
 		}
+	}
+
+	private boolean heldByAnotherPatient(PatientIdentifierType type, String value) {
+		return !value.isEmpty()
+				&& !Context.getPatientService().getPatients(null, value, Collections.singletonList(type), true).isEmpty();
 	}
 
 	private Location getFallbackLocation() {
@@ -667,7 +684,7 @@ public class RemoteSearchService {
 		return Context.getUserContext().getLocation();
 	}
 
-	private Patient findLocalByIdentifier(JsonNode identifiersNode) {
+	private Patient findLocalByIdentifier(JsonNode identifiersNode, JsonNode remotePerson) {
 		if (!identifiersNode.isArray()) {
 			return null;
 		}
@@ -678,13 +695,54 @@ public class RemoteSearchService {
 			if (value.isEmpty() || type == null) {
 				continue;
 			}
-			List<Patient> matches = Context.getPatientService().getPatients(null, value,
-					Collections.singletonList(type), true);
-			if (!matches.isEmpty()) {
-				return matches.get(0);
+			for (Patient match : Context.getPatientService().getPatients(null, value, Collections.singletonList(type),
+					true)) {
+				if (samePerson(match, remotePerson)) {
+					return match;
+				}
+				log.warn("Central identifier {} is also held by local patient {}, whose details differ; not treating "
+						+ "them as the same person", value, match.getUuid());
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Whether a local patient with a shared identifier is plausibly the central patient: same gender,
+	 * same birthdate, and a family name in common (ignoring case). Anything less is a different person.
+	 */
+	boolean samePerson(Patient local, JsonNode remotePerson) {
+		String gender = remotePerson.path("gender").asText("");
+		if (gender.isEmpty() || local.getGender() == null || !gender.equalsIgnoreCase(local.getGender())) {
+			return false;
+		}
+
+		Date remoteBirthdate = parseDateOrNull(remotePerson.path("birthdate"));
+		if (remoteBirthdate == null || local.getBirthdate() == null) {
+			return false;
+		}
+		SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
+		if (!day.format(remoteBirthdate).equals(day.format(local.getBirthdate()))) {
+			return false;
+		}
+
+		JsonNode names = remotePerson.path("names");
+		if (!names.isArray()) {
+			return false;
+		}
+		for (JsonNode name : names) {
+			String family = name.path("familyName").asText("").trim();
+			if (family.isEmpty() || name.path("voided").asBoolean(false)) {
+				continue;
+			}
+			for (PersonName localName : local.getNames()) {
+				if (!localName.getVoided() && family.equalsIgnoreCase(
+						localName.getFamilyName() == null ? "" : localName.getFamilyName().trim())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private String requireRemoteUrl() throws RemoteSearchException {
