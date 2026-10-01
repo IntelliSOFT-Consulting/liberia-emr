@@ -145,14 +145,8 @@
   },
   "@liberiaemr/esm-liberia-login-app": {
     "_comment_idle_timeout": [
-      "MOH ICT SOP A7. Unit: minutes of HUMAN inactivity, not milliseconds.",
-      "Maven filtering leaves this as a JSON string such as \"10\" because the",
-      "placeholder is inside quotes. The login app clamps any value above 10 to 10,",
-      "falls back to 10 when the value is missing or invalid, and honors a shorter",
-      "positive value. Background HTTP polling is not activity.",
-      "This is not logoutIdleTimeoutMinutes. The primary-navigation app does not",
-      "read that key. The servlet session timeout is a separate 10-minute backstop",
-      "in the backend image. See docs/security/moh-ict-sop-mapping.md."
+      "Minutes of human inactivity for the login-app watcher. Maven filtering leaves this as a string such as \"10\".",
+      "This is not logoutIdleTimeoutMinutes. See docs/security/moh-ict-sop-mapping.md."
     ],
     "session": {
       "idleTimeoutMinutes": "${var.security.session.timeout-minutes}"

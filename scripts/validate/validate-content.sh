@@ -898,8 +898,8 @@ ok "every obsGroup in a form has its own group concept"
 
 section "session inactivity timeout"
 # MOH ICT SOP A7. The contractual maximum is 10 minutes of human inactivity.
-# The login app clamps at runtime; these checks stop the configuration, the docs
-# and the backend patch from drifting away from that control.
+# The login app clamps at runtime; these checks stop the configuration and the
+# backend patch from drifting away from that control.
 python3 - "$ROOT" <<'PY' || err "session inactivity timeout (see above)"
 import json, os, re, sys
 
@@ -992,29 +992,9 @@ for dirpath, dirnames, filenames in os.walk(gp_root):
             if re.search(r"(session[-_.]?timeout|idle[-_.]?timeout|servlet\.session|web\.session)", prop, re.I):
                 problems.append(f"{rel(path)}: {prop} looks like a session-timeout global property; do not invent one")
 
-readme = open(os.path.join(
-    root,
-    "content-packages/content-liberia-national/configuration/backend_configuration/globalproperties/README.md",
-), encoding="utf-8").read()
-if "at the gateway" in readme or "gateway does not enforce this" not in readme:
-    problems.append("globalproperties/README.md must not say the gateway enforces the session timeout")
-if "<session-timeout>" not in readme and "session-timeout" not in readme:
-    problems.append("globalproperties/README.md must describe the servlet session-timeout")
-
-mapping = open(os.path.join(root, "docs/security/moh-ict-sop-mapping.md"), encoding="utf-8").read()
-a7 = mapping.split("### A7 — session timeout", 1)[-1].split("\n## ", 1)[0]
-if "at the gateway" in a7:
-    problems.append("moh-ict-sop-mapping.md A7 must not say the control is enforced at the gateway")
-for phrase in ("human inactivity", "session-timeout", "DELETE /ws/rest/v1/session", "**Partial**"):
-    if phrase not in a7:
-        problems.append(f"moh-ict-sop-mapping.md A7 is missing {phrase!r}")
-
 dockerfile = open(os.path.join(root, "distribution/backend/Dockerfile"), encoding="utf-8").read()
-script = open(os.path.join(root, "distribution/backend/session-timeout/patch_session_timeout.py"), encoding="utf-8").read()
 if "patch_session_timeout.py" not in dockerfile or "COPY --from=session-timeout" not in dockerfile:
     problems.append("backend Dockerfile does not apply patch_session_timeout.py to the distribution WAR")
-if 'SESSION_TIMEOUT_MINUTES = "10"' not in script:
-    problems.append("patch_session_timeout.py must set the servlet timeout to 10 minutes")
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)

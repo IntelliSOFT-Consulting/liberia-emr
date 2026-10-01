@@ -74,7 +74,6 @@ both site `config-site.json` files), which this module does not read.
 | `logo.src` / `logo.alt` | `''` / `Logo` | Empty `src` uses the OpenMRS logo |
 | `footer.additionalLogos` | `[]` | `{src, alt}` entries |
 | `showPasswordOnSeparateScreen` | `true` | |
-| `showPasswordReset` | `true` | |
 | `session.idleTimeoutMinutes` | `10` | Minutes of human inactivity before logout. Unit: minutes, not milliseconds. Above 10 is clamped to 10. Missing or invalid becomes 10. A shorter positive value is honored. The built config is a string such as `"10"`. |
 | `background.image` / `background.color` | `''` / `''` | The image wins if both are set |
 | `announcements` | `[]` | `{title, text, kind}` banners above the form |
