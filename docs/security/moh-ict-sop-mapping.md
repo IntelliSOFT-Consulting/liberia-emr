@@ -24,7 +24,7 @@ one is a contract breach. Never scaffold a looser default (IMPLEMENTATION.md §1
 | A4 | Password expiry | 90 days | — | **Open** |
 | A5 | No reuse of last 3 passwords | history = 3 | — | **Open** |
 | A6 | Lockout after failed attempts | 5 attempts | `gp-security.csv` → `security.loginAttemptsBeforeLockout` | Enforced |
-| A7 | Session timeout | 10 minutes | `config-national.json` (client) | **Partial** |
+| A7 | Session timeout | 10 minutes of human inactivity | Login-app idle watcher and Tomcat `conf/web.xml` `session-timeout` — see below | **Partial** |
 
 ### A4 / A5 — password expiry and history
 
@@ -44,10 +44,54 @@ the substance of the ADR.
 
 ### A7 — session timeout
 
-`logoutIdleTimeoutMinutes` in the O3 runtime config ends the user's session **in the
-browser**. It does not invalidate the session server-side, so a stolen session cookie
-survives it. The matching server-side timeout must be configured in the backend image;
-until both are in place this control is partial, not enforced.
+The contractual maximum is **10 minutes of human inactivity**. Two layers implement it.
+Neither is an OpenMRS global property. The gateway does not enforce this control:
+`ssl_session_timeout` is TLS session caching, and `proxy_read_timeout` is how long the
+proxy waits on an HTTP response.
+
+**Client.** `packages/esm-liberia-login-app` mounts an invisible watcher on
+`top-nav-info-slot`, which stays mounted during authenticated O3 use. The login route
+does not. The watcher records pointer, keyboard, touch and scroll activity. It does not
+treat `fetch`, XHR or background polling as activity. A timestamp — nothing else — is
+stored in `localStorage` under `liberiaemr.lastHumanActivityAt`, so activity in any tab
+refreshes the same clock and one idle tab does not log out a tab that is in use. When
+every tab has been idle for the configured period, the watcher calls the existing logout
+path: `DELETE /ws/rest/v1/session`, which invalidates the OpenMRS `HttpSession`, then
+returns to the login page. A background tab whose timers were throttled compares that
+timestamp when it becomes visible and logs out immediately if the period has already
+elapsed.
+
+The period is `session.idleTimeoutMinutes` on `@liberiaemr/esm-liberia-login-app`,
+filled from `${var.security.session.timeout-minutes}`. The unit is minutes. Maven
+filtering leaves the built value as a JSON string such as `"10"`. A missing, invalid or
+greater-than-10 value becomes 10. A shorter positive value is honored, so a site can be
+stricter and cannot loosen the maximum. `@openmrs/esm-primary-navigation-app`'s
+`logoutIdleTimeoutMinutes` is not this control; that app does not read the key.
+
+The distribution still pins `@liberiaemr/esm-liberia-login-app=10.0.0-pre.143`, which
+does not contain the watcher. `packages.yml` publishes `10.0.0-pre.<run>` only after
+this change is on `main`. The pin has to move to that exact version in a follow-up.
+Until then a frontend image built from `distro.properties` does not run the watcher.
+
+**Server.** OpenMRS 2.8.8 does not set `session-timeout`, so Tomcat uses the default in
+`/usr/local/tomcat/conf/web.xml`. The backend image changes that value from 30 minutes to
+10. `startup.sh` recopies the WAR and does not replace `conf/`. An application-level
+`<session-timeout>` in the OpenMRS `WEB-INF/web.xml` would override this default, so the
+image build fails if one appears. The OpenMRS descriptor itself is not modified.
+
+**Why both.** A frontend-only timer leaves the server session alive when the browser
+never runs the watcher, including a stolen cookie sitting unused. A server-only timer
+is reset by the application's own background polling, so a person can be idle at the
+keyboard while the servlet session stays fresh. The client watches the person. The
+server is the backstop for a session that is not being called.
+
+**Unsaved work.** Idle logout, like the Logout button, does not warn that a form has
+unsaved changes. A countdown is out of scope.
+
+**Not yet shown at runtime.** The source and the image build are in place. Login, idle
+logout, rejection of the old `JSESSIONID`, partograph polling, and multi-tab behavior
+have not been exercised on a running stack. Status stays **Partial** until the login
+app pin includes the watcher and both layers have been runtime-verified.
 
 ---
 
@@ -222,7 +266,7 @@ certificate. Disk encryption is what makes theft a hardware loss rather than a b
 ## Open items blocking go-live sign-off
 
 1. **A4 / A5**: password expiry and history (ADR 0004).
-2. **A7**: server-side session timeout to match the client timer.
+2. **A7**: re-pin `@liberiaemr/esm-liberia-login-app` to the pre-release that contains the human-idle watcher, and runtime-verify that watcher together with the 10-minute servlet `session-timeout`. Both mechanisms are in source; neither has been shown on a running stack.
 3. **B4**: named-account policy in the runbook and training material.
 4. **C3**: log review confirming no PHI reaches application logs.
 5. **D3**: backup encryption implemented and a restore rehearsed, covering all six copies
