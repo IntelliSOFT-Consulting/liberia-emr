@@ -16,8 +16,9 @@ class AdultTriageFormPage extends TriageFormPage {
         cy.get('#muac', { timeout: this.timeout }).should('be.visible');
         cy.get('[data-testid="muac-label"] [title="Required"]').should('not.exist');
 
-        ['ebola_screen', 'triage_category_child', 'whz', 'red_signs_child', 'yellow_signs_child'].forEach((fieldId) => {
-            cy.get(`#${fieldId}`).should('not.exist');
+        cy.contains('legend', 'Ebola Screening Result').should('not.exist');
+        ['triage_category_child', 'whz', 'red_signs_child', 'yellow_signs_child'].forEach((fieldId) => {
+            cy.get(`[data-testid="${fieldId}-label"], #${fieldId}`).should('not.exist');
         });
     }
 }
