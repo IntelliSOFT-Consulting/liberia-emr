@@ -23,7 +23,7 @@ one is a contract breach. Never scaffold a looser default (IMPLEMENTATION.md §1
 | A3 | Password must not match username | — | `gp-security.csv` | Enforced |
 | A4 | Password expiry | 90 days | — | **Open** |
 | A5 | No reuse of last 3 passwords | history = 3 | — | **Open** |
-| A6 | Lockout after failed attempts | 5 attempts | `gp-security.csv` → `security.loginAttemptsBeforeLockout` | Enforced |
+| A6 | Lockout after failed attempts | 5 attempts | `gp-security.xml` → `security.allowedFailedLoginsBeforeLockout=4` (locks on failure 5); `security.unlockAccountWaitingTime=5` minutes | **Partial** — existing-install configuration update verified; REST authentication checks pending ([evidence](account-lockout-verification.md)) |
 | A7 | Session timeout | 10 minutes of human inactivity | Login-app idle watcher and Tomcat `conf/web.xml` `session-timeout` — see below | **Partial** |
 
 ### A4 / A5 — password expiry and history
@@ -41,6 +41,20 @@ Two real options, to be decided in **ADR 0004** before go-live:
 Option 2 is likely better for the MOH long-term but adds an availability dependency that an
 offline-first facility instance cannot tolerate unless the IdP is local. That trade-off is
 the substance of the ADR.
+
+### A6 — lockout after failed attempts
+
+OpenMRS 2.8.8 locks when the failure count exceeds
+`security.allowedFailedLoginsBeforeLockout`. The shipped value **4** locks on the fifth
+consecutive failure; **5** would lock on the sixth. `security.unlockAccountWaitingTime`
+is **5 minutes** after the latest authentication attempt while the account is still
+locked. The account opens only when the elapsed time is greater than that interval.
+Trying again earlier, including at the five-minute mark and including with the correct
+password, sets `lockoutTimestamp` to now and starts the five minutes over. Waiting, without
+another attempt, is what lets the account open. That is core behavior, not a defect to
+"fix" by shortening the wait. The ICT note is in
+[deploy.md](../runbooks/deploy.md). REST checks are still pending, so this row stays
+**Partial**.
 
 ### A7 — session timeout
 

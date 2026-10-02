@@ -76,6 +76,16 @@ bind or `secrets:` entry added for it. With no host set in the env file or in th
 box, never at a facility. A user can reset only if their account carries an email
 address. Details: [modules/liberiaemr/README.md](../../modules/liberiaemr/README.md).
 
+### Locked sign-in
+
+An account locks on the fifth consecutive wrong password. It opens only after more than
+five minutes with no further sign-in attempt. Trying again while it is locked, even with
+the correct password, and even at the five-minute mark, rejects the sign-in and starts
+the five minutes over. A user who keeps retrying can stay locked for much longer than
+five minutes. This is how OpenMRS 2.8.8 behaves; it is not a bug in the facility.
+Evidence and the checks still to run:
+[account-lockout-verification.md](../security/account-lockout-verification.md).
+
 ### Sync to central
 
 The sync service starts only with `--profile sync`, so a facility deployed with the commands
