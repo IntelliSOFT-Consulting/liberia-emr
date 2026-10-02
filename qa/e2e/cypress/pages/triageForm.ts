@@ -16,7 +16,6 @@ class TriageFormPage {
         { id: 'spo2', value: '98' },
         { id: 'weight', value: '20.5' },
         { id: 'height', value: '120.5' },
-        { id: 'wz_score', value: '0' },
         { id: 'muac', value: '15.5' }
     ];
 
@@ -74,7 +73,7 @@ class TriageFormPage {
             .should('contain.text', 'Triage Category (Child)')
             .find('[title="Required"]')
             .should('exist');
-        cy.get('#wz_score', { timeout: this.timeout }).should('be.visible');
+        cy.get('#whz', { timeout: this.timeout }).scrollIntoView().should('be.visible').and('be.disabled');
         ['sbp', 'dbp', 'bmi', 'pain_score'].forEach((fieldId) => {
             cy.get(`#${fieldId}`).should('not.exist');
         });
@@ -205,7 +204,6 @@ class TriageFormPage {
             { id: 'spo2', value: '94' },
             { id: 'weight', value: '20.5' },
             { id: 'height', value: '120.5' },
-            { id: 'wz_score', value: '0' },
             { id: 'muac', value: '15.5' }
         ]);
 

@@ -1498,7 +1498,9 @@ jobs:
   #     repo, owned by CENTRAL_DEV_USER), and optionally CENTRAL_DEV_ENV_FILE (relative to
   #     that directory; default ../../env/central.env, where ansible/central-server.yaml and
   #     docs/runbooks/deploy.md put it).
-  # No LEGACY_ADMIN_UI: the central compose file has no such switch.
+  # LEGACY_ADMIN_UI=true is passed on the deploy command, as deploy-dev does and for the
+  # same reason (LE-376): central dev needs Manage Modules and the legacy scheduler. It is
+  # never written to central.env, so it cannot travel into a production central server.
   # ---------------------------------------------------------------------
   deploy-central-dev:
     name: Update central dev environment
@@ -1637,8 +1639,8 @@ jobs:
               exit 1
             fi
             echo \"checkout \$top now at \$head\"
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
