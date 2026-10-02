@@ -30,9 +30,6 @@ import java.util.TimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.openmrs.Concept;
-import org.openmrs.ConceptDatatype;
-import org.openmrs.Obs;
 import org.openmrs.Patient;
 import org.openmrs.PersonName;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.RemoteSearchException;
@@ -222,49 +219,12 @@ public class RemoteSearchServiceTest {
 		body = "{\"results\":[" + patient(NEW_UUID) + "]}";
 
 		service.searchPatients("kate");
-		service.fetchAll(base + "/ws/rest/v1/visit?v=full&patient=" + NEW_UUID);
 		service.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID + "?v=full");
 
-		assertEquals(3, methods.size());
+		assertEquals(2, methods.size());
 		for (String method : methods) {
 			assertEquals("GET", method);
 		}
-	}
-
-	// --- paging -----------------------------------------------------------------------------------
-
-	@Test
-	public void fetchAllReadsEveryPage() throws Exception {
-		// 100 results is a full page, so a second page is requested; a short page ends the read.
-		final StringBuilder full = new StringBuilder("{\"results\":[");
-		for (int i = 0; i < 100; i++) {
-			full.append(i == 0 ? "" : ",").append("{\"uuid\":\"u").append(i).append("\"}");
-		}
-		full.append("]}");
-		final String first = full.toString();
-		final String second = "{\"results\":[{\"uuid\":\"last\"}]}";
-
-		central.removeContext("/");
-		central.createContext("/", new HttpHandler() {
-
-			@Override
-			public void handle(HttpExchange exchange) throws IOException {
-				methods.add(exchange.getRequestMethod());
-				requests.add(exchange.getRequestURI().toString());
-				byte[] bytes = (exchange.getRequestURI().toString().contains("startIndex=0") ? first : second)
-				        .getBytes("UTF-8");
-				exchange.sendResponseHeaders(200, bytes.length);
-				try (OutputStream out = exchange.getResponseBody()) {
-					out.write(bytes);
-				}
-			}
-		});
-
-		List<JsonNode> all = service.fetchAll(base + "/ws/rest/v1/encounter?v=full&patient=" + NEW_UUID);
-
-		assertEquals(101, all.size());
-		assertEquals(2, requests.size());
-		assertTrue(requests.get(1).contains("startIndex=100"));
 	}
 
 	// --- dates ------------------------------------------------------------------------------------
@@ -273,9 +233,9 @@ public class RemoteSearchServiceTest {
 	public void parsesTheDateFormatsOpenmrsReturns() throws Exception {
 		SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
 
-		assertEquals("2026-08-06", day.format(service.parseDate("2026-08-06")));
-		assertEquals("2026-08-06", day.format(service.parseDate("2026-08-06T00:00:00.000+0000").getTime() > 0
-		        ? service.parseDate("2026-08-06T12:00:00.000+0000") : null));
+		assertEquals("2026-08-06", day.format(PatientShellBuilder.parseDate("2026-08-06")));
+		assertEquals("2026-08-06", day.format(PatientShellBuilder.parseDate("2026-08-06T00:00:00.000+0000").getTime() > 0
+		        ? PatientShellBuilder.parseDate("2026-08-06T12:00:00.000+0000") : null));
 	}
 
 	@Test
@@ -283,62 +243,7 @@ public class RemoteSearchServiceTest {
 		SimpleDateFormat utc = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
 		utc.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-		assertEquals("2026-08-06T10:30", utc.format(service.parseDate("2026-08-06T10:30:00.000+0000")));
-	}
-
-	// --- observation values -----------------------------------------------------------------------
-
-	private static Concept conceptOf(String datatypeUuid) {
-		ConceptDatatype datatype = new ConceptDatatype();
-		datatype.setUuid(datatypeUuid);
-		Concept concept = new Concept();
-		concept.setDatatype(datatype);
-		return concept;
-	}
-
-	@Test
-	public void numericValuesAreReadAsNumbers() throws Exception {
-		Obs obs = new Obs();
-
-		assertTrue(service.applyObsValue(obs, conceptOf(ConceptDatatype.NUMERIC_UUID), json("37.5")));
-		assertEquals(Double.valueOf(37.5), obs.getValueNumeric());
-	}
-
-	@Test
-	public void textValuesAreReadAsText() throws Exception {
-		Obs obs = new Obs();
-
-		assertTrue(service.applyObsValue(obs, conceptOf(ConceptDatatype.TEXT_UUID), json("\"cough\"")));
-		assertEquals("cough", obs.getValueText());
-	}
-
-	@Test
-	public void dateValuesAreReadAsDates() throws Exception {
-		Obs obs = new Obs();
-
-		assertTrue(service.applyObsValue(obs, conceptOf(ConceptDatatype.DATE_UUID), json("\"2026-08-06T00:00:00.000+0000\"")));
-		assertEquals("2026-08-06", new SimpleDateFormat("yyyy-MM-dd").format(obs.getValueDatetime()));
-	}
-
-	@Test
-	public void unreadableDatesAreSkipped() throws Exception {
-		assertFalse(service.applyObsValue(new Obs(), conceptOf(ConceptDatatype.DATE_UUID), json("\"\"")));
-	}
-
-	@Test
-	public void missingNullAndComplexValuesAreSkipped() throws Exception {
-		Obs obs = new Obs();
-
-		assertFalse(service.applyObsValue(obs, conceptOf(ConceptDatatype.NUMERIC_UUID), json("null")));
-		assertFalse(service.applyObsValue(obs, conceptOf(ConceptDatatype.NUMERIC_UUID), json("{}").path("absent")));
-		assertFalse(service.applyObsValue(obs, conceptOf(ConceptDatatype.COMPLEX_UUID), json("\"image-bytes\"")));
-		assertFalse(service.applyObsValue(obs, new Concept(), json("1")));
-		assertNull(obs.getValueNumeric());
-	}
-
-	@Test
-	public void numericValueThatIsNotANumberIsSkipped() throws Exception {
-		assertFalse(service.applyObsValue(new Obs(), conceptOf(ConceptDatatype.NUMERIC_UUID), json("{\"uuid\":\"x\"}")));
+		assertEquals("2026-08-06T10:30", utc.format(PatientShellBuilder.parseDate("2026-08-06T10:30:00.000+0000")));
 	}
 
 	// --- is a shared identifier the same person? --------------------------------------------------

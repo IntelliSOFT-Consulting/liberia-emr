@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService;
+import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.ImportOutcome;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.RemoteSearchException;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.SearchOutcome;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +89,10 @@ public class RemoteSearchController {
 
 		try {
 			Map<String, Object> response = new LinkedHashMap<>();
-			response.put("localUuid", remoteSearchService.importPatient(remoteUuid));
+			ImportOutcome outcome = remoteSearchService.importPatient(remoteUuid);
+			response.put("localUuid", outcome.getLocalUuid());
+			// false when the patient was already here (a repeat import only adds the rows it lacked)
+			response.put("created", outcome.isCreated());
 			response.put("status", "success");
 			return new ResponseEntity<>(response, HttpStatus.OK);
 		}
