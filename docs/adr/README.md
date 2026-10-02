@@ -21,6 +21,7 @@ Format: Context → Decision → Consequences → Status.
 | [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
 | [0012](0012-central-site-locations.md) | Central loads the locations of every site package | Accepted |
 | [0013](0013-remote-patient-import.md) | Remote patient import: a local read-only history outside sync, and a shared patient record | Accepted |
+| [0014](0014-sync-over-https-path.md) | Facility to central sync over HTTPS on 443, through a path on the central gateway | **Proposed** |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
 implementation. The number is reserved and has no file until the decision is written; the
@@ -60,6 +61,11 @@ patients until an MPI exists. Accepted on 2 October 2026. The cache's retention 
 still to be set before the first facility rollout, and 0007's own open items
 (sensitive-category exclusions and lawful basis) still apply to what the cache may hold.
 
-Background for 0005, 0007, 0008 and 0013: [Sync & EIP architecture](../architecture/sync-eip.md), the
+0014 carries sync over HTTPS on 443 at `/sync/broker/` on the central gateway, inside a
+WebSocket tunnel at each end, for networks that allow nothing else (LE-372). The facility's
+mutual TLS session with the broker travels inside unopened, so 0008's broker and its controls
+are unchanged. Proposed until the dev pair runs sync with 61617 closed.
+
+Background for 0005, 0007, 0008, 0013 and 0014: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and
 [entity coverage](../architecture/sync-entity-coverage.md).

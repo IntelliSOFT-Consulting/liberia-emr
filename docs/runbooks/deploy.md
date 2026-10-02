@@ -97,7 +97,14 @@ statements in `distribution/compose/facility/initdb/10-sync-db-users.sh`.
 Enrol the facility first ([sync operations](sync-operations.md) section 1): that gives it
 `SYNC_CERTS_DIR`, and central the matching enrolment. Then set `FACILITY_CODE`, `ARTEMIS_URL`,
 `SYNC_CERTS_DIR` and the sync account in `facility.env`, and use the profile on every command
-from then on, including the upgrade and rollback commands below:
+from then on, including the upgrade and rollback commands below.
+
+The facility's network needs only HTTPS to central: with `ARTEMIS_URL=ssl://artemis:61617` and
+`SYNC_CENTRAL_URL=https://<central host>`, sync travels inside
+`https://<central host>/sync/broker/` ([ADR 0014](../adr/0014-sync-over-https-path.md)). Set
+`SYNC_HTTP_PROXY` if HTTPS must go through a proxy, and `SYNC_TUNNEL_CA_FILE` if the network
+inspects TLS. Pointing `ARTEMIS_URL` at `ssl://<central host>:61617` instead needs that port
+open from the facility to central.
 
 ```bash
 docker compose --env-file ../../env/facility.env --profile sync up -d

@@ -27,7 +27,9 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   `distribution/compose/facility/initdb/10-sync-db-users.sh`; on an existing database,
   run its statements by hand once.
 - The broker at central as `ARTEMIS_URL=ssl://<central>:61617`, where the host is one of
-  the names in the broker certificate. Plain `tcp://` and URL options are refused. Before
+  the names in the broker certificate. Or over HTTPS on 443, where the network allows nothing
+  else: `ARTEMIS_URL=ssl://artemis:61617` with `SYNC_CENTRAL_URL=https://<central>`, through the
+  facility's `sync-tunnel` service ([broker README](../broker/README.md#reaching-it-over-https)). Plain `tcp://` and URL options are refused. Before
   central is reachable, a `file:` output endpoint (`SYNC_OUTPUT_ENDPOINT`) is upstream's
   QA-only testing mode.
 - This facility's security material mounted at `/app/sync-certs`: `client.p12`,

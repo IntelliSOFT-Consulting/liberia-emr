@@ -80,7 +80,10 @@ case "$STEP" in
     fi
     log "checkout at $(git -C "$top" rev-parse --short HEAD)"
     setting FACILITY_CODE "${FACILITY:?}"
-    setting ARTEMIS_URL "ssl://${CENTRAL_HOST:?}:61617"
+    # Over HTTPS on 443 (LE-372, ADR 0014): the facility's sync-tunnel answers as artemis and
+    # carries the session inside https://<central>/sync/broker/, so 61617 need not be open.
+    setting ARTEMIS_URL "ssl://artemis:61617"
+    setting SYNC_CENTRAL_URL "https://${CENTRAL_HOST:?}"
     setting SYNC_CERTS_DIR /etc/liberiaemr/sync-certs
     setting COMPOSE_PROFILES sync
     setting SYNC_SNAPSHOT_MODE initial

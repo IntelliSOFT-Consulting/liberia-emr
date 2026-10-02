@@ -123,6 +123,9 @@ Besides the database, release and sync settings, the facility and central templa
   defaults to `dhis2.moh.gov.lr`.
 - `LIBERIAEMR_SYNC_MONITORING_URL` (central only): the Prometheus the sync status endpoint
   reads, `http://prometheus:9090` by default. Empty turns the page off.
+- `SYNC_CENTRAL_URL`, `SYNC_HTTP_PROXY`, `SYNC_TUNNEL_CA_FILE` (facility, `sync` profile):
+  carry sync to central over HTTPS on 443 through the `sync-tunnel` service (ADR 0014). Empty
+  `SYNC_CENTRAL_URL` leaves it idle.
 - `LEGACY_ADMIN_UI` (facility and demo, commented out): one variable drives both the
   gateway block and the backend switch, and unset means false. Only a dev, staging or local
   box sets it true; CI's dev deploy passes it on the command line. Central hard-codes

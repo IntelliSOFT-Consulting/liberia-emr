@@ -68,6 +68,31 @@ sessions go through `scripts/sync/broker-admin.sh`. In short:
   messages as evidence with `consumer --data`, or replay a dead letter to
   `openmrs.sync.topic` with `transfer` once its cause is fixed.
 
+## Reaching it over HTTPS
+
+Facilities can reach the broker on 443, at `https://<central>/sync/broker/`, for networks that
+allow nothing else ([ADR 0014](../../docs/adr/0014-sync-over-https-path.md)). The gateway
+hands that path to the central `sync-tunnel` service, a WebSocket tunnel server that forwards
+to this broker and nowhere else. At the facility a `sync-tunnel` client answers as `artemis`,
+so the sender keeps `ARTEMIS_URL=ssl://artemis:61617` and opens its mutual TLS session as
+before. That session travels inside the tunnel unopened: this broker checks the facility's
+certificate, the revocation list and its permissions exactly as on 61617.
+
+- **A facility moves over** by setting `SYNC_CENTRAL_URL=https://<central-host>` and
+  `ARTEMIS_URL=ssl://artemis:61617`, then `facility up -d`. One at a time; nothing changes for
+  the others.
+- **Forward proxy:** `SYNC_HTTP_PROXY` (`host:port` or `user:pass@host:port`), sent as HTTP
+  CONNECT.
+- **A firewall that inspects TLS** re-signs central's web certificate. Give its CA to the
+  tunnel with `SYNC_TUNNEL_CA_FILE`; it is trusted for the outer HTTPS only.
+- **61617** stays published until every facility has moved. Then set
+  `ARTEMIS_BIND_ADDR=127.0.0.1` so it is no longer reachable from outside.
+- **Addresses:** tunnelled facilities reach this broker from the central tunnel's address.
+  The gateway's access log has each facility's address against `/sync/broker/`.
+
+`qa/sync/verify-broker-path.sh` proves the route, each refusal through it, and a facility
+behind a CONNECT proxy.
+
 ## Upgrading from the interim broker
 
 The interim `apache/activemq-artemis` service used a password and kept an unencrypted
