@@ -59,11 +59,17 @@ class AdultTriageFormPage extends TriageFormPage {
         this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
             expect(response?.statusCode).to.be.oneOf([200, 201]);
-            const bmi = (request.body.obs as Array<{ formFieldPath: string; value: number }>).find(
-                (observation) => observation.formFieldPath === 'rfe-forms-bmi'
-            );
-            expect(bmi, 'saved BMI observation').to.exist;
-            expect(bmi?.value).to.be.closeTo(24.2, 0.1);
+            const observations = request.body.obs as Array<{ formFieldPath: string; value: number }>;
+            const observationFor = (fieldId: string) =>
+                observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`);
+
+            adultVitals.forEach(({ id, value }) => {
+                expect(observationFor(id)?.value, `saved ${id}`).to.equal(Number(value));
+            });
+            expect(observationFor('bmi')?.value, 'saved BMI').to.be.closeTo(24.2, 0.1);
+            ['ebola_screen', 'triage_category_child', 'red_signs_child', 'yellow_signs_child'].forEach((fieldId) => {
+                expect(observationFor(fieldId), `child-only ${fieldId} observation`).to.be.undefined;
+            });
         });
     }
 

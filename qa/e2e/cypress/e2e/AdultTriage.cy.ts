@@ -35,7 +35,7 @@ describe('Adult Triage Assessment form', () => {
         triageForm.verifyAdultWarningsAllowSave();
     });
 
-    it('calculates, disables, and saves BMI from adult height and weight', () => {
+    it('saves a complete adult assessment with calculated BMI and no child-only observations', () => {
         triageForm.verifyBmiCalculationAndSave();
     });
 });
