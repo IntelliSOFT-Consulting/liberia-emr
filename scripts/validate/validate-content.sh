@@ -968,6 +968,13 @@ for vf in sorted(glob.glob(f"{pkg_dir}/*/configuration/variables.properties")):
                 problems.append(f"{rel(vf)}:{n}: {VARIABLE}={v}, expected 4 (locks on the fifth failure)")
 if f"{NATIONAL}/variables.properties" not in declared_in:
     problems.append(f"{VARIABLE} is not declared in {NATIONAL}/variables.properties")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "lockout on the fifth failure, 5-minute recovery, activation-key validity 300000 ms; obsolete lockout name absent"
+
 section "session inactivity timeout"
 # MOH ICT SOP A7. The contractual maximum is 10 minutes of human inactivity.
 # The login app clamps at runtime. The backend image sets Tomcat's default
