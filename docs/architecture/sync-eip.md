@@ -855,7 +855,7 @@ today the fix is to send the facility's records again.
 | Binlog retention approaching sender offset | Replay territory, not retry territory | Urgent | None |
 
 Alerts built that the table does not list: `SyncFacilitySilent` (F7), `SyncCaptureStalled`
-(F11), `SyncRecordsMissing` (F8), the certificate expiry and revocation-list alerts (§7.6), and
+(F11), `SyncRecordsMissing` (F8), `SyncPlaceholderMetadata` (§1.6), the certificate expiry and revocation-list alerts (§7.6), and
 a down or datasource alert for each component. The rules are
 `distribution/monitoring/rules-facility.yml` and `rules-central.yml`.
 
@@ -1258,7 +1258,7 @@ can invalidate the Sprint 3 plan.
 | E9 | Facility disk encryption is not in the SOP mapping, and facility servers are physically exposed | Raise with MOH ICT; add to the control register (§7.4) | High |
 | E10 | Nothing detects a facility that has silently stopped syncing | Per-facility heartbeat and silence alerting (F7). PARTLY BUILT: the `SyncFacilitySilent` alert and the sync status page both read the broker's per-facility message counts, so a facility that stops sending is noticed within three days. A heartbeat would tell "nothing recorded" apart from "no contact"; the broker cannot. A sender that is up but has stopped reading the binlog, the silent case the sender's own metrics miss, raises `SyncCaptureStalled` at the facility within 15 minutes of records waiting (`monitoring/sync-capture/`). | Medium |
 | E11 | **Sender publishes before the receiver has subscribed → messages lost silently** | Durable topic subscription; enforce receiver-first start order in compose and the runbook (§1.4). BUILT: the broker declares the receiver's subscription queue, so messages wait from its first start whether or not the receiver has connected; `qa/sync/verify-hardening.sh` checks it | **Highest**: defeats every other durability control |
-| E12 | Facility and central drift onto different content-package versions, and the receiver fills each gap with placeholder metadata rather than failing (§1.6) | Same national packages both sides, with central carrying every site's locations (ADR 0012); assert UUID parity in the upgrade rehearsal; detect placeholders at central (LE-373) | Medium |
+| E12 | Facility and central drift onto different content-package versions, and the receiver fills each gap with placeholder metadata rather than failing (§1.6) | Same national packages both sides, with central carrying every site's locations (ADR 0012); assert UUID parity in the upgrade rehearsal. `SyncPlaceholderMetadata` detects a placeholder at central (LE-373) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; reconciliation verifies that records exist at central (§5.5), not yet that their content matches | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
 | E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
