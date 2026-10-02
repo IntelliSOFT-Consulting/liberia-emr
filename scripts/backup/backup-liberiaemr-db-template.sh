@@ -105,6 +105,28 @@ fi
 # check with `docker --version` if this fails on an older host.
 if [ "${ENCRYPT_BACKUPS}" = "true" ]; then
   final_file="${dump_file}.gpg"
+
+  # Refuse to encrypt if GPG_RECIPIENT is ambiguous. --trust-model always
+  # (below) skips GPG's normal "is this really the right key" prompt, which
+  # is necessary for an unattended cron job — but that only stays safe if
+  # exactly one key can match. An email-style recipient can silently match a
+  # second key (an old one still in the keyring, or one added by anyone else
+  # with keyring access), and gpg would pick one with no error and no log
+  # entry. This check makes that impossible: zero or multiple matches is a
+  # hard failure, not a guess.
+  # || true: grep -c exits 1 when it counts zero matches (that's the exact
+  # "no key found" case this check needs to catch), and under pipefail that
+  # would otherwise abort the script via set -e before the check below runs.
+  key_match_count="$(gpg --list-keys --with-colons "${GPG_RECIPIENT}" 2>/dev/null | grep -c '^pub' || true)"
+  if [ "${key_match_count}" -eq 0 ]; then
+    log "ERROR: GPG_RECIPIENT '${GPG_RECIPIENT}' matches no key in this keyring"
+    exit 1
+  elif [ "${key_match_count}" -gt 1 ]; then
+    log "ERROR: GPG_RECIPIENT '${GPG_RECIPIENT}' matches ${key_match_count} keys — ambiguous."
+    log "       Set GPG_RECIPIENT to the exact fingerprint (gpg --list-keys) to fix this."
+    exit 1
+  fi
+
   if docker exec --env-file "${cred_file}" "${CONTAINER_NAME}" \
        mariadb-dump --single-transaction --routines --triggers --events \
        -u "${DB_USER}" "${DB_NAME}" \

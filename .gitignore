@@ -100,3 +100,19 @@ qa/e2e/cypress/downloads/
 #Ansible
 ansible/inventory.ini
 ansible/central-server.vars.yml
+
+
+
+# LiberiaEMR DB backups — scripts/backup/
+scripts/backup/backup.env
+scripts/backup/*.env
+!scripts/backup/*.env.example
+scripts/backup/rendered/
+
+scripts/backup/backup-liberiaemr-db.sh
+scripts/backup/restore-liberiaemr-db.sh
+scripts/backup/backup_cron.sh
+
+scripts/backup/rclone.conf
+scripts/backup/*.asc
+scripts/backup/*.gpg
