@@ -149,6 +149,7 @@ sync-eip.md 5.5), one series per facility that has sent a digest.
 | `sync_recon_suspected_records{facility}` | Records not found yet, inside the confirm window or while something could still deliver them |
 | `sync_recon_digest_records{facility}`, `sync_recon_digest_taken_seconds{facility}` | The size of its last digest, and when it was taken |
 | `sync_recon_last_run_seconds` | When the check last ran |
+| `sync_placeholder_metadata{table}` | Placeholder rows dbsync inserted at central for metadata a synced record referenced and central lacked (location, concept, encounter type, visit type, encounter role, relationship type, programme). Nationally, not per facility. `SyncPlaceholderMetadata` fires on any; runbook section 17 |
 
 ## Testing
 

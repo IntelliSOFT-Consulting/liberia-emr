@@ -150,6 +150,14 @@ groups:
           summary: "Facility {{ $labels.facility }} holds {{ $value }} records central does not"
           description: "Its reconciliation digest lists records that are still not at central hours later, with nothing queued that could deliver them. They are safe at the facility. The Sync status page shows it; the sync runbook's section on records missing at central says how to find them and send them again."
 
+      - alert: SyncPlaceholderMetadata
+        expr: sync_placeholder_metadata > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Central holds {{ $value }} placeholder {{ $labels.table }} rows"
+          description: "A facility sent records that reference {{ $labels.table }} metadata central does not have. The receiver applied them anyway, against a nameless retired placeholder with that uuid, so they are misattributed in the national record and its reports. Usually central's content is older than a facility's, or a content change gave shipped metadata a new uuid. The sync runbook's section on placeholder metadata says how to find and repair them."
+
       - alert: SyncReconDigestLate
         expr: time() - sync_recon_digest_taken_seconds > 3 * 86400
         for: 1h
