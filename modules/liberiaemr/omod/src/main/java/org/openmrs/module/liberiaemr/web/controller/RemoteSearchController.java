@@ -93,7 +93,11 @@ public class RemoteSearchController {
 			return forbidden(PRIVILEGE_IMPORT_REMOTE_PATIENT);
 		}
 
-		String remoteUuid = payload == null ? null : payload.get("remoteUuid");
+		if (payload == null) {
+			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "request body is required"),
+					HttpStatus.BAD_REQUEST);
+		}
+		String remoteUuid = payload.get("remoteUuid");
 		if (!remoteSearchService.isValidUuid(remoteUuid)) {
 			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "remoteUuid must be a patient UUID"),
 					HttpStatus.BAD_REQUEST);
