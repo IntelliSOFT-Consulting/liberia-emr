@@ -102,7 +102,12 @@ bulk form):
 - Refreshes on chart open when the facility is online and the bundle is older than
   `liberiaemr.remoteHistory.maxAgeHours` (a global property, default 24).
 
-### 5. "Records from other facilities" widget (ESM, facility)
+### 5. "External records" chart pieces (ESM, facility)
+
+Placement (wireframes: https://claude.ai/artifact/Y1ktub3MFjvKwYrWPgVLDS): an "External records"
+left-nav dashboard below Visits, an "External records" card at the top of the Patient summary,
+and an "Other facility records (N)" tag in the patient banner. All three are hidden for a
+patient who was never imported. They ship in `esm-liberia-patient-chart-extension`.
 
 - Read-only. It reads only from the store (`GET /ws/rest/v1/liberiaemr/remotehistory/local/{patientUuid}`).
 - Every item shows its source facility. The widget shows "As of {fetched_at}".
