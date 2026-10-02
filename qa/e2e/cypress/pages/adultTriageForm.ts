@@ -1,6 +1,72 @@
 import TriageFormPage from './triageForm';
 
 class AdultTriageFormPage extends TriageFormPage {
+    verifyAdultWarningsAllowSave() {
+        this.enterVitals([
+            { id: 'temp', value: '38.1' },
+            { id: 'hr', value: '101' },
+            { id: 'rr', value: '27' },
+            { id: 'sbp', value: '141' },
+            { id: 'dbp', value: '91' },
+            { id: 'spo2', value: '94' },
+            { id: 'weight', value: '70' },
+            { id: 'height', value: '170' },
+            { id: 'pain_score', value: '0' }
+        ]);
+
+        this.assertWarningsVisible([
+            'Temperature is outside the normal range (36–38 °C). Please verify the reading.',
+            'Heart Rate is outside the normal range (60–100 bpm). Please verify the reading.',
+            'Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading.',
+            'Systolic BP is outside the normal range (100–140 mmHg). Please verify the reading.',
+            'Diastolic BP is outside the normal range (55–90 mmHg). Please verify the reading.',
+            'SpO₂ below 95% — please verify the reading and consider clinical review.'
+        ]);
+
+        this.submitAssessment();
+        cy.wait('@saveTriage', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    }
+
+    verifyBmiCalculationAndSave() {
+        const adultVitals = [
+            { id: 'temp', value: '37.2' },
+            { id: 'hr', value: '78' },
+            { id: 'rr', value: '18' },
+            { id: 'sbp', value: '120' },
+            { id: 'dbp', value: '80' },
+            { id: 'spo2', value: '98' },
+            { id: 'weight', value: '70' },
+            { id: 'height', value: '170' },
+            { id: 'pain_score', value: '0' }
+        ];
+        this.enterVitals(adultVitals);
+
+        cy.get('#bmi', { timeout: this.timeout })
+            .should('be.disabled')
+            .should(($bmi) => {
+                expect(Number.parseFloat(String($bmi.val()))).to.be.closeTo(24.2, 0.1);
+            });
+
+        cy.get('#weight').type('{selectall}80').blur();
+        cy.get('#bmi').should(($bmi) => {
+            expect(Number.parseFloat(String($bmi.val()))).to.be.closeTo(27.7, 0.1);
+        });
+        cy.get('#weight').type('{selectall}70').blur();
+        cy.get('#bmi').should(($bmi) => {
+            expect(Number.parseFloat(String($bmi.val()))).to.be.closeTo(24.2, 0.1);
+        });
+
+        this.submitAssessment();
+        cy.wait('@saveTriage', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            const bmi = (request.body.obs as Array<{ formFieldPath: string; value: number }>).find(
+                (observation) => observation.formFieldPath === 'rfe-forms-bmi'
+            );
+            expect(bmi, 'saved BMI observation').to.exist;
+            expect(bmi?.value).to.be.closeTo(24.2, 0.1);
+        });
+    }
+
     verifyAdultNumericLimits() {
         this.verifyNumericLimits();
         this.verifyNumericFieldLimits([

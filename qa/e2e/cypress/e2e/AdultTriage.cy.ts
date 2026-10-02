@@ -30,4 +30,12 @@ describe('Adult Triage Assessment form', () => {
     it('requires diastolic pressure to be lower than systolic pressure', () => {
         triageForm.verifyDiastolicMustBeBelowSystolic();
     });
+
+    it('shows shared and blood-pressure warnings without blocking save', () => {
+        triageForm.verifyAdultWarningsAllowSave();
+    });
+
+    it('calculates, disables, and saves BMI from adult height and weight', () => {
+        triageForm.verifyBmiCalculationAndSave();
+    });
 });

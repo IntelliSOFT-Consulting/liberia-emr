@@ -26,15 +26,21 @@ class TriageFormPage {
         cy.contains('[role="option"], .cds--list-box__menu-item', category, { timeout: this.timeout }).click();
     }
 
-    private enterVitals(vitals = this.normalVitals) {
+    protected enterVitals(vitals = this.normalVitals) {
         vitals.forEach(({ id, value }) => {
             cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
         });
     }
 
-    private submitAssessment() {
+    protected submitAssessment() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
+    }
+
+    protected assertWarningsVisible(warnings: string[]) {
+        warnings.forEach((warning) => {
+            cy.contains(warning, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        });
     }
 
     private assertCodedAnswer(value: string | number | undefined, expectedName: string) {
@@ -211,14 +217,12 @@ class TriageFormPage {
             { id: 'muac', value: '15.5' }
         ]);
 
-        [
+        this.assertWarningsVisible([
             'Temperature is outside the normal range (36–38 °C). Please verify the reading.',
             'Heart Rate is outside the normal range (60–100 bpm). Please verify the reading.',
             'Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading.',
             'SpO₂ below 95% — please verify the reading and consider clinical review.'
-        ].forEach((warning) => {
-            cy.contains(warning, { timeout: this.timeout }).scrollIntoView().should('be.visible');
-        });
+        ]);
 
         this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);
