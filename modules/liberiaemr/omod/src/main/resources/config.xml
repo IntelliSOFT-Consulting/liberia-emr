@@ -51,6 +51,15 @@
 
 	<!-- Appointment Integration Configuration -->
 	<globalProperty>
+		<property>liberiaemr.remoteHistory.excludedConceptUuids</property>
+		<defaultValue></defaultValue>
+		<description>
+			Central only: comma-separated concept UUIDs the MOH names as sensitive.
+			A condition, allergy, medication, immunisation or programme coded with one is never sent to
+			another facility.
+		</description>
+	</globalProperty>
+	<globalProperty>
 		<property>liberiaemr.nextContactDateConceptUuid</property>
 		<defaultValue></defaultValue>
 		<description>
