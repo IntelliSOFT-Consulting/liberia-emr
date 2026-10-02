@@ -1,6 +1,6 @@
 # 0013: Remote patient import: a local read-only history and a shared patient record
 
-**Status:** Proposed, awaiting MOH ICT and MOH legal agreement
+**Status:** Accepted (2 October 2026)
 **Ticket:** LE-383 (amends [ADR 0007](0007-pulled-record-scope.md) condition 1; records a
 departure from [ADR 0005](0005-cross-facility-identity-reconciliation.md))
 **Design:** [remote import sync isolation](../superpowers/specs/2026-10-02-remote-import-sync-isolation-design.md)
@@ -125,20 +125,23 @@ query did. They stay out: ADR 0007's reasoning (an enumerated list can be audite
 cannot) applies with more force to a copy than to a query, since a copy outlives the access
 that produced it. Widening the scope later remains a new ADR and a fresh legal review.
 
-## What MOH ICT and MOH legal must decide
+## Agreed on acceptance
 
-1. **Accept the amendment to ADR 0007 condition 1**: a cached, read-only, scoped copy in place
-   of "never replicate", for the offline requirement.
-2. **Retention of the cached copy**: how long a facility may keep a bundle after the last
-   access (proposed: refreshed while the patient is under care here, purged after
-   [N months] without access).
-3. **Revocation**: ADR 0007 relied on "nothing is replicated, so revoking access removes
-   future visibility completely". With a cache, revocation must also purge cached bundles at
-   that facility. Confirm this is an acceptable control.
-4. **The two items still open from ADR 0007**: sensitive-category exclusions (for example HIV
-   status) and the lawful basis, including whether consent is captured at the point of import.
-5. **The shared-record departure from ADR 0005** and last-write-wins on demographics, until an
+1. **The amendment to ADR 0007 condition 1**: a cached, read-only, scoped copy in place of
+   "never replicate", for the offline requirement.
+2. **Retention of the cached copy**: refreshed while the patient is under care at the
+   importing facility, and purged after a configurable period without access. The period is
+   a deployment setting, and its value is still to be set before the first facility rollout.
+3. **Revocation purges the cache**: ADR 0007 relied on "nothing is replicated, so revoking
+   access removes future visibility completely". With a cache, revoking a facility's access
+   also purges its cached bundles. This is a required control.
+4. **The shared-record departure from ADR 0005** and last-write-wins on demographics, until an
    MPI is in place.
+
+Accepting this ADR does not settle the two items still open from ADR 0007: sensitive-category
+exclusions (for example HIV status) and the lawful basis, including whether consent is
+captured at the point of import. They stay with ADR 0007, and the central endpoint applies
+whatever the MOH decides there.
 
 ## Consequences
 
