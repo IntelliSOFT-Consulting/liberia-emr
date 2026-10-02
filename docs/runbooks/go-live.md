@@ -9,7 +9,7 @@ Go-live cannot proceed while any of these is open.
 
 ### Security — see [../security/moh-ict-sop-mapping.md](../security/moh-ict-sop-mapping.md)
 - [ ] A4/A5 — password expiry and history mechanism decided (ADR 0004) and implemented
-- [ ] A7 — server-side session timeout matching the 10-minute client timer
+- [ ] A7 — re-pin the login app and runtime-verify the 10-minute human-idle logout and the servlet session timeout
 - [ ] B4 — named-account policy in training and operations
 - [ ] C3 — log review confirms no PHI in application logs
 - [ ] D3 — backup encryption implemented and a restore rehearsed

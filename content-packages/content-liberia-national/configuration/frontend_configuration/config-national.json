@@ -143,14 +143,14 @@
       ]
     }
   },
-  "@openmrs/esm-primary-navigation-app": {
-    "_comment_timeout": [
-      "MOH ICT SOP: 10-minute inactivity timeout. This client-side timer is HALF the",
-      "control — it ends the user's session in the browser but does not invalidate a",
-      "stolen server session. The matching server-side timeout is configured in the",
-      "backend image; both must be present. See the globalproperties/README.md table."
+  "@liberiaemr/esm-liberia-login-app": {
+    "_comment_idle_timeout": [
+      "Minutes of human inactivity for the login-app watcher. Maven filtering leaves this as a string such as \"10\".",
+      "This is not logoutIdleTimeoutMinutes. See docs/security/moh-ict-sop-mapping.md."
     ],
-    "logoutIdleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+    "session": {
+      "idleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+    }
   },
   "@openmrs/esm-styleguide": {
     "Brand color #1": "#002A86",

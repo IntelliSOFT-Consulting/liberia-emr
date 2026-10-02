@@ -19,7 +19,7 @@ and must be closed before go-live sign-off.
 | Audit logs readable only by ICT Unit | — | `ICT Auditor` role in `roles/roles-national.csv`; no clinical privileges attached (`Get People` only so O3 signs the user in). Read in the **Audit log** page, `docs/runbooks/audit-log.md` |
 | **Password expiry — 90 days** | 90 days | **NOT a GP.** Requires an authentication-module policy or an external IdP. See ADR 0004. |
 | **No reuse of last 3 passwords** | history = 3 | **NOT a GP.** Same as above. |
-| **Session timeout — 10 minutes** | 10 min | **NOT a core GP.** Enforced in the O3 runtime config (`config-national.json`) *and* at the gateway; both are required, since the frontend timer alone does not invalidate a stolen session server-side. |
+| **Session timeout — 10 minutes** | 10 min of human inactivity | **NOT a core GP.** Do not add one. Client: the human-idle watcher in `@liberiaemr/esm-liberia-login-app` (`session.idleTimeoutMinutes`, from `var.security.session.timeout-minutes`). Server: Tomcat `conf/web.xml` `<session-timeout>10</session-timeout>`. OpenMRS 2.8.8 does not set one; the image build fails if it starts to. The gateway does not enforce this. See `docs/security/moh-ict-sop-mapping.md`. |
 | TLS for facility↔cloud sync | TLS 1.2+ | `distribution/gateway/default.conf.template` |
 | Encrypted backups | — | `docs/runbooks/backup-restore.md` |
 

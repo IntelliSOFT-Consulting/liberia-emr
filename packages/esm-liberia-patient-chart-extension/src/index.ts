@@ -8,7 +8,8 @@
  *
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
- * ANC numeric lookup for L&D Gravida/Parity prefill).
+ * ANC numeric lookup for L&D Gravida/Parity prefill, the transient WHO
+ * weight-for-length/height display, and the MUAC completed-month check).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
@@ -16,6 +17,7 @@ import { configSchema } from './config-schema';
 import { currentPregnancyAncConfigSchema } from './forms/current-pregnancy-anc-config-schema';
 import { getCurrentPregnancyAncNumeric } from './forms/current-pregnancy-anc-obstetric-history';
 import { registerFormEngineExpressionHelper } from './forms/register-form-engine-helpers';
+import { calcLiberiaWhz, isMuacRequired } from './forms/who-whz';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -30,6 +32,8 @@ export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
   defineConfigSchema(moduleName, currentPregnancyAncConfigSchema);
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
+  registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
+  registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
 }
 
 /**

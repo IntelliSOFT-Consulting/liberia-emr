@@ -20,6 +20,7 @@ Format: Context → Decision → Consequences → Status.
 | [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** (implementation in progress; amended 2026-09) |
 | [0011](0011-central-composition.md) | Compose central as its own build, with `content-central` in the site layer's place | Accepted |
 | [0012](0012-central-site-locations.md) | Central loads the locations of every site package | Accepted |
+| [0013](0013-remote-patient-import.md) | Remote patient import: a local read-only history outside sync, and a shared patient record | **Proposed** |
 
 0004 is open and blocks go-live: it is a contractual security control with no platform
 implementation. The number is reserved and has no file until the decision is written; the
@@ -52,6 +53,12 @@ decision the builds changed. Its status stays Proposed until its owner accepts i
 cached at central by a scheduled sync in the liberiaemr module (LE-317). Accepted on 27 September
 2026. Two site-root matches still await MOH or site confirmation.
 
-Background for 0005, 0007 and 0008: [Sync & EIP architecture](../architecture/sync-eip.md), the
+0013 settles how remote patient search's import may interact with sync. Imported history is a
+scoped, read-only cache that sync never watches, and the patient shell shares central's UUIDs.
+It amends 0007's "query, never replicate" for offline use and departs from 0005 for imported
+patients until an MPI exists, so it needs MOH ICT and MOH legal agreement before the cache
+ships to a facility.
+
+Background for 0005, 0007, 0008 and 0013: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and
 [entity coverage](../architecture/sync-entity-coverage.md).

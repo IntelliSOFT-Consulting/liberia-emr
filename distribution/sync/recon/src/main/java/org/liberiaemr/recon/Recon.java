@@ -250,7 +250,7 @@ public final class Recon {
 					        + " not at central yet");
 				});
 				CentralCheck.recheck(openmrs, mgmt, now, confirmHours, backlogEmpty());
-				metrics[0] = CentralCheck.metrics(mgmt, now);
+				metrics[0] = CentralCheck.metrics(mgmt, CentralCheck.placeholders(openmrs), now);
 			}
 			catch (Exception e) {
 				log("check failed, trying again at the next pass: " + e);
