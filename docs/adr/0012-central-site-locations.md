@@ -9,7 +9,10 @@ Every record a facility sends to central references that facility's own location
 and the OPD, ward, maternity, laboratory or pharmacy the encounter or visit happened in.
 Location rows are metadata, and metadata is not synced
 ([sync-entity-coverage.md](../architecture/sync-entity-coverage.md) §3): central must already
-hold every UUID a synced record references, or the receiver fails on it.
+hold every UUID a synced record references. When it does not, the receiver does not fail or
+park the record: it inserts a retired placeholder location with that UUID (name `[Default]`,
+retire reason `[placeholder]`, no parent, no tags) and applies the record against it. Nothing
+alerts, and the record is lost to anything that reads locations by name or hierarchy (LE-373).
 
 Until now central ran the facility release's backend image, which is built with one site
 package (Careysburg by default). So it held one facility's locations and no other facility's:
@@ -84,8 +87,12 @@ Checked against the current site packages on 29 September 2026:
   so central dev keeps the Careysburg ID source and HRN auto-generation option it already
   holds from the facility image. A fresh central does not get them. Retire them there by hand
   if they matter.
-- **Not yet proven end to end:** a record created at a second facility against one of its
-  wards, pushed through the broker, and landing at central without parking. This is the ticket's
-  "done when" check. The image-content check proves the precondition on every build: central
-  holds those UUIDs. The two-facility `qa/sync` scenario needs a second facility stack in CI and
-  is left as follow-up work.
+- **Proven end to end on 30 September 2026** with `qa/sync/verify-second-facility.sh`, on a
+  fresh central and a Barnersville facility built from main: records created at the facility's
+  root and at each of its five child locations reached central attached to the same location,
+  and no placeholder location appeared. Its `--negative-control` shows the failure the check
+  catches. The image-content check proves the precondition on every build. Running the
+  two-facility scenario in CI needs a second facility stack there and is not done.
+- "Without parking", the ticket's original criterion, proves nothing on its own: a missing
+  location never parks (see Context). The check asserts on placeholders and on name and parent
+  equality instead.

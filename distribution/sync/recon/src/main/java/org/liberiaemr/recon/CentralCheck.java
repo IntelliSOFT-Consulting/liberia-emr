@@ -39,7 +39,54 @@ public final class CentralCheck {
 	 */
 	static final long UNLISTED_AFTER_SECONDS = 42 * 86_400L;
 
+	/**
+	 * The metadata tables where dbsync's receiver, given a record that references a uuid central
+	 * does not hold, inserts a placeholder row with that uuid and applies the record against it,
+	 * with how to recognise one. Nothing parks or alerts, so these are found only by counting.
+	 * Observed on dbsync 4.0.0 (LE-373, sync-entity-coverage.md section 3). {@code program} has no
+	 * retire_reason column: its placeholder is named "[Default] - <uuid>". A missing patient
+	 * identifier type or person attribute type does not get one: the record parks instead, under
+	 * ReceiverErrors.
+	 */
+	static final Map<String, String> PLACEHOLDER_TABLES;
+
+	static {
+		Map<String, String> t = new LinkedHashMap<>();
+		for (String table : new String[] { "location", "concept", "encounter_type", "visit_type", "encounter_role",
+		        "relationship_type" }) {
+			t.put(table, "retire_reason = '[placeholder]'");
+		}
+		t.put("program", "name LIKE '[Default]%'");
+		PLACEHOLDER_TABLES = java.util.Collections.unmodifiableMap(t);
+	}
+
 	private CentralCheck() {
+	}
+
+	/**
+	 * Counts one table's placeholders. dbsync also keeps a few shared rows of its own, with uuids
+	 * such as PLACEHOLDER_CONCEPT_LIGHT, on every install; they reference nothing a facility sent.
+	 */
+	static String placeholderQuery(String table) {
+		String condition = PLACEHOLDER_TABLES.get(table);
+		if (condition == null) {
+			throw new IllegalArgumentException("not a placeholder table: " + table);
+		}
+		return "SELECT COUNT(*) FROM `" + table + "` WHERE " + condition + " AND uuid NOT LIKE 'PLACEHOLDER%'";
+	}
+
+	/** Placeholder rows per metadata table in central's replica. */
+	public static Map<String, Long> placeholders(Connection openmrs) throws SQLException {
+		Map<String, Long> out = new LinkedHashMap<>();
+		try (Statement s = openmrs.createStatement()) {
+			for (String table : PLACEHOLDER_TABLES.keySet()) {
+				try (ResultSet rs = s.executeQuery(placeholderQuery(table))) {
+					rs.next();
+					out.put(table, rs.getLong(1));
+				}
+			}
+		}
+		return out;
 	}
 
 	/** @return the uuids central skips by design, from db-sync.excludedEntities (entity:uuid,...) */
@@ -212,8 +259,11 @@ public final class CentralCheck {
 		}
 	}
 
-	/** Prometheus text for the last state, one series per facility. */
-	public static String metrics(Connection mgmt, long now) throws SQLException {
+	/**
+	 * Prometheus text for the last state: one series per facility, and one per metadata table for
+	 * its placeholders, which dbsync records no sender for, so they are national.
+	 */
+	public static String metrics(Connection mgmt, Map<String, Long> placeholders, long now) throws SQLException {
 		StringBuilder out = new StringBuilder();
 		Map<String, long[]> facilities = new TreeMap<>();
 		try (Statement s = mgmt.createStatement();
@@ -247,6 +297,14 @@ public final class CentralCheck {
 		});
 		out.append("# TYPE sync_recon_last_run_seconds gauge\n").append("sync_recon_last_run_seconds ").append(now)
 		        .append('\n');
+		out.append(placeholderMetrics(placeholders));
+		return out.toString();
+	}
+
+	static String placeholderMetrics(Map<String, Long> placeholders) {
+		StringBuilder out = new StringBuilder("# TYPE sync_placeholder_metadata gauge\n");
+		placeholders.forEach((table, n) -> out.append("sync_placeholder_metadata{table=\"").append(table).append("\"} ")
+		        .append(n).append('\n'));
 		return out.toString();
 	}
 

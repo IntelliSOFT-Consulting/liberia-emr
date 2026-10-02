@@ -60,6 +60,14 @@
       "order": 1
     },
     {
+      "name": "session-idle-watcher",
+      "slot": "top-nav-info-slot",
+      "component": "sessionIdle",
+      "online": true,
+      "offline": true,
+      "order": 2
+    },
+    {
       "name": "two-factor-authentication",
       "slot": "user-panel-slot",
       "component": "twoFactorAuthLink",

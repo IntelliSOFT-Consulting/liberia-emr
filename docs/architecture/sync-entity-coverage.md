@@ -102,7 +102,8 @@ The dependency chain that must hold:
                           └─▶ orders ─▶ {drug,test,referral}_order
 
   Referenced metadata (concept, location) must EXIST at central first, and is
-  delivered by the content-package image, not by sync. Providers and users sync. See §3.
+  delivered by the content-package image, not by sync. Providers and users sync. See §3:
+  a missing reference does not park, it becomes a placeholder.
 ```
 
 ### 2.3 Out-of-order arrival
@@ -152,6 +153,28 @@ versions across an upgrade boundary. Central's backend carries every site packag
 for the same reason (ADR 0012). This belongs in the deploy runbook and in the upgrade rehearsal
 in `qa/upgrade/`.
 
+**What breaking it does (observed for locations on 30 September 2026, LE-339):** the receiver
+does not fail or park the record. It inserts a placeholder row with the missing UUID (for a
+location: name `[Default]`, retired, retire reason `[placeholder]`, no parent, no tags) and
+applies the record against it. The retry and conflict queues stay empty, so the record is
+silently misattributed. Each type was tested on dbsync 4.0.0 (LE-373, 1 October 2026):
+
+| Missing at central | What the receiver does |
+| --- | --- |
+| location, concept, encounter type, visit type, encounter role, relationship type | Placeholder row: retired, retire reason `[placeholder]`, no name; the record applies |
+| programme | Placeholder named `[Default] - <uuid>`, retired (the table has no retire reason); the enrolment applies |
+| patient identifier type, person attribute type | No placeholder; the record parks in the retry queue (`ReceiverErrors`) and applies once the metadata is loaded |
+
+A placeholder concept's datatype and class are dbsync's shared `PLACEHOLDER_CONCEPT_DATATYPE_LIGHT`
+and `PLACEHOLDER_CONCEPT_CLASS_LIGHT` rows, present on every install. The reconciliation check at
+central counts placeholders on every pass (`sync_placeholder_metadata`) and
+`SyncPlaceholderMetadata` alerts on any. Repairing one in place is runbook
+`sync-operations.md` section 17. `qa/sync/verify-second-facility.sh` checks every facility
+location, and its `--negative-control` reproduces a placeholder.
+
+The first one found in practice was on the dev pair: two partograph concepts given new uuids in
+content after both dev databases had loaded the old ones (LE-373).
+
 ---
 
 ## 4. Entities needing a decision
@@ -186,5 +209,5 @@ Each of these is a test, not an assertion:
 - [ ] Out-of-order dependency parking observed and recovering
 - [x] `Order` subclass defect reproduced or disproven on 4.0.0 (disproven for `DrugOrder` and `TestOrder`, `qa/sync/verify-e2e-push.sh`; `ReferralOrder` not creatable, §4)
 - [x] `UserModel` payload inspected and confirmed to carry no credential material (§4)
-- [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses, but no check covers the whole set)
+- [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses; `qa/sync/verify-second-facility.sh` covers every facility location; nothing covers the rest of the set, and a gap shows up as a placeholder, not a failure, §3)
 - [ ] Complex obs behaviour confirmed, and sized if in use
