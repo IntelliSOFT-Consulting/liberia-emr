@@ -148,9 +148,9 @@ is already centrally managed", by a stronger mechanism than metadata sharing: it
 into an immutable image rather than applied by an operator.
 
 **The rule this creates:** facility and central must never run different content-package
-versions across an upgrade boundary. A concept or location UUID that exists at a facility but
-not at central is a sync failure at the receiver. This belongs in the deploy runbook and in
-the upgrade rehearsal in `qa/upgrade/`.
+versions across an upgrade boundary. Central's backend carries every site package's locations
+for the same reason (ADR 0012). This belongs in the deploy runbook and in the upgrade rehearsal
+in `qa/upgrade/`.
 
 ---
 

@@ -296,8 +296,7 @@ reject a row referencing metadata it lacks. For most metadata types it inserts a
 placeholder row with the missing UUID and applies the record against it, with nothing in the
 retry or conflict queues; a missing patient identifier type or person attribute type is the
 exception, and parks the record in the retry queue. Found on dbsync 4.0.0 on 30 September and
-1 October 2026 (LE-373); the behaviour by type, its detection and its repair are in
-[entity coverage](sync-entity-coverage.md) §3.
+1 October 2026 (LE-373).
 
 **Not pushed:** anything from `content-demo`; anything from a facility running the demo
 stack (`docker-compose.demo.yml` has no `sync` service, and that is deliberate: fabricated
