@@ -106,7 +106,7 @@ bulk form):
 
 Placement (wireframes: https://claude.ai/artifact/Y1ktub3MFjvKwYrWPgVLDS): an "External records"
 left-nav dashboard below Visits, an "External records" card at the top of the Patient summary,
-and an "Other facility records (N)" tag in the patient banner. All three are hidden for a
+and an "Records from other facilities (N)" tag in the patient banner. All three are hidden for a
 patient who was never imported. They ship in `esm-liberia-patient-chart-extension`.
 
 - Read-only. It reads only from the store (`GET /ws/rest/v1/liberiaemr/remotehistory/local/{patientUuid}`).
