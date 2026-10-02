@@ -7,7 +7,7 @@
  * Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
  * graphic logo is a trademark of OpenMRS Inc.
  */
-package org.openmrs.module.liberiaemr.web.remotesearch;
+package org.openmrs.module.liberiaemr.web.central;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -92,7 +92,7 @@ final class RemoteEndpointPolicy {
 		if (!fromEnvironment && !allowedHosts.contains(host)) {
 			throw new IllegalArgumentException("'" + host + "' is not an allowed central host for a URL set in the global "
 			        + "property. Allowed: " + allowedHosts + ", set by " + ENV_ALLOWED_HOSTS
-			        + " in the deployment environment; or set " + RemoteSearchService.ENV_REMOTE_URL + " instead");
+			        + " in the deployment environment; or set " + CentralClient.ENV_REMOTE_URL + " instead");
 		}
 	}
 }

@@ -216,6 +216,16 @@
 		</description>
 	</globalProperty>
 
+	<globalProperty>
+		<property>liberiaemr.remoteHistory.maxAgeHours</property>
+		<defaultValue>24</defaultValue>
+		<description>
+			Facility (LE-384, ADR 0013): how old, in hours, an imported patient's cached history from
+			central may be before opening their chart refreshes it. Offline, the cache is served
+			whatever its age, and the chart shows that age.
+		</description>
+	</globalProperty>
+
 	<!-- Internationalization -->
 	<!-- All message codes should start with @MODULE_ID@.* -->
 	<messages>
