@@ -129,6 +129,17 @@ export const configSchema = {
     _default: true,
     _description: 'Whether to show the "Forgot password?" link on the login screen.',
   },
+  session: {
+    idleTimeoutMinutes: {
+      _type: Type.String,
+      _default: '10',
+      _description:
+        'Minutes of human inactivity before automatic logout. Unit: minutes, not milliseconds. ' +
+        'The MOH maximum is 10. A larger value is clamped to 10. A missing or invalid value falls back to 10. ' +
+        'A shorter positive value is honored. Maven filtering of ${var.security.session.timeout-minutes} ' +
+        'produces a JSON string such as "10". Background HTTP polling does not count as activity.',
+    },
+  },
   background: {
     _type: Type.Object,
     _description:
@@ -214,5 +225,9 @@ export interface ConfigSchema {
   };
   showPasswordOnSeparateScreen: boolean;
   showPasswordReset: boolean;
+  session: {
+    /** Minutes of human inactivity. See resolveIdleTimeoutMinutes. */
+    idleTimeoutMinutes: string;
+  };
   twoFactorAuth: TwoFactorAuthConfigObject;
 }

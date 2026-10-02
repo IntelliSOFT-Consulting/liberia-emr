@@ -8,5 +8,5 @@ fp-national-v1.0,form:3. Family Planning@1.0,${var.encountertype.consultation.uu
 ld-first-second-v1.2,${var.form.first-and-second-stage-of-labor-and-delivery.uuid},${var.encountertype.labor-delivery.uuid},fail,1. First and Second Stage of Labor and Delivery
 pnc-mother-v1.0,${var.form.pnc-visit.uuid},${var.encountertype.mch-pnc.uuid},fail,Mother PNC
 immunization-v1.1,${var.form.immunization.uuid},${var.encountertype.consultation.uuid},fail,Immunization; saves under the shared Consultation encounter type
-triage-v2.0,${var.form.triage.uuid},${var.encountertype.triage.uuid},fail,Triage Form
+triage-v2.0,form:Triage Form@2.0,${var.encountertype.triage.uuid},create-retired,old version of the same form; exists on upgraded databases only so the loader creates it retired (old/new form version edge case)
 opd-v2.0,${var.form.opd-consultation.uuid},${var.encountertype.consultation.uuid},fail,OPD Consultation Form; shared Consultation encounter type

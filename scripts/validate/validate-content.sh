@@ -896,6 +896,117 @@ sys.exit(1 if problems else 0)
 PYGRP
 ok "every obsGroup in a form has its own group concept"
 
+section "session inactivity timeout"
+# MOH ICT SOP A7. The contractual maximum is 10 minutes of human inactivity.
+# The login app clamps at runtime. The backend image sets Tomcat's default
+# session timeout to 10 minutes and fails if OpenMRS defines its own.
+python3 - "$ROOT" <<'PY' || err "session inactivity timeout (see above)"
+import json, os, re, sys
+
+root = sys.argv[1]
+problems = []
+
+def rel(path):
+    return os.path.relpath(path, root)
+
+national_vars = os.path.join(
+    root, "content-packages/content-liberia-national/configuration/variables.properties")
+declared = []
+for dirpath, dirnames, filenames in os.walk(os.path.join(root, "content-packages")):
+    if "target" in dirpath.split(os.sep):
+        continue
+    if "variables.properties" not in filenames:
+        continue
+    path = os.path.join(dirpath, "variables.properties")
+    for n, line in enumerate(open(path, encoding="utf-8"), start=1):
+        s = line.strip()
+        if not s or s.startswith("#") or "=" not in s:
+            continue
+        key, value = s.split("=", 1)
+        if key.strip() != "var.security.session.timeout-minutes":
+            continue
+        value = value.strip()
+        where = f"{rel(path)}:{n}"
+        declared.append(where)
+        try:
+            minutes = float(value)
+        except ValueError:
+            problems.append(f"{where}: timeout {value!r} is not a number of minutes")
+            continue
+        if not minutes > 0 or minutes > 10:
+            problems.append(f"{where}: timeout {value} must be greater than 0 and at most 10 minutes")
+if not any(item.startswith("content-packages/content-liberia-national/") for item in declared):
+    problems.append("content-liberia-national does not declare var.security.session.timeout-minutes")
+
+frontend_dir = os.path.join(root, "content-packages")
+for dirpath, dirnames, filenames in os.walk(frontend_dir):
+    if "target" in dirpath.split(os.sep):
+        continue
+    for name in filenames:
+        if not name.endswith(".json") or "frontend_configuration" not in dirpath:
+            continue
+        path = os.path.join(dirpath, name)
+        try:
+            data = json.load(open(path, encoding="utf-8"))
+        except Exception as exc:
+            problems.append(f"{rel(path)}: {exc}")
+            continue
+        def has_key(value, key):
+            if isinstance(value, dict):
+                if key in value:
+                    return True
+                return any(has_key(item, key) for item in value.values())
+            if isinstance(value, list):
+                return any(has_key(item, key) for item in value)
+            return False
+
+        if has_key(data, "logoutIdleTimeoutMinutes"):
+            problems.append(f"{rel(path)}: logoutIdleTimeoutMinutes is not read by primary-navigation")
+        nav = data.get("@openmrs/esm-primary-navigation-app")
+        if has_key(nav, "idleTimeoutMinutes") or has_key(nav, "logoutIdleTimeoutMinutes"):
+            problems.append(f"{rel(path)}: session timeout must not be configured on primary-navigation")
+
+national_cfg = os.path.join(
+    root,
+    "content-packages/content-liberia-national/configuration/frontend_configuration/config-national.json",
+)
+national = json.load(open(national_cfg, encoding="utf-8"))
+login = national.get("@liberiaemr/esm-liberia-login-app")
+got = None if not isinstance(login, dict) else login.get("session", {}).get("idleTimeoutMinutes")
+if got != "${var.security.session.timeout-minutes}":
+    problems.append(
+        "config-national.json must set @liberiaemr/esm-liberia-login-app"
+        ".session.idleTimeoutMinutes to ${var.security.session.timeout-minutes}"
+        f" (found {got!r})"
+    )
+
+gp_root = os.path.join(root, "content-packages")
+for dirpath, dirnames, filenames in os.walk(gp_root):
+    if "target" in dirpath.split(os.sep) or "globalproperties" not in dirpath:
+        continue
+    for name in filenames:
+        if not name.endswith((".xml", ".csv")):
+            continue
+        path = os.path.join(dirpath, name)
+        for prop in re.findall(r"<property>\s*([^<]+?)\s*</property>", open(path, encoding="utf-8").read()):
+            if re.search(r"(session[-_.]?timeout|idle[-_.]?timeout|servlet\.session|web\.session)", prop, re.I):
+                problems.append(f"{rel(path)}: {prop} looks like a session-timeout global property; do not invent one")
+
+dockerfile = open(os.path.join(root, "distribution/backend/Dockerfile"), encoding="utf-8").read()
+if "/usr/local/tomcat/conf/web.xml" not in dockerfile \
+        or "<session-timeout>30</session-timeout>" not in dockerfile \
+        or "<session-timeout>10</session-timeout>" not in dockerfile:
+    problems.append("backend Dockerfile must change Tomcat conf/web.xml session-timeout from 30 to 10")
+if "jar xf" not in dockerfile or "WEB-INF/web.xml" not in dockerfile \
+        or "defines session-timeout" not in dockerfile:
+    problems.append("backend Dockerfile must fail the build when OpenMRS WEB-INF/web.xml defines session-timeout")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "10-minute human-idle config and Tomcat session timeout"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2
