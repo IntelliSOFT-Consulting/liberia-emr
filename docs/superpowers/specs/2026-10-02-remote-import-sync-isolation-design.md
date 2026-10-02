@@ -25,14 +25,14 @@ Both are **add-only** at the importing facility: it records its own encounters, 
 orders, and never changes records another facility created.
 
 | Case | Meaning | Needs |
-|---|---|---|
+| --- | --- | --- |
 | Visiting patient | Seen here once or occasionally; the home facility owns the history | History visible offline; today's visit recorded |
 | Referral in | Ongoing care moves here; past records keep their author | Same, for longer |
 
 ## Decisions
 
 | Decision | Choice | Rejected alternative |
-|---|---|---|
+| --- | --- | --- |
 | Where imported history lives | **A separate facility-side store** (`liberiaemr_remote_history*`), rendered by a read-only widget | Copying into OpenMRS tables and filtering sync (custom sender route); copying with `sql_log_bin=0`; live query only (fails the offline requirement) |
 | How the importing facility identifies the patient | **One shared record: the shell reuses central's patient UUID** | A new local patient linked through a synced source attribute: correct under ADR 0005, but linked records need an MPI that central does not have |
 | Demographics edits on a shared patient | **Allowed; last write wins at central**, documented as a known limitation | Read-only at the importer; add-only at the importer |
@@ -105,7 +105,7 @@ bulk form):
 ### 5. "Records from other facilities" widget (ESM, facility)
 
 - Read-only. It reads only from the store (`GET /ws/rest/v1/liberiaemr/remotehistory/local/{patientUuid}`).
-- Every item shows its source facility. The widget shows "As of <fetched_at>".
+- Every item shows its source facility. The widget shows "As of {fetched_at}".
 - No edit, void, or "add to form" actions.
 
 ### Removed from #215
@@ -137,10 +137,10 @@ is refreshed. The operation can be repeated safely.
 ### Chart open
 
 | State | Behaviour |
-|---|---|
+| --- | --- |
 | Online, bundle older than max age | Background refresh; fetch logged with the reason "routine refresh" |
 | Online, bundle fresh | Show cached bundle |
-| Offline, bundle present | Show cached bundle with "As of <time>" |
+| Offline, bundle present | Show cached bundle with "As of {fetched time}" |
 | Offline, no bundle | "History from other facilities unavailable offline" |
 
 ### Search
