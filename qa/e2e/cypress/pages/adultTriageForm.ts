@@ -1,6 +1,27 @@
 import TriageFormPage from './triageForm';
 
 class AdultTriageFormPage extends TriageFormPage {
+    verifyPainScoreRequired() {
+        [
+            { id: 'temp', value: '37.2' },
+            { id: 'hr', value: '78' },
+            { id: 'rr', value: '18' },
+            { id: 'sbp', value: '120' },
+            { id: 'dbp', value: '80' },
+            { id: 'spo2', value: '98' },
+            { id: 'weight', value: '70' },
+            { id: 'height', value: '170' }
+        ].forEach(({ id, value }) => {
+            cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(value).blur();
+        });
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+
+        cy.get('#pain_score', { timeout: this.timeout }).should('have.attr', 'aria-invalid', 'true');
+        cy.get('@saveTriage.all').should('have.length', 0);
+    }
+
     verifyAdultFormContract() {
         cy.contains('p', 'Triage Assessment', { timeout: this.timeout }).should('be.visible');
         cy.contains('.cds--accordion__title', 'Vital Signs', { timeout: this.timeout })

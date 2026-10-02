@@ -18,4 +18,8 @@ describe('Adult Triage Assessment form', () => {
     it('opens with the adult fields and hides child-only fields', () => {
         triageForm.verifyAdultFormContract();
     });
+
+    it('blocks saving when the required pain score is omitted', () => {
+        triageForm.verifyPainScoreRequired();
+    });
 });
