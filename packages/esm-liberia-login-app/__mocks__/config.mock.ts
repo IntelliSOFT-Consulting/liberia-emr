@@ -30,6 +30,9 @@ export const mockConfig: ConfigSchema = {
   },
   showPasswordOnSeparateScreen: true,
   showPasswordReset: true,
+  session: {
+    idleTimeoutMinutes: '10',
+  },
   twoFactorAuth: {
     enabled: true,
     dashboardTitle: {

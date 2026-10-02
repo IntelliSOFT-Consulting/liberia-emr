@@ -540,3 +540,55 @@ facility watches for it (distribution/monitoring/README.md).
 Records are safe in the facility database throughout, and clinical work carries on as normal.
 `SyncCaptureCheckBlind` means the exporter itself cannot see: it is down, or cannot sign in to
 the database with the Debezium account.
+
+## 17. Placeholder metadata at central: `SyncPlaceholderMetadata`
+
+A facility sent records that reference metadata central does not hold: a location, concept,
+encounter type, visit type, encounter role, relationship type or programme. The receiver did not
+park them. It inserted a placeholder row with the missing uuid and applied the records against
+it: retired, retire reason `[placeholder]` (a programme is named `[Default] - <uuid>` instead), no
+name, no parent. The records are intact, but they hang off metadata that reports and the
+location hierarchy cannot read. The alert names the table; the reconciliation check at central
+counts placeholders on every pass (sync-entity-coverage.md section 3, LE-373).
+
+A missing patient identifier type or person attribute type gets no placeholder. Its records
+park and retry under `ReceiverErrors`, and apply by themselves once the metadata is loaded.
+
+1. List them. dbsync keeps a few shared rows of its own whose uuid starts `PLACEHOLDER_`;
+   ignore those.
+
+   ```bash
+   central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs -e "SELECT uuid FROM <table> WHERE retire_reason = '\''[placeholder]'\'' AND uuid NOT LIKE '\''PLACEHOLDER%'\''"'
+   ```
+
+2. Find each uuid in the content packages (`grep -r <uuid> content-packages`, and the
+   resolved values in each `variables.properties`). The usual causes:
+   - **Central's image is older than the facility's.** Deploy central at the facility's release
+     version. Central must never run older content (sync-entity-coverage.md section 3).
+   - **A content change gave shipped metadata a new uuid.** A database that already held the old
+     row by the same name cannot load the new one, and Initializer reports it only in the
+     backend log. Shipped uuids are append-only; fix the content, then repair as below.
+   - **The facility created it locally** (an admin added a ward, say). It must go into the
+     facility's site package with the same uuid; central gets every site's locations (ADR 0012).
+3. Repair the placeholder **in place, keeping its uuid**: the records point at it, so deleting
+   it or creating a new row orphans them. Shipping the metadata in content with that uuid does
+   it: on the next start Initializer finds the row by uuid and fills it in, unretires it and
+   sets its parent. For a **concept** that already has observations, Initializer refuses to
+   change the placeholder's datatype (`ConceptInUseException`). Set the datatype and class the
+   content declares first, then let Initializer do the rest:
+
+   ```bash
+   central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs -e "UPDATE concept SET datatype_id = (SELECT concept_datatype_id FROM concept_datatype WHERE name = '\''<Data type>'\'' AND retired = 0), class_id = (SELECT concept_class_id FROM concept_class WHERE name = '\''<Data class>'\'' AND retired = 0) WHERE uuid = '\''<uuid>'\'' AND retire_reason = '\''[placeholder]'\''"'
+   ```
+
+4. Make Initializer read the file again even if its content has not changed, because it records
+   a file as loaded even when a row in it failed. Delete that file's checksum, for example
+   `central exec backend rm /openmrs/data/configuration_checksums/concepts/concepts-mch.checksum`,
+   and restart the backend (`central restart backend`). Check the backend log for the file's
+   `CSV FILE ERROR SUMMARY`; there should be none.
+5. The alert clears at the next reconciliation pass (`SYNC_RECON_CHECK_SECONDS`, 10 minutes by
+   default) once the table has no placeholders left.
+
+If the content row's name is already taken by another concept (the "new uuid" cause above),
+Initializer rejects the row as a duplicate name. Retire or rename the other, older concept first,
+and check whether any observations still point at it.

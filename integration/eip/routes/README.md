@@ -10,9 +10,9 @@ than write them. The facility-side sender ships as the `liberia-emr-sync` image 
 central side as `liberia-emr-sync-receiver`, both built in
 [`distribution/sync/`](../../../distribution/sync/) from the pinned dbsync tag. The
 sender sits in the facility compose behind `--profile sync`; the Artemis broker and the
-receiver are ordinary services in the central compose. Outstanding builds against this
-contract: reconciliation. This directory remains the contract that
-deployment and configuration must satisfy.
+receiver are ordinary services in the central compose. Reconciliation is built for existence
+([sync-eip.md](../../../docs/architecture/sync-eip.md) §5.5); comparing content is still to
+build. This directory remains the contract that deployment and configuration must satisfy.
 
 The design these routes implement (change capture, transport, wire format, retry and
 reconciliation) is in [`docs/architecture/sync-eip.md`](../../../docs/architecture/sync-eip.md).
@@ -43,9 +43,13 @@ build one route at a time.
 
 ## Non-negotiable properties
 
-**Durable local queue.** The queue survives a container restart and a multi-day outage.
-Nothing is acknowledged upstream until central has confirmed receipt. `sync-queue` is a
-named volume in `distribution/compose/facility/docker-compose.yml` for exactly this reason.
+**Durable local queue.** The sender's queues survive a container restart and a multi-day
+outage: they live in its management schema, and its Debezium offset in the `sync-queue` named
+volume (`/opt/eip` in `distribution/compose/facility/docker-compose.yml`), so a restarted
+sender resumes where it stopped. An event leaves the facility's queue once the sender has
+published it, or moves to the retry queue if publishing fails; from then on the broker at
+central holds it in the receiver's durable subscription until it is applied
+([sync-eip.md](../../../docs/architecture/sync-eip.md) §1.5, §5.8).
 
 **Ordering within a patient.** A visit cannot land before the patient it belongs to. Global
 ordering across patients is not required; ordering within one is.
@@ -67,13 +71,14 @@ hold duplicates.
 
 This is a **clinical safety decision, not a data-quality one**: silently auto-merging two
 records can attach one person's obstetric history to another. Decide the policy and record
-it in an ADR *before* the first production push. Until then central stores what it is sent
-and flags candidate duplicates for human review.
+it in an ADR *before* the first production push.
 
-The policy is drafted in
-[ADR 0005: link, never merge](../../../docs/adr/0005-cross-facility-identity-reconciliation.md).
-It is **Proposed**, not Accepted: it still needs the MOH to confirm the identifier scheme
-and name the role that owns the review queue.
+The policy is
+[ADR 0005: link, never merge](../../../docs/adr/0005-cross-facility-identity-reconciliation.md),
+accepted by MOH ICT (LE-22) and built at central as the CPI service
+([sync-eip.md](../../../docs/architecture/sync-eip.md) §2.5): central stores what it is sent,
+links on an exact National ID match that passes the sex and date-of-birth check, and sends
+failing matches to review. The review queue's named MOH owner is still open.
 
 ## Before writing route one
 
@@ -92,9 +97,11 @@ platform 2.8.8 version gate it hit, and the one-line patch that clears it, are r
 in [sync-eip.md](../../../docs/architecture/sync-eip.md) §1.8 and
 [`distribution/sync/patches/`](../../../distribution/sync/patches/).
 
-1. ADR 0005 accepted (identity, above).
+1. ~~ADR 0005 accepted (identity, above).~~ Accepted; its review-queue owner is still open.
 2. ~~Confirm the EIP module version pinned in `distribution/distro.properties`.~~ Pinned:
    `sync.dbsync=4.0.0`, `sync.eip=4.2.0`.
 3. Confirm the mutual-TLS setup with the MOH ICT Unit — the certificate lifecycle is
    theirs, not ours.
-4. Decide the retention policy for the local queue after a successful push.
+4. ~~Decide the retention policy for the local queue after a successful push.~~ Settled by
+   dbsync: both ends delete a message once it is processed and keep no archive
+   ([sync-eip.md](../../../docs/architecture/sync-eip.md) §5.8).

@@ -309,6 +309,21 @@ USER root
 RUN printf '#!/bin/sh\nexec /usr/bin/mysql "$@"\n' > /usr/local/bin/mariadb \
     && chmod 0755 /usr/local/bin/mariadb \
     && /usr/local/bin/mariadb --version
+# MOH ICT SOP A7. OpenMRS 2.8.8 omits session-timeout, so Tomcat's conf/web.xml
+# default of 30 minutes applies. startup.sh recopies the WAR and does not replace
+# conf/. An application-level session-timeout would override this default.
+RUN set -eu; \
+    tomcat_web=/usr/local/tomcat/conf/web.xml; \
+    grep -q '<session-timeout>30</session-timeout>' "$tomcat_web"; \
+    sed -i 's/<session-timeout>30<\/session-timeout>/<session-timeout>10<\/session-timeout>/' "$tomcat_web"; \
+    grep -q '<session-timeout>10</session-timeout>' "$tomcat_web"; \
+    tmp=$(mktemp -d); \
+    (cd "$tmp" && jar xf /openmrs/distribution/openmrs_core/openmrs.war WEB-INF/web.xml); \
+    if grep -q '<session-timeout>' "$tmp/WEB-INF/web.xml"; then \
+      echo "OpenMRS WEB-INF/web.xml defines session-timeout; Tomcat conf/web.xml will not apply" >&2; \
+      exit 1; \
+    fi; \
+    rm -rf "$tmp"
 USER 1001
 
 # OMODs resolved from distro.properties by scripts/build/build-distribution.sh into
