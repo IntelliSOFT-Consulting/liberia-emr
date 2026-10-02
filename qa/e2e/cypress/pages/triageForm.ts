@@ -1,7 +1,7 @@
 type ChildPriority = 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Priority';
 
 class TriageFormPage {
-    constructor(private readonly timeout = 20000) {}
+    constructor(protected readonly timeout = 20000) {}
 
     private readonly categoryNames: Record<ChildPriority, string> = {
         'Non-urgent Priority': 'Green',
