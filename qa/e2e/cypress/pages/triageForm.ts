@@ -123,14 +123,18 @@ class TriageFormPage {
     }
 
     verifyNumericLimits() {
-        [
+        this.verifyNumericFieldLimits([
             { id: 'temp', min: '20', max: '45', below: '19.9', above: '45.1' },
             { id: 'hr', min: '0', max: '300', below: '-1', above: '301' },
             { id: 'rr', min: '0', max: '80', below: '-1', above: '81' },
             { id: 'spo2', min: '0', max: '100', below: '-1', above: '101' },
             { id: 'weight', min: '0', max: '250', below: '-0.1', above: '250.1' },
             { id: 'height', min: '10', max: '272', below: '9.9', above: '272.1' }
-        ].forEach(({ id, min, max, below, above }) => {
+        ]);
+    }
+
+    protected verifyNumericFieldLimits(fields: Array<{ id: string; min: string; max: string; below: string; above: string }>) {
+        fields.forEach(({ id, min, max, below, above }) => {
             cy.get(`#${id}`, { timeout: this.timeout })
                 .scrollIntoView()
                 .should('have.attr', 'min', min)

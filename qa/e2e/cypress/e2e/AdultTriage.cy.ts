@@ -22,4 +22,12 @@ describe('Adult Triage Assessment form', () => {
     it('blocks saving when the required pain score is omitted', () => {
         triageForm.verifyPainScoreRequired();
     });
+
+    it('validates adult vital and pain-score limits', () => {
+        triageForm.verifyAdultNumericLimits();
+    });
+
+    it('requires diastolic pressure to be lower than systolic pressure', () => {
+        triageForm.verifyDiastolicMustBeBelowSystolic();
+    });
 });
