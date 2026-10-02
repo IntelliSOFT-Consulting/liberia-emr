@@ -178,6 +178,85 @@ describe('sync status page', () => {
     expect(screen.getByText('Sync status is not available on this server')).toBeInTheDocument();
   });
 
+  it("shows a facility its own sender, and explains what is wrong in words", () => {
+    const now = Math.floor(Date.now() / 1000);
+    givenStatus({
+      enabled: false,
+      available: true,
+      facility: {
+        senderRunning: true,
+        databaseReachable: true,
+        connectedToCentral: false,
+        recordsWaiting: 40,
+        recordsRetrying: 6,
+        initialLoad: false,
+        lastCaptured: now - 3 * 3600,
+        captureStalledSeconds: 0,
+      },
+      alerts: ['SyncCentralUnreachable', 'SomeNewRule'],
+    });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.getByText('40')).toBeInTheDocument();
+    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(screen.getByText('3 hours ago')).toBeInTheDocument();
+    expect(screen.getByText('This facility cannot reach the national server')).toBeInTheDocument();
+    // A rule the page has no words for yet is still shown, by name.
+    expect(screen.getByText('SomeNewRule')).toBeInTheDocument();
+    // Not the national view, and not the "not available here" notice.
+    expect(screen.queryByText('Facilities')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sync status is not available on this server')).not.toBeInTheDocument();
+  });
+
+  it('says unknown, not zero, for what a stopped sender is not reporting', () => {
+    givenStatus({
+      enabled: false,
+      available: true,
+      facility: {
+        senderRunning: false,
+        databaseReachable: null,
+        connectedToCentral: null,
+        recordsWaiting: null,
+        recordsRetrying: null,
+        initialLoad: false,
+        lastCaptured: 1790700000,
+      },
+      alerts: ['SyncSenderDown'],
+    });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('Stopped')).toBeInTheDocument();
+    expect(screen.getByText('The sync service is not running')).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("tells a facility when its first load is still running", () => {
+    givenStatus({
+      enabled: false,
+      available: true,
+      facility: { senderRunning: true, connectedToCentral: true, recordsWaiting: 5000, recordsRetrying: 0, initialLoad: true },
+      alerts: [],
+    });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('First load in progress')).toBeInTheDocument();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+  });
+
+  it("warns a facility when its own monitoring cannot be reached", () => {
+    givenStatus({ enabled: false, available: false, facility: {} });
+
+    render(<SyncStatus />);
+
+    expect(screen.getByText('Monitoring cannot be reached')).toBeInTheDocument();
+    expect(screen.queryByText('Connection to the national server')).not.toBeInTheDocument();
+  });
+
   it('tells a user without the privilege why, rather than blaming the server', () => {
     givenRefused();
 

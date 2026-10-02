@@ -14,7 +14,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { ConfigurableLink, formatDate, useSession, userHasAccess } from '@openmrs/esm-framework';
-import { useIdentityStatus, useSyncStatus } from './sync-status.resource';
+import { type SyncStatus as SyncStatusAnswer, useIdentityStatus, useSyncStatus } from './sync-status.resource';
 import { useMflStatus } from '../mfl-sync/mfl-sync.resource';
 import { VIEW_MFL_SYNC } from '../privileges';
 import styles from './sync-status.scss';
@@ -61,6 +61,153 @@ const MflSyncLink: React.FC = () => {
 };
 
 /**
+ * A facility's own sender: whether it can reach central and what is waiting to be sent, so the
+ * facility can answer "is sync working?" without a terminal. Alerts are explained in words, not
+ * shown by rule name, because the reader here is rarely the person who wrote the rules.
+ */
+const FacilitySyncStatus: React.FC<{ status: SyncStatusAnswer }> = ({ status }) => {
+  const { t, i18n } = useTranslation();
+  const sender = status.facility ?? {};
+
+  const explanations: Record<string, { title: string; subtitle: string }> = {
+    SyncCentralUnreachable: {
+      title: t('alertCentralUnreachable', 'This facility cannot reach the national server'),
+      subtitle: t(
+        'alertCentralUnreachableBody',
+        'Records wait here and are sent when the link returns. Check the internet link first.',
+      ),
+    },
+    SyncPushErrors: {
+      title: t('alertPushErrors', 'Some records failed to send'),
+      subtitle: t('alertPushErrorsBody', 'They are kept here and tried again automatically.'),
+    },
+    SyncPushErrorsSustained: {
+      title: t('alertPushErrorsSustained', 'Records have been failing to send for over 2 hours'),
+      subtitle: t('alertPushErrorsSustainedBody', 'They are safe here. Ask ICT to check the link to the national server.'),
+    },
+    SyncSenderDown: {
+      title: t('alertSenderDown', 'The sync service is not running'),
+      subtitle: t('alertSenderDownBody', 'Nothing is being sent. Changes are kept and picked up when it starts again.'),
+    },
+    SyncSenderDatasourceDown: {
+      title: t('alertSenderDatabase', "The sync service cannot read this facility's database"),
+      subtitle: t('alertSenderDatabaseBody', 'Ask ICT to check the database and the sync service.'),
+    },
+    SyncCaptureStalled: {
+      title: t('alertCaptureStalled', 'New records are not being picked up for sending'),
+      subtitle: t('alertCaptureStalledBody', "They are safe in this facility's database. Ask ICT to check the sync service."),
+    },
+    SyncCaptureCheckBlind: {
+      title: t('alertCaptureBlind', 'The check that records are being picked up is not working'),
+      subtitle: t('alertCaptureBlindBody', 'Sync may still be working. Ask ICT to check the sync-capture service.'),
+    },
+  };
+
+  const count = (value?: number | null) => (value == null ? t('unknown', 'Unknown') : value);
+  const state = (value: boolean | null | undefined, yes: string, no: string) =>
+    value == null ? (
+      <Tag type="gray">{t('unknown', 'Unknown')}</Tag>
+    ) : (
+      <Tag type={value ? 'green' : 'red'}>{value ? yes : no}</Tag>
+    );
+
+  return (
+    <div className={styles.container}>
+      <h3 className={styles.heading}>{t('syncStatus', 'Sync status')}</h3>
+      <p className={styles.explainer}>
+        {t(
+          'facilityExplainer',
+          'How this facility is sending its records to the national server. Clinical work carries on as normal whatever this page shows.',
+        )}
+      </p>
+
+      {status.available === false && (
+        <InlineNotification
+          className={styles.notice}
+          kind="warning"
+          lowContrast
+          hideCloseButton
+          title={t('monitoringUnreachable', 'Monitoring cannot be reached')}
+          subtitle={t(
+            'facilityMonitoringUnreachableBody',
+            "Sync may still be working. Ask ICT to check this facility's monitoring service.",
+          )}
+        />
+      )}
+
+      {sender.initialLoad && (
+        <InlineNotification
+          className={styles.notice}
+          kind="info"
+          lowContrast
+          hideCloseButton
+          title={t('initialLoad', 'First load in progress')}
+          subtitle={t(
+            'initialLoadBody',
+            'This facility is sending every record it already holds. New records are sent after it.',
+          )}
+        />
+      )}
+
+      {(status.alerts ?? []).map((name) => (
+        <InlineNotification
+          key={name}
+          className={styles.notice}
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={explanations[name]?.title ?? name}
+          subtitle={explanations[name]?.subtitle ?? ''}
+        />
+      ))}
+
+      {status.available !== false && (
+        <div className={styles.tiles}>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>
+              {state(sender.connectedToCentral, t('connected', 'Connected'), t('notConnected', 'Not connected'))}
+            </div>
+            <div className={styles.tileLabel}>{t('connectionToCentral', 'Connection to the national server')}</div>
+          </Tile>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>{count(sender.recordsWaiting)}</div>
+            <div className={styles.tileLabel}>{t('recordsWaitingToSend', 'Records waiting to be sent')}</div>
+          </Tile>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>{count(sender.recordsRetrying)}</div>
+            <div className={styles.tileLabel}>{t('recordsRetrying', 'Records retrying')}</div>
+          </Tile>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>
+              {sender.lastCaptured ? (
+                <span title={formatDate(new Date(sender.lastCaptured * 1000))}>
+                  {ago(sender.lastCaptured, i18n?.language)}
+                </span>
+              ) : (
+                t('unknown', 'Unknown')
+              )}
+            </div>
+            <div className={styles.tileLabel}>{t('lastCaptured', 'Last change picked up')}</div>
+          </Tile>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>
+              {state(sender.senderRunning, t('running', 'Running'), t('stopped', 'Stopped'))}
+            </div>
+            <div className={styles.tileLabel}>{t('syncService', 'Sync service')}</div>
+          </Tile>
+          <Tile className={styles.tile}>
+            <div className={styles.tileValue}>
+              {state(sender.databaseReachable, t('reachable', 'Reachable'), t('notReachable', 'Not reachable'))}
+            </div>
+            <div className={styles.tileLabel}>{t('facilityDatabase', 'Facility database')}</div>
+          </Tile>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/**
  * Shows what central knows about each facility's sync, and what is waiting at central.
  *
  * Stuck records and conflicts are national totals rather than per facility: dbsync records no
@@ -89,6 +236,10 @@ const SyncStatus: React.FC = () => {
         />
       </div>
     );
+  }
+
+  if (!error && status?.facility) {
+    return <FacilitySyncStatus status={status} />;
   }
 
   if (error || !status?.enabled) {

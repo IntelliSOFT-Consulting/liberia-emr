@@ -38,7 +38,8 @@ alert's `label_replace` and its one-hour `for:` hold.
 
 | Variable | Meaning |
 |---|---|
-| `LIBERIAEMR_SYNC_MONITORING_URL` | Prometheus base URL. Central's compose defaults it to `http://prometheus:9090`; facility stacks leave it unset, which turns the feature off in the same image. Falls back to the `liberiaemr.sync.monitoringUrl` global property. |
+| `LIBERIAEMR_SYNC_MONITORING_URL` | Prometheus base URL. Both compose files default it to `http://prometheus:9090`; empty turns the feature off. Falls back to the `liberiaemr.sync.monitoringUrl` global property. |
+| `LIBERIAEMR_INSTANCE_ROLE` | `facility` answers with the facility view below instead of the national one. Set by each compose file. |
 
 The response is never an error for a monitoring failure: `enabled: false` when no address is
 set, `available: false` when monitoring cannot be reached (4-second timeout), otherwise
@@ -46,6 +47,14 @@ set, `available: false` when monitoring cannot be reached (4-second timeout), ot
 `central` (`recordsWaiting`, `recordsRetrying`, `conflicts`, `deadLetters`, `receiverUp`,
 `brokerUp`) and the firing `alerts`.
 
+At a facility the answer keeps `enabled: false`, since there is no national view, and adds a
+`facility` section read from the facility's own Prometheus: `senderRunning`,
+`databaseReachable`, `connectedToCentral` (the sender's own broker check, through the capture
+exporter), `recordsWaiting` (captured, not yet sent), `recordsRetrying`, `initialLoad`,
+`lastCaptured` and `captureStalledSeconds`, with the firing facility `alerts`. A value the
+sender is not reporting, because it is stopped, is `null` rather than 0. Without the `sync`
+profile the facility's Prometheus does not exist, its name does not resolve, and the answer
+is just `enabled: false`; if it exists but does not answer, `available: false`.
 ### Identity review queue
 Backs the `Possible matches` page (`packages/esm-liberia-sync-status-app`, ADR 0005 band 2):
 pairs of records at central that the National ID rule could not settle, decided by a person.

@@ -2,8 +2,9 @@
 # QA check for the national sync status endpoint the status page reads
 # (modules/liberiaemr, /ws/rest/v1/liberiaemr/syncstatus). Asserts that it answers at central,
 # that its numbers match what the broker and the receiver actually report, that it refuses a
-# user without the View Sync Status privilege, and that a facility server reports the feature
-# off rather than showing a national view.
+# user without the View Sync Status privilege, and that a facility server never shows the
+# national view: with sync running it shows its own sender, connected to central, and without
+# it the feature is off.
 #
 #   qa/sync/verify-sync-status.sh [--central-url https://localhost:8443] [--user admin]
 #     [--password ...] [--facility-url https://localhost] [--timeout 60]
@@ -91,8 +92,25 @@ echo "== the same image at a facility =="
 if curl -sk -o /dev/null -m 5 "$FACILITY_URL/openmrs/ws/rest/v1/session"; then
   facility_body="$(curl -sk -m "$TIMEOUT" -u "$USER:$PASSWORD" "$FACILITY_URL$STATUS_PATH")"
   [[ "$(field enabled <<<"$facility_body")" == "False" ]] \
-    || fail "a facility reports the page off" "$(head -c 200 <<<"$facility_body")"
-  pass "a facility reports the page off, so its menu entry stays hidden"
+    || fail "a facility never shows the national view" "$(head -c 200 <<<"$facility_body")"
+  if python3 -c 'import json,sys; sys.exit(0 if "facility" in json.load(sys.stdin) else 1)' <<<"$facility_body"; then
+    [[ "$(field available <<<"$facility_body")" == "True" ]] \
+      || fail "the facility can reach its own monitoring" "$(head -c 300 <<<"$facility_body")"
+    [[ "$(field facility.senderRunning <<<"$facility_body")" == "True" ]] \
+      || fail "the facility view says its sender is running" "$(head -c 300 <<<"$facility_body")"
+    # Central is up (checked above), so the sender's own broker check must pass. The capture
+    # exporter refreshes every minute; give a just-started stack two rounds.
+    for _ in 1 2 3; do
+      [[ "$(field facility.connectedToCentral <<<"$facility_body")" == "True" ]] && break
+      sleep 60
+      facility_body="$(curl -sk -m "$TIMEOUT" -u "$USER:$PASSWORD" "$FACILITY_URL$STATUS_PATH")"
+    done
+    [[ "$(field facility.connectedToCentral <<<"$facility_body")" == "True" ]] \
+      || fail "the facility view says it is connected to central" "$(head -c 300 <<<"$facility_body")"
+    pass "a facility running sync shows its own sender, connected to central"
+  else
+    pass "a facility without sync reports the page off, so its menu entry stays hidden"
+  fi
 else
   echo "   skipped: no facility stack is running"
 fi
