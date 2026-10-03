@@ -333,6 +333,25 @@ RUN set -eu; \
       exit 1; \
     fi; \
     rm -rf "$tmp"
+# UPSTREAM WORKAROUND — openmrs/openmrs-core:2.8.8.
+#
+# /openmrs/startup-init.sh means to empty the modules, OWA, configuration and frontend
+# directories on the openmrs-data volume before copying this image's distribution into them,
+# but writes `rm -fR "${OMRS_MODULES_DIR:?}/*"`: the glob is quoted, so it deletes nothing.
+# Files from earlier images therefore pile up. Our own OMODs are versioned by commit SHA, so
+# an old liberiaemr-<sha>.omod sits beside the new one and OpenMRS may keep the old one —
+# central dev ran a two-day-old liberiaemr, liberiaemrreports and mamba-etl through green
+# deploys (LE-380). Same for config files a newer content package removed.
+#
+# Moving the glob outside the quotes restores what upstream intended. The checks fail the
+# build if a later base image changes these lines, so the patch is never silently skipped.
+RUN set -eu; \
+    f=/openmrs/startup-init.sh; \
+    for d in OMRS_MODULES_DIR OMRS_OWA_DIR OMRS_CONFIG_DIR OMRS_FRONTEND_DIR; do \
+      grep -qF "rm -fR \"\${$d:?}/*\"" "$f"; \
+      sed -i "s|rm -fR \"\${$d:?}/\*\"|rm -fR \"\${$d:?}\"/*|" "$f"; \
+      grep -qF "rm -fR \"\${$d:?}\"/*" "$f"; \
+    done
 USER 1001
 
 # OMODs resolved from distro.properties by scripts/build/build-distribution.sh into
