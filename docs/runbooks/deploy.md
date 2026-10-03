@@ -150,8 +150,10 @@ sync runbook, section 2). Otherwise its records reference locations central does
 
 ## Upgrade
 
-On a facility that syncs, add `--profile sync` to the commands below, and do not upgrade while
-its first load to central is still running (sync runbook section 1). Upgrading does not make a
+Where facilities sync, upgrade central before any facility and the facilities one at a time,
+with the checks in section 19 of the [sync runbook](sync-operations.md). On a facility that
+syncs, add `--profile sync` to the commands below, and do not upgrade while its first load to
+central is still running (sync runbook section 1). Upgrading does not make a
 facility enrolled before this release send its earlier records: it already has a saved position,
 so nothing is backfilled. Send them with section 11 of the sync runbook.
 
