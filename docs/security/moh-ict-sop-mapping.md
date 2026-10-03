@@ -114,8 +114,8 @@ app pin includes the watcher and both layers have been runtime-verified.
 | # | Control | Where | Status |
 | --- | --- | --- | --- |
 | B1 | Role-based access control | `content-common/…/roles.csv`, `content-liberia-national/…/roles.csv` | Enforced |
-| B2 | Least privilege by job function | Roles map to actual facility job functions | Enforced |
-| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds `View Audit Log`, the auditlog module's `Get Audit Logs`, and `Get People`, without which O3 will not sign anyone in (see below). Read in the **Audit log** page (`packages/esm-liberia-audit-log-app`) over `/ws/rest/v1/liberiaemr/auditlog` (`modules/liberiaemr`) | Implemented — see the note below |
+| B2 | Least privilege by job function | Roles map to actual facility job functions; see [the login roles](#the-login-roles) | Enforced |
+| B3 | Audit logs readable only by ICT Unit | `ICT Auditor` role — **no clinical privileges attached**; holds `View Audit Log` and the auditlog module's `Get Audit Logs`, and no person or patient read (see below). Read in the **Audit log** page (`packages/esm-liberia-audit-log-app`) over `/ws/rest/v1/liberiaemr/auditlog` (`modules/liberiaemr`) | Implemented — see the note below |
 | B4 | Named accounts, no shared logins | — | **Open** — operational policy, not configuration; belongs in the go-live runbook and training |
 
 B3 is easy to get wrong by granting the auditor "read everything" for convenience. Reading
@@ -135,15 +135,12 @@ update's previous and new values and a deleted item's last state, and export CSV
   clinical privilege; it deliberately does not hold `Get Items`, which resolves ANY object by
   class and id, and the viewer does not need it. `qa/e2e/cypress/e2e/AuditLog.cy.ts` checks on
   every CI run that a user without the role sees no menu entry and gets `403`.
-- **`Get People` is the one read privilege it holds, and only because O3 needs it.** O3's
-  navigation sends a signed-in user back to the login page unless their session includes
-  their own person record, which the server includes only for holders of `Get People`
-  (seen on a demo stack: an ICT Auditor without it could not get past login). It lets the
-  role read person records over REST, which for a patient means their name, sex, birth date
-  and address, the same demographics the audit log already shows. It does not reach
-  patients, visits, encounters, observations or orders (`Get Patients` and the rest, which
-  the role does not hold; `AuditLog.cy.ts` checks it gets `403` reading patients). **Review
-  this grant at sign-off**: the alternative is a separate, non-O3 way to read the log.
+- **It holds no person read.** Until LE-392 it held `Get People` only because O3 would not
+  keep it signed in without it; the session now carries the officer's own person without that
+  privilege (see [Signing in to O3](#signing-in-to-o3)), so the grant was removed. It reaches no
+  person, patient, visit, encounter, observation or order (`AuditLog.cy.ts` checks it gets
+  `403` reading patients, and `RoleSignIn.cy.ts` that it gets `403` reading persons). The
+  audit log itself still shows a changed person's old and new values, so the log is PHI.
 - **Credential material is never shown**, whatever `auditlog.exceptions` says: rows of
   `LoginCredential` and of liberiaemr's `PasswordResetToken` are left out of every read, and a
   password, salt, token or key, or any value of a global property named like one, is shown
@@ -154,6 +151,55 @@ update's previous and new values and a deleted item's last state, and export CSV
 Whoever reads the log sees more than metadata. An entry records the old and new value of
 every changed property, for example a patient's previous and corrected name. Treat the audit
 log as PHI.
+
+
+### The login roles
+
+Every role a person signs in with, and what it may read. Privileges are in
+`content-common` `roles-common.csv` and `content-liberia-national` `roles-national.csv`.
+`RoleSignIn.cy.ts` signs a user holding each role alone in to O3 on every CI run.
+
+| Role | Package | Job | Person records (`Get People`) | Why |
+| --- | --- | --- | --- | --- |
+| Records Officer | common | Registration and medical records | Yes (LE-392) | Registers and finds patients; REST leaves a patient's name, sex and age out without it |
+| Nurse | common | Triage and vitals | Yes (LE-392) | The patient banner and chart show the person |
+| Clinician | common | Consultation and ordering | Yes, from Nurse | As Nurse |
+| Midwife | common | Maternal care | Yes, from Nurse | As Nurse |
+| Pharmacist | common | Dispensing | Yes (LE-392) | Dispenses to a named patient |
+| Lab Technician | common | Order fulfilment | Yes (LE-392) | Matches a sample to a named patient |
+| National Reporting Officer | national | MOH indicator reports | **No** | Aggregate figures only; `403` on persons and patients |
+| Sync Administrator | national | Sync queue and MFL sync | **No** | Operates queues and the facility list, not records; `403` on persons and patients |
+| ICT Auditor | national | Reads the audit log (B3) | **No** (removed in LE-392) | See B3 above |
+| Sync Conflict Reviewer | national | Resolves sync conflicts at central | Yes | Reads the patient record a conflict holds |
+
+Sync Sender and Sync Receiver are service accounts, not people, and are not in this table.
+
+`Get People` reads every person's name, sex, birth date and address over REST. The four
+facility roles that gained it in LE-392 already read patients (`Get Patients`), and a patient's
+demographics are its person, so for patients the grant adds no data they could not already
+see, it only lets REST return it. It also reaches persons who are not patients, such as staff
+accounts' names; that is the exposure accepted for these four roles.
+
+### Signing in to O3
+
+O3 sends a user back to the login page unless `/ws/rest/v1/session` includes the user's own
+person record, which the REST module renders only for holders of `Get People`. Until LE-392 no
+login role but the ICT Auditor held it, so none of the others could sign in; every E2E spec
+signed in as admin and none noticed.
+
+Rather than give every role `Get People`, `modules/liberiaemr` adds the signed-in user's
+**own** person, as `{uuid, display}` and nothing else, to the session response when the REST
+module left it out (`OwnPersonSessionAdvice`, a response advice on the REST module's session
+controller only). It grants no privilege: `/person/{that uuid}` and every other person read
+still answer `403`. Its unit tests check that it never touches another user, a rendered
+person, or an anonymous session; `RoleSignIn.cy.ts` checks on a running stack that every login
+role signs in and that a role without `Get People` still cannot read persons.
+
+If a REST module upgrade renamed the session controller, the advice would stop applying and
+the non-clinical roles would again be sent back to login; `RoleSignIn.cy.ts` fails on that.
+The fallback is to grant those roles `Get People`, with the exposure above recorded here.
+
+How to check a new role: [local-development.md §2.1](../runbooks/local-development.md#21-a-new-or-changed-login-role-check-that-it-can-sign-in).
 
 ---
 
