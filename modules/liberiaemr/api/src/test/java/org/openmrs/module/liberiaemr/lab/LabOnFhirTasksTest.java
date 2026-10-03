@@ -91,6 +91,20 @@ public class LabOnFhirTasksTest {
 		assertEquals(1, LabOnFhirTasks.disable(scheduler));
 
 		assertFalse(pull.getStartOnStartup());
+		verify(scheduler, never()).shutdownTask(any());
+	}
+
+	@Test
+	public void keepsATaskFromStartingAgainEvenWhenShuttingItDownFails() throws Exception {
+		TaskDefinition pull = task("org.openmrs.module.labonfhir.api.scheduler.FetchTaskUpdates", true, true);
+		SchedulerService scheduler = mock(SchedulerService.class);
+		when(scheduler.getRegisteredTasks()).thenReturn(Arrays.asList(pull));
+		doThrow(new SchedulerException("boom")).when(scheduler).shutdownTask(pull);
+
+		LabOnFhirTasks.disable(scheduler);
+
+		assertFalse(pull.getStartOnStartup());
+		verify(scheduler).saveTaskDefinition(pull);
 	}
 
 	@Test

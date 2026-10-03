@@ -52,9 +52,12 @@ public class LabOnFhirTasks {
 				continue;
 			}
 			try {
-				scheduler.shutdownTask(task);
+				// Saved first, so a shutdown that throws still leaves the task off at the next start.
 				task.setStartOnStartup(false);
 				scheduler.saveTaskDefinition(task);
+				if (Boolean.TRUE.equals(task.getStarted())) {
+					scheduler.shutdownTask(task);
+				}
 				log.info("Turned off labonfhir task '{}': the LIS integration is out of scope", task.getName());
 				disabled++;
 			}
