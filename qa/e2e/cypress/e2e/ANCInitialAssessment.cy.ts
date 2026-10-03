@@ -40,6 +40,10 @@ describe('Initial ANC Assessment form', () => {
         ancInitialForm.verifyObstetricHistoryConsistency();
     });
 
+    it('saves an ANC Initial Visit with key obstetric and maternal observations', () => {
+        ancInitialForm.verifySuccessfulAssessmentSaved();
+    });
+
     it('does not save physical exam descriptions after findings are set to Normal', () => {
         ancInitialForm.verifyPhysicalExamDescriptionsNotSavedWhenNormal();
     });

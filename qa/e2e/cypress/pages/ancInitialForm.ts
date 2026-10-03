@@ -146,6 +146,44 @@ class ANCInitialFormPage {
         cy.get('@saveAncInitial.all').should('have.length', 0);
     }
 
+    verifySuccessfulAssessmentSaved() {
+        this.completeRequiredAssessmentFields();
+        cy.get('#pregnancyTrimester').should('contain.text', '2nd trimester');
+        cy.get('#womanReceivingIpt-No').should('be.checked');
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(request.body.encounterType, 'submitted encounter type').to.be.a('string').and.not.be.empty;
+
+            cy.request<{ name: string }>(
+                `/openmrs/ws/rest/v1/encountertype/${request.body.encounterType}?v=custom:(name)`
+            ).its('body.name').should('eq', 'ANC Initial Visit');
+
+            const observations = request.body.obs as Array<{ formFieldPath?: string; value?: string | number }>;
+            const observationFor = (fieldId: string) =>
+                observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`);
+            [
+                { id: 'gravida', value: 2 },
+                { id: 'parity', value: 1 },
+                { id: 'fullTermBirths', value: 1 },
+                { id: 'pretermBirths', value: 0 },
+                { id: 'abortions', value: 0 },
+                { id: 'livingChildren', value: 1 },
+                { id: 'systolicBloodPressure', value: 120 },
+                { id: 'diastolicBloodPressure', value: 80 },
+                { id: 'weight', value: 65 },
+                { id: 'gestationalAge', value: 20 }
+            ].forEach(({ id, value }) => {
+                expect(observationFor(id)?.value, `saved ${id}`).to.equal(value);
+            });
+            ['lmp', 'pregnancyTrimester', 'womanReceivingIpt', 'returnDate', 'healthCardIssueDate'].forEach((fieldId) => {
+                expect(observationFor(fieldId)?.value, `saved ${fieldId}`).to.exist;
+            });
+        });
+    }
+
     verifyObstetricHistoryConsistency() {
         const setNumber = (fieldId: string, value: string) =>
             cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
