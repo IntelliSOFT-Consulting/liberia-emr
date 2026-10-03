@@ -29,7 +29,8 @@ options are set out in [the SOP mapping](../security/moh-ict-sop-mapping.md) (A4
 0005 is Accepted by MOH ICT (LE-22) and is being built as the CPI service in the liberiaemr
 module: minting and the National ID rule are in (LE-35); scoring, the review queue and the
 queue's MOH owner follow. 0007 is drafted and **Proposed**, not Accepted; it names the
-questions the MOH must answer to close it (sensitive-category exclusions and lawful basis).
+questions the MOH must answer to close it. Sensitive-category exclusions were answered for now
+on 3 October 2026: nothing is excluded. The lawful basis is still open.
 It was due for MOH ICT sign-off by 21 August 2026 and blocks cross-facility query, which is a
 legal decision rather than a technical one.
 
@@ -58,8 +59,8 @@ scoped, read-only cache that sync never watches, and the patient shell shares ce
 It amends 0007's "query, never replicate" for offline use and departs from 0005 for imported
 patients until an MPI exists. Accepted on 2 October 2026. On 3 October 2026 the cache's
 retention period, which acceptance had left open, was set to at most 12 months without access.
-0007's own open items (sensitive-category exclusions and lawful basis) still apply to what the
-cache may hold.
+No sensitive category is excluded from the cache for now (0007, 3 October 2026), and 0007's
+lawful-basis question still applies to it.
 
 Background for 0005, 0007, 0008 and 0013: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and

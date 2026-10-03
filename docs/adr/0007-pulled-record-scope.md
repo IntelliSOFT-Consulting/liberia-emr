@@ -75,6 +75,12 @@ query time or covered by the care relationship. An exclusion is a filter at the 
 Final scope is to be re-checked against the Data Protection Act as enacted; this ADR does
 not assume its final text.
 
+*Update (3 October 2026):* **No sensitive category is excluded for now.** Cross-facility
+responses, and the cache allowed by [ADR 0013](0013-remote-patient-import.md), carry the full
+enumerated list, HIV status included. The boundary filter stays in place with an empty
+exclusion list, so naming a category later means adding a concept set and a filter entry, not
+rebuilding the read path. The lawful basis is still open.
+
 ## Consequences
 
 - The boundary filter is enumerated in one place and testable. `qa/api/` asserts that a
@@ -87,7 +93,8 @@ not assume its final text.
 - Widening the scope later is a new ADR and a fresh legal review, not a configuration
   change. Narrowing it is cheap. This asymmetry is intentional.
 - Sensitive-category exclusion needs a concept set in the content packages, so a late
-  answer to that question delays Sprint 4 rather than being absorbed by it.
+  answer to that question delays Sprint 4 rather than being absorbed by it. (Answered for now
+  on 3 October 2026: nothing is excluded.)
 - Audit volume grows with every cross-facility access, and the retention window (control
   C2, ≥3 months) is likely to be longer here than for ordinary access. This lands on the
   backup schedule in `docs/runbooks/backup-restore.md`.
