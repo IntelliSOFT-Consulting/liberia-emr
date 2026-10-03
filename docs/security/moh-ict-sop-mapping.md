@@ -248,19 +248,31 @@ Why each role:
   [Landing pages and the app menu](#landing-pages-and-the-app-menu-le-397)). They see no error
   notification and make no failing call.
 
-What no role got: `Assign Beds` and `Edit Admission Locations`. **Ending a visit** therefore
-fails for every login role (`403 Assign Beds`): the bed management module's save handler
-un-assigns beds on every visit that gets a stop time and requires `Assign Beds` and
-`Edit Admission Locations` to do so, even when the patient has no bed. Granting bed write access
-to every check-in role to work around that is not least privilege. It is an upstream defect
-(openmrs-module-bedmanagement 7.2.0, `VisitWithBedPatientAssignmentSaveHandler`); until it is
-fixed, or the MOH accepts that grant, an administrator ends visits. The check-in roles already
-hold `Edit Visits`, so nothing more is needed once it is fixed.
+What no role got, and none needs: `Assign Beds` and `Edit Admission Locations`, the bed write
+privileges. Until LE-396 **ending a visit** failed for every login role (`403 Assign Beds`),
+because the released bed management module (7.2.0, `VisitWithBedPatientAssignmentSaveHandler`)
+un-assigned beds on every visit that got a stop time and demanded both privileges for it, even
+when the patient had no bed. That is an upstream defect, not a grant to make: the distribution
+now builds bedmanagement from the 7.2.0 source with a Modify + PR patch
+(`distribution/backend/patches/bedmanagement/`, tracked in
+`packages/modify-pr/.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md`)
+that frees beds only when the visit holds one. So:
+
+- ending the visit of a patient **with no bed** needs only what the check-in roles already hold
+  (`Edit Visits`, and the bed reads `Get Beds` and `Get Admission Locations` that every visit
+  save already needs, in the table above);
+- ending the visit of a patient who **is in a bed** still needs both bed write privileges, which
+  no login role holds, so only the administrator can end it, as before. Whether ward roles
+  should get them is an MOH decision for when inpatient care is configured.
+
+No login role holds bed write access, and none was added.
 
 `RoleSignIn.cy.ts` checks on every CI run that each role lands on the page in the table above,
 that the landing page makes no failing call and shows no error, that the Sync Conflict Reviewer's
-app menu lists no entry it cannot use and makes no failing call, that the six facility roles read
-queues, queue entries and visits and the four national roles do not; `Queue.cy.ts` that a Records Officer adds a patient to a queue.
+app menu lists no entry it cannot use and makes no failing call, and that the six facility roles
+read queues, queue entries and visits while the four national roles do not. `Queue.cy.ts` checks
+that a Records Officer adds a patient to a queue, and checks a patient in, queues them and ends
+the visit.
 
 `Get People` reads every person's name, sex, birth date and address over REST. The four
 facility roles that gained it in LE-392 already read patients (`Get Patients`), and a patient's

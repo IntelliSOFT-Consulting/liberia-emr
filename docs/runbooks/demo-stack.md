@@ -48,7 +48,7 @@ Verified end to end on 2026-07-30 against `1.0.0` built from this repository: 67
 
 Allow 15–25 minutes on a cold cache. In order, this validates the content, builds the
 content packages (resolving `${var.*}` into `target/configuration`), fetches the demo OCL
-concept exports if they are missing, resolves the 32 OMODs pinned in `distro.properties`,
+concept exports if they are missing, resolves the 31 OMODs pinned in `distro.properties`,
 generates the import map, collects the frontend config in layer order, checks that order
 against `SPA_CONFIG_URLS` in the demo compose file, and builds three images:
 

@@ -505,7 +505,7 @@ jobs:
   # hand-rolling the build — an earlier version of this job reimplemented
   # its steps piecemeal (reading spa.core, computing SPA_CONFIG_URLS,
   # collecting frontend config) and, in doing so, missed a step the script
-  # doesn't skip: resolving the 32 OMODs pinned in distro.properties into
+  # doesn't skip: resolving the 31 OMODs pinned in distro.properties into
   # distribution/backend/modules/. Since that directory isn't git-tracked,
   # a fresh checkout has it empty, and `COPY distribution/backend/modules/`
   # on an empty directory does not error — it silently ships a backend
