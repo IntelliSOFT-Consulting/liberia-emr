@@ -79,7 +79,13 @@ not assume its final text.
 responses, and the cache allowed by [ADR 0013](0013-remote-patient-import.md), carry the full
 enumerated list, HIV status included. The boundary filter stays in place with an empty
 exclusion list, so naming a category later means adding a concept set and a filter entry, not
-rebuilding the read path. The lawful basis is still open.
+rebuilding the read path.
+
+*Update (3 October 2026):* **The lawful basis is the care relationship.** No separate
+patient consent is captured at query or import time. That basis holds only while the patient
+is in an active clinical interaction at the querying facility, which condition 2 already
+requires. The reason for access (condition 3) is still captured, because it is the audit
+record of that care relationship, not a consent.
 
 ## Consequences
 
