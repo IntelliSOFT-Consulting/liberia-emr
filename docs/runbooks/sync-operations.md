@@ -8,8 +8,8 @@ rotating certificates and keys, and handling what the alerts raise. The design i
 
 **Rehearsal status:** sections 7 to 9, 11 and 13 to 17 are exercised by the `qa/sync/` checks
 named in them. Sections 1 and 6 run on the dev pair with throwaway material (section 18).
-Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
-before go-live.
+Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material, and section
+19 not at all; do both before go-live.
 
 Commands assume the repository is checked out on the host and the stacks run with Docker
 Compose. At central, `central` below stands for
@@ -632,3 +632,67 @@ build and fast-forwards each server's checkout to the deployed commit, so the co
 matches the images. A checkout with local changes stops the deploy rather than being
 overwritten. Run git on a dev server only as the deploy user (`DEV_USER`); a checkout touched
 as root fails the next deploy's fetch with a permission error.
+
+## 19. Upgrade a release across central and the facilities
+
+**Central first, then the facilities one at a time.** dbsync's own guidance is to upgrade the
+receiver before any sender, and the content rule says the same: a facility must never run
+newer content than central, or its records reference metadata central lacks and land on
+placeholders (section 17). Upgrading central first keeps both true throughout, because a
+newer receiver and newer content at central accept what older facilities send. Each stack is
+upgraded with the steps in [deploy.md](deploy.md) ("Upgrade"); this section is the order
+around them and the sync checks between.
+
+Facilities keep working and keep recording throughout. While central is down their messages
+wait at the broker, or in their own queues while the broker restarts; nothing needs to be
+stopped at a facility for central's upgrade.
+
+1. **Before anything changes, at central.** No conflicts queued (`ReceiverConflicts` quiet,
+   `scripts/sync/conflicts.sh list` empty) and no dead letters (`SyncDeadLetters` quiet):
+   resolve them first (sections 7 and 8), because a hash rebuild after the upgrade refuses to
+   run with conflicts queued. Check no facility is still in its first load (section 1); it
+   waits until the load has finished.
+2. **Find out whether the release changes synced rows.** Compare `war.openmrs` and the module
+   versions in `distribution/distro.properties`, and any new liquibase changeset in our
+   modules, with the last release. A platform or module upgrade whose migrations update rows
+   in the tables the sender watches (`eip.watchedTables`) changes them at central outside
+   sync, so dbsync's stored hashes no longer match and the next facility update to each such
+   row becomes a conflict. A release that changes only content (concepts, forms, locations)
+   does not. Note the tables, if any, for step 6.
+   A new `sync.dbsync` or `war.openmrs` also needs the checks in sync-eip.md 1.8 run again:
+   the platform-version patch in `distribution/sync/patches/` and streaming from MariaDB.
+3. **Back up central:** the OpenMRS database, the management schema (`SYNC_MGMT_DB_NAME`), the
+   identity schema, and the `receiver-state` and `broker-data` volumes, at the same point in
+   time ([backup-restore.md](backup-restore.md)).
+4. **Upgrade central** (deploy.md "Upgrade", with the central env file). The receiver waits for
+   the backend to report healthy before it starts. Then check: the receiver logs `Started
+   Application`, `ReceiverDown` and `SyncBrokerDown` are quiet, and the subscription queue
+   (`broker-admin.sh ... queue stat --queueName DB-SYNC-REC.DB-SYNC-RECEIVER`) drains as
+   facilities' waiting messages apply. Facilities may raise `SyncPushErrors` briefly while the
+   broker restarts; their senders retry on their 30-minute cycle.
+5. **Upgrade each facility, one at a time** (deploy.md "Upgrade", with `--profile sync`), backing
+   up its database, management schema and `sync-queue` volume together first. The sender stops
+   with the stack and resumes from its saved position, so what was recorded during the window
+   follows once it is back. Check its records arrive at central (`Entity: ..., source=<code>`
+   in the receiver log) before moving to the next facility.
+6. **After every facility is on the release**, if step 2 found synced tables changed: conflicts
+   raised since step 4 for those tables are expected. Resolve them as in section 8, then rebuild
+   the hashes for those tables so later updates apply cleanly. With the receiver stopped:
+
+   ```bash
+   central stop sync-receiver
+   central run --rm --no-deps -e SYNC_HASHES_UPDATE=true -e SYNC_HASHES_UPDATE_TABLES=<table>[,<table>...] sync-receiver
+   central start sync-receiver
+   ```
+
+   The run logs `Successfully updated entity hashes` and exits. It accepts central's current
+   copy of every row in those tables, so it also hides any other change made at central to
+   them; it is safe only because central is read-only for clinical data (sync-eip.md 1.8c).
+
+**Rolling back.** Roll facilities back before central, never central below any facility's
+release, for the same content reason. Restoring central's database from the step 3 backup loses
+what arrived since; send those facilities' records again (section 11).
+
+This order has not yet been rehearsed on a staging pair; do that before the first production
+upgrade.
+
