@@ -51,8 +51,9 @@ when the investigation closes.
 2. Do not add the role to a clinical account, and do not give an auditor a clinical role to
    "see more": reading the audit log and reading patient records are separate permissions.
 3. The officer logs out and in again. **Audit log** appears in the app menu. The home page
-   may show "Error loading queue entries … 403": the role cannot read the patient queue, by
-   design. Close it.
+   shows no dashboard ("The dashboard you are looking for does not exist"): the role reads no
+   patient queue, by design, so the queue dashboard is hidden from it (LE-395). Open the app
+   menu instead. An error notification on the home page is a fault; report it.
 
 Someone who opens `/openmrs/spa/audit-log` without the role sees "You cannot read the audit
 log", and the API answers `403`.

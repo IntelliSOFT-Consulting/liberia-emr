@@ -114,8 +114,12 @@ A role needs **no** privilege to sign in: O3 needs the user's own person in the 
 grant `Get People` to make a sign-in work; if `user.person` is missing, the module is not
 running or the advice has stopped matching the REST module's session controller.
 
-The home page's service queue widget shows a 403 toast to roles that cannot read queues. That
-is a question of what the role should see, not a sign-in failure.
+The spec also fails if the role's landing page makes a REST call that answers an error or
+shows an error notification (LE-395). A role that works the patient queue needs the queue and
+visit privileges in [the service queue table](../security/moh-ict-sop-mapping.md#the-service-queue-le-395);
+a role that does not gets no home dashboard, because `config-national.json` shows each one
+only to holders of the privileges its data needs. A new home dashboard needs the same
+`Display conditions` there.
 
 Initializer applies roles by UUID and rewrites an existing role's privileges and inherited roles
 from the CSV whenever the file changes, so a deployed role picks up the change on the next start.
