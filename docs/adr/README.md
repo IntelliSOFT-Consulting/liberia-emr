@@ -56,9 +56,10 @@ cached at central by a scheduled sync in the liberiaemr module (LE-317). Accepte
 0013 settles how remote patient search's import may interact with sync. Imported history is a
 scoped, read-only cache that sync never watches, and the patient shell shares central's UUIDs.
 It amends 0007's "query, never replicate" for offline use and departs from 0005 for imported
-patients until an MPI exists. Accepted on 2 October 2026. The cache's retention period is
-still to be set before the first facility rollout, and 0007's own open items
-(sensitive-category exclusions and lawful basis) still apply to what the cache may hold.
+patients until an MPI exists. Accepted on 2 October 2026. On 3 October 2026 the cache's
+retention period, which acceptance had left open, was set to at most 12 months without access.
+0007's own open items (sensitive-category exclusions and lawful basis) still apply to what the
+cache may hold.
 
 Background for 0005, 0007, 0008 and 0013: [Sync & EIP architecture](../architecture/sync-eip.md), the
 [module evaluation](../architecture/sync-module-evaluation.md) and

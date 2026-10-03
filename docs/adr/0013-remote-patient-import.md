@@ -131,7 +131,9 @@ that produced it. Widening the scope later remains a new ADR and a fresh legal r
    "never replicate", for the offline requirement.
 2. **Retention of the cached copy**: refreshed while the patient is under care at the
    importing facility, and purged after a configurable period without access. The period is
-   a deployment setting, and its value is still to be set before the first facility rollout.
+   a deployment setting of **at most 12 months**, and 12 months is also the default. A
+   deployment may set it shorter, never longer. *(Value set on 3 October 2026; on acceptance
+   this item left it open.)*
 3. **Revocation purges the cache**: ADR 0007 relied on "nothing is replicated, so revoking
    access removes future visibility completely". With a cache, revoking a facility's access
    also purges its cached bundles. This is a required control.

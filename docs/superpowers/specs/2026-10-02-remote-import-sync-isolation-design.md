@@ -101,6 +101,10 @@ bulk form):
 - Creates the shell, then fills the store, as two separate steps (see Data flow).
 - Refreshes on chart open when the facility is online and the bundle is older than
   `liberiaemr.remoteHistory.maxAgeHours` (a global property, default 24).
+- Purges a patient's bundles and their rows once the patient's cached history has gone
+  `liberiaemr.remoteHistory.retentionMonths` without access (a global property, default 12).
+  ADR 0013 caps it at 12, so a larger value is treated as 12. A scheduled task runs the purge,
+  and revoking a facility's access purges all of its bundles.
 
 ### 5. "External records" chart pieces (ESM, facility)
 
