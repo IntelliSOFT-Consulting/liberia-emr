@@ -121,7 +121,13 @@ cd distribution/compose/central
 cp ../../env/central.env.example ../../env/central.env    # first time only; then fill it in
 docker compose --env-file ../../env/central.env pull
 docker compose --env-file ../../env/central.env up -d
+docker compose --env-file ../../env/central.env up -d --no-deps --force-recreate prometheus alertmanager
 ```
+
+The last line matters on every deploy after the first. Prometheus and Alertmanager mount their
+configuration and alert rules from this checkout one file at a time, and a running container
+keeps reading the file it started with after the checkout replaces it. `up -d` does not notice,
+so without it a release's new or changed alerts never load (LE-373).
 
 Before the first start, `BROKER_CERTS_DIR` needs the broker's enrolment (rendered by
 `scripts/security/render-broker-config.sh` from MOH-issued material) and `RECEIVER_CERTS_DIR`
@@ -146,9 +152,11 @@ so nothing is backfilled. Send them with section 11 of the sync runbook.
 2. **Back up the database and verify the backup restores** — not just that the file exists.
 3. `docker compose --env-file ../../env/facility.env pull`
 4. `docker compose --env-file ../../env/facility.env up -d`
-5. Watch migrations and Initializer complete.
-6. Run the post-deploy checks below.
-7. Release the instance back to clinical use.
+5. On a facility that syncs, and at central: `docker compose --env-file ../../env/<facility|central>.env up -d --no-deps --force-recreate prometheus alertmanager`,
+   so monitoring reads this release's alert rules (see Central deployment above for why).
+6. Watch migrations and Initializer complete.
+7. Run the post-deploy checks below.
+8. Release the instance back to clinical use.
 
 ## Post-deploy checks
 
