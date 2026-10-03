@@ -35,4 +35,8 @@ describe('Initial ANC Assessment form', () => {
     it('blocks saving when required ANC assessment fields are empty', () => {
         ancInitialForm.verifyRequiredFieldsBlockSave();
     });
+
+    it('validates consistency across obstetric history fields', () => {
+        ancInitialForm.verifyObstetricHistoryConsistency();
+    });
 });

@@ -21,6 +21,48 @@ class ANCInitialFormPage {
         cy.get('@saveAncInitial.all').should('have.length', 0);
     }
 
+    verifyObstetricHistoryConsistency() {
+        const setNumber = (fieldId: string, value: string) =>
+            cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
+        const saveAndCheckInvalidField = (fieldId: string) => {
+            cy.contains('button', 'Save', { timeout: this.timeout }).click();
+            cy.get(`#${fieldId}`, { timeout: this.timeout }).should('have.attr', 'aria-invalid', 'true');
+        };
+
+        [
+            { id: 'gravida', value: '3' },
+            { id: 'parity', value: '2' },
+            { id: 'fullTermBirths', value: '1' },
+            { id: 'pretermBirths', value: '1' },
+            { id: 'abortions', value: '0' },
+            { id: 'livingChildren', value: '2' }
+        ].forEach(({ id, value }) => setNumber(id, value));
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+
+        setNumber('gravida', '4');
+        saveAndCheckInvalidField('gravida');
+        setNumber('gravida', '3');
+
+        setNumber('parity', '3');
+        saveAndCheckInvalidField('parity');
+        setNumber('parity', '1');
+        saveAndCheckInvalidField('parity');
+        setNumber('parity', '2');
+
+        setNumber('livingChildren', '3');
+        saveAndCheckInvalidField('livingChildren');
+
+        setNumber('gravida', '1');
+        setNumber('fullTermBirths', '0');
+        setNumber('pretermBirths', '0');
+        setNumber('abortions', '0');
+        setNumber('livingChildren', '1');
+        saveAndCheckInvalidField('livingChildren');
+
+        cy.get('@saveAncInitial.all').should('have.length', 0);
+    }
+
     verifyFormContract() {
         cy.contains('p', 'Initial ANC Assessment', { timeout: this.timeout }).should('be.visible');
 
