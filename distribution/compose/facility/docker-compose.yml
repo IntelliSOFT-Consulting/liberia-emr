@@ -127,6 +127,16 @@ services:
       LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
       LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
       LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
+      # Remote Search of the central server (liberiaemr module). They come from the environment
+      # only: the URL must be https, and the service account is never read from a global
+      # property. The password is a deployment secret: mount the password file and leave the
+      # plain variable empty. Unset means Remote Search is off and its toggle hides itself.
+      # LIBERIAEMR_REMOTE_ALLOWED_HOSTS is only for a URL left in the global property.
+      LIBERIAEMR_REMOTE_URL: ${LIBERIAEMR_REMOTE_URL:-}
+      LIBERIAEMR_REMOTE_USER: ${LIBERIAEMR_REMOTE_USER:-}
+      LIBERIAEMR_REMOTE_PASSWORD: ${LIBERIAEMR_REMOTE_PASSWORD:-}
+      LIBERIAEMR_REMOTE_PASSWORD_FILE: ${LIBERIAEMR_REMOTE_PASSWORD_FILE:-}
+      LIBERIAEMR_REMOTE_ALLOWED_HOSTS: ${LIBERIAEMR_REMOTE_ALLOWED_HOSTS:-}
       # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4). startup-init.sh maps
       # OMRS_EXTRA_A_B__C to runtime property a.b_c and re-applies it on every start. The
       # schema name is fixed: binlog-ignore-db above and the initdb grants name it too. The
@@ -150,6 +160,11 @@ services:
       # /run/secrets/mfl-password to use it. Unset, /dev/null is mounted: an empty password,
       # so the MFL sync is unavailable. See docs/runbooks/mfl-sync.md.
       - ${LIBERIAEMR_MFL_PASSWORD_HOST_FILE:-/dev/null}:/run/secrets/mfl-password:ro
+      # The Remote Search service account's password, the same way: a host file, mode 0400 and
+      # owned by uid 1001, mounted read-only. Set LIBERIAEMR_REMOTE_PASSWORD_FILE to
+      # /run/secrets/remote-search-password to use it. Unset, /dev/null is mounted: an empty
+      # password, which central refuses.
+      - ${LIBERIAEMR_REMOTE_PASSWORD_HOST_FILE:-/dev/null}:/run/secrets/remote-search-password:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/health/started"]
       interval: 20s
