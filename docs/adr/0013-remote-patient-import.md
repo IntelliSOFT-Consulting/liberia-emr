@@ -95,8 +95,13 @@ in one place and tested there (`qa/api/`).
 
 The importing facility creates `person`, `patient`, `person_name`, `person_address` and
 `patient_identifier` rows **with central's UUIDs**, audit fields and preferred flags. They
-reach central as no-op upserts: identical rows, and the stale-data check
-([sync-eip.md](../architecture/sync-eip.md) §7.5) stops an older copy overwriting a newer one.
+reach central as upserts. While central still holds what the import copied, they are identical
+rows and change nothing. If the patient's home facility edits those rows after the import and
+its edit reaches central first, the shell's older rows arrive last and are applied, because
+dbsync has no check that an update is newer than what central holds
+([sync-eip.md](../architecture/sync-eip.md) §7.5, risk E17). That happens when the importing
+facility goes offline before its sender pushes the shell. *(Corrected 3 October 2026: this
+paragraph first said a stale-data check prevented it; dbsync 4.0.0 has none.)*
 Records the importing facility creates afterwards sync normally against the same patient UUID.
 
 This **departs from ADR 0005** for imported patients only: two facilities now write to one
@@ -109,9 +114,13 @@ patient record instead of each holding its own. Two rules keep the identity laye
 
 **Demographics edits are last-write-wins at central.** Two facilities editing the same
 patient's name, address or attributes each send a full row; the last to arrive wins, with no
-conflict raised. Accepted as a known limitation: demographics edits are rare, clinical rows
-are unaffected (they are add-only and owned by their author), and the alternative needs an
-MPI. When an MPI exists, this decision should be revisited in favour of Option D.
+conflict raised. The import itself is a write of this kind: a shell that reaches central
+after a newer edit from the home facility reverts it, with nothing edited at the importing
+facility, and central keeps the reverted values until the home facility edits that patient
+again. Accepted as a known limitation, with the import case accepted on 3 October 2026:
+demographics edits are rare, clinical rows are unaffected (they are add-only and owned by
+their author), and the alternatives need an MPI or a change to dbsync's receiver. When an MPI
+exists, this decision should be revisited in favour of Option D.
 
 ### 4. Scope: observations and diagnoses stay out
 
@@ -138,7 +147,8 @@ that produced it. Widening the scope later remains a new ADR and a fresh legal r
    access removes future visibility completely". With a cache, revoking a facility's access
    also purges its cached bundles. This is a required control.
 4. **The shared-record departure from ADR 0005** and last-write-wins on demographics, until an
-   MPI is in place.
+   MPI is in place. This includes an imported shell that reaches central after a newer edit
+   and reverts it (accepted 3 October 2026, §3).
 
 Accepting this ADR does not settle the two items still open from ADR 0007: sensitive-category
 exclusions (for example HIV status) and the lawful basis, including whether consent is
@@ -165,7 +175,8 @@ whatever the MOH decides there.
   item visible, at the cost of one more place to look.
 - Central holds one record for an imported patient, written by more than one facility. A
   demographics correction at one facility can be overwritten by an older edit from another
-  arriving later. Accepted until an MPI exists.
+  arriving later, and by an imported shell synced after it. Nothing at central detects either.
+  Accepted until an MPI exists.
 - Superseding this ADR in favour of Option D (linked records) is the expected path once an
   MPI or national client registry is in place; the store and the scoped endpoint carry over
   unchanged.
