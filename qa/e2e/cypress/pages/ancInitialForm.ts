@@ -82,6 +82,50 @@ class ANCInitialFormPage {
             .should('be.oneOf', [200, 201]);
     }
 
+    verifyOptionalFetalFieldsCanBeBlank() {
+        this.completeRequiredAssessmentFields();
+        const optionalFetalFields = ['fundalHeight', 'fetalPresentation', 'fetalHeartTone', 'otherFindings'];
+        optionalFetalFields.forEach((fieldId) => {
+            cy.get(`[data-testid="${fieldId}-label"] [title="Required"]`).should('not.exist');
+        });
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            const observations = request.body.obs as Array<{ formFieldPath?: string }>;
+            optionalFetalFields.forEach((fieldId) => {
+                expect(
+                    observations.some((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`),
+                    `optional ${fieldId} observation`
+                ).to.equal(false);
+            });
+        });
+    }
+
+    verifyFetalAssessmentWarnings() {
+        this.completeRequiredAssessmentFields();
+
+        cy.get('#fetalPresentation', { timeout: this.timeout }).scrollIntoView().within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Breech', { timeout: this.timeout }).click();
+        cy.contains('Non-vertex Presentation:', { timeout: this.timeout }).scrollIntoView().should('be.visible');
+
+        cy.get('#fetalPresentation').within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', 'Vertex', { timeout: this.timeout }).click();
+        cy.contains('Non-vertex Presentation:').should('not.exist');
+
+        this.setNumber('fetalHeartTone', '100');
+        cy.contains('Abnormal Fetal Heart Tone (<110 or >160 bpm):', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+        this.setNumber('fetalHeartTone', '140');
+        cy.contains('Abnormal Fetal Heart Tone (<110 or >160 bpm):').should('not.exist');
+    }
+
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');

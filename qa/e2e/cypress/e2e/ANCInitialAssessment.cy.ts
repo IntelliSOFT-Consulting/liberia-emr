@@ -51,4 +51,12 @@ describe('Initial ANC Assessment form', () => {
     it('shows the appropriate IPT field and requires a dose for Yes', () => {
         ancInitialForm.verifyIptConditionalFields();
     });
+
+    it('saves with optional fetal assessment fields blank', () => {
+        ancInitialForm.verifyOptionalFetalFieldsCanBeBlank();
+    });
+
+    it('shows warnings for non-vertex presentation and abnormal fetal heart tone', () => {
+        ancInitialForm.verifyFetalAssessmentWarnings();
+    });
 });
