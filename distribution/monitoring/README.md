@@ -71,6 +71,7 @@ Central (`rules-central.yml`):
 | `SyncRecordsMissing` | a facility's reconciliation digest lists records central confirmed missing | critical |
 | `SyncReconDigestLate` | a facility has sent no reconciliation digest for three days | warning |
 | `SyncReconDown` | reconciliation at central is not running, or has not run for an hour | warning |
+| `SyncPlaceholderMetadata` | central holds a placeholder row dbsync inserted for metadata a synced record referenced and central lacked | critical |
 
 Operating procedures for the sync alerts are in
 [docs/runbooks/sync-operations.md](../../docs/runbooks/sync-operations.md) and
