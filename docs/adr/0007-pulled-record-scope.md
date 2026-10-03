@@ -1,6 +1,7 @@
 # 0007: Cross-facility pulled-record scope: demographics plus an enumerated clinical summary
 
-**Status:** Proposed, awaiting MOH ICT and MOH legal agreement (LE-22, target 21 August 2026)
+**Status:** Accepted (3 October 2026), once both open items below were answered. Proposed
+under LE-22, with MOH ICT and MOH legal sign-off targeted for 21 August 2026.
 **Amended by:** [ADR 0013](0013-remote-patient-import.md) (Accepted 2 October 2026), which relaxes condition 1
 to allow a scoped, read-only cache outside sync for offline use. Every other condition stands.
 

@@ -14,7 +14,7 @@ Format: Context → Decision → Consequences → Status.
 | 0004 | Password expiry and history enforcement mechanism | **Open** |
 | [0005](0005-cross-facility-identity-reconciliation.md) | Cross-facility identity reconciliation: link, never merge | Accepted |
 | [0006](0006-pin-o3-refapp-3.7.1.md) | Rebase the distribution on O3 RefApp 3.7.1 | Accepted |
-| [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | **Proposed** |
+| [0007](0007-pulled-record-scope.md) | Cross-facility pulled-record scope: demographics + enumerated summary | Accepted (amended by [0013](0013-remote-patient-import.md)) |
 | [0008](0008-adopt-openmrs-dbsync.md) | Adopt openmrs-eip + openmrs-dbsync over ActiveMQ Artemis | **Proposed** |
 | [0009](0009-mfl-facility-locations.md) | The Master Facility List is the source of truth for facility locations | Accepted |
 | [0010](0010-indicator-reporting-mamba-etl.md) | Indicator reporting on a per-instance Mamba ETL schema, with an in-tree reports module | **Proposed** (implementation in progress; amended 2026-09) |
@@ -28,13 +28,10 @@ options are set out in [the SOP mapping](../security/moh-ict-sop-mapping.md) (A4
 
 0005 is Accepted by MOH ICT (LE-22) and is being built as the CPI service in the liberiaemr
 module: minting and the National ID rule are in (LE-35); scoring, the review queue and the
-queue's MOH owner follow. 0007 is drafted and **Proposed**, not Accepted; it names the
-questions the MOH must answer to close it. Sensitive-category exclusions were answered for now
-on 3 October 2026: nothing is excluded. The lawful basis was answered the same day: it is the
-care relationship, with no separate consent captured. Both questions are answered, but the
-status line still reads Proposed until 0007 is formally accepted.
-It was due for MOH ICT sign-off by 21 August 2026 and blocks cross-facility query, which is a
-legal decision rather than a technical one.
+queue's MOH owner follow. 0007 was Accepted on 3 October 2026, once its two open questions
+were answered: nothing is excluded as a sensitive category for now, and the lawful basis is the
+care relationship, with no separate consent captured. 0013 amends its condition 1. It had been
+due for MOH ICT sign-off by 21 August 2026, and it no longer blocks cross-facility query.
 
 0008 selects the sync technology and is **conditional**: it holds as written only if the
 Debezium/MariaDB spike succeeds, and otherwise stands with MySQL 8.0 substituted. Unlike 0007

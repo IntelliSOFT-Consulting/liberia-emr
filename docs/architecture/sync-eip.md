@@ -668,6 +668,13 @@ care relationship; confirm retention of the audit trail (≥3 months per control
 longer for cross-facility access). Final scope to be re-checked against the Data Protection
 Act as enacted; this document does not assume its final text.
 
+**Decided 3 October 2026** ([ADR 0007](../adr/0007-pulled-record-scope.md), now Accepted):
+Option B and its list are confirmed, nothing is excluded as a sensitive category for now, and
+the lawful basis is the care relationship, with no separate consent captured.
+[ADR 0013](../adr/0013-remote-patient-import.md) amends "query, never replicate" so a scoped,
+read-only cache can be kept for offline use. Audit-trail retention and the Data Protection Act
+re-check remain open.
+
 ---
 
 ## 4. DECISION 3: Offline registration and duplicate reconciliation
