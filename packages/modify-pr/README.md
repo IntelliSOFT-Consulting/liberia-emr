@@ -47,14 +47,13 @@ The sidecar records:
 | `openmrs-module-auditlog` (`source.auditlog.commit=ba96ba5`) | `distribution/backend/patches/auditlog/0001-serialize-hibernate-proxies.patch` | [`0002-openmrs-module-auditlog-serialize-hibernate-proxies.md`](.patches/0002-openmrs-module-auditlog-serialize-hibernate-proxies.md) | [openmrs/openmrs-module-auditlog#30](https://github.com/openmrs/openmrs-module-auditlog/pull/30) |
 | `openmrs-module-auditlog` (`source.auditlog.commit=ba96ba5`) | `distribution/backend/patches/auditlog/0002-keep-session-open-for-detached-previous-state.patch` | [`0003-openmrs-module-auditlog-detached-previous-state.md`](.patches/0003-openmrs-module-auditlog-detached-previous-state.md) | [openmrs/openmrs-module-auditlog#31](https://github.com/openmrs/openmrs-module-auditlog/pull/31) |
 | `openmrs-module-auditlog` (`source.auditlog.commit=ba96ba5`) | `distribution/backend/patches/auditlog/0003-unmapped-class-metadata.patch` | [`0004-openmrs-module-auditlog-unmapped-class-metadata.md`](.patches/0004-openmrs-module-auditlog-unmapped-class-metadata.md) | [openmrs/openmrs-module-auditlog#32](https://github.com/openmrs/openmrs-module-auditlog/pull/32) |
-| `openmrs-module-bedmanagement` (`source.bedmanagement.commit=c346b7b`, tag 7.2.0) | `distribution/backend/patches/bedmanagement/0001-end-visit-without-bed-write-privileges.patch` | [`0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md`](.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md) | **not opened yet** (prepared locally, awaiting approval to publish) |
+| `openmrs-module-bedmanagement` (`source.bedmanagement.commit=c346b7b`, tag 7.2.0) | `distribution/backend/patches/bedmanagement/0001-end-visit-without-bed-write-privileges.patch` | [`0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md`](.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md) | [openmrs/openmrs-module-bedmanagement#119](https://github.com/openmrs/openmrs-module-bedmanagement/pull/119) |
 | `esm-service-queues-app` (`11.1.0`) | `distribution/frontend/patch-service-queues-location.cjs` | [`0001-esm-service-queues-app-default-queue-location.md`](.patches/0001-esm-service-queues-app-default-queue-location.md) | **none yet** (sidecar says TODO) |
 | `esm-patient-registration-app` (`11.1.0`) | `distribution/frontend/patch-patient-registration.cjs` | **none** | **none recorded** |
 | `esm-patient-orders-app` (`12.3.4`) | `distribution/frontend/patch-patient-orders.cjs` | **none** | **none recorded** |
 
-The bedmanagement patch and the last three break [the rule](#the-rule) as things stand: no
-upstream PR link, and two have no sidecar at all. The bedmanagement PR is prepared and waits
-only on approval to publish it.
+The last three break [the rule](#the-rule) as things stand: no upstream PR link, and two have no
+sidecar at all.
 
 ## Before adding a patch
 

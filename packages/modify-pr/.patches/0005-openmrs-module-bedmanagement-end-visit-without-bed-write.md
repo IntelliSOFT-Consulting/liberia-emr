@@ -3,7 +3,7 @@
 | Field | |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-module-bedmanagement` |
-| Upstream PR | **not opened yet.** The branch, tests and description are prepared; a BED ticket and the PR are opened once the team approves publishing. Replace this cell with the PR link then. Until then this patch breaks [the rule](../README.md#the-rule). |
+| Upstream PR | [openmrs/openmrs-module-bedmanagement#119](https://github.com/openmrs/openmrs-module-bedmanagement/pull/119) (ticket [BED-40](https://openmrs.atlassian.net/browse/BED-40)) |
 | Component version patched | tag `7.2.0`, commit `c346b7b97a662027459d51247f50fdd6ee0d5ab4` (`source.bedmanagement.commit` in `distribution/distro.properties`), built as `7.2.0.1-c346b7b` |
 | Why not configuration | The privilege check is compiled in: `VisitWithBedPatientAssignmentSaveHandler` calls `unAssignBedsInEndedVisit()`, which is `@Authorized` with `Assign Beds` and `Edit Admission Locations`, on every save of an ended visit. The only configuration answer is to grant both to every role that ends visits, which is bed write access for the whole front desk; that is not least privilege, and an MOH decision rather than ours. |
 | Removal condition | An upstream release containing the fix: move back to an `omod.bedmanagement` pin at that release, then delete the `source.bedmanagement.*` lines, the Dockerfile stage, the patch body and this sidecar |

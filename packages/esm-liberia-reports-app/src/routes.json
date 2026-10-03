@@ -18,6 +18,27 @@
       "privileges": ["Export National Report"],
       "online": true,
       "offline": false
+    },
+    {
+      "name": "indicator-reports-dashboard-link",
+      "component": "reportsDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "privileges": ["Export National Report"],
+      "meta": {
+        "name": "indicator-reports",
+        "slot": "indicator-reports-dashboard-slot",
+        "title": "Indicator reports"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "indicator-reports-dashboard",
+      "component": "root",
+      "slot": "indicator-reports-dashboard-slot",
+      "privileges": ["Export National Report"],
+      "online": true,
+      "offline": false
     }
   ]
 }

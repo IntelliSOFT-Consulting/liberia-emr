@@ -159,20 +159,55 @@ Every role a person signs in with, and what it may read. Privileges are in
 `content-common` `roles-common.csv` and `content-liberia-national` `roles-national.csv`.
 `RoleSignIn.cy.ts` signs a user holding each role alone in to O3 on every CI run.
 
-| Role | Package | Job | Person records (`Get People`) | Why |
-| --- | --- | --- | --- | --- |
-| Records Officer | common | Registration and medical records | Yes (LE-392) | Registers and finds patients; REST leaves a patient's name, sex and age out without it |
-| Nurse | common | Triage and vitals | Yes (LE-392) | The patient banner and chart show the person |
-| Clinician | common | Consultation and ordering | Yes, from Nurse | As Nurse |
-| Midwife | common | Maternal care | Yes, from Nurse | As Nurse |
-| Pharmacist | common | Dispensing | Yes (LE-392) | Dispenses to a named patient |
-| Lab Technician | common | Order fulfilment | Yes (LE-392) | Matches a sample to a named patient |
-| National Reporting Officer | national | MOH indicator reports | **No** | Aggregate figures only; `403` on persons and patients |
-| Sync Administrator | national | Sync queue and MFL sync | **No** | Operates queues and the facility list, not records; `403` on persons and patients |
-| ICT Auditor | national | Reads the audit log (B3) | **No** (removed in LE-392) | See B3 above |
-| Sync Conflict Reviewer | national | Resolves sync conflicts at central | Yes | Reads the patient record a conflict holds |
+| Role | Package | Job | Landing page (`/home` opens) | Person records (`Get People`) | Why |
+| --- | --- | --- | --- | --- | --- |
+| Records Officer | common | Registration and medical records | Service queues (`/home/service-queues`) | Yes (LE-392) | Registers and finds patients; REST leaves a patient's name, sex and age out without it |
+| Nurse | common | Triage and vitals | Service queues | Yes (LE-392) | The patient banner and chart show the person |
+| Clinician | common | Consultation and ordering | Service queues | Yes, from Nurse | As Nurse |
+| Midwife | common | Maternal care | Service queues | Yes, from Nurse | As Nurse |
+| Pharmacist | common | Dispensing | Service queues | Yes (LE-392) | Dispenses to a named patient |
+| Lab Technician | common | Order fulfilment | Service queues | Yes (LE-392) | Matches a sample to a named patient |
+| National Reporting Officer | national | MOH indicator reports | Indicator reports (`/home/indicator-reports`, LE-397) | **No** | Aggregate figures only; `403` on persons and patients |
+| Sync Administrator | national | Sync queue and MFL sync | Sync status (`/home/sync-status`, LE-397) | **No** | Operates queues and the facility list, not records; `403` on persons and patients |
+| ICT Auditor | national | Reads the audit log (B3) | Audit log (`/home/audit-log`, LE-397) | **No** (removed in LE-392) | See B3 above |
+| Sync Conflict Reviewer | national | Resolves sync conflicts at central | Sync conflicts (`/home/sync-conflicts`, LE-397) | Yes | Reads the patient record a conflict holds |
 
 Sync Sender and Sync Receiver are service accounts, not people, and are not in this table.
+
+#### Landing pages and the app menu (LE-397)
+
+esm-home-app opens the dashboard that `defaultDashboardPerRole` names for one of the user's
+roles, else `service-queues`, else the first dashboard left in `homepage-dashboard-slot`. The six
+facility roles are not named and land on the service queues. Each LiberiaEMR app registers its
+page as a home dashboard too, gated in its `routes.json` by the privilege the page needs, and
+`config-national.json` names it for the national role that works there:
+
+| Dashboard | App | Shown to holders of | Default for |
+| --- | --- | --- | --- |
+| `indicator-reports` | `esm-liberia-reports-app` | `Export National Report` | National Reporting Officer |
+| `sync-status` | `esm-liberia-sync-status-app` | `View Sync Status` | Sync Administrator |
+| `sync-conflicts` | `esm-liberia-sync-status-app` | `Resolve Sync Conflicts` | Sync Conflict Reviewer |
+| `audit-log` | `esm-liberia-audit-log-app` | `View Audit Log` | ICT Auditor |
+
+The National Reporting Officer also holds `Get Users` (LE-397). The reporting module loads a
+report definition with the user who created it, and core refuses that load without `Get Users`,
+so until then every `reportingrest/reportDefinition` call answered `403` for the role and its
+report page could not list a report. `Get Users` reads user accounts (staff names and usernames),
+not patients; the role still gets `403` on persons and patients.
+
+A role may hold more than one: the Sync Conflict Reviewer also sees the sync status dashboard in
+the side navigation. A user holding several national roles lands on the first of them in the
+order the session lists the roles. At a facility the two sync pages say they are shown at
+central, which is their page working, not an error.
+
+The app menu shows an entry only to a user who may use it. The RefApp's own entries carry no
+privilege, so `config-national.json` gates them in `app-menu-slot`: System Administration by
+`View Administration Functions`, the queue screen by the service queues dashboard's queue
+privileges, Dispensing by `Get Medication Dispense`. LiberiaEMR's entries are gated in their
+`routes.json` by the privilege their endpoint checks: Sync status by `View Sync Status`, Master
+Facility List sync by `View MFL Sync` (before LE-397 both asked the server for every user who
+opened the menu, and a Sync Conflict Reviewer got a `403` from `mfl/status`), Indicator reports by
+`Export National Report`, Audit log by `View Audit Log`.
 
 #### The service queue (LE-395)
 
@@ -207,9 +242,11 @@ Why each role:
 - **National Reporting Officer, Sync Administrator, Sync Conflict Reviewer, ICT Auditor** get no
   queue or visit privilege: their work is aggregate reports, the sync and the audit log, not
   patient flow. Instead `config-national.json` shows each home dashboard only to users holding
-  every privilege its data needs (O3's extension `Display conditions`), so these roles get no
-  dashboard on `/home` (the home app's "dashboard does not exist" tile) and open their own app
-  from the app menu. They see no error notification and make no failing call.
+  every privilege its data needs (O3's extension `Display conditions`), so no clinical dashboard
+  is shown to them. From LE-395 until LE-397 that left them the home app's "dashboard does not
+  exist" tile; they now land on their own app's dashboard (see
+  [Landing pages and the app menu](#landing-pages-and-the-app-menu-le-397)). They see no error
+  notification and make no failing call.
 
 What no role got, and none needs: `Assign Beds` and `Edit Admission Locations`, the bed write
 privileges. Until LE-396 **ending a visit** failed for every login role (`403 Assign Beds`),
@@ -230,10 +267,12 @@ that frees beds only when the visit holds one. So:
 
 No login role holds bed write access, and none was added.
 
-`RoleSignIn.cy.ts` checks on every CI run that each role's landing page makes no failing call and
-shows no error, that the six facility roles read queues, queue entries and visits and the four
-national roles do not; `Queue.cy.ts` that a Records Officer adds a patient to a queue, and
-checks a patient in, queues them and ends the visit.
+`RoleSignIn.cy.ts` checks on every CI run that each role lands on the page in the table above,
+that the landing page makes no failing call and shows no error, that the Sync Conflict Reviewer's
+app menu lists no entry it cannot use and makes no failing call, and that the six facility roles
+read queues, queue entries and visits while the four national roles do not. `Queue.cy.ts` checks
+that a Records Officer adds a patient to a queue, and checks a patient in, queues them and ends
+the visit.
 
 `Get People` reads every person's name, sex, birth date and address over REST. The four
 facility roles that gained it in LE-392 already read patients (`Get Patients`), and a patient's

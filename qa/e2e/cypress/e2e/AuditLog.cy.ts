@@ -1,4 +1,5 @@
 import { ERROR_NOTIFICATION } from '../support/landing';
+import { DASHBOARD_APPS, loadLocalEsms } from '../support/local-esm';
 import { api, asAdmin, type Auth, createUser, loginAs as loginAsUser, REST, runPassword } from '../support/users';
 
 /**
@@ -10,19 +11,12 @@ import { api, asAdmin, type Auth, createUser, loginAs as loginAsUser, REST, runP
  * created here with that role alone, finds both in the viewer with their previous and new values
  * and downloads them as CSV. A user without the role sees no menu entry and gets 403 from the API.
  *
- * Until the app is pinned in distribution/distro.properties, the SPA the gateway serves does not
- * include it (a new package has no published version before its first merge). Then, and only
- * then, loadAuditLogApp() adds this checkout's build to the page: it intercepts importmap.json and
- * routes.registry.json to add the module, and serves packages/esm-liberia-audit-log-app/dist/
- * under /openmrs/spa/__e2e__/. CI's E2E job builds that dist first. Once the app is pinned, the
- * served import map has it and the spec tests exactly what the distribution ships.
+ * Until distribution/distro.properties pins a build of the app with the behaviour under test (here,
+ * since LE-397, its home dashboard), loadAuditLogApp() serves this checkout's build in place of the
+ * served one (support/local-esm.ts). CI's E2E job builds that dist first. Once the pin carries it,
+ * the spec tests exactly what the distribution ships.
  */
 
-const MODULE = '@liberiaemr/esm-liberia-audit-log-app';
-const DIST = '../../packages/esm-liberia-audit-log-app/dist';
-// The same directory for the readDist task, which runs from qa/e2e.
-const DIST_DIR = '../../packages/esm-liberia-audit-log-app/dist';
-const OVERLAY = '__e2e__/esm-liberia-audit-log-app';
 const AUDIT = `${REST}/liberiaemr/auditlog`;
 
 // Throwaway accounts on a disposable demo stack, created by this spec with a password generated
@@ -37,50 +31,9 @@ const newValue = `after-${run}`;
 
 const loginAs = (user: Auth) => loginAsUser(user, 'audit-log');
 
-/** Serve this checkout's build of the app, unless the SPA already includes it (see the header). */
+/** Serve this checkout's build of the app, unless the served SPA already has it (see the header). */
 const loadAuditLogApp = () =>
-  cy.request('/openmrs/spa/importmap.json').then(({ body }) => {
-    if (body.imports?.[MODULE]) {
-      return;
-    }
-    cy.readFile(`${DIST}/routes.json`, { log: false }).then((routes) => {
-      // No cached copy: a 304 would carry no body to add the module to.
-      const fresh = (req: { headers: Record<string, unknown> }) => {
-        delete req.headers['if-none-match'];
-        delete req.headers['if-modified-since'];
-      };
-      cy.intercept('GET', '**/openmrs/spa/importmap.json*', (req) => {
-        fresh(req);
-        req.continue((res) => {
-          const map = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
-          map.imports[MODULE] = `./${OVERLAY}/liberiaemr-esm-liberia-audit-log-app.js`;
-          res.body = map;
-        });
-      });
-      cy.intercept('GET', '**/openmrs/spa/routes.registry.json*', (req) => {
-        fresh(req);
-        req.continue((res) => {
-          const registry = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
-          registry[MODULE] = routes;
-          res.body = registry;
-        });
-      });
-      // Served from memory: a .js fixture would be evaluated by Cypress, not sent as text.
-      cy.task<Record<string, string>>('readDist', DIST_DIR, { log: false }).then((files) => {
-        cy.intercept('GET', `**/openmrs/spa/${OVERLAY}/*`, (req) => {
-          const file = new URL(req.url).pathname.split('/').pop() ?? '';
-          if (!(file in files)) {
-            req.reply({ statusCode: 404, body: '' });
-            return;
-          }
-          req.reply({
-            body: files[file],
-            headers: { 'content-type': file.endsWith('.json') ? 'application/json' : 'application/javascript' },
-          });
-        });
-      });
-    });
-  });
+  loadLocalEsms(DASHBOARD_APPS.filter(({ module }) => module === '@liberiaemr/esm-liberia-audit-log-app'));
 
 /** The saved file's text, once the browser has finished writing it. */
 const waitForDownload = (prefix: string, attempts = 40): Cypress.Chainable<string> =>
@@ -104,7 +57,7 @@ const openAppMenuTo = (entry: string, attempts = 4) => {
   openAppMenu();
   cy.wait(2000);
   cy.get('body').then(($body) => {
-    const shown = $body.find('a').filter((_, a) => Cypress.$(a).is(':visible') && a.textContent?.trim() === entry);
+    const shown = $body.find('.cds--header-panel--expanded a').filter((_, a) => Cypress.$(a).is(':visible') && a.textContent?.trim() === entry);
     if (!shown.length && attempts > 1) {
       openAppMenuTo(entry, attempts - 1);
     }
@@ -154,19 +107,28 @@ describe('Audit log', () => {
     loginAs(auditor);
     loadAuditLogApp();
     cy.visit('/openmrs/spa/home');
+    // Since LE-397 the role lands on its audit log dashboard, which the side navigation links as
+    // "Audit log" too; this is the menu's entry, to the page's own route.
+    cy.location('pathname', { timeout: 30000 }).should('eq', '/openmrs/spa/home/audit-log');
     openAppMenuTo('Audit log');
-    cy.contains('a', 'Audit log', { timeout: 30000 }).should('be.visible').click();
+    cy.get('.cds--header-panel--expanded', { timeout: 30000 }).contains('a', 'Audit log').should('be.visible').click();
     cy.url().should('include', '/openmrs/spa/audit-log');
     cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
     // Since LE-395 the home page shows the role no queue dashboard, so no 403 toast follows it here.
     cy.get(ERROR_NOTIFICATION).should('not.exist');
 
-    cy.intercept('GET', `${AUDIT}?*`).as('list');
+    // Matches only the filtered request. The page's own unfiltered first load can still be in
+    // flight when this is set, and a plain `${AUDIT}?*` alias then caught that one instead.
+    cy.intercept({
+      method: 'GET',
+      pathname: AUDIT,
+      query: { type: 'org.openmrs.GlobalProperty', action: 'UPDATED', user: 'admin' },
+    }).as('list');
     cy.get('#audit-type').select('org.openmrs.GlobalProperty');
     cy.get('#audit-action').select('UPDATED');
     cy.get('#audit-user').type('admin');
     cy.contains('button', 'Apply filters').click();
-    cy.wait('@list').its('request.url').should('include', 'type=org.openmrs.GlobalProperty').and('include', 'user=admin');
+    cy.wait('@list', { timeout: 30000 });
 
     cy.contains('[data-testid="audit-row"]', gpName, { timeout: 30000 }).should('be.visible');
     // Scoped to the visible row: in CI the label matched two elements (a second, hidden one).
