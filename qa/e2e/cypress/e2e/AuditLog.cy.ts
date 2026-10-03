@@ -114,8 +114,7 @@ describe('Audit log', () => {
 
   before(() => {
     createUser(auditor, ['ICT Auditor']);
-    // A national role that can sign in to O3 (it holds Get People, which the app shell needs to
-    // show a signed-in user) but holds no audit privilege.
+    // A national role that signs in to O3 but holds no audit privilege.
     createUser(clerk, ['Sync Conflict Reviewer']);
 
     // The changes the auditor must find: a global property set and then changed, and a location
