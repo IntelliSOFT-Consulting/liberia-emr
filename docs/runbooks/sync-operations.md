@@ -79,8 +79,12 @@ certificate, the PGP key and the broker address, and must be the facility's `FAC
      --facility careysburg=careysburg.pem --facility <code>=<code>.pem
    central restart artemis && central restart sync-receiver
    ```
-5. **Facility.** Set `FACILITY_CODE`, `ARTEMIS_URL=ssl://<central host>:61617`,
-   `SYNC_CERTS_DIR` and the sync account (section 6) in the facility env, then `facility up -d`.
+5. **Facility.** Set `FACILITY_CODE`, `ARTEMIS_URL`, `SYNC_CERTS_DIR` and the sync account
+   (section 6) in the facility env, then `facility up -d`. For `ARTEMIS_URL`, prefer HTTPS,
+   which needs nothing from the facility's network but HTTPS to central:
+   `ARTEMIS_URL=ssl://artemis:61617` with `SYNC_CENTRAL_URL=https://<central host>`, and
+   `SYNC_HTTP_PROXY` if the network forces a proxy (distribution/broker/README.md, "Reaching it
+   over HTTPS"). Directly, where 61617 is open: `ssl://<central host>:61617`.
 
    On its first start the sender sends every record already in the facility database, then
    carries on with new changes (`SYNC_SNAPSHOT_MODE=initial`). The clinic can keep working
