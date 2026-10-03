@@ -39,4 +39,8 @@ describe('Initial ANC Assessment form', () => {
     it('validates consistency across obstetric history fields', () => {
         ancInitialForm.verifyObstetricHistoryConsistency();
     });
+
+    it('does not save physical exam descriptions after findings are set to Normal', () => {
+        ancInitialForm.verifyPhysicalExamDescriptionsNotSavedWhenNormal();
+    });
 });
