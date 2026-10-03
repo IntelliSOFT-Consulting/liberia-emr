@@ -1,3 +1,4 @@
+import { ERROR_NOTIFICATION, recordFailedCalls } from '../support/landing';
 import { api, asAdmin, type Auth, createUser, loginAs, REST, runPassword } from '../support/users';
 
 /**
@@ -13,13 +14,16 @@ import { api, asAdmin, type Auth, createUser, loginAs, REST, runPassword } from 
  * so the non-clinical roles sign in while /person stays closed to them; the last tests check that,
  * and a sample of what each role must NOT read.
  *
- * The home page's service queue widget answers 403 (or 500) to most of these roles and shows a
- * toast. That is a question of what each role should see, not of signing in, so it is not asserted.
+ * Each role's landing page must also load cleanly (LE-395): no REST call answering an error and no
+ * error notification. The six facility roles work the patient queue and land on the service queues
+ * dashboard; the national roles hold no queue privilege, so config-national.json hides every home
+ * dashboard they cannot read and /home shows them no dashboard at all, rather than one that fails.
  */
 
 type LoginRole = { role: string; clinical: boolean };
 
-// Every role a person signs in with. Sync Sender and Sync Receiver are service accounts.
+// Every role a person signs in with. Sync Sender and Sync Receiver are service accounts. The
+// clinical roles are also the ones that work the service queue.
 const ROLES: Array<LoginRole> = [
   { role: 'Records Officer', clinical: true },
   { role: 'Nurse', clinical: true },
@@ -55,25 +59,49 @@ describe('Sign-in for every login role', () => {
     ROLES.forEach(({ role }) => createUser(userFor(role), [role]));
   });
 
-  ROLES.forEach(({ role }) => {
-    it(`signs in a user holding only ${role} and keeps them on the home page`, () => {
+  ROLES.forEach(({ role, clinical }) => {
+    it(`signs in a user holding only ${role} and keeps them on a home page that loads cleanly`, () => {
       const user = userFor(role);
       loginAs(user, 'role-sign-in');
+      const failed = recordFailedCalls();
       cy.visit('/openmrs/spa/home');
 
-      // The signed-in home page: the location chosen at login in the header and the home
-      // dashboard's navigation. A user O3 does not accept is sent to /login instead.
+      // The signed-in home page: the location chosen at login in the header and the app menu.
+      // A user O3 does not accept is sent to /login instead.
       cy.location('pathname', { timeout: 30000 }).should('match', /^\/openmrs\/spa\/home/);
       cy.get('header', { timeout: 30000 }).should('be.visible');
-      cy.contains('a', 'Service queues', { timeout: 30000 }).should('be.visible');
       cy.get('[aria-label="App Menu"], [aria-label="Open menu"]', { timeout: 30000 }).should('exist');
+      if (clinical) {
+        // The queue roles land on the service queues dashboard and its table loads.
+        cy.location('pathname', { timeout: 30000 }).should('eq', '/openmrs/spa/home/service-queues');
+        cy.contains(/patients currently in queue/i, { timeout: 30000 }).should('be.visible');
+      } else {
+        cy.contains('The dashboard you are looking for does not exist', { timeout: 30000 }).should('be.visible');
+        cy.contains('a', 'Service queues').should('not.exist');
+      }
       // O3 decides once the session has loaded; give it the time it took to bounce users before.
+      // The same wait lets the dashboard's requests, and any toast they raise, arrive.
       cy.wait(5000);
       cy.location('pathname').should('match', /^\/openmrs\/spa\/home/);
+      cy.get(ERROR_NOTIFICATION).should('not.exist');
+      cy.wrap(failed).should('deep.equal', []);
 
       sessionPerson().then((person) => {
         expect(person.display, 'own name').to.include('E2E');
       });
+    });
+  });
+
+  it('gives the queue roles the queue and visit privileges their work needs, and no other role', () => {
+    ROLES.forEach(({ role, clinical }) => {
+      const user = userFor(role);
+      api(user, 'GET', `${REST}/queue?v=custom:(uuid)`, undefined, false).its('status').should('eq', clinical ? 200 : 403);
+      api(user, 'GET', `${REST}/queue-entry?isEnded=false&v=custom:(uuid)`, undefined, false)
+        .its('status')
+        .should('eq', clinical ? 200 : 403);
+      api(user, 'GET', `${REST}/visit?includeInactive=false&v=custom:(uuid)`, undefined, false)
+        .its('status')
+        .should('eq', clinical ? 200 : 403);
     });
   });
 
