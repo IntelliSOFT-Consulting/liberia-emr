@@ -930,7 +930,7 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F2 | **Facility disk fills**: binlog plus queue plus retry payloads grow all outage | Long outage on a small disk | **The database stops accepting writes and care stops.** The worst outcome in this document, and it is caused by the sync layer | Size the disk for the full retention window; put binlog on its own volume; alarm at 60/75/85%; a documented emergency procedure that sheds sync state, never clinical data |
 | F3 | **Management database lost or restored from an older backup** | Facility disk failure, bad restore | Offset regresses (harmless duplicate sends) or jumps forward (**silent gap**) | Back up the management database with the OpenMRS database, at the same point in time; treat any restore as requiring a reconciliation run |
 | F4 | **Certificate expired during the outage** | Long outage crossing an expiry date | Facility cannot reconnect **at the moment connectivity returns** | Long-lived certs, expiry alerting at 90/60/30 days, central-side revocation for containment (§7.6). BUILT: the `cert-expiry` exporter at central reads the broker's certificates and revocation list; `SyncCertExpiresIn90Days`, `60Days` and `30Days` fire ahead of expiry |
-| F5 | **Stale message overwrites fresher data** | Replay or long-delayed delivery | Silent clinical regression at central | Reject updates older than what central holds (§7.5) |
+| F5 | **Stale message overwrites fresher data** | Replay or long-delayed delivery | Silent clinical regression at central | Reject updates older than what central holds (§7.5). NOT BUILT: dbsync applies whatever arrives last (E17) |
 | F6 | **Poison message blocks the queue head** | One malformed or unsupported entity | The facility appears to be retrying forever and never drains | Bounded retries then dead-letter, and the stream continues (§5.4). BUILT at the broker: 10 delivery attempts, then `DLQ` and `SyncDeadLetters` |
 | F7 | **Central never notices a facility has gone quiet** | Facility down, sender crashed, or nothing to send | An outage that nobody is counting is an outage nobody fixes | Facilities send a heartbeat; central alerts on silence, per facility, distinguishing "no data" from "no contact" |
 | F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional**. BUILT for existence: a nightly digest over the broker, compared at central (§5.5); content comparison is still to come |
@@ -1176,11 +1176,20 @@ whose source version or source timestamp is older than what it already holds, an
 the rejection. Without that check, "at-least-once plus idempotent upsert" quietly means
 "last to arrive wins", and after a long outage the last to arrive is frequently the oldest.
 
-**Not verified for dbsync 4.0.0.** The [sync runbook](../runbooks/sync-operations.md)
-(section 7) records the opposite: dbsync applies a message over whatever central holds, which
-is why replaying an old dead letter must be checked by hand first. ADR 0013 relies on this
-check to stop an imported patient shell overwriting newer demographics at central, so which of
-the two is right needs settling against dbsync's source.
+**Not built: dbsync 4.0.0 has no such check** (checked in source on 3 October 2026). The
+receiver's apply step, `OpenmrsLoadProducer.process()` in dbsync's `api` module, compares only
+hashes: if central's row no longer matches the hash stored when sync last applied it, the
+message goes to the conflict queue; otherwise the incoming row is saved, whatever its age.
+Nothing compares `date_changed` or the message's `dateSent`. The entities do define
+`wasModifiedAfter()`, but nothing calls it. So at central the last message to arrive wins,
+and the sync runbook (section 7) is right to have an operator check a dead letter by hand
+before replaying it. This is risk E17.
+
+Within one facility this rarely bites, because its sender publishes in commit order and the
+receiver applies in arrival order. It bites when two sources write the same record, which
+ADR 0013 now allows: an imported patient shell is a full copy of central's patient rows sent
+from a second facility, and the ADR relies on this check to stop an older shell overwriting
+newer demographics.
 
 ### 7.6 Reconnection after an outage
 
@@ -1283,6 +1292,7 @@ can invalidate the Sprint 3 plan.
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; reconciliation verifies that records exist at central (§5.5), not yet that their content matches | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
 | E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
 | E16 | Retries run on a fixed 30-minute interval with no backoff or jitter, and central has no per-facility rate limit, so facilities restored together reconnect together and one facility's backlog can starve another's live sync (F9) | Jittered, capped backoff (§5.4) and per-facility fairness at central (§7.6). Neither is configured today; establish whether dbsync or the broker can provide them before writing our own | Medium |
+| E17 | Central applies whatever arrives last: dbsync has no check that an update is newer than what central holds (§7.5). A replayed dead letter, or an imported patient shell (ADR 0013) synced after the source facility's newer edit, silently turns central's record back | Check by hand before replaying a dead letter (runbook section 7). For imported shells, either a receiver-side age check (a dbsync change) or an import that never re-sends rows central already holds; ADR 0013 to be revisited | High |
 
 ## 10. Before route one
 
