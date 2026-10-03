@@ -286,7 +286,7 @@ services:
   # SYNC_TUNNEL_CA_FILE adds a CA to the ones it trusts for central's web certificate, for a
   # network that inspects TLS; the broker's own certificate check is unaffected.
   sync-tunnel:
-    image: ghcr.io/erebe/wstunnel:v10.7.1
+    image: ${REGISTRY}/liberia-emr-sync-tunnel:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     environment:
       SYNC_CENTRAL_URL: ${SYNC_CENTRAL_URL:-}

@@ -7,11 +7,12 @@
 # CONNECT) must get through as well.
 #
 #   qa/sync/verify-broker-path.sh --gateway-image <image> --broker-image <image> \
-#     --sender-image <image> --stub-image <image> [--proxy-image ubuntu/squid:6.6-24.04_edge] \
-#     [--jdk-image maven:3.9-eclipse-temurin-17] [--keep]
+#     --sender-image <image> --stub-image <image> [--tunnel-image <image>] \
+#     [--proxy-image ubuntu/squid:6.6-24.04_edge] [--jdk-image maven:3.9-eclipse-temurin-17] [--keep]
 #
-# The tunnel services run exactly as the compose files define them (image and command are read
-# from `docker compose config`). --stub-image is any image with busybox httpd (the sync-capture
+# The tunnel services run exactly as the compose files define them (command read from
+# `docker compose config`); --tunnel-image stands in for the image the compose files name,
+# for a liberia-emr-sync-tunnel built locally rather than pulled. --stub-image is any image with busybox httpd (the sync-capture
 # exporter's will do); it stands in for the frontend and backend the gateway proxies to.
 # Self-contained: throwaway material from scripts/security/gen-sync-certs.sh, private networks.
 # Needs docker, openssl, keytool, gpg, python3.
@@ -21,6 +22,7 @@ GATEWAY_IMAGE=""
 BROKER_IMAGE=""
 SENDER_IMAGE=""
 STUB_IMAGE=""
+TUNNEL_IMAGE_OVERRIDE=""
 PROXY_IMAGE="ubuntu/squid:6.6-24.04_edge"
 JDK_IMAGE="maven:3.9-eclipse-temurin-17"
 KEEP=false
@@ -31,6 +33,7 @@ while [[ $# -gt 0 ]]; do
     --broker-image)  BROKER_IMAGE="$2"; shift 2 ;;
     --sender-image)  SENDER_IMAGE="$2"; shift 2 ;;
     --stub-image)    STUB_IMAGE="$2"; shift 2 ;;
+    --tunnel-image)  TUNNEL_IMAGE_OVERRIDE="$2"; shift 2 ;;
     --proxy-image)   PROXY_IMAGE="$2"; shift 2 ;;
     --jdk-image)     JDK_IMAGE="$2"; shift 2 ;;
     --keep)          KEEP=true; shift ;;
@@ -100,6 +103,7 @@ SERVER_CMD=(); while IFS= read -r line; do SERVER_CMD+=("$line"); done < <(servi
 CLIENT_CMD=()
 { IFS= read -r a; IFS= read -r b; CLIENT_CMD=("$a" "$b" "$(cat)"); } < <(service facility command)
 pass "both stacks define the tunnel, on $TUNNEL_IMAGE"
+TUNNEL_IMAGE="${TUNNEL_IMAGE_OVERRIDE:-$TUNNEL_IMAGE}"
 
 echo "== issuing throwaway security material =="
 "$ROOT/scripts/security/gen-sync-certs.sh" --out "$WORK/pki" --broker-host "$CENTRAL_HOST" \

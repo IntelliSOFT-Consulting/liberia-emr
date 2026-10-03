@@ -45,8 +45,8 @@ page; at a facility its menu item is hidden and the page shows a not-available n
 ## Images
 
 Per release, immutable and versioned, each tagged `${REGISTRY}/<image>:x.y.z`: the backend and
-frontend for each facility site, central's frontend, and the six site-agnostic images, published
-once. That is 11 for today's `RELEASE_SITES` (Careysburg, Barnersville, central);
+frontend for each facility site, central's backend and frontend, and the seven site-agnostic
+images, published once. That is 13 for today's `RELEASE_SITES` (Careysburg, Barnersville, central);
 `scripts/build/image-refs.sh --check` prints the count.
 `REGISTRY` defaults to `intellisoftdev` in `scripts/build/build-distribution.sh`; the
 compose files read it from the stack's `.env`.
@@ -62,6 +62,7 @@ compose files read it from the stack's `.env`.
 | `liberia-emr-broker` | `broker/Dockerfile` | central (the `artemis` service) |
 | `liberia-emr-cert-expiry` | `monitoring/cert-expiry/Dockerfile` | central |
 | `liberia-emr-sync-capture` | `monitoring/sync-capture/Dockerfile` | facility (`sync` profile) |
+| `liberia-emr-sync-tunnel` | `sync-tunnel/Dockerfile` (upstream wstunnel, pinned by digest) | facility (`sync` profile), central |
 
 Prometheus and Alertmanager run the upstream images, pinned by tag in the compose files.
 
@@ -92,6 +93,7 @@ sender or receiver can connect.
 | `backend`, `frontend` | yes | yes |
 | `gateway` | ports 80 and 443 | port 443 |
 | `sync` (sender), `sync-capture` | `sync` profile | — |
+| `sync-tunnel` | `sync` profile (client) | yes (server) |
 | `artemis`, `sync-receiver`, `cert-expiry` | — | yes |
 | `prometheus`, `alertmanager` | `sync` profile | yes |
 | `dhis2-export` | — | `dhis2` profile |

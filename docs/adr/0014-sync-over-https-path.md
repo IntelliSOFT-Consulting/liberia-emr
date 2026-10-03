@@ -50,7 +50,10 @@ Two things are fixed:
 
 Carry the sender's existing connection inside a WebSocket on
 `https://<central>/sync/broker/`, with [wstunnel](https://github.com/erebe/wstunnel)
-(BSD-3-Clause), pinned as `ghcr.io/erebe/wstunnel:v10.7.1`, at each end.
+(BSD-3-Clause) at each end. It ships as our own image, `liberia-emr-sync-tunnel`
+(`distribution/sync-tunnel/Dockerfile`): upstream's v10.7.1 release image pinned by digest,
+built, released and promoted with the other images, so each release fixes the binary and an
+upstream change or outage cannot stop a facility from deploying or syncing.
 
 - **Central:** the gateway routes `/sync/broker/` to a `sync-tunnel` service
   (`wstunnel server`), which forwards to `artemis:61617` and nowhere else (`--restrict-to`).
@@ -85,8 +88,8 @@ published at central until the last has moved, then `ARTEMIS_BIND_ADDR=127.0.0.1
 ## Consequences
 
 - A facility's network requirement becomes "HTTPS to central".
-- One more container on each side to keep patched. It is pinned like Prometheus and
-  Alertmanager, and bumped deliberately.
+- One more container on each side to keep patched. Its image is ours, pinned to an upstream
+  digest and scanned by Trivy in CI; the tag and digest are bumped together, deliberately.
 - The broker sees every tunnelled facility arrive from the central tunnel's address. The
   gateway's access log records the facility's address for each `/sync/broker/` request, and
   the certificate already names the facility.

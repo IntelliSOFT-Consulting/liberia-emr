@@ -5,7 +5,7 @@
 #                                       [--no-frontend] [--no-sync]
 #   scripts/build/build-distribution.sh --version 1.0.0 --site central
 #
-# Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry|-sync-capture :<version>
+# Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry|-sync-capture|-sync-tunnel :<version>
 #
 # Per-site names (LE-360): a facility build ALSO tags its two site-bearing images as
 # liberia-emr-backend-<site> and liberia-emr-frontend-<site> (scripts/build/image-refs.sh).
@@ -391,8 +391,14 @@ if [[ "$SYNC" == "true" && "$DEMO" == "false" ]]; then
     --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
     -t "${REGISTRY}/liberia-emr-sync-capture:${VERSION}" \
     "$ROOT/distribution/monitoring/sync-capture"
+  echo "== sync tunnel =="
+  docker build \
+    -f "$ROOT/distribution/sync-tunnel/Dockerfile" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-sync-tunnel:${VERSION}" \
+    "$ROOT/distribution/sync-tunnel"
 else
-  echo "== sync sender/receiver/broker/cert-expiry/sync-capture == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
+  echo "== sync sender/receiver/broker/cert-expiry/sync-capture/sync-tunnel == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
 fi
 
 echo

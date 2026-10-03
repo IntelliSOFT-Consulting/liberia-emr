@@ -598,6 +598,14 @@ jobs:
           format: sarif
           output: trivy-gateway.sarif
           exit-code: '0'
+      # The one third-party binary on the sync path (LE-372): upstream wstunnel, rebuilt as ours.
+      - name: Trivy scan — sync tunnel
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/liberia-emr-sync-tunnel:${{ github.sha }}
+          format: sarif
+          output: trivy-sync-tunnel.sarif
+          exit-code: '0'
 
       # Uploaded as three separate calls, each with its own category —
       # GitHub Code Scanning rejects multiple SARIF runs sharing a category
@@ -640,6 +648,13 @@ jobs:
         with:
           sarif_file: trivy-gateway.sarif
           category: trivy-gateway
+      - name: Upload Trivy results — sync tunnel
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-sync-tunnel.sarif
+          category: trivy-sync-tunnel
 
   # Sync broker hardening (sync-eip.md sections 7.2 and 7.3): every permission and
   # certificate control is proven by a refusal, over OpenWire, the protocol both sync
@@ -663,6 +678,7 @@ jobs:
           docker build -f distribution/monitoring/sync-capture/Dockerfile \
             -t lemr-sync-capture:ci distribution/monitoring/sync-capture
           docker build -f distribution/gateway/Dockerfile -t lemr-gateway:ci distribution/gateway
+          docker build -f distribution/sync-tunnel/Dockerfile -t lemr-sync-tunnel:ci distribution/sync-tunnel
       - name: Compose keeps the sync security wiring
         run: qa/sync/verify-compose-wiring.sh
       # The binlog Debezium reads is kept for up to 99 days; a CREATE USER logged there is a
@@ -678,7 +694,7 @@ jobs:
       - name: Sync over HTTPS through the gateway
         run: |
           qa/sync/verify-broker-path.sh --gateway-image lemr-gateway:ci --broker-image lemr-broker:ci \
-            --sender-image lemr-sync:ci --stub-image lemr-sync-capture:ci
+            --sender-image lemr-sync:ci --stub-image lemr-sync-capture:ci --tunnel-image lemr-sync-tunnel:ci
       - name: Sender refuses a weaker configuration
         run: |
           set -euo pipefail

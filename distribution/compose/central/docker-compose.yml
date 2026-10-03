@@ -208,9 +208,10 @@ services:
   # https://<central>/sync/broker/ to this WebSocket tunnel server, which forwards to the broker
   # and nowhere else. Inside each tunnel is the facility's own mutual TLS session with the
   # broker, so the certificate checks stay at the broker. Plain ws here: the outer TLS ends at
-  # the gateway, the inner one is never opened. Publishes no port.
+  # the gateway, the inner one is never opened. Publishes no port. The image is wstunnel,
+  # pinned by digest in distribution/sync-tunnel/Dockerfile.
   sync-tunnel:
-    image: ghcr.io/erebe/wstunnel:v10.7.1
+    image: ${REGISTRY}/liberia-emr-sync-tunnel:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     command: ["/home/app/wstunnel", "server", "ws://0.0.0.0:8080",
               "--restrict-to", "artemis:61617", "--restrict-http-upgrade-path-prefix", "sync"]
