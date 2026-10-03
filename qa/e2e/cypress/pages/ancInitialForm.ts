@@ -61,7 +61,7 @@ class ANCInitialFormPage {
         cy.get('#iptDoseAdministered').should('not.exist');
 
         cy.get('#womanReceivingIpt-Yes', { timeout: this.timeout }).check({ force: true });
-        cy.get('#iptpDeferralReason-label').should('not.exist');
+        cy.get('[data-testid="iptpDeferralReason-label"]').should('not.exist');
         cy.get('#iptDoseAdministered', { timeout: this.timeout }).should('be.visible');
 
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
@@ -192,6 +192,7 @@ class ANCInitialFormPage {
             cy.get(`#${fieldId}`, { timeout: this.timeout }).should('have.attr', 'aria-invalid', 'true');
         };
 
+        this.completeRequiredAssessmentFields();
         [
             { id: 'gravida', value: '3' },
             { id: 'parity', value: '2' },
