@@ -104,15 +104,13 @@ ansible/central-server.vars.yml
 
 
 # LiberiaEMR DB backups — scripts/backup/
-scripts/backup/backup.env
-scripts/backup/*.env
+# Everything a server renders or keeps there stays out of git: env files with credentials, the
+# rendered scripts cron runs, rclone config, keys, and older copies an operator leaves behind.
+# Only the templates, the example env, render.sh and the README are tracked; list a new
+# tracked kind here, or it is ignored. Note: git overwrites an ignored file without asking
+# when a commit adds a file of the same name, so never commit a name a server renders to.
+scripts/backup/*
+!scripts/backup/README.md
+!scripts/backup/render.sh
+!scripts/backup/*-template.sh
 !scripts/backup/*.env.example
-scripts/backup/rendered/
-
-scripts/backup/backup-liberiaemr-db.sh
-scripts/backup/restore-liberiaemr-db.sh
-scripts/backup/backup_cron.sh
-
-scripts/backup/rclone.conf
-scripts/backup/*.asc
-scripts/backup/*.gpg
