@@ -31,4 +31,8 @@ describe('Initial ANC Assessment form', () => {
     it('opens for a registered female patient aged 16 to 35', () => {
         ancInitialForm.verifyFormContract();
     });
+
+    it('blocks saving when required ANC assessment fields are empty', () => {
+        ancInitialForm.verifyRequiredFieldsBlockSave();
+    });
 });
