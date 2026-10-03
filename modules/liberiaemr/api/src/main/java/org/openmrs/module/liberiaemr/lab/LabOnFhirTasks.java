@@ -41,21 +41,26 @@ public class LabOnFhirTasks {
 		}
 	}
 	
-	/** @return how many tasks were turned off */
-	static int disable(SchedulerService scheduler) throws Exception {
+	/** @return how many tasks were turned off; one that fails is logged and the rest still are */
+	static int disable(SchedulerService scheduler) {
 		int disabled = 0;
 		for (TaskDefinition task : scheduler.getRegisteredTasks()) {
 			if (task.getTaskClass() == null || !task.getTaskClass().startsWith(TASK_CLASS_PREFIX)) {
 				continue;
 			}
-			if (!task.getStarted() && !Boolean.TRUE.equals(task.getStartOnStartup())) {
+			if (!Boolean.TRUE.equals(task.getStarted()) && !Boolean.TRUE.equals(task.getStartOnStartup())) {
 				continue;
 			}
-			scheduler.shutdownTask(task);
-			task.setStartOnStartup(false);
-			scheduler.saveTaskDefinition(task);
-			log.info("Turned off labonfhir task '{}': the LIS integration is out of scope", task.getName());
-			disabled++;
+			try {
+				scheduler.shutdownTask(task);
+				task.setStartOnStartup(false);
+				scheduler.saveTaskDefinition(task);
+				log.info("Turned off labonfhir task '{}': the LIS integration is out of scope", task.getName());
+				disabled++;
+			}
+			catch (Exception e) {
+				log.error("Failed to turn off labonfhir task '{}'", task.getName(), e);
+			}
 		}
 		return disabled;
 	}

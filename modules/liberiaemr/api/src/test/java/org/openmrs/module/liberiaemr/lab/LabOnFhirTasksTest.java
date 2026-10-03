@@ -13,6 +13,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 
 import org.junit.Test;
+import org.openmrs.scheduler.SchedulerException;
 import org.openmrs.scheduler.SchedulerService;
 import org.openmrs.scheduler.TaskDefinition;
 
@@ -63,6 +65,32 @@ public class LabOnFhirTasksTest {
 		verify(scheduler, never()).shutdownTask(any());
 		verify(scheduler, never()).saveTaskDefinition(any());
 		assertTrue(mfl.getStartOnStartup());
+	}
+
+	@Test
+	public void oneTaskFailingDoesNotStopTheOthersBeingTurnedOff() throws Exception {
+		TaskDefinition pull = task("org.openmrs.module.labonfhir.api.scheduler.FetchTaskUpdates", true, true);
+		TaskDefinition retry = task("org.openmrs.module.labonfhir.api.scheduler.RetryFailedTasks", true, true);
+		SchedulerService scheduler = mock(SchedulerService.class);
+		when(scheduler.getRegisteredTasks()).thenReturn(Arrays.asList(pull, retry));
+		doThrow(new SchedulerException("boom")).when(scheduler).shutdownTask(pull);
+
+		assertEquals(1, LabOnFhirTasks.disable(scheduler));
+
+		verify(scheduler).saveTaskDefinition(retry);
+		assertFalse(retry.getStartOnStartup());
+	}
+
+	@Test
+	public void treatsAnUnsetStartedFlagAsNotStarted() throws Exception {
+		TaskDefinition pull = task("org.openmrs.module.labonfhir.api.scheduler.FetchTaskUpdates", false, true);
+		pull.setStarted(null);
+		SchedulerService scheduler = mock(SchedulerService.class);
+		when(scheduler.getRegisteredTasks()).thenReturn(Arrays.asList(pull));
+
+		assertEquals(1, LabOnFhirTasks.disable(scheduler));
+
+		assertFalse(pull.getStartOnStartup());
 	}
 
 	@Test
