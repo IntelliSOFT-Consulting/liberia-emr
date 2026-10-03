@@ -1,4 +1,4 @@
-import AuthenticationPage from '../pages/AuthenticationPage';
+import { api, asAdmin, type Auth, createUser, loginAs as loginAsUser, REST, runPassword } from '../support/users';
 
 /**
  * The ICT Unit's audit log viewer (MOH ICT SOP control B3): @liberiaemr/esm-liberia-audit-log-app
@@ -22,73 +22,19 @@ const DIST = '../../packages/esm-liberia-audit-log-app/dist';
 // The same directory for the readDist task, which runs from qa/e2e.
 const DIST_DIR = '../../packages/esm-liberia-audit-log-app/dist';
 const OVERLAY = '__e2e__/esm-liberia-audit-log-app';
-const REST = '/openmrs/ws/rest/v1';
 const AUDIT = `${REST}/liberiaemr/auditlog`;
 
 // Throwaway accounts on a disposable demo stack, created by this spec with a password generated
 // per run: nothing here is a credential of any real server.
 const run = `${Date.now()}`;
-const password = `Audit-${Cypress._.random(100000, 999999)}-e2E!${Cypress._.random(1000, 9999)}`;
+const password = runPassword('Audit');
 const auditor = { username: `e2e-ict-auditor-${run}`, password };
 const clerk = { username: `e2e-no-audit-${run}`, password };
 const gpName = `liberiaemr.e2e.auditMarker${run}`;
 const oldValue = `before-${run}`;
 const newValue = `after-${run}`;
 
-type Auth = { username: string; password: string };
-
-const admin = (): Cypress.Chainable<Auth> =>
-  cy.env<{ USERNAME?: string; PASSWORD?: string }>(['USERNAME', 'PASSWORD']).then(({ USERNAME, PASSWORD }) => {
-    if (!USERNAME || !PASSWORD) {
-      throw new Error('Missing Cypress credentials: set CYPRESS_USERNAME/CYPRESS_PASSWORD');
-    }
-    return { username: USERNAME, password: PASSWORD };
-  });
-
-/**
- * A REST call as this user alone. cy.request sends the browser's cookies, and OpenMRS answers a
- * request carrying an authenticated JSESSIONID as that session's user whatever the Authorization
- * header says; so the session cookie goes first, or every call would run as whoever called last.
- */
-const api = (auth: Auth, method: string, url: string, body?: Cypress.RequestBody, failOnStatusCode = true) =>
-  cy
-    .clearCookie('JSESSIONID')
-    .then(() => cy.request({ method, url, body, auth, failOnStatusCode, headers: { Accept: 'application/json' } }));
-
-const asAdmin = (method: string, url: string, body?: Cypress.RequestBody) =>
-  admin().then((auth) => api(auth, method, url, body));
-
-/** A user with the given roles (by name), created through REST as the admin. */
-const createUser = (user: Auth, roleNames: Array<string>) => {
-  const roles: Array<string> = [];
-  // The role resource has no search by name; list them all (a few dozen) and pick by name.
-  asAdmin('GET', `${REST}/role?v=custom:(uuid,display)&limit=100`).then(({ body }) => {
-    roleNames.forEach((name) => {
-      const role = body.results.find((candidate: { display: string }) => candidate.display === name);
-      expect(role, `role ${name}`).to.exist;
-      roles.push(role.uuid);
-    });
-  });
-  return cy.then(() =>
-    asAdmin('POST', `${REST}/user`, {
-      username: user.username,
-      password: user.password,
-      person: {
-        names: [{ givenName: 'E2E', familyName: user.username.replace(/[^A-Za-z]/g, '') }],
-        gender: 'U',
-      },
-      roles,
-    }).its('status').should('eq', 201),
-  );
-};
-
-const loginAs = (user: Auth) =>
-  cy.session(['audit-log', user.username], () => {
-    const page = new AuthenticationPage();
-    page.visitPage();
-    page.verifyLoginPageLoaded();
-    page.login(user.username, user.password);
-  });
+const loginAs = (user: Auth) => loginAsUser(user, 'audit-log');
 
 /** Serve this checkout's build of the app, unless the SPA already includes it (see the header). */
 const loadAuditLogApp = () =>
@@ -168,8 +114,7 @@ describe('Audit log', () => {
 
   before(() => {
     createUser(auditor, ['ICT Auditor']);
-    // A national role that can sign in to O3 (it holds Get People, which the app shell needs to
-    // show a signed-in user) but holds no audit privilege.
+    // A national role that signs in to O3 but holds no audit privilege.
     createUser(clerk, ['Sync Conflict Reviewer']);
 
     // The changes the auditor must find: a global property set and then changed, and a location

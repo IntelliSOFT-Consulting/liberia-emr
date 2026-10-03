@@ -95,6 +95,31 @@ in the sense that the stack still comes up:
   later layer replaces the earlier one. `validate-content.sh` fails on this now.
 - `Concept Source is required` — CIEL is not loaded on any local build; see §5.
 
+### 2.1 A new or changed login role: check that it can sign in
+
+A role that loads cleanly can still leave its users unable to use O3, and an admin login will
+never show it. Check with a user holding **that role alone**:
+
+1. Add the role to `ROLES` in `qa/e2e/cypress/e2e/RoleSignIn.cy.ts`, with `clinical: true`
+   only if it holds `Get People` for its work. Sync Sender and Sync Receiver are service
+   accounts and are not listed.
+2. Run that spec against your demo stack (see [qa/e2e/README.md](../../qa/e2e/README.md)). It
+   creates the user, signs in through the login page and location picker, and fails if O3
+   sends the user back to `/login`.
+3. By hand, the same check is: sign in as the user, open `/openmrs/ws/rest/v1/session` in the
+   same browser, and confirm `user.person` and `sessionLocation` are both present.
+
+A role needs **no** privilege to sign in: O3 needs the user's own person in the session, and
+`modules/liberiaemr` adds it (`OwnPersonSessionAdvice`) for users without `Get People`. Do not
+grant `Get People` to make a sign-in work; if `user.person` is missing, the module is not
+running or the advice has stopped matching the REST module's session controller.
+
+The home page's service queue widget shows a 403 toast to roles that cannot read queues. That
+is a question of what the role should see, not a sign-in failure.
+
+Initializer applies roles by UUID and rewrites an existing role's privileges and inherited roles
+from the CSV whenever the file changes, so a deployed role picks up the change on the next start.
+
 ## 3. Frontend runtime configuration
 
 `configuration/frontend_configuration/config-*.json` is collected in layer order into the
