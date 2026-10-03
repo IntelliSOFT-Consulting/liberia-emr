@@ -22,7 +22,8 @@ the ones most likely to move the Sprint 3 date.
 Related: [`integration/eip/routes/README.md`](../../integration/eip/routes/README.md) (route
 contract), [`integration/cross-facility/README.md`](../../integration/cross-facility/README.md),
 [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md) (identity),
-[ADR 0007](../adr/0007-pulled-record-scope.md) (pulled-record scope).
+[ADR 0007](../adr/0007-pulled-record-scope.md) (pulled-record scope),
+[ADR 0013](../adr/0013-remote-patient-import.md) (remote patient import).
 
 ---
 
@@ -642,7 +643,10 @@ every observation by default.
   copy it into its local database. Restated from
   [`integration/cross-facility/README.md`](../../integration/cross-facility/README.md)
   because it is the guarantee that makes the scope meaningful: a scope you can copy is a
-  scope you no longer control.
+  scope you no longer control. **Amended by
+  [ADR 0013](../adr/0013-remote-patient-import.md)** for the offline requirement: a scoped copy
+  may be cached at the facility, but only in a store sync never watches
+  (`liberiaemr_remote_history`), read-only, and always shown with its source facility and age.
 - **Patient-scoped, never bulk.** A query is only valid against a single resolved patient
   in the context of an active clinical interaction. There is no export, no list, no "all
   patients at Barnersville".
@@ -1013,6 +1017,15 @@ the [sync runbook](../runbooks/sync-operations.md).
 
 A read path. It introduces no second write direction.
 
+> **Amended by [ADR 0013](../adr/0013-remote-patient-import.md)** (accepted 2 October 2026).
+> Remote search imports the patient: the facility creates a patient shell (person, name,
+> address, identifiers) with central's UUIDs, which syncs back to central as a no-op, and
+> caches the §3.2 summary as a FHIR bundle in `liberiaemr_remote_history`, outside sync, shown
+> in a dedicated read-only "External records" view. Step 4's "never written to the local
+> database" holds for the clinical summary only in the sense that it never enters OpenMRS
+> clinical tables. Remote search and the shell import are on `main`; the history endpoint, its
+> facility store and the search UI are still in review.
+
 ```
   Clinician at Careysburg, patient in front of them
         │
@@ -1125,7 +1138,7 @@ Therefore, per facility:
 The broker is never exposed beyond mTLS-authenticated facilities, and its management
 interface is not exposed at all.
 
-### 7.4 Data at rest: six copies, not one
+### 7.4 Data at rest: seven copies, not one
 
 PHI exists at rest in more places than the OpenMRS database, and each is a full or partial
 copy of the clinical record:
@@ -1137,10 +1150,11 @@ copy of the clinical record:
 | **Sender management database** | Retry payloads (§1.5) | Clinical content, indefinitely if a message is stuck |
 | **Broker journal at central** | In-flight messages | Clinical content |
 | **Reporting ETL schema `liberiaemr_etl`**, at every facility and at central | A flattened copy of the clinical record: names, addresses, identifiers, encounters, obs, orders (ADR 0010) | In the same MariaDB volume as `openmrs`, so full-disk encryption and every database backup carry it. Kept out of the binlog. Rebuildable, so a restore may drop it and re-flatten ([reporting-etl.md](../runbooks/reporting-etl.md)) |
+| **Remote history cache `liberiaemr_remote_history`**, at each facility that imports patients | Other facilities' §3.2 summaries for imported patients (ADR 0013) | Outside sync by construction; inherits the facility's encryption at rest and backup; purged after a period without access and when a facility's access is revoked |
 | **Backups of any of the above** | Everything | Control D3 |
 
 This table is the **canonical enumeration** for control D3: the SOP mapping and §7.8 cite it
-rather than restate it. The `sync-queue` volume is not a sixth store; it is the physical
+rather than restate it. The `sync-queue` volume is not another store; it is the physical
 backing of the Debezium offset beside the management database (§1.5) and is covered by that
 row.
 
@@ -1161,6 +1175,12 @@ newer version of the same record with an older one. Central therefore rejects an
 whose source version or source timestamp is older than what it already holds, and counts
 the rejection. Without that check, "at-least-once plus idempotent upsert" quietly means
 "last to arrive wins", and after a long outage the last to arrive is frequently the oldest.
+
+**Not verified for dbsync 4.0.0.** The [sync runbook](../runbooks/sync-operations.md)
+(section 7) records the opposite: dbsync applies a message over whatever central holds, which
+is why replaying an old dead letter must be checked by hand first. ADR 0013 relies on this
+check to stop an imported patient shell overwriting newer demographics at central, so which of
+the two is right needs settling against dbsync's source.
 
 ### 7.6 Reconnection after an outage
 
@@ -1211,7 +1231,7 @@ not an afterthought.
 | D2: Mutual TLS | Per-facility client certificate on `sync`; broker authorises on certificate subject; revocation enforced at central. **Requires the §1.4 change.** Certificate lifecycle is the MOH ICT Unit's |
 | C1 / B3: Audit | Sync outcomes, rejected messages, dead-letter access and every cross-facility access; readable by the ICT Auditor role only |
 | C3: No PHI in logs | Log UUID, entity type and outcome. Never a name, an identifier value or an observation value: including in error and dead-letter logs, which is where it usually leaks |
-| D3: Encrypted backups | Extends to all six copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
+| D3: Encrypted backups | Extends to all seven copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
 | D4: No secrets in the repo | Facility credentials and keys live in `.env` and mounted files; already enforced in CI |
 | **New**: Payload encryption | PGP keys per facility, receiver key custody and rotation owned by MOH ICT (§7.7) |
 | **New**: Facility disk encryption | Not currently in the SOP mapping. §7.4 makes it necessary; raise it with MOH ICT |
@@ -1226,7 +1246,7 @@ Status as the repository records it on 1 October 2026.
 | --- | --- | --- | --- |
 | 1 | Central-assigned CPI accepted, or National ID to become mandatory at registration? | ADR 0005, Sprint 3 | Answered: the central-assigned CPI, ADR 0005 accepted (LE-22) |
 | 2 | Named MOH role owning the duplicate review queue, with an expected turnaround | ADR 0005, go-live | Open |
-| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 | Open: ADR 0007 Proposed |
+| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 | Open: ADR 0007 Proposed; its condition 1 amended by ADR 0013 |
 | 4 | Sensitive categories excluded from cross-facility visibility, if any | ADR 0007, content packages | Open: ADR 0007 Proposed |
 | 5 | Lawful basis, and whether patient consent is captured at query time | ADR 0007 | Open: ADR 0007 Proposed |
 | 6 | Certificate lifecycle ownership, in writing (control D2) | Sprint 3 | Open: D2 Partial |

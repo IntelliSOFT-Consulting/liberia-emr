@@ -6,8 +6,9 @@ rotating certificates and keys, and handling what the alerts raise. The design i
 [distribution/broker/README.md](../../distribution/broker/README.md) and
 [distribution/sync/README.md](../../distribution/sync/README.md).
 
-**Rehearsal status:** sections 7 to 9, 11 and 13 are exercised by the `qa/sync/` checks named in
-them. Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
+**Rehearsal status:** sections 7 to 9, 11 and 13 to 17 are exercised by the `qa/sync/` checks
+named in them. Sections 1 and 6 run on the dev pair with throwaway material (section 18).
+Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
 before go-live.
 
 Commands assume the repository is checked out on the host and the stacks run with Docker
@@ -422,7 +423,9 @@ DELETE FROM receiver_retry_queue WHERE
 ## 13. The sync status page
 
 `Sync status` in the app menu at central shows, per facility, whether it is still sending, how
-much arrived in the last day, the total received, and when its certificate expires. Above that
+many records arrived in the last day and the last 7 days, when central last received from it
+("Not in the last 7 days" beyond that), the reconciliation result, and when its certificate
+expires. Totals since the broker started are not shown, because a broker restart resets them. Above that
 it shows what is waiting at central: records still to apply, records retrying, conflicts to
 resolve, records set aside, whether the receiver and broker are running, and any sync alert
 currently firing. It reads central's own monitoring
@@ -539,7 +542,7 @@ facility watches for it (distribution/monitoring/README.md).
 
 Records are safe in the facility database throughout, and clinical work carries on as normal.
 `SyncCaptureCheckBlind` means the exporter itself cannot see: it is down, or cannot sign in to
-the database with the Debezium account.
+the database with the Debezium account. `qa/sync/verify-capture-stall.sh` exercises this section.
 
 ## 17. Placeholder metadata at central: `SyncPlaceholderMetadata`
 
@@ -592,3 +595,36 @@ park and retry under `ReceiverErrors`, and apply by themselves once the metadata
 If the content row's name is already taken by another concept (the "new uuid" cause above),
 Initializer rejects the row as a duplicate name. Retire or rename the other, older concept first,
 and check whether any observations still point at it.
+
+`qa/sync/verify-second-facility.sh --negative-control` raises a placeholder location on a staging
+pair, and leaves it behind for this procedure to repair.
+
+## 18. The dev pair
+
+The facility dev server (`careysburg`) syncs to central dev. It is set up and checked by two
+manual GitHub workflows, never by hand, and never against a production server: the certificates
+are throwaway material from `scripts/security/gen-sync-certs.sh`, and the dev CA is kept on
+central dev, readable by root only, so a later run reuses it.
+
+- **Enable sync on dev** (`.github/workflows/enable-dev-sync.yml`, input `facility`, default
+  `careysburg`) runs sections 1 and 6 end to end: it publishes the sync images, issues and
+  installs the certificates, starts central with the broker and monitoring, creates both sync
+  accounts (`scripts/deploy/dev-sync-user.sh`), turns on the facility's binary log and starts
+  the sender, then proves a record travels by registering a test patient at the facility,
+  waiting for it at central, and voiding it again (`scripts/deploy/dev-sync-proof.sh`). Each
+  server's steps are `scripts/deploy/dev-sync-central.sh` and `dev-sync-facility.sh`; every step
+  can be run again, and the pre-flight backs up the env file and the database first. It stops
+  before touching a server if a secret it needs is missing (the list is in the workflow header).
+- **Dev sync check** (`.github/workflows/dev-sync-check.yml`) is read-only: what runs on both
+  servers, which sync settings are present, and whether the facility reaches central's broker.
+
+A facility that cannot reach central on 61617 is the hosting provider's firewall in front of
+central, not the servers (neither runs a host firewall): allow TCP 61617 from the facility
+server's address there. The enable run does not fail on it; the sender captures and queues
+until the port opens, then sends by itself. Run Dev sync check afterwards.
+
+The CI deploy keeps sync running across releases: it publishes the sync images with every dev
+build and fast-forwards each server's checkout to the deployed commit, so the compose file
+matches the images. A checkout with local changes stops the deploy rather than being
+overwritten. Run git on a dev server only as the deploy user (`DEV_USER`); a checkout touched
+as root fails the next deploy's fetch with a permission error.
