@@ -1026,7 +1026,8 @@ A read path. It introduces no second write direction.
 
 > **Amended by [ADR 0013](../adr/0013-remote-patient-import.md)** (accepted 2 October 2026).
 > Remote search imports the patient: the facility creates a patient shell (person, name,
-> address, identifiers) with central's UUIDs, which syncs back to central as a no-op, and
+> address, identifiers) with central's UUIDs, which syncs back to central (a no-op unless the
+> home facility edited the patient after the import; E17), and
 > caches the §3.2 summary as a FHIR bundle in `liberiaemr_remote_history`, outside sync, shown
 > in a dedicated read-only "External records" view. Step 4's "never written to the local
 > database" holds for the clinical summary only in the sense that it never enters OpenMRS
@@ -1195,8 +1196,8 @@ before replaying it. This is risk E17.
 Within one facility this rarely bites, because its sender publishes in commit order and the
 receiver applies in arrival order. It bites when two sources write the same record, which
 ADR 0013 now allows: an imported patient shell is a full copy of central's patient rows sent
-from a second facility, and the ADR relies on this check to stop an older shell overwriting
-newer demographics.
+from a second facility, so a shell that arrives after the home facility's newer edit reverts
+it. ADR 0013 accepts that risk until an MPI exists.
 
 ### 7.6 Reconnection after an outage
 
@@ -1299,7 +1300,7 @@ can invalidate the Sprint 3 plan.
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; reconciliation verifies that records exist at central (§5.5), not yet that their content matches | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
 | E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
 | E16 | Retries run on a fixed 30-minute interval with no backoff or jitter, and central has no per-facility rate limit, so facilities restored together reconnect together and one facility's backlog can starve another's live sync (F9) | Jittered, capped backoff (§5.4) and per-facility fairness at central (§7.6). Neither is configured today; establish whether dbsync or the broker can provide them before writing our own | Medium |
-| E17 | Central applies whatever arrives last: dbsync has no check that an update is newer than what central holds (§7.5). A replayed dead letter, or an imported patient shell (ADR 0013) synced after the source facility's newer edit, silently turns central's record back | Check by hand before replaying a dead letter (runbook section 7). For imported shells, either a receiver-side age check (a dbsync change) or an import that never re-sends rows central already holds; ADR 0013 to be revisited | High |
+| E17 | Central applies whatever arrives last: dbsync has no check that an update is newer than what central holds (§7.5). A replayed dead letter, or an imported patient shell (ADR 0013) synced after the source facility's newer edit, silently turns central's record back | Check by hand before replaying a dead letter (runbook section 7). For imported shells, accepted in ADR 0013 until an MPI exists; the alternatives were a receiver-side age check (a dbsync change) or an import that never re-sends rows central already holds | High |
 
 ## 10. Before route one
 
