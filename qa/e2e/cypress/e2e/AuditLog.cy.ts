@@ -259,7 +259,10 @@ describe('Audit log', () => {
     cy.visit('/openmrs/spa/home');
     openAppMenu();
     // The menu has rendered its other entries before the absence of this one means anything.
-    cy.get('[aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 }).should('have.length.greaterThan', 0);
+    // (Since LE-395 this role has no home dashboard, so the home page's side navigation no longer
+    // holds a link; the open app menu panel's own entries are what count.)
+    cy.get('.cds--header-panel--expanded a, [aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 })
+      .should('have.length.greaterThan', 0);
     cy.contains('a', 'Audit log').should('not.exist');
 
     cy.visit('/openmrs/spa/audit-log');

@@ -190,7 +190,8 @@ privileges are the ones the queue module (`omod.queue` 3.0.0) and core actually 
 | `Get Locations` | the queue location filter and picker | had it | Yes | Yes |
 | `Get Visit Types`, `Get Visit Attribute Types` | the start-visit form that checks a patient in | Yes | Yes | No |
 | `Get Beds`, `Get Admission Locations` | saving any visit: the bed management module validates every visit save against the patient's bed assignments, checked as the user | Yes | Yes | No |
-| `Get Encounters` | the queue number: saving the visit attribute that holds it answers `403` without it | Yes | had it | No (they do not check in) |
+| `Edit Visits` | the queue number: the queue module stores it as a visit attribute and saves the existing visit, which core allows only with `Edit Visits` (without it the call answered `500`, a `ContextAuthenticationException`) | Yes | Yes | No (they do not check in) |
+| `Get Encounters` | the same save of the visit answers `403` without it | Yes | had it | No |
 
 Why each role:
 
@@ -210,14 +211,14 @@ Why each role:
   dashboard on `/home` (the home app's "dashboard does not exist" tile) and open their own app
   from the app menu. They see no error notification and make no failing call.
 
-What no role got: `Edit Visits`, `Assign Beds` and `Edit Admission Locations`. **Ending a visit**
+What no role got: `Assign Beds` and `Edit Admission Locations`. **Ending a visit** therefore
 fails for every login role (`403 Assign Beds`): the bed management module's save handler
 un-assigns beds on every visit that gets a stop time and requires `Assign Beds` and
 `Edit Admission Locations` to do so, even when the patient has no bed. Granting bed write access
 to every check-in role to work around that is not least privilege. It is an upstream defect
 (openmrs-module-bedmanagement 7.2.0, `VisitWithBedPatientAssignmentSaveHandler`); until it is
-fixed, or the MOH accepts that grant, an administrator ends visits. `Add Visits` already satisfies the core `Edit Visits` check for ending
-a visit, so nothing more is needed once that is fixed.
+fixed, or the MOH accepts that grant, an administrator ends visits. The check-in roles already
+hold `Edit Visits`, so nothing more is needed once it is fixed.
 
 `RoleSignIn.cy.ts` checks on every CI run that each role's landing page makes no failing call and
 shows no error, that the six facility roles read queues, queue entries and visits and the four
