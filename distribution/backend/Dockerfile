@@ -75,8 +75,17 @@ RUN set -eu; \
       # <wipe>true</wipe> means replace, not merge. Registration would then teach the wrong
       # form. Dropped here rather than deleted from content-demo, which is lifted verbatim
       # from upstream (scripts/build/lift-demo-content.sh).
+      # The same goes for the RefApp demo queue dictionary (LE-395). Its 'Waiting' and
+      # 'Emergency' take the names of the national queue status and priority (CIEL 167407 and
+      # 1882), which then fail to load as duplicates, and with them the national status and
+      # priority sets: every queue-entry search sent the missing status and answered 500
+      # "Unable to find concept". The two RefApp demo queues are built on that dictionary's
+      # services, so they go too; a training stack uses the site's own queues.
+      # scripts/build/build-distribution.sh leaves the same files out of its name check.
       if [ "$pkg" = "${DEMO_PACKAGE}" ]; then \
         rm -rf /tmp/pkg/configuration/backend_configuration/addresshierarchy; \
+        rm -f /tmp/pkg/configuration/backend_configuration/ocl/openmrs_DemoQueueConcepts_*.zip \
+              /tmp/pkg/configuration/backend_configuration/queues/queues-core_demo.csv; \
       fi; \
       cp -R /tmp/pkg/configuration/backend_configuration/. /openmrs_config/; \
     done; \
