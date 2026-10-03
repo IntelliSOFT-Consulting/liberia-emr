@@ -43,4 +43,12 @@ describe('Initial ANC Assessment form', () => {
     it('does not save physical exam descriptions after findings are set to Normal', () => {
         ancInitialForm.verifyPhysicalExamDescriptionsNotSavedWhenNormal();
     });
+
+    it('shows maternal BP warnings without blocking save', () => {
+        ancInitialForm.verifyMaternalBpWarningsAllowSave();
+    });
+
+    it('shows the appropriate IPT field and requires a dose for Yes', () => {
+        ancInitialForm.verifyIptConditionalFields();
+    });
 });

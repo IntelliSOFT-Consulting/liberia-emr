@@ -40,6 +40,48 @@ class ANCInitialFormPage {
         cy.get('#womanReceivingIpt-No', { timeout: this.timeout }).check({ force: true });
     }
 
+    verifyMaternalBpWarningsAllowSave() {
+        this.completeRequiredAssessmentFields();
+        this.setNumber('systolicBloodPressure', '140');
+        this.setNumber('diastolicBloodPressure', '90');
+
+        cy.contains('High Systolic BP (≥140 mmHg)', { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        cy.contains('High Diastolic BP (≥90 mmHg)', { timeout: this.timeout }).scrollIntoView().should('be.visible');
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveAncInitial', { timeout: this.timeout })
+            .its('response.statusCode')
+            .should('be.oneOf', [200, 201]);
+    }
+
+    verifyIptConditionalFields() {
+        this.completeRequiredAssessmentFields();
+        cy.get('[data-testid="iptpDeferralReason-label"]', { timeout: this.timeout }).should('be.visible');
+        cy.get('#iptDoseAdministered').should('not.exist');
+
+        cy.get('#womanReceivingIpt-Yes', { timeout: this.timeout }).check({ force: true });
+        cy.get('#iptpDeferralReason-label').should('not.exist');
+        cy.get('#iptDoseAdministered', { timeout: this.timeout }).should('be.visible');
+
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.contains('Select the IPT dose administered', { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        cy.get('@saveAncInitial.all').should('have.length', 0);
+
+        cy.get('#iptDoseAdministered').within(() => {
+            cy.get('button[role="combobox"]').click();
+        });
+        cy.contains('[role="option"], .cds--list-box__menu-item', '1st IPT dose', {
+            timeout: this.timeout
+        }).click();
+
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveAncInitial', { timeout: this.timeout })
+            .its('response.statusCode')
+            .should('be.oneOf', [200, 201]);
+    }
+
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
