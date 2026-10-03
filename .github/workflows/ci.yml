@@ -1347,6 +1347,11 @@ jobs:
             cd "${{ secrets.DEV_COMPOSE_DIR }}"
             LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env pull
             LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
+            # Monitoring mounts its config and rules one file at a time, so a running container
+            # keeps the old files and up -d does not notice. Recreate it where the sync profile runs it.
+            if LIBERIAEMR_VERSION=latest docker compose --env-file facility.env ps --services --status running | grep -qx prometheus; then
+              LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d --no-deps --force-recreate prometheus alertmanager
+            fi
           '
 
   # ---------------------------------------------------------------------
@@ -1486,9 +1491,11 @@ jobs:
   # Central dev (LE-368): https://liberiaemrcentraldev.intellisoftkenya.com, a separate
   # server running the CENTRAL composition (distribution/compose/central, ADR 0011). Same
   # shape as deploy-dev / smoke-test / rollback-dev, with three differences:
-  #   - it updates only backend and frontend (the -central images, LE-339) and gateway, with --no-deps.
-  #     The broker, sync receiver and monitoring images are not published as :latest, so
-  #     they stay at whatever the server runs;
+  #   - it updates only backend and frontend (the -central images, LE-339), gateway and the sync
+  #     receiver, with --no-deps; the broker stays at whatever the server runs. It then recreates
+  #     prometheus and alertmanager, which mount their config and rules from the checkout one file
+  #     at a time: a running container keeps the file it started with, so without that a rule
+  #     change never reached central dev (LE-373);
   #   - it refuses to deploy unless the server runs the liberiaemr-central compose project,
   #     so CI never starts a second stack beside a facility one;
   #   - it skips cleanly until its secrets exist. Create, under Settings > Secrets and
@@ -1523,6 +1530,7 @@ jobs:
       backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
       frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
       gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
+      receiver_digest: ${{ steps.previous-version.outputs.receiver_digest }}
       checkout_sha: ${{ steps.previous-checkout.outputs.checkout_sha }}
     steps:
       - name: Check the central dev secrets exist
@@ -1557,7 +1565,7 @@ jobs:
               docker ps --format "{{.Names}}" | sed "s/^/running: /"
               exit 0
             fi
-            for service in backend frontend gateway; do
+            for service in backend frontend gateway sync-receiver; do
               # A container has no RepoDigests; its image does. Ask the container for its image
               # ID, then that image for the registry digest a rollback can pull.
               image=$(docker inspect --format="{{.Image}}" "liberiaemr-central-${service}-1" 2>/dev/null || true)
@@ -1574,6 +1582,7 @@ jobs:
           echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "receiver_digest=$(echo "$output" | awk -F': ' '/^sync-receiver:/{print $2}')" >> "$GITHUB_OUTPUT"
       # The compose file on the server has to match the images being deployed: an old checkout
       # names the facility frontend, and lacks newer services and settings. So the compose
       # directory MUST sit in a git checkout (the Ansible playbook clones one); anything else
@@ -1639,8 +1648,10 @@ jobs:
               exit 1
             fi
             echo \"checkout \$top now at \$head\"
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway sync-receiver
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway sync-receiver
+            # Their config and rules are single-file mounts from this checkout; only a new container sees the new files.
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps --force-recreate prometheus alertmanager
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
@@ -1722,8 +1733,9 @@ jobs:
           backend="${{ needs.deploy-central-dev.outputs.backend_digest }}"
           frontend="${{ needs.deploy-central-dev.outputs.frontend_digest }}"
           gateway="${{ needs.deploy-central-dev.outputs.gateway_digest }}"
+          receiver="${{ needs.deploy-central-dev.outputs.receiver_digest }}"
           checkout="${{ needs.deploy-central-dev.outputs.checkout_sha }}"
-          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "checkout:$checkout"; do
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "sync-receiver:$receiver" "checkout:$checkout"; do
             svc="${pair%%:*}"; digest="${pair#*:}"
             if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
               echo "::error::No previous ${svc} captured; cannot roll back automatically. Manual intervention required on the central dev server."
@@ -1734,6 +1746,7 @@ jobs:
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
           echo "  gateway:  $gateway"
+          echo "  receiver: $receiver"
           echo "  checkout: $checkout"
           # The compose file goes back FIRST, and each image is tagged under the name THAT file
           # gives its service: an older compose file may name a different image (the facility
@@ -1772,14 +1785,15 @@ jobs:
             echo \"checkout back at \$(git rev-parse HEAD)\"
             compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
             config=\$(compose config --format json)
-            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway'; do
+            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway' 'sync-receiver=$receiver'; do
               svc=\${pair%%=*}; digest=\${pair#*=}
               name=\$(printf '%s' \"\$config\" | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"services\"][sys.argv[1]][\"image\"])' \"\$svc\")
               docker pull \"\$digest\"
               docker tag \"\$digest\" \"\$name\"
               echo \"\$svc: \$digest tagged as \$name\"
             done
-            compose up -d --no-deps backend frontend gateway
+            compose up -d --no-deps backend frontend gateway sync-receiver
+            compose up -d --no-deps --force-recreate prometheus alertmanager
           "
       # Same bar as the smoke test: the SPA answering is not enough, since the frontend serves
       # it with the backend down. A rollback that leaves the backend unhealthy fails here.

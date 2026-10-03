@@ -6,7 +6,8 @@
 #
 #   qa/sync/verify-second-facility.sh [--facility-url https://localhost] \
 #     [--central-url https://localhost:8443] [--user admin] [--password ...] \
-#     [--central-user admin] [--central-password ...] [--timeout 300] [--negative-control]
+#     [--central-user admin] [--central-password ...] [--timeout 300] [--negative-control] \
+#     [--prom-url http://127.0.0.1:9190] [--alert-timeout 1200]
 #
 # Run it against a facility other than the one central's database was first built from;
 # Careysburg proves nothing on a central that once ran the Careysburg image.
@@ -21,6 +22,9 @@
 # records a visit there, and passes only if central shows it as a placeholder: proof the check
 # can fail. It then retires the location at the facility, but central keeps the placeholder for
 # good, so use it on a throwaway pair only. Later runs list it as already present and still pass.
+# With --prom-url (central's Prometheus) it also waits for SyncPlaceholderMetadata to fire for
+# locations (LE-373), after the exported count rises above what it was before the run. That needs a reconciliation pass after the placeholder appears, every
+# SYNC_RECON_CHECK_SECONDS (10 minutes by default), hence --alert-timeout.
 set -euo pipefail
 
 FACILITY_URL="https://localhost"
@@ -31,6 +35,8 @@ CENTRAL_USER=""
 CENTRAL_PASSWORD=""
 TIMEOUT=300
 NEGATIVE=false
+PROM_URL=""
+ALERT_TIMEOUT=1200
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,6 +48,8 @@ while [[ $# -gt 0 ]]; do
     --central-password) CENTRAL_PASSWORD="$2"; shift 2 ;;
     --timeout)          TIMEOUT="$2"; shift 2 ;;
     --negative-control) NEGATIVE=true; shift ;;
+    --prom-url)         PROM_URL="$2"; shift 2 ;;
+    --alert-timeout)    ALERT_TIMEOUT="$2"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -217,7 +225,17 @@ new="$(comm -13 "$WORK/placeholders-before" "$WORK/placeholders-after")"
 [[ -z "$new" ]] || fail "no record from this run created a placeholder location at central" "$new"
 pass "no placeholder location appeared at central"
 
+placeholder_metric() { # the location count central's reconciliation last exported, or empty
+  curl -s "$PROM_URL/api/v1/query" --data-urlencode 'query=sync_placeholder_metadata{table="location"}' \
+    | python3 -c 'import json,sys; r=json.load(sys.stdin)["data"]["result"]; print(int(float(r[0]["value"][1])) if r else "")'
+}
+
 if $NEGATIVE; then
+  if [[ -n "$PROM_URL" ]]; then
+    METRIC_BEFORE="$(placeholder_metric)"
+    [[ -n "$METRIC_BEFORE" ]] || fail "central's Prometheus at $PROM_URL has sync_placeholder_metadata" \
+      "the sync-recon target is down, or its receiver image predates LE-373"
+  fi
   echo "== negative control: a location no site package holds =="
   stray_name="QA Unenrolled Ward $(date +%s)"
   stray="$(facility "$FACILITY_URL/$REST/location" -d '{"name":"'"$stray_name"'"}' | uuid_or_error location)"
@@ -229,6 +247,21 @@ if $NEGATIVE; then
   [[ "$reason" == "[placeholder]" ]] \
     || fail "central shows the unenrolled location as a placeholder" "retire reason: ${reason:-none}"
   pass "the negative control is caught: central applied its records against a placeholder location"
+  if [[ -n "$PROM_URL" ]]; then
+    echo "== waiting for SyncPlaceholderMetadata to fire for locations (timeout ${ALERT_TIMEOUT}s) =="
+    alert_firing() {
+      local now
+      now="$(placeholder_metric)"
+      [[ -n "$now" && "$now" -gt "$METRIC_BEFORE" ]] || return 1
+      curl -s "$PROM_URL/api/v1/alerts" | python3 -c 'import json,sys
+sys.exit(0 if any(a["labels"].get("alertname") == "SyncPlaceholderMetadata" and a["labels"].get("table") == "location"
+                  and a["state"] == "firing" for a in json.load(sys.stdin)["data"]["alerts"]) else 1)'
+    }
+    until_true "$ALERT_TIMEOUT" alert_firing \
+      || fail "SyncPlaceholderMetadata fires for locations within ${ALERT_TIMEOUT}s" \
+              "check sync_placeholder_metadata on the sync-recon target and that Prometheus loaded rules-central.yml"
+    pass "the placeholder count rose from $METRIC_BEFORE and SyncPlaceholderMetadata fires for locations"
+  fi
   # Retired at the facility, so the next run's location check skips it; central keeps the
   # placeholder, which the next run lists as already present.
   facility -o /dev/null -X DELETE "$FACILITY_URL/$REST/location/$stray?reason=LE-339%20negative%20control"
