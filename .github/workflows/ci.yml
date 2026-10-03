@@ -800,14 +800,17 @@ jobs:
       - name: Install Cypress test dependencies
         working-directory: qa/e2e
         run: npm ci
-      # AuditLog.cy.ts adds this build to the served SPA while the app is not yet pinned in
-      # distro.properties (a new package has no published version before its first merge); once
-      # it is pinned the spec uses the served one and this build goes unused.
-      - name: Build the audit log app for AuditLog.cy.ts
-        working-directory: packages/esm-liberia-audit-log-app
+      # RoleSignIn.cy.ts and AuditLog.cy.ts serve these builds in place of the SPA's own while
+      # distro.properties pins builds without the behaviour under test (the home dashboards,
+      # LE-397): a change here is published only after merge and pinned in a follow-up PR.
+      # Once the pin carries it, the specs use the served builds and these go unused
+      # (qa/e2e/cypress/support/local-esm.ts).
+      - name: Build the LiberiaEMR apps the specs may overlay
         run: |
-          yarn install --frozen-lockfile
-          yarn build
+          set -euo pipefail
+          for app in esm-liberia-audit-log-app esm-liberia-reports-app esm-liberia-sync-status-app; do
+            (cd "packages/$app" && yarn install --frozen-lockfile && yarn build)
+          done
 
       # --demo: the priority journeys log in as admin/Admin123, which only content-demo
       # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —

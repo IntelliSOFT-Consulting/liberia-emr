@@ -11,3 +11,14 @@ import routes from './routes.json';
 export const EXPORT_PRIVILEGE: string = routes.extensions.find(
   (extension) => extension.name === 'indicator-reports-app-menu-item',
 ).privileges[0];
+
+/**
+ * The home page dashboard's name (/home/indicator-reports), from its link in routes.json. The
+ * National Reporting Officer lands on it: config-national.json maps the role to it in
+ * esm-home-app's defaultDashboardPerRole.
+ */
+export const REPORTS_DASHBOARD: string = (
+  routes.extensions.find((extension) => extension.name === 'indicator-reports-dashboard-link') as {
+    meta: { name: string };
+  }
+).meta.name;

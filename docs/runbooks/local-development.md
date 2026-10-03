@@ -101,8 +101,9 @@ A role that loads cleanly can still leave its users unable to use O3, and an adm
 never show it. Check with a user holding **that role alone**:
 
 1. Add the role to `ROLES` in `qa/e2e/cypress/e2e/RoleSignIn.cy.ts`, with `clinical: true`
-   only if it holds `Get People` for its work. Sync Sender and Sync Receiver are service
-   accounts and are not listed.
+   only if it works the patient queue, and otherwise the `dashboard` it lands on (its name, its
+   side-navigation title and a text its page shows on a facility stack). Sync Sender and Sync
+   Receiver are service accounts and are not listed.
 2. Run that spec against your demo stack (see [qa/e2e/README.md](../../qa/e2e/README.md)). It
    creates the user, signs in through the login page and location picker, and fails if O3
    sends the user back to `/login`.
@@ -117,9 +118,31 @@ running or the advice has stopped matching the REST module's session controller.
 The spec also fails if the role's landing page makes a REST call that answers an error or
 shows an error notification (LE-395). A role that works the patient queue needs the queue and
 visit privileges in [the service queue table](../security/moh-ict-sop-mapping.md#the-service-queue-le-395);
-a role that does not gets no home dashboard, because `config-national.json` shows each one
-only to holders of the privileges its data needs. A new home dashboard needs the same
+a role that does not sees no clinical dashboard, because `config-national.json` shows each one
+only to holders of the privileges its data needs. A new RefApp home dashboard needs the same
 `Display conditions` there.
+
+The spec also fails if the role lands on the home app's "dashboard you are looking for does not
+exist" tile (LE-397). A role that does not work the queue must land on a dashboard of its own:
+
+- If its app registers one in `homepage-dashboard-slot` (as the reports, audit log and sync
+  status apps do, gated in their `routes.json`), name it for the role in `defaultDashboardPerRole`
+  under `@openmrs/esm-home-app` in `config-national.json`. The key is the role's name and the
+  value the dashboard's name, the path after `/home/`
+  ([table](../security/moh-ict-sop-mapping.md#landing-pages-and-the-app-menu-le-397)).
+- If the app has none yet, add one: a link extension in `homepage-dashboard-slot` whose `meta`
+  names the dashboard and its slot, and the page registered in that slot, both carrying the
+  page's privilege (see `src/home-dashboard/` in any of those apps).
+
+Open the app menu as the user too. Every entry must be one the role can use, and opening the
+menu must make no failing call: gate a RefApp entry in `app-menu-slot` in `config-national.json`,
+and a LiberiaEMR entry by the privilege its endpoint checks in its `routes.json`.
+
+An ESM change reaches the served SPA only after `packages.yml` publishes it from `main` and
+`distro.properties` is re-pinned in a follow-up PR. Until then `RoleSignIn.cy.ts` serves this
+checkout's builds of the dashboard apps (`qa/e2e/cypress/support/local-esm.ts`), so build them
+first: `yarn install --frozen-lockfile && yarn build` in each `packages/esm-liberia-*` app the
+spec loads.
 
 Initializer applies roles by UUID and rewrites an existing role's privileges and inherited roles
 from the CSV whenever the file changes, so a deployed role picks up the change on the next start.

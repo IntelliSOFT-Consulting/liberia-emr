@@ -1,12 +1,14 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { openmrsFetch, userHasAccess } from '@openmrs/esm-framework';
+import { openmrsFetch, useSession, userHasAccess } from '@openmrs/esm-framework';
+import routes from '../routes.json';
 import MflSync from './mfl-sync.component';
 import MflSyncAppMenuItem from './mfl-sync-app-menu-item.component';
 import { type MflRun, type MflRunItemPage, type MflStatus } from './mfl-sync.types';
 
 const mockOpenmrsFetch = openmrsFetch as jest.Mock;
 const mockUserHasAccess = userHasAccess as jest.Mock;
+const mockUseSession = useSession as jest.Mock;
 
 // Asserted through the words an administrator reads, so t returns its default text with values filled in.
 jest.mock('react-i18next', () => ({
@@ -20,6 +22,7 @@ jest.mock('react-i18next', () => ({
 jest.mock('swr', () => ({
   __esModule: true,
   default: (key: string | null) => {
+    (global as any).__swrKeys?.push(key);
     const answer = key ? (global as any).__swr[key.split('?')[0]] : undefined;
     return { data: answer?.data, error: answer?.error, isLoading: Boolean(answer?.isLoading), mutate: jest.fn() };
   },
@@ -476,6 +479,25 @@ describe('MFL sync page', () => {
 describe('MFL sync menu item', () => {
   beforeEach(() => {
     (global as any).__swr = {};
+    (global as any).__swrKeys = [];
+    mockUseSession.mockReturnValue({ authenticated: true, user: { uuid: 'u', privileges: [], roles: [] } });
+    mockUserHasAccess.mockReset();
+    mockUserHasAccess.mockImplementation((privilege: string) => privilege === 'View MFL Sync');
+  });
+
+  it('is gated by View MFL Sync in routes.json, the privilege the status endpoint requires', () => {
+    const extension = routes.extensions.find((candidate) => candidate.name === 'mfl-sync-app-menu-item');
+    expect(extension.privileges).toEqual(['View MFL Sync']);
+  });
+
+  it('sends no status request for a user without View MFL Sync, who would only get a 403', () => {
+    mockUserHasAccess.mockReturnValue(false);
+    given('/status', { data: { data: status() } });
+
+    render(<MflSyncAppMenuItem />);
+
+    expect(screen.queryByText('Master Facility List sync')).not.toBeInTheDocument();
+    expect((global as any).__swrKeys).toEqual([null]);
   });
 
   it('is absent where no MFL account is configured', () => {

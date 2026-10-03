@@ -8,7 +8,9 @@
  * The page and its menu item hide themselves unless the backend reports the feature on, so
  * the same frontend image serves a facility, where there is no national view to show.
  */
-import { getAsyncLifecycle } from '@openmrs/esm-framework';
+import { getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createHomeDashboardLink } from './home-dashboard/home-dashboard-link.component';
+import { RESOLVE_SYNC_CONFLICTS, SYNC_CONFLICTS_DASHBOARD, SYNC_STATUS_DASHBOARD, VIEW_SYNC_STATUS } from './privileges';
 
 const moduleName = '@liberiaemr/esm-liberia-sync-status-app';
 
@@ -31,5 +33,30 @@ export const mflSyncAppMenuItem = getAsyncLifecycle(
 
 export const syncStatusAppMenuItem = getAsyncLifecycle(
   () => import('./sync-status/sync-status-app-menu-item.component'),
+  options,
+);
+
+// Home page dashboards, the same pages as /sync-status and /sync-conflicts. config-national.json
+// lands the Sync Administrator on the first and the Sync Conflict Reviewer on the second
+// (esm-home-app's defaultDashboardPerRole).
+export const syncStatusDashboardLink = getSyncLifecycle(
+  // t('syncStatus', 'Sync status')
+  createHomeDashboardLink({
+    name: SYNC_STATUS_DASHBOARD,
+    titleKey: 'syncStatus',
+    title: 'Sync status',
+    privilege: VIEW_SYNC_STATUS,
+  }),
+  options,
+);
+
+export const syncConflictsDashboardLink = getSyncLifecycle(
+  // t('syncConflicts', 'Sync conflicts')
+  createHomeDashboardLink({
+    name: SYNC_CONFLICTS_DASHBOARD,
+    titleKey: 'syncConflicts',
+    title: 'Sync conflicts',
+    privilege: RESOLVE_SYNC_CONFLICTS,
+  }),
   options,
 );

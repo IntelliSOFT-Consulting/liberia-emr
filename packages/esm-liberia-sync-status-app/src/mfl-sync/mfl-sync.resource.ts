@@ -23,9 +23,10 @@ export type MflFetchError = Error & { response?: { status?: number }; responseBo
 const idleRefresh = 60_000;
 const runningRefresh = 5_000;
 
-export function useMflStatus() {
+/** Not asked at all when `enabled` is false: a user without View MFL Sync would only get a 403. */
+export function useMflStatus(enabled = true) {
   const { data, error, isLoading, mutate } = useSWR<{ data: MflStatus }, MflFetchError>(
-    `${mflBaseUrl}/status`,
+    enabled ? `${mflBaseUrl}/status` : null,
     openmrsFetch,
     { refreshInterval: (latest) => (latest?.data?.running ? runningRefresh : idleRefresh) },
   );

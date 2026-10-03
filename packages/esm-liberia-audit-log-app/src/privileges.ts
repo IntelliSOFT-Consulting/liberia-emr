@@ -17,3 +17,11 @@ export const VIEW_PRIVILEGE: string = routes.extensions.find(
 ).privileges[0];
 
 export const READ_PRIVILEGE = 'Get Audit Logs';
+
+/**
+ * The home page dashboard's name (/home/audit-log), from its link in routes.json. The ICT Auditor
+ * lands on it: config-national.json maps the role to it in esm-home-app's defaultDashboardPerRole.
+ */
+export const AUDIT_LOG_DASHBOARD: string = (
+  routes.extensions.find((extension) => extension.name === 'audit-log-dashboard-link') as { meta: { name: string } }
+).meta.name;
