@@ -374,4 +374,26 @@
 		</createIndex>
 	</changeSet>
 
+	<!--
+		The LIS (OpenELIS) integration is out of scope (LE-380), so labonfhir's scheduled tasks stay
+		off. runAlways, because labonfhir's own liquibase inserts them with start_on_startup=1 and
+		an admin may switch them on. It has to happen here, not only in LiberiaEMRActivator: the
+		scheduler starts tasks on a background thread after the context refresh, at the same time
+		as module activators run, so a task the activator shuts down can still be mid-run and save
+		its started/start_on_startup flags back. Module liquibase runs before that refresh, so the
+		scheduler never sees these tasks as start-on-startup. config.xml is aware of labonfhir, so
+		its rows exist by now. Remove this when the LIS integration is taken on.
+	-->
+	<changeSet id="liberiaemr-2026-10-03-labonfhir-tasks-off" author="liberiaemr" runAlways="true">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="scheduler_task_config"/>
+		</preConditions>
+		<comment>Keep labonfhir's scheduled tasks from starting: the LIS integration is out of scope</comment>
+		<update tableName="scheduler_task_config">
+			<column name="started" valueBoolean="false"/>
+			<column name="start_on_startup" valueBoolean="false"/>
+			<where>schedulable_class LIKE 'org.openmrs.module.labonfhir.%'</where>
+		</update>
+	</changeSet>
+
 </databaseChangeLog>
