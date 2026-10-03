@@ -289,6 +289,56 @@ RUN set -eu; \
     ls "/build/auditlog/omod/target/auditlog-${version}.omod"
 
 # ---------------------------------------------------------------------------
+# Stage 2c — bed management, from pinned upstream source plus a Modify + PR patch
+# ---------------------------------------------------------------------------
+# The released 7.2.0 (RefApp 3.7.1's pin) makes ending ANY visit require "Assign Beds" and
+# "Edit Admission Locations", even for a patient with no bed, so the queue roles could not end
+# a visit without bed write access. distribution/backend/patches/bedmanagement/ fixes that;
+# packages/modify-pr/.patches/ tracks it until upstream releases the fix.
+#
+# Built exactly as the auditlog stage above: the commit pinned in distro.properties
+# (source.bedmanagement.*, the 7.2.0 tag) is fetched by its full SHA, every patch is applied
+# in name order and one that no longer applies fails the build, and the version is stamped so
+# no -SNAPSHOT omod reaches the image. One extra check: the stamped version must sort above
+# the commit's own (distro.properties says why), or a server that still holds the released
+# omod could keep loading the unpatched one.
+#
+# The omod embeds the module's legacy OWA, whose build downloads Node and runs yarn; that is
+# most of this stage's time, and it is cached with the stage.
+FROM maven:3.9-eclipse-temurin-17 AS bedmanagement
+
+WORKDIR /build
+COPY distribution/distro.properties /build/distro.properties
+COPY distribution/backend/patches/bedmanagement/ /build/patches/
+RUN set -eu; \
+    repo="$(sed -n 's/^source\.bedmanagement\.repository=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    commit="$(sed -n 's/^source\.bedmanagement\.commit=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    version="$(sed -n 's/^source\.bedmanagement\.version=//p' /build/distro.properties | tr -d '[:space:]')"; \
+    [ -n "$repo" ] && [ -n "$version" ] \
+      || { echo "source.bedmanagement.repository/.version are not pinned in distro.properties" >&2; exit 1; }; \
+    echo "$commit" | grep -qxE '[0-9a-f]{40}' \
+      || { echo "source.bedmanagement.commit must be a full 40-character SHA, got '${commit}'" >&2; exit 1; }; \
+    case "$version" in *SNAPSHOT*|*latest*) echo "source.bedmanagement.version must be a fixed version" >&2; exit 1 ;; esac; \
+    git init -q /build/bedmanagement; \
+    cd /build/bedmanagement; \
+    git fetch -q --depth 1 "$repo" "$commit"; \
+    git checkout -q FETCH_HEAD; \
+    [ "$(git rev-parse HEAD)" = "$commit" ] || { echo "fetched $(git rev-parse HEAD), pinned $commit" >&2; exit 1; }; \
+    base="$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)"; \
+    case "$base" in *SNAPSHOT*) echo "source.bedmanagement.commit is a SNAPSHOT (${base}), not a release" >&2; exit 1 ;; esac; \
+    [ "${version%%-*}" != "$base" ] \
+      && [ "$(printf '%s\n%s\n' "$base" "${version%%-*}" | sort -V | tail -n 1)" = "${version%%-*}" ] \
+      || { echo "source.bedmanagement.version ${version} must sort above the commit's own ${base}" >&2; exit 1; }; \
+    for p in /build/patches/*.patch; do \
+      echo "applying ${p##*/}"; \
+      git apply --whitespace=nowarn "$p"; \
+    done; \
+    mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
+      -DnewVersion="$version" -DgenerateBackupPoms=false; \
+    mvn -B -q -DskipTests clean package; \
+    ls "/build/bedmanagement/omod/target/bedmanagement-${version}.omod"
+
+# ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
 # Must match war.openmrs in distribution/distro.properties — this image IS the platform, so
@@ -367,6 +417,8 @@ COPY --from=module /build/modules/mambaetl/omod/target/mamba-etl-liberiaemr-*.om
 COPY --from=module /build/modules/liberiaemrreports/omod/target/liberiaemrreports-*.omod /openmrs/distribution/openmrs_modules/
 # Third-party, but built from a pinned commit rather than resolved (stage 2b says why).
 COPY --from=auditlog /build/auditlog/omod/target/auditlog-*.omod /openmrs/distribution/openmrs_modules/
+# The same for bed management, which replaces the omod.bedmanagement pin (stage 2c says why).
+COPY --from=bedmanagement /build/bedmanagement/omod/target/bedmanagement-*.omod /openmrs/distribution/openmrs_modules/
 
 # Initializer reads this tree on startup and applies backend_configuration/**.
 COPY --from=content /openmrs_config/ /openmrs/distribution/openmrs_config/
