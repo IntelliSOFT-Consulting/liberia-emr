@@ -161,12 +161,18 @@ describe('Audit log', () => {
     // Since LE-395 the home page shows the role no queue dashboard, so no 403 toast follows it here.
     cy.get(ERROR_NOTIFICATION).should('not.exist');
 
-    cy.intercept('GET', `${AUDIT}?*`).as('list');
+    // Matches only the filtered request. The page's own unfiltered first load can still be in
+    // flight when this is set, and a plain `${AUDIT}?*` alias then caught that one instead.
+    cy.intercept({
+      method: 'GET',
+      pathname: AUDIT,
+      query: { type: 'org.openmrs.GlobalProperty', action: 'UPDATED', user: 'admin' },
+    }).as('list');
     cy.get('#audit-type').select('org.openmrs.GlobalProperty');
     cy.get('#audit-action').select('UPDATED');
     cy.get('#audit-user').type('admin');
     cy.contains('button', 'Apply filters').click();
-    cy.wait('@list').its('request.url').should('include', 'type=org.openmrs.GlobalProperty').and('include', 'user=admin');
+    cy.wait('@list', { timeout: 30000 });
 
     cy.contains('[data-testid="audit-row"]', gpName, { timeout: 30000 }).should('be.visible');
     // Scoped to the visible row: in CI the label matched two elements (a second, hidden one).
