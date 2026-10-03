@@ -1,3 +1,4 @@
+import { ERROR_NOTIFICATION } from '../support/landing';
 import { api, asAdmin, type Auth, createUser, loginAs as loginAsUser, REST, runPassword } from '../support/users';
 
 /**
@@ -95,9 +96,10 @@ const waitForDownload = (prefix: string, attempts = 40): Cypress.Chainable<strin
 
 const openAppMenu = () => cy.get('[aria-label="App Menu"], [aria-label="Open menu"]', { timeout: 30000 }).first().click();
 
-// Opens the app menu until the named entry is visible. For the ICT Auditor the home page's queue
-// widget fails with a 403 whose toast can land just as the menu opens and close it again (seen in
-// CI, not locally), so one click is not enough; a user without the entry never gets here.
+// Opens the app menu until the named entry is visible. Before LE-395 the home page's queue widget
+// failed for the ICT Auditor with a 403 whose toast could land just as the menu opened and close it
+// again (seen in CI, not locally); the retry stays as a guard against any late re-render. A user
+// without the entry never gets here.
 const openAppMenuTo = (entry: string, attempts = 4) => {
   openAppMenu();
   cy.wait(2000);
@@ -156,10 +158,8 @@ describe('Audit log', () => {
     cy.contains('a', 'Audit log', { timeout: 30000 }).should('be.visible').click();
     cy.url().should('include', '/openmrs/spa/audit-log');
     cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
-    // The home page's service queue widget, which the role cannot read, leaves a 403 toast over
-    // the page; a reload clears it.
-    cy.reload();
-    cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
+    // Since LE-395 the home page shows the role no queue dashboard, so no 403 toast follows it here.
+    cy.get(ERROR_NOTIFICATION).should('not.exist');
 
     cy.intercept('GET', `${AUDIT}?*`).as('list');
     cy.get('#audit-type').select('org.openmrs.GlobalProperty');
@@ -259,7 +259,10 @@ describe('Audit log', () => {
     cy.visit('/openmrs/spa/home');
     openAppMenu();
     // The menu has rendered its other entries before the absence of this one means anything.
-    cy.get('[aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 }).should('have.length.greaterThan', 0);
+    // (Since LE-395 this role has no home dashboard, so the home page's side navigation no longer
+    // holds a link; the open app menu panel's own entries are what count.)
+    cy.get('.cds--header-panel--expanded a, [aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 })
+      .should('have.length.greaterThan', 0);
     cy.contains('a', 'Audit log').should('not.exist');
 
     cy.visit('/openmrs/spa/audit-log');

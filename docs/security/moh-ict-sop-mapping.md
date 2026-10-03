@@ -174,6 +174,56 @@ Every role a person signs in with, and what it may read. Privileges are in
 
 Sync Sender and Sync Receiver are service accounts, not people, and are not in this table.
 
+#### The service queue (LE-395)
+
+Every login role lands on `/home`, which opens the service queues dashboard. Until LE-395 no
+login role but the administrator could read a queue, so every one of them saw "Error loading
+queue entries" there. The patient-flow roles now hold what each queue operation needs, and the
+privileges are the ones the queue module (`omod.queue` 3.0.0) and core actually check:
+
+| Privilege | What needs it | Records Officer | Nurse (and Clinician, Midwife) | Pharmacist, Lab Technician |
+| --- | --- | --- | --- | --- |
+| `Get Queues` | the queue list and the dashboard's filters | Yes | Yes | Yes |
+| `Get Queue Entries` | the queue table and its counts | Yes | Yes | Yes |
+| `Manage Queue Entries` | add a patient to a queue, move (transition) them, end their queue entry | Yes | Yes | Yes |
+| `Get Visits` | the "checked in patients" count and each entry's visit | had it | had it | Yes |
+| `Get Locations` | the queue location filter and picker | had it | Yes | Yes |
+| `Get Visit Types`, `Get Visit Attribute Types` | the start-visit form that checks a patient in | Yes | Yes | No |
+| `Get Beds`, `Get Admission Locations` | saving any visit: the bed management module validates every visit save against the patient's bed assignments, checked as the user | Yes | Yes | No |
+| `Edit Visits` | the queue number: the queue module stores it as a visit attribute and saves the existing visit, which core allows only with `Edit Visits` (without it the call answered `500`, a `ContextAuthenticationException`) | Yes | Yes | No (they do not check in) |
+| `Get Encounters` | the same save of the visit answers `403` without it | Yes | had it | No |
+
+Why each role:
+
+- **Records Officer** registers and checks patients in: starts the visit and puts the patient in
+  the first queue. It still reads no observation, order or programme.
+- **Nurse, Clinician, Midwife** see who is waiting for them, call the next patient, move them to
+  the next service and end their entry. Nurses also start visits (they already held
+  `Add Visits`), which needs the same visit-form and bed reads as the Records Officer.
+- **Pharmacist and Lab Technician**: each facility has TB Screening, ANC and General Consultation
+  queues at its Pharmacy and Laboratory (the site `queues/` CSV), so patients are sent to them
+  through the queue. They see their queue, serve the patient and end or move the entry. They do
+  not check patients in, so they get no visit-type, visit-attribute or bed privilege.
+- **National Reporting Officer, Sync Administrator, Sync Conflict Reviewer, ICT Auditor** get no
+  queue or visit privilege: their work is aggregate reports, the sync and the audit log, not
+  patient flow. Instead `config-national.json` shows each home dashboard only to users holding
+  every privilege its data needs (O3's extension `Display conditions`), so these roles get no
+  dashboard on `/home` (the home app's "dashboard does not exist" tile) and open their own app
+  from the app menu. They see no error notification and make no failing call.
+
+What no role got: `Assign Beds` and `Edit Admission Locations`. **Ending a visit** therefore
+fails for every login role (`403 Assign Beds`): the bed management module's save handler
+un-assigns beds on every visit that gets a stop time and requires `Assign Beds` and
+`Edit Admission Locations` to do so, even when the patient has no bed. Granting bed write access
+to every check-in role to work around that is not least privilege. It is an upstream defect
+(openmrs-module-bedmanagement 7.2.0, `VisitWithBedPatientAssignmentSaveHandler`); until it is
+fixed, or the MOH accepts that grant, an administrator ends visits. The check-in roles already
+hold `Edit Visits`, so nothing more is needed once it is fixed.
+
+`RoleSignIn.cy.ts` checks on every CI run that each role's landing page makes no failing call and
+shows no error, that the six facility roles read queues, queue entries and visits and the four
+national roles do not; `Queue.cy.ts` that a Records Officer adds a patient to a queue.
+
 `Get People` reads every person's name, sex, birth date and address over REST. The four
 facility roles that gained it in LE-392 already read patients (`Get Patients`), and a patient's
 demographics are its person, so for patients the grant adds no data they could not already

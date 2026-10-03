@@ -20,6 +20,41 @@
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
     }
   },
+  "_comment_home_dashboards": [
+    "LE-395. /home opens the dashboard defaultDashboardPerRole names for one of the user's roles,",
+    "else 'service-queues', else the first dashboard left in homepage-dashboard-slot. Each",
+    "dashboard below is shown only to a user holding EVERY privilege its data needs, so no role",
+    "lands on, or sees a link to, a dashboard that can only answer 403. The roles without a",
+    "clinical dashboard (National Reporting Officer, Sync Administrator, Sync Conflict Reviewer,",
+    "ICT Auditor) get the home page's 'no dashboard' tile and reach their own app from the app",
+    "menu. Privilege names: docs/security/moh-ict-sop-mapping.md, 'The login roles'."
+  ],
+  "@openmrs/esm-home-app": {
+    "extensionSlots": {
+      "homepage-dashboard-slot": {
+        "configure": {
+          "service-queues-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Queues", "Get Queue Entries", "Get Visits"] }
+          },
+          "clinical-appointments-dashboard-link": {
+            "Display conditions": { "privileges": ["View Appointments"] }
+          },
+          "laboratory-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Orders", "Get Patients"] }
+          },
+          "billing-dashboard-link": {
+            "Display conditions": { "privileges": ["View Cashier Bills"] }
+          },
+          "ward-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Beds", "Get Admission Locations", "Assign Beds"] }
+          },
+          "patient-lists-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Patient Cohorts"] }
+          }
+        }
+      }
+    }
+  },
   "@openmrs/esm-app-shell": {
     "Enabled feature flags": [
       "patient-flags"

@@ -197,20 +197,29 @@ mvn -B -q -DskipTests -f "$ROOT/pom.xml" clean package
 # file nor the dictionary it collided with. validate-content.sh catches the same clash
 # between two content CSVs; the exports are gitignored, so it cannot see this half.
 echo "== checking concept names against the shipped dictionaries =="
-python3 - "$ROOT" "$DEMO" <<'PY' || { echo "FAIL: concept name collides with the dictionary (see above)" >&2; exit 1; }
-import csv, glob, json, os, sys, zipfile
+python3 - "$ROOT" "$DEMO" "$SITE" <<'PY' || { echo "FAIL: concept name collides with the dictionary (see above)" >&2; exit 1; }
+import csv, fnmatch, glob, json, os, sys, zipfile
 
-root, demo = sys.argv[1], sys.argv[2] == "true"
+root, demo, site = sys.argv[1], sys.argv[2] == "true", sys.argv[3]
 
 # (locale, casefolded name) -> (external_id, dictionary) for every FULLY_SPECIFIED name the
 # exports carry. Synonyms are excluded: OpenMRS only enforces uniqueness on the fully
 # specified name.
 owned = {}
 
+# Demo files distribution/backend/Dockerfile leaves out of the image (LE-395).
+DROPPED_FROM_DEMO = ("openmrs_DemoQueueConcepts_*.zip",)
+
 def in_this_build(path):
-    """A distribution ships the demo layer or the production layers, never both."""
+    """A release ships the production layers and this site's. A demo build loads the demo
+    layer ON TOP of them, so its dictionaries can take a name a production concept needs
+    (LE-395: the RefApp demo 'Waiting' and 'Emergency' did, and the queue broke)."""
     pkg = path[len(f"{root}/content-packages/"):].split(os.sep)[0]
-    return (pkg == "content-demo") == demo
+    if pkg == "content-demo":
+        return demo and not any(fnmatch.fnmatch(os.path.basename(path), p) for p in DROPPED_FROM_DEMO)
+    if pkg.startswith("content-site-") or pkg == "content-central":
+        return pkg in (f"content-site-{site}", f"content-{site}")
+    return True
 
 for z in glob.glob(f"{root}/content-packages/*/configuration/backend_configuration/ocl/*.zip"):
     if not in_this_build(z):
