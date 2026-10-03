@@ -189,6 +189,12 @@ page as a home dashboard too, gated in its `routes.json` by the privilege the pa
 | `sync-conflicts` | `esm-liberia-sync-status-app` | `Resolve Sync Conflicts` | Sync Conflict Reviewer |
 | `audit-log` | `esm-liberia-audit-log-app` | `View Audit Log` | ICT Auditor |
 
+The National Reporting Officer also holds `Get Users` (LE-397). The reporting module loads a
+report definition with the user who created it, and core refuses that load without `Get Users`,
+so until then every `reportingrest/reportDefinition` call answered `403` for the role and its
+report page could not list a report. `Get Users` reads user accounts (staff names and usernames),
+not patients; the role still gets `403` on persons and patients.
+
 A role may hold more than one: the Sync Conflict Reviewer also sees the sync status dashboard in
 the side navigation. A user holding several national roles lands on the first of them in the
 order the session lists the roles. At a facility the two sync pages say they are shown at
