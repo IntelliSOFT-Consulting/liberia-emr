@@ -25,6 +25,9 @@ import org.openmrs.module.reporting.definition.configuration.ConfigurationProper
  * It must never hold a UUID literal (ADR 0010 decision 7): coded logic belongs in the ETL's derived
  * SQL, and reports read named fact columns.
  */
+// java:S2160 - a definition's identity is its uuid (BaseOpenmrsObject.equals), which is how the reporting
+// module stores, caches and compares definitions; equality on the SQL would change that.
+@SuppressWarnings("java:S2160")
 public class EtlSqlDataSetDefinition extends BaseDataSetDefinition {
 	
 	private static final long serialVersionUID = 1L;

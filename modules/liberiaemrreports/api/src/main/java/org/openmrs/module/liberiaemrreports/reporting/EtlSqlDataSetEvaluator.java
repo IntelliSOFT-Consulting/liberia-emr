@@ -57,6 +57,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * caller passes reaches the SQL except through these bindings.
  */
 @Handler(supports = { EtlSqlDataSetDefinition.class })
+// java:S2143 - the reporting module passes the period as java.util.Date and expects Date cells back.
+@SuppressWarnings("java:S2143")
 public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 	
 	/**
@@ -66,13 +68,10 @@ public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 	        Arrays.asList("patient_id", "person_id", "client_id", "encounter_id", "visit_id", "obs_id", "order_id", "uuid",
 	            "identifier", "given_name", "middle_name", "family_name", "name", "birthdate", "phone_number", "address")));
 	
-	@Autowired
 	private EvaluationService evaluationService;
 	
-	@Autowired
 	private LocationScopeResolver locationScopeResolver;
 	
-	@Autowired
 	private RegisteredEtlDataSets registeredEtlDataSets;
 	
 	@Override
@@ -148,14 +147,17 @@ public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 		        + "; indicator data sets return plain values only");
 	}
 	
+	@Autowired
 	public void setEvaluationService(EvaluationService evaluationService) {
 		this.evaluationService = evaluationService;
 	}
 	
+	@Autowired
 	public void setLocationScopeResolver(LocationScopeResolver locationScopeResolver) {
 		this.locationScopeResolver = locationScopeResolver;
 	}
 	
+	@Autowired
 	public void setRegisteredEtlDataSets(RegisteredEtlDataSets registeredEtlDataSets) {
 		this.registeredEtlDataSets = registeredEtlDataSets;
 	}

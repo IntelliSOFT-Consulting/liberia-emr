@@ -9,7 +9,7 @@
  */
 package org.openmrs.module.liberiaemrreports.reporting;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ public class ReportRegistrar {
 	 */
 	public int registerAll() {
 		List<LiberiaReportManager> managers = Context.getRegisteredComponents(LiberiaReportManager.class);
-		Map<ReportSheet, String> claimed = new HashMap<ReportSheet, String>();
+		Map<ReportSheet, String> claimed = new EnumMap<ReportSheet, String>(ReportSheet.class);
 		int saved = 0;
 		for (LiberiaReportManager manager : managers) {
 			String owner = claimed.put(manager.getSheet(), manager.getClass().getName());

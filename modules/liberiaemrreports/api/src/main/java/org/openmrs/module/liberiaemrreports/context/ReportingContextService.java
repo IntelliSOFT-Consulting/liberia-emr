@@ -10,6 +10,7 @@
 package org.openmrs.module.liberiaemrreports.context;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +34,9 @@ import org.springframework.stereotype.Component;
  * Officer holds neither Get Global Properties nor access to the environment. Served by the omod at
  * {@code GET /ws/rest/v1/liberiaemrreports/context}.
  */
-@Component("liberiaemrreports.reportingContextService")
+@Component("liberiaemrreportsReportingContextService")
+// java:S2143 - JDBC returns java.util.Date (a Timestamp) for the ETL schedule's DATETIME columns.
+@SuppressWarnings("java:S2143")
 public class ReportingContextService {
 	
 	private static final Log log = LogFactory.getLog(ReportingContextService.class);
@@ -49,10 +52,8 @@ public class ReportingContextService {
 	
 	private static final String STATUS_ERROR = "ERROR";
 	
-	@Autowired
 	private LocationScopeResolver locationScopeResolver;
 	
-	@Autowired
 	private EvaluationService evaluationService;
 	
 	/**
@@ -77,13 +78,15 @@ public class ReportingContextService {
 		}
 		context.put("facilityLocation", facility);
 		context.put("etlSchema", EtlSchema.getEtlDatabase());
-		context.put("etlLastRun", getEtlLastRun());
+		Map<String, Object> lastRun = getEtlLastRun();
+		// null, not {}, in the response: the UI and its tests read "no run yet" as null.
+		context.put("etlLastRun", lastRun.isEmpty() ? null : lastRun);
 		return context;
 	}
 	
 	/**
-	 * The latest row of the ETL schedule, or null when the ETL has never run here (or its schema is
-	 * absent). {@code status} is one of:
+	 * The latest row of the ETL schedule, or an empty map when the ETL has never run here (or its schema
+	 * is absent). {@code status} is one of:
 	 * <ul>
 	 * <li>{@code RUNNING}: started and not finished. A run that crashed also reads this way until the
 	 * next scheduled run marks it stuck;</li>
@@ -111,10 +114,10 @@ public class ReportingContextService {
 			log.warn("Could not read the ETL schedule from " + SCHEDULE_TABLE + "; reporting no last run: "
 			        + e.getMessage());
 			log.debug("ETL schedule read failure", e);
-			return null;
+			return Collections.emptyMap();
 		}
 		if (rows.isEmpty()) {
-			return null;
+			return Collections.emptyMap();
 		}
 		Object[] row = rows.get(0);
 		Map<String, Object> run = new LinkedHashMap<String, Object>();
@@ -122,6 +125,16 @@ public class ReportingContextService {
 		run.put("completedAt", iso(row[1]));
 		run.put("status", status(str(row[2]), str(row[3]), str(row[4])));
 		return run;
+	}
+	
+	@Autowired
+	public void setLocationScopeResolver(LocationScopeResolver locationScopeResolver) {
+		this.locationScopeResolver = locationScopeResolver;
+	}
+	
+	@Autowired
+	public void setEvaluationService(EvaluationService evaluationService) {
+		this.evaluationService = evaluationService;
 	}
 	
 	static String status(String transactionStatus, String completionStatus, String message) {

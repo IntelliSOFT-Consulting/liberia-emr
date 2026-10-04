@@ -28,8 +28,11 @@ import org.springframework.stereotype.Component;
  * location means national.</li>
  * </ul>
  */
-@Component("liberiaemrreports.locationScopeResolver")
+@Component(LocationScopeResolver.BEAN_NAME)
 public class LocationScopeResolver {
+	
+	/** This bean's name in the Spring context, for {@code Context.getRegisteredComponent}. */
+	public static final String BEAN_NAME = "liberiaemrreportsLocationScopeResolver";
 	
 	/** Seeded by each site package from its facility root; see omod config.xml. */
 	public static final String GP_FACILITY_LOCATION = "liberiaemr.facility.locationUuid";
@@ -93,17 +96,13 @@ public class LocationScopeResolver {
 		}
 	}
 	
-	private static final LocationLookup CORE_LOOKUP = new LocationLookup() {
-		
-		@Override
-		public Location byUuid(String uuid) {
-			Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
-			try {
-				return Context.getLocationService().getLocationByUuid(uuid);
-			}
-			finally {
-				Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
-			}
+	private static final LocationLookup CORE_LOOKUP = uuid -> {
+		Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+		try {
+			return Context.getLocationService().getLocationByUuid(uuid);
+		}
+		finally {
+			Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
 		}
 	};
 	

@@ -22,6 +22,8 @@ import org.openmrs.module.reporting.evaluation.parameter.Parameter;
  * {@code docs/reporting/README.md} §3.2. The UI and reportingrest's {@code parameterMappings} use
  * these names, so they never change.
  */
+// java:S2143 - reporting's Parameter, the UI's date pickers and reportingrest all type dates as java.util.Date.
+@SuppressWarnings("java:S2143")
 public final class ReportParameters {
 	
 	/** Inclusive, from 00:00. */

@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
  * strings, and a rebuild always matches what {@link ReportRegistrar} saves for the current instance
  * role, including the central-only {@link LiberiaReportManager#BY_FACILITY} data set.
  */
-@Component("liberiaemrreports.registeredEtlDataSets")
+@Component("liberiaemrreportsRegisteredEtlDataSets")
 public class RegisteredEtlDataSets {
 
 	/**

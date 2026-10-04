@@ -152,7 +152,7 @@ public abstract class LiberiaReportManager extends BaseReportManager {
 	 *         (EMR-Ops). Fixed for the life of the process, and definitions are rebuilt on every start.
 	 */
 	protected InstanceRole getRole() {
-		return Context.getRegisteredComponent("liberiaemrreports.locationScopeResolver", LocationScopeResolver.class)
+		return Context.getRegisteredComponent(LocationScopeResolver.BEAN_NAME, LocationScopeResolver.class)
 		        .getRole();
 	}
 }
