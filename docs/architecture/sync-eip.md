@@ -22,7 +22,8 @@ the ones most likely to move the Sprint 3 date.
 Related: [`integration/eip/routes/README.md`](../../integration/eip/routes/README.md) (route
 contract), [`integration/cross-facility/README.md`](../../integration/cross-facility/README.md),
 [ADR 0005](../adr/0005-cross-facility-identity-reconciliation.md) (identity),
-[ADR 0007](../adr/0007-pulled-record-scope.md) (pulled-record scope).
+[ADR 0007](../adr/0007-pulled-record-scope.md) (pulled-record scope),
+[ADR 0013](../adr/0013-remote-patient-import.md) (remote patient import).
 
 ---
 
@@ -642,7 +643,10 @@ every observation by default.
   copy it into its local database. Restated from
   [`integration/cross-facility/README.md`](../../integration/cross-facility/README.md)
   because it is the guarantee that makes the scope meaningful: a scope you can copy is a
-  scope you no longer control.
+  scope you no longer control. **Amended by
+  [ADR 0013](../adr/0013-remote-patient-import.md)** for the offline requirement: a scoped copy
+  may be cached at the facility, but only in a store sync never watches
+  (`liberiaemr_remote_history`), read-only, and always shown with its source facility and age.
 - **Patient-scoped, never bulk.** A query is only valid against a single resolved patient
   in the context of an active clinical interaction. There is no export, no list, no "all
   patients at Barnersville".
@@ -663,6 +667,13 @@ the lawful basis and whether patient consent is required at query time or covere
 care relationship; confirm retention of the audit trail (≥3 months per control C2, likely
 longer for cross-facility access). Final scope to be re-checked against the Data Protection
 Act as enacted; this document does not assume its final text.
+
+**Decided 3 October 2026** ([ADR 0007](../adr/0007-pulled-record-scope.md), now Accepted):
+Option B and its list are confirmed, nothing is excluded as a sensitive category for now, and
+the lawful basis is the care relationship, with no separate consent captured.
+[ADR 0013](../adr/0013-remote-patient-import.md) amends "query, never replicate" so a scoped,
+read-only cache can be kept for offline use. Audit-trail retention and the Data Protection Act
+re-check remain open.
 
 ---
 
@@ -926,7 +937,7 @@ and what closes each. Nothing here is theoretical; each one has a specific trigg
 | F2 | **Facility disk fills**: binlog plus queue plus retry payloads grow all outage | Long outage on a small disk | **The database stops accepting writes and care stops.** The worst outcome in this document, and it is caused by the sync layer | Size the disk for the full retention window; put binlog on its own volume; alarm at 60/75/85%; a documented emergency procedure that sheds sync state, never clinical data |
 | F3 | **Management database lost or restored from an older backup** | Facility disk failure, bad restore | Offset regresses (harmless duplicate sends) or jumps forward (**silent gap**) | Back up the management database with the OpenMRS database, at the same point in time; treat any restore as requiring a reconciliation run |
 | F4 | **Certificate expired during the outage** | Long outage crossing an expiry date | Facility cannot reconnect **at the moment connectivity returns** | Long-lived certs, expiry alerting at 90/60/30 days, central-side revocation for containment (§7.6). BUILT: the `cert-expiry` exporter at central reads the broker's certificates and revocation list; `SyncCertExpiresIn90Days`, `60Days` and `30Days` fire ahead of expiry |
-| F5 | **Stale message overwrites fresher data** | Replay or long-delayed delivery | Silent clinical regression at central | Reject updates older than what central holds (§7.5) |
+| F5 | **Stale message overwrites fresher data** | Replay or long-delayed delivery | Silent clinical regression at central | Reject updates older than what central holds (§7.5). NOT BUILT: dbsync applies whatever arrives last (E17) |
 | F6 | **Poison message blocks the queue head** | One malformed or unsupported entity | The facility appears to be retrying forever and never drains | Bounded retries then dead-letter, and the stream continues (§5.4). BUILT at the broker: 10 delivery attempts, then `DLQ` and `SyncDeadLetters` |
 | F7 | **Central never notices a facility has gone quiet** | Facility down, sender crashed, or nothing to send | An outage that nobody is counting is an outage nobody fixes | Facilities send a heartbeat; central alerts on silence, per facility, distinguishing "no data" from "no contact" |
 | F8 | **Everything retried successfully but records still missing** | Any of F1–F3, or a bug | Loss discovered months later in a DHIS2 report | Scheduled reconciliation by count and hash (§5.5). **This is the only control that detects loss rather than preventing it, which is why it is not optional**. BUILT for existence: a nightly digest over the broker, compared at central (§5.5); content comparison is still to come |
@@ -1012,6 +1023,16 @@ the [sync runbook](../runbooks/sync-operations.md).
 ## 6. Cross-facility query flow (Sprint 4)
 
 A read path. It introduces no second write direction.
+
+> **Amended by [ADR 0013](../adr/0013-remote-patient-import.md)** (accepted 2 October 2026).
+> Remote search imports the patient: the facility creates a patient shell (person, name,
+> address, identifiers) with central's UUIDs, which syncs back to central (a no-op unless the
+> home facility edited the patient after the import; E17), and
+> caches the §3.2 summary as a FHIR bundle in `liberiaemr_remote_history`, outside sync, shown
+> in a dedicated read-only "External records" view. Step 4's "never written to the local
+> database" holds for the clinical summary only in the sense that it never enters OpenMRS
+> clinical tables. Remote search and the shell import are on `main`; the history endpoint, its
+> facility store and the search UI are still in review.
 
 ```
   Clinician at Careysburg, patient in front of them
@@ -1125,7 +1146,7 @@ Therefore, per facility:
 The broker is never exposed beyond mTLS-authenticated facilities, and its management
 interface is not exposed at all.
 
-### 7.4 Data at rest: six copies, not one
+### 7.4 Data at rest: seven copies, not one
 
 PHI exists at rest in more places than the OpenMRS database, and each is a full or partial
 copy of the clinical record:
@@ -1137,10 +1158,11 @@ copy of the clinical record:
 | **Sender management database** | Retry payloads (§1.5) | Clinical content, indefinitely if a message is stuck |
 | **Broker journal at central** | In-flight messages | Clinical content |
 | **Reporting ETL schema `liberiaemr_etl`**, at every facility and at central | A flattened copy of the clinical record: names, addresses, identifiers, encounters, obs, orders (ADR 0010) | In the same MariaDB volume as `openmrs`, so full-disk encryption and every database backup carry it. Kept out of the binlog. Rebuildable, so a restore may drop it and re-flatten ([reporting-etl.md](../runbooks/reporting-etl.md)) |
+| **Remote history cache `liberiaemr_remote_history`**, at each facility that imports patients | Other facilities' §3.2 summaries for imported patients (ADR 0013) | Outside sync by construction; inherits the facility's encryption at rest and backup; purged after a period without access and when a facility's access is revoked |
 | **Backups of any of the above** | Everything | Control D3 |
 
 This table is the **canonical enumeration** for control D3: the SOP mapping and §7.8 cite it
-rather than restate it. The `sync-queue` volume is not a sixth store; it is the physical
+rather than restate it. The `sync-queue` volume is not another store; it is the physical
 backing of the Debezium offset beside the management database (§1.5) and is covered by that
 row.
 
@@ -1161,6 +1183,21 @@ newer version of the same record with an older one. Central therefore rejects an
 whose source version or source timestamp is older than what it already holds, and counts
 the rejection. Without that check, "at-least-once plus idempotent upsert" quietly means
 "last to arrive wins", and after a long outage the last to arrive is frequently the oldest.
+
+**Not built: dbsync 4.0.0 has no such check** (checked in source on 3 October 2026). The
+receiver's apply step, `OpenmrsLoadProducer.process()` in dbsync's `api` module, compares only
+hashes: if central's row no longer matches the hash stored when sync last applied it, the
+message goes to the conflict queue; otherwise the incoming row is saved, whatever its age.
+Nothing compares `date_changed` or the message's `dateSent`. The entities do define
+`wasModifiedAfter()`, but nothing calls it. So at central the last message to arrive wins,
+and the sync runbook (section 7) is right to have an operator check a dead letter by hand
+before replaying it. This is risk E17.
+
+Within one facility this rarely bites, because its sender publishes in commit order and the
+receiver applies in arrival order. It bites when two sources write the same record, which
+ADR 0013 now allows: an imported patient shell is a full copy of central's patient rows sent
+from a second facility, so a shell that arrives after the home facility's newer edit reverts
+it. ADR 0013 accepts that risk until an MPI exists.
 
 ### 7.6 Reconnection after an outage
 
@@ -1211,7 +1248,7 @@ not an afterthought.
 | D2: Mutual TLS | Per-facility client certificate on `sync`; broker authorises on certificate subject; revocation enforced at central. **Requires the §1.4 change.** Certificate lifecycle is the MOH ICT Unit's |
 | C1 / B3: Audit | Sync outcomes, rejected messages, dead-letter access and every cross-facility access; readable by the ICT Auditor role only |
 | C3: No PHI in logs | Log UUID, entity type and outcome. Never a name, an identifier value or an observation value: including in error and dead-letter logs, which is where it usually leaks |
-| D3: Encrypted backups | Extends to all six copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
+| D3: Encrypted backups | Extends to all seven copies of clinical data at rest enumerated in §7.4, not only the OpenMRS database |
 | D4: No secrets in the repo | Facility credentials and keys live in `.env` and mounted files; already enforced in CI |
 | **New**: Payload encryption | PGP keys per facility, receiver key custody and rotation owned by MOH ICT (§7.7) |
 | **New**: Facility disk encryption | Not currently in the SOP mapping. §7.4 makes it necessary; raise it with MOH ICT |
@@ -1226,7 +1263,7 @@ Status as the repository records it on 1 October 2026.
 | --- | --- | --- | --- |
 | 1 | Central-assigned CPI accepted, or National ID to become mandatory at registration? | ADR 0005, Sprint 3 | Answered: the central-assigned CPI, ADR 0005 accepted (LE-22) |
 | 2 | Named MOH role owning the duplicate review queue, with an expected turnaround | ADR 0005, go-live | Open |
-| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 | Open: ADR 0007 Proposed |
+| 3 | Pulled-record scope: Option B and its enumerated list confirmed? | ADR 0007, Sprint 4 | Open: ADR 0007 Proposed; its condition 1 amended by ADR 0013 |
 | 4 | Sensitive categories excluded from cross-facility visibility, if any | ADR 0007, content packages | Open: ADR 0007 Proposed |
 | 5 | Lawful basis, and whether patient consent is captured at query time | ADR 0007 | Open: ADR 0007 Proposed |
 | 6 | Certificate lifecycle ownership, in writing (control D2) | Sprint 3 | Open: D2 Partial |
@@ -1261,8 +1298,9 @@ can invalidate the Sprint 3 plan.
 | E12 | Facility and central drift onto different content-package versions, and the receiver fills each gap with placeholder metadata rather than failing (§1.6) | Same national packages both sides, with central carrying every site's locations (ADR 0012); assert UUID parity in the upgrade rehearsal. `SyncPlaceholderMetadata` detects a placeholder at central (LE-373) | Medium |
 | E13 | PGP key custody unassigned; a lost receiver key makes queued messages unreadable | Assign to MOH ICT with the certificate lifecycle; key backup in the DR runbook (§7.7) | Medium |
 | E14 | ~~No plan for the initial load of a facility's existing data~~ RESOLVED: snapshot on the sender's first start, rehearsed by `qa/sync/verify-initial-load.sh`; reconciliation verifies that records exist at central (§5.5), not yet that their content matches | Snapshot during onboarding, one facility at a time, verified by reconciliation (§5.10) | Closed |
-| E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender | Medium |
+| E15 | Sender and receiver upgraded out of order, or with conflicts pending | Follow the module's documented order: drain conflicts, upgrade the receiver, then each sender. DOCUMENTED: sync runbook section 19, with the hash rebuild after a release that changes synced rows; not yet rehearsed | Medium |
 | E16 | Retries run on a fixed 30-minute interval with no backoff or jitter, and central has no per-facility rate limit, so facilities restored together reconnect together and one facility's backlog can starve another's live sync (F9) | Jittered, capped backoff (§5.4) and per-facility fairness at central (§7.6). Neither is configured today; establish whether dbsync or the broker can provide them before writing our own | Medium |
+| E17 | Central applies whatever arrives last: dbsync has no check that an update is newer than what central holds (§7.5). A replayed dead letter, or an imported patient shell (ADR 0013) synced after the source facility's newer edit, silently turns central's record back | Check by hand before replaying a dead letter (runbook section 7). For imported shells, accepted in ADR 0013 until an MPI exists; the alternatives were a receiver-side age check (a dbsync change) or an import that never re-sends rows central already holds | High |
 
 ## 10. Before route one
 

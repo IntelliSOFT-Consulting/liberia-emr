@@ -1,6 +1,6 @@
 # 0013: Remote patient import: a local read-only history and a shared patient record
 
-**Status:** Proposed, awaiting MOH ICT and MOH legal agreement
+**Status:** Accepted (2 October 2026)
 **Ticket:** LE-383 (amends [ADR 0007](0007-pulled-record-scope.md) condition 1; records a
 departure from [ADR 0005](0005-cross-facility-identity-reconciliation.md))
 **Design:** [remote import sync isolation](../superpowers/specs/2026-10-02-remote-import-sync-isolation-design.md)
@@ -95,8 +95,13 @@ in one place and tested there (`qa/api/`).
 
 The importing facility creates `person`, `patient`, `person_name`, `person_address` and
 `patient_identifier` rows **with central's UUIDs**, audit fields and preferred flags. They
-reach central as no-op upserts: identical rows, and the stale-data check
-([sync-eip.md](../architecture/sync-eip.md) §7.5) stops an older copy overwriting a newer one.
+reach central as upserts. While central still holds what the import copied, they are identical
+rows and change nothing. If the patient's home facility edits those rows after the import and
+its edit reaches central first, the shell's older rows arrive last and are applied, because
+dbsync has no check that an update is newer than what central holds
+([sync-eip.md](../architecture/sync-eip.md) §7.5, risk E17). That happens when the importing
+facility goes offline before its sender pushes the shell. *(Corrected 3 October 2026: this
+paragraph first said a stale-data check prevented it; dbsync 4.0.0 has none.)*
 Records the importing facility creates afterwards sync normally against the same patient UUID.
 
 This **departs from ADR 0005** for imported patients only: two facilities now write to one
@@ -109,9 +114,13 @@ patient record instead of each holding its own. Two rules keep the identity laye
 
 **Demographics edits are last-write-wins at central.** Two facilities editing the same
 patient's name, address or attributes each send a full row; the last to arrive wins, with no
-conflict raised. Accepted as a known limitation: demographics edits are rare, clinical rows
-are unaffected (they are add-only and owned by their author), and the alternative needs an
-MPI. When an MPI exists, this decision should be revisited in favour of Option D.
+conflict raised. The import itself is a write of this kind: a shell that reaches central
+after a newer edit from the home facility reverts it, with nothing edited at the importing
+facility, and central keeps the reverted values until the home facility edits that patient
+again. Accepted as a known limitation, with the import case accepted on 3 October 2026:
+demographics edits are rare, clinical rows are unaffected (they are add-only and owned by
+their author), and the alternatives need an MPI or a change to dbsync's receiver. When an MPI
+exists, this decision should be revisited in favour of Option D.
 
 ### 4. Scope: observations and diagnoses stay out
 
@@ -125,20 +134,26 @@ query did. They stay out: ADR 0007's reasoning (an enumerated list can be audite
 cannot) applies with more force to a copy than to a query, since a copy outlives the access
 that produced it. Widening the scope later remains a new ADR and a fresh legal review.
 
-## What MOH ICT and MOH legal must decide
+## Agreed on acceptance
 
-1. **Accept the amendment to ADR 0007 condition 1**: a cached, read-only, scoped copy in place
-   of "never replicate", for the offline requirement.
-2. **Retention of the cached copy**: how long a facility may keep a bundle after the last
-   access (proposed: refreshed while the patient is under care here, purged after
-   [N months] without access).
-3. **Revocation**: ADR 0007 relied on "nothing is replicated, so revoking access removes
-   future visibility completely". With a cache, revocation must also purge cached bundles at
-   that facility. Confirm this is an acceptable control.
-4. **The two items still open from ADR 0007**: sensitive-category exclusions (for example HIV
-   status) and the lawful basis, including whether consent is captured at the point of import.
-5. **The shared-record departure from ADR 0005** and last-write-wins on demographics, until an
-   MPI is in place.
+1. **The amendment to ADR 0007 condition 1**: a cached, read-only, scoped copy in place of
+   "never replicate", for the offline requirement.
+2. **Retention of the cached copy**: refreshed while the patient is under care at the
+   importing facility, and purged after a configurable period without access. The period is
+   a deployment setting of **at most 12 months**, and 12 months is also the default. A
+   deployment may set it shorter, never longer. *(Value set on 3 October 2026; on acceptance
+   this item left it open.)*
+3. **Revocation purges the cache**: ADR 0007 relied on "nothing is replicated, so revoking
+   access removes future visibility completely". With a cache, revoking a facility's access
+   also purges its cached bundles. This is a required control.
+4. **The shared-record departure from ADR 0005** and last-write-wins on demographics, until an
+   MPI is in place. This includes an imported shell that reaches central after a newer edit
+   and reverts it (accepted 3 October 2026, §3).
+
+Accepting this ADR does not settle the two items still open from ADR 0007: sensitive-category
+exclusions (for example HIV status) and the lawful basis, including whether consent is
+captured at the point of import. They stay with ADR 0007, and the central endpoint applies
+whatever the MOH decides there.
 
 ## Consequences
 
@@ -160,7 +175,8 @@ that produced it. Widening the scope later remains a new ADR and a fresh legal r
   item visible, at the cost of one more place to look.
 - Central holds one record for an imported patient, written by more than one facility. A
   demographics correction at one facility can be overwritten by an older edit from another
-  arriving later. Accepted until an MPI exists.
+  arriving later, and by an imported shell synced after it. Nothing at central detects either.
+  Accepted until an MPI exists.
 - Superseding this ADR in favour of Option D (linked records) is the expected path once an
   MPI or national client registry is in place; the store and the scoped endpoint carry over
   unchanged.

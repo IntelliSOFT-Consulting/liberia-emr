@@ -9,8 +9,10 @@
  * The auditlog module's own page does not load on core 2.8.8 and it has no REST resource, hence
  * this app (docs/security/moh-ict-sop-mapping.md, B3).
  */
-import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import { createHomeDashboardLink } from './home-dashboard/home-dashboard-link.component';
+import { AUDIT_LOG_DASHBOARD, VIEW_PRIVILEGE } from './privileges';
 
 const moduleName = '@liberiaemr/esm-liberia-audit-log-app';
 
@@ -26,5 +28,18 @@ export const root = getAsyncLifecycle(() => import('./audit-log/audit-log.compon
 
 export const auditLogAppMenuItem = getAsyncLifecycle(
   () => import('./audit-log/audit-log-app-menu-item.component'),
+  options,
+);
+
+// The ICT Auditor's home page (/home/audit-log), the same page as /audit-log; config-national.json
+// names it in esm-home-app's defaultDashboardPerRole.
+export const auditLogDashboardLink = getSyncLifecycle(
+  // t('auditLog', 'Audit log')
+  createHomeDashboardLink({
+    name: AUDIT_LOG_DASHBOARD,
+    titleKey: 'auditLog',
+    title: 'Audit log',
+    privilege: VIEW_PRIVILEGE,
+  }),
   options,
 );

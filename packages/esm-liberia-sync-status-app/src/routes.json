@@ -22,6 +22,7 @@
       "name": "sync-status-app-menu-item",
       "component": "syncStatusAppMenuItem",
       "slot": "app-menu-slot",
+      "privileges": ["View Sync Status"],
       "online": true,
       "offline": false
     },
@@ -29,6 +30,49 @@
       "name": "mfl-sync-app-menu-item",
       "component": "mflSyncAppMenuItem",
       "slot": "app-menu-slot",
+      "privileges": ["View MFL Sync"],
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "sync-status-dashboard-link",
+      "component": "syncStatusDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "privileges": ["View Sync Status"],
+      "meta": {
+        "name": "sync-status",
+        "slot": "sync-status-dashboard-slot",
+        "title": "Sync status"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "sync-status-dashboard",
+      "component": "root",
+      "slot": "sync-status-dashboard-slot",
+      "privileges": ["View Sync Status"],
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "sync-conflicts-dashboard-link",
+      "component": "syncConflictsDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "privileges": ["Resolve Sync Conflicts"],
+      "meta": {
+        "name": "sync-conflicts",
+        "slot": "sync-conflicts-dashboard-slot",
+        "title": "Sync conflicts"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "sync-conflicts-dashboard",
+      "component": "syncConflicts",
+      "slot": "sync-conflicts-dashboard-slot",
+      "privileges": ["Resolve Sync Conflicts"],
       "online": true,
       "offline": false
     }

@@ -1,7 +1,7 @@
 {
   "name": "4. Fourth Stage Monitoring for Woman and Baby",
   "uuid": "${var.form.fourth-stage-monitoring-for-woman-and-baby.uuid}",
-  "version": "1.2",
+  "version": "1.3",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -48,6 +48,21 @@
               "required": true
             },
             {
+              "label": "Other Complications",
+              "type": "obs",
+              "id": "other_complications_of_woman",
+              "questionOptions": {
+                "concept": "${var.concept.mch.other-complications-of-woman.uuid}",
+                "rendering": "text",
+                "calculate": {
+                  "calculateExpression": "complications_of_woman !== '${var.concept.ciel.5622.uuid}' ? '' : myValue"
+                }
+              },
+              "hide": {
+                "hideWhenExpression": "complications_of_woman !== '${var.concept.ciel.5622.uuid}'"
+              }
+            },
+            {
               "label": "Complications of baby",
               "type": "obs",
               "id": "complications_of_baby",
@@ -74,6 +89,21 @@
                 ]
               },
               "required": true
+            },
+            {
+              "label": "Other Complications",
+              "type": "obs",
+              "id": "other_complications_of_baby",
+              "questionOptions": {
+                "concept": "${var.concept.mch.other-complications-of-baby.uuid}",
+                "rendering": "text",
+                "calculate": {
+                  "calculateExpression": "complications_of_baby !== '${var.concept.ciel.5622.uuid}' ? '' : myValue"
+                }
+              },
+              "hide": {
+                "hideWhenExpression": "complications_of_baby !== '${var.concept.ciel.5622.uuid}'"
+              }
             },
             {
               "label": "Monitoring frequency",
@@ -129,13 +159,14 @@
                 "rendering": "number",
                 "min": 0,
                 "max": 250,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
-                  "message": "Value must be between 0 and 250"
+                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
                 }
               ]
             },
@@ -147,14 +178,15 @@
                 "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 200,
-                "step": 1
+                "max": 150,
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
-                  "message": "Value must be between 0 and 200"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150)",
+                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
                 }
               ]
             }
@@ -173,13 +205,14 @@
                 "rendering": "number",
                 "min": 0,
                 "max": 230,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
-                  "message": "Value must be between 0 and 230"
+                  "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
                 }
               ]
             },
