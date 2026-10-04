@@ -22,21 +22,26 @@ source.bedmanagement.commit in distribution/distro.properties (the 7.2.0 tag). T
 packages/modify-pr/.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md.
 
 diff --git a/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java b/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
-index 61f182f..2c6a063 100644
+index 61f182f..8cce5eb 100644
 --- a/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
 +++ b/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
-@@ -44,8 +44,12 @@ public class VisitWithBedPatientAssignmentSaveHandler implements SaveHandler<Vis
+@@ -42,12 +42,13 @@ public class VisitWithBedPatientAssignmentSaveHandler implements SaveHandler<Vis
+ 	
+ 	@Override
  	public void handle(Visit visit, User user, Date date, String s) {
- 		if (visit.getVisitId() != null) {
- 			
+-		if (visit.getVisitId() != null) {
+-			
 -			if (visit.getStopDatetime() != null) {
 -				log.debug("Unassigning bed from patient (if any) due to stopped visit on " + visit.getStopDatetime());
-+			// unAssignBedsInEndedVisit requires "Assign Beds" and "Edit Admission Locations", and this
-+			// handler runs on every save of an ended visit. Only call it when there is a bed to free,
-+			// so ending a visit of a patient who has no bed needs no bed write privilege.
-+			if (visit.getStopDatetime() != null
-+			        && !bedManagementService.getBedPatientAssignmentByVisit(visit.getUuid(), false).isEmpty()) {
-+				log.debug("Unassigning bed from patient due to stopped visit on " + visit.getStopDatetime());
- 				bedManagementService.unAssignBedsInEndedVisit(visit);
- 			}
+-				bedManagementService.unAssignBedsInEndedVisit(visit);
+-			}
++		// unAssignBedsInEndedVisit requires "Assign Beds" and "Edit Admission Locations", and this
++		// handler runs on every save of an ended visit. Only call it when there is a bed to free,
++		// so ending a visit of a patient who has no bed needs no bed write privilege.
++		if (visit.getVisitId() != null && visit.getStopDatetime() != null
++		        && !bedManagementService.getBedPatientAssignmentByVisit(visit.getUuid(), false).isEmpty()) {
++			log.debug("Unassigning bed from patient due to stopped visit on " + visit.getStopDatetime());
++			bedManagementService.unAssignBedsInEndedVisit(visit);
  		}
+ 	}
+ }
