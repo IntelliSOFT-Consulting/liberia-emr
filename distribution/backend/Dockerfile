@@ -262,9 +262,9 @@ FROM maven:3.9-eclipse-temurin-17 AS auditlog
 
 WORKDIR /build
 COPY distribution/distro.properties /build/distro.properties
-# Modify + PR patches (packages/modify-pr/README.md), applied in name order. A patch that no
-# longer applies fails the build rather than shipping the unpatched module.
-COPY distribution/backend/patches/auditlog/ /build/patches/
+# No Modify + PR patches: the pinned commit already contains AUDIT-64/65/66, which this stage
+# used to apply as patches. To carry one again, restore a patches/auditlog/ COPY and the apply
+# loop as in the bedmanagement stage below (packages/modify-pr/README.md).
 RUN set -eu; \
     repo="$(sed -n 's/^source\.auditlog\.repository=//p' /build/distro.properties | tr -d '[:space:]')"; \
     commit="$(sed -n 's/^source\.auditlog\.commit=//p' /build/distro.properties | tr -d '[:space:]')"; \
@@ -279,10 +279,6 @@ RUN set -eu; \
     git fetch -q --depth 1 "$repo" "$commit"; \
     git checkout -q FETCH_HEAD; \
     [ "$(git rev-parse HEAD)" = "$commit" ] || { echo "fetched $(git rev-parse HEAD), pinned $commit" >&2; exit 1; }; \
-    for p in /build/patches/*.patch; do \
-      echo "applying ${p##*/}"; \
-      git apply --whitespace=nowarn "$p"; \
-    done; \
     mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set \
       -DnewVersion="$version" -DgenerateBackupPoms=false; \
     mvn -B -q -DskipTests clean package; \
@@ -296,7 +292,7 @@ RUN set -eu; \
 # a visit without bed write access. distribution/backend/patches/bedmanagement/ fixes that;
 # packages/modify-pr/.patches/ tracks it until upstream releases the fix.
 #
-# Built exactly as the auditlog stage above: the commit pinned in distro.properties
+# Built like the auditlog stage above, plus patches: the commit pinned in distro.properties
 # (source.bedmanagement.*, the 7.2.0 tag) is fetched by its full SHA, every patch is applied
 # in name order and one that no longer applies fails the build, and the version is stamped so
 # no -SNAPSHOT omod reaches the image. One extra check: the stamped version must sort above

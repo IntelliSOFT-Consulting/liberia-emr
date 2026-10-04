@@ -14,7 +14,6 @@ import static org.openmrs.module.liberiaemrreports.reporting.IndicatorSql.column
 import java.util.Arrays;
 import java.util.List;
 
-import org.openmrs.module.liberiaemrreports.reporting.Grouping;
 import org.openmrs.module.liberiaemrreports.reporting.IndicatorQuery;
 import org.openmrs.module.liberiaemrreports.reporting.IndicatorSql;
 import org.openmrs.module.liberiaemrreports.reporting.LiberiaReportManager;
@@ -29,6 +28,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class RmncahReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String ENCOUNTER_DATETIME = "d.encounter_datetime";
+	
+	/** Repeated in this file's SQL. */
+	private static final String FACILITY_LOCATION_ID = "f.facility_location_id";
 
 	/** Episode window for diarrhoea and pneumonia (ambiguity 6). */
 	static final int CHILD_EPISODE_DAYS = 14;
@@ -70,7 +75,7 @@ public class RmncahReportManager extends LiberiaReportManager {
 	 */
 	static IndicatorQuery contraceptivePrevalence() {
 		String num = column("RMNCAH-017", "NUM");
-		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "f.facility_location_id",
+		return IndicatorQuery.of(g -> IndicatorQuery.select(g, FACILITY_LOCATION_ID,
 		    Arrays.asList(IndicatorSql.countDistinct(num, "f.person_key", "f.is_modern_method = 1")),
 		    "FROM ${etl}.mamba_fact_rmncah_family_planning f\n" //
 		            + "WHERE f.encounter_datetime <= :endDate\n" //
@@ -111,9 +116,9 @@ public class RmncahReportManager extends LiberiaReportManager {
 		            + "                  THEN 1 ELSE 0 END AS treated\n" //
 		            + "      FROM " + DIAGNOSIS + " d" + Sql.joinPersonKey("d", "pc") + Sql.joinPerson("d", "p") + "\n" //
 		            + "      WHERE d.icd10_group = '" + icd10Group + "'\n" //
-		            + "        AND " + Sql.inPeriod("d.encounter_datetime") + "\n" //
+		            + "        AND " + Sql.inPeriod(ENCOUNTER_DATETIME) + "\n" //
 		            + "        AND " + g.inScope("d") + "\n" //
-		            + "        AND " + Sql.ageMonths("p.birthdate", "d.encounter_datetime") + " BETWEEN 0 AND 59) x"),
+		            + "        AND " + Sql.ageMonths("p.birthdate", ENCOUNTER_DATETIME) + " BETWEEN 0 AND 59) x"),
 		    num, den, column(code, "PCT"));
 	}
 
@@ -128,16 +133,16 @@ public class RmncahReportManager extends LiberiaReportManager {
 		    Arrays.asList(IndicatorSql.count(num, "1 = 1")),
 		    "FROM " + DIAGNOSIS + " d" + Sql.joinPersonKey("d", "pc") + Sql.joinPerson("d", "p") + "\n" //
 		            + "WHERE d.icd10_group = '" + icd10Group + "'\n" //
-		            + "  AND " + Sql.inPeriod("d.encounter_datetime") + "\n" //
+		            + "  AND " + Sql.inPeriod(ENCOUNTER_DATETIME) + "\n" //
 		            + "  AND " + g.inScope("d") + "\n" //
-		            + "  AND " + Sql.ageMonths("p.birthdate", "d.encounter_datetime") + " BETWEEN 0 AND 59\n" //
+		            + "  AND " + Sql.ageMonths("p.birthdate", ENCOUNTER_DATETIME) + " BETWEEN 0 AND 59\n" //
 		            + "  AND NOT EXISTS (SELECT 1 FROM " + DIAGNOSIS + " e" + Sql.joinPersonKey("e", "pe") + "\n" //
 		            + "                  WHERE pe.person_key = pc.person_key\n" //
 		            + "                    AND e.icd10_group = d.icd10_group\n" //
 		            + "                    AND " + g.inSameScope("e", "d") + "\n" //
-		            + "                    AND " + Sql.before("e.encounter_datetime", "d.encounter_datetime",
+		            + "                    AND " + Sql.before("e.encounter_datetime", ENCOUNTER_DATETIME,
 		                "e.diagnosis_id < d.diagnosis_id") + "\n" //
-		            + "                    AND " + Sql.withinDaysBefore("e.encounter_datetime", "d.encounter_datetime",
+		            + "                    AND " + Sql.withinDaysBefore("e.encounter_datetime", ENCOUNTER_DATETIME,
 		                CHILD_EPISODE_DAYS) + ")"),
 		    num);
 	}
@@ -151,7 +156,7 @@ public class RmncahReportManager extends LiberiaReportManager {
 		String code = "RMNCAH-026";
 		String caesarean = "f.episode_delivery_method = 'caesarean'";
 		String anyMethod = "f.episode_delivery_method IS NOT NULL";
-		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "f.facility_location_id",
+		return IndicatorQuery.of(g -> IndicatorQuery.select(g, FACILITY_LOCATION_ID,
 		    Arrays.asList(IndicatorSql.count(column(code, "NUM"), caesarean),
 		        IndicatorSql.count(column(code, "DEN"), anyMethod),
 		        IndicatorSql.percent(column(code, "PCT"), "SUM(CASE WHEN " + caesarean + " THEN 1 ELSE 0 END)",
@@ -169,7 +174,7 @@ public class RmncahReportManager extends LiberiaReportManager {
 	 */
 	static IndicatorQuery homeDeliveries() {
 		String num = column("RMNCAH-028", "NUM");
-		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "f.facility_location_id",
+		return IndicatorQuery.of(g -> IndicatorQuery.select(g, FACILITY_LOCATION_ID,
 		    Arrays.asList(IndicatorSql.count(num, "f.episode_place_of_delivery = 'home'")),
 		    "FROM ${etl}.mamba_fact_rmncah_mother_pnc f\n" //
 		            + "WHERE f.is_episode_start = 1\n" //

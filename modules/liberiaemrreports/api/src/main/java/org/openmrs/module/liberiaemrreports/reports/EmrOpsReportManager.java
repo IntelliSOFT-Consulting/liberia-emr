@@ -34,6 +34,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class EmrOpsReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String COUNT_ALL = "COUNT(*)";
 
 	static final String PATIENT = "${etl}.mamba_fact_emr_ops_patient";
 
@@ -76,7 +79,7 @@ public class EmrOpsReportManager extends LiberiaReportManager {
 			denominator = "COUNT(DISTINCT f.person_key)";
 		} else {
 			numerator = "COALESCE(SUM(CASE WHEN f.is_probable_duplicate = 1 THEN 1 ELSE 0 END), 0)";
-			denominator = "COUNT(*)";
+			denominator = COUNT_ALL;
 		}
 		String num = numerator;
 		String den = denominator;
@@ -98,7 +101,7 @@ public class EmrOpsReportManager extends LiberiaReportManager {
 		String sameDay = "CAST(e.date_created AS DATE) = CAST(e.encounter_datetime AS DATE)";
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "h.facility_location_id",
 		    Arrays.asList(IndicatorSql.count(column(code, "NUM"), sameDay), IndicatorSql.count(column(code, "DEN"), "1 = 1"),
-		        IndicatorSql.percent(column(code, "PCT"), "SUM(CASE WHEN " + sameDay + " THEN 1 ELSE 0 END)", "COUNT(*)")),
+		        IndicatorSql.percent(column(code, "PCT"), "SUM(CASE WHEN " + sameDay + " THEN 1 ELSE 0 END)", COUNT_ALL)),
 		    "FROM ${etl}.mamba_dim_encounter e\n" //
 		            + "INNER JOIN ${etl}.mamba_dim_encounter_location el ON el.encounter_id = e.encounter_id\n" //
 		            + "INNER JOIN ${etl}.mamba_dim_emr_ops_encounter_type t ON t.encounter_type_id = e.encounter_type\n" //
@@ -121,7 +124,7 @@ public class EmrOpsReportManager extends LiberiaReportManager {
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "x.facility_location_id",
 		    Arrays.asList(IndicatorSql.count(column(code, "NUM"), "x.consistent = 1"),
 		        IndicatorSql.count(column(code, "DEN"), "1 = 1"), IndicatorSql.percent(column(code, "PCT"),
-		            "SUM(CASE WHEN x.consistent = 1 THEN 1 ELSE 0 END)", "COUNT(*)")),
+		            "SUM(CASE WHEN x.consistent = 1 THEN 1 ELSE 0 END)", COUNT_ALL)),
 		    "FROM (SELECT " + g.keyColumn("v.facility_location_id") + "pc.person_key, " + consistent + " AS consistent\n" //
 		            + "      FROM ${etl}.mamba_fact_emr_ops_visit v" + Sql.joinPersonKey("v", "pc") + "\n" //
 		            + "      INNER JOIN " + PATIENT + " pt ON pt.client_id = v.client_id\n" //
