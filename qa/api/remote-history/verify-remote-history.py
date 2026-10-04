@@ -3,10 +3,12 @@
 
   qa/api/remote-history/verify-remote-history.py --base-url https://central.example \
       --user USER --password PASS --patient-uuid UUID \
-      [--requesting-facility LOCATION_UUID] [--allow-host HOST]
+      [--requesting-facility LOCATION_UUID] [--allow-host HOST] [--cacert FILE]
 
 Runs against a CENTRAL instance (LIBERIAEMR_INSTANCE_ROLE=central) as an account holding View
 Remote History. It only reads. It refuses any host but localhost unless you pass --allow-host.
+Certificates are always verified; for a test gateway with a self-signed certificate, pass that
+certificate with --cacert.
 
 Checks:
   - the response holds only the ADR 0013 resource types, and nothing outside them;
@@ -47,10 +49,9 @@ def get(args, path):
     url = args.base_url.rstrip("/") + "/openmrs/ws/rest/v1/liberiaemr/remotehistory/" + path
     token = base64.b64encode(f"{args.user}:{args.password}".encode()).decode()
     request = urllib.request.Request(url, headers={"Authorization": "Basic " + token, "Accept": "application/json"})
-    context = ssl.create_default_context()
-    if urllib.parse.urlparse(url).hostname in ("localhost", "127.0.0.1"):
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
+    # Always verified: a self-signed test gateway is trusted by passing its certificate (--cacert),
+    # never by switching verification off.
+    context = ssl.create_default_context(cafile=args.cacert)
     try:
         with urllib.request.urlopen(request, context=context, timeout=60) as response:
             return response.status, json.loads(response.read() or b"{}")
@@ -73,6 +74,7 @@ def main():
     parser.add_argument("--patient-uuid", required=True)
     parser.add_argument("--requesting-facility")
     parser.add_argument("--allow-host", action="append", default=[])
+    parser.add_argument("--cacert", help="a CA or self-signed certificate (PEM) to trust, e.g. the test gateway's")
     args = parser.parse_args()
 
     host = urllib.parse.urlparse(args.base_url).hostname

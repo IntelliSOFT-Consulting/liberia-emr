@@ -155,5 +155,6 @@ The contract test for central's remote history endpoint (LE-382, [ADR 0013](../.
 response holds only the ADR 0013 resource types (`RemoteHistoryAssembler.RESOURCE_TYPES`), that
 observations appear only as the tagged ANC contact summary, that the requesting facility's own
 records are left out, and that an unknown patient is an empty list, not a 404. It only reads, and
-refuses any host but localhost unless you pass `--allow-host`. Not yet wired into CI: it needs a
+refuses any host but localhost unless you pass `--allow-host`. Certificates are always verified; pass
+a self-signed test gateway's certificate with `--cacert`. Not yet wired into CI: it needs a
 central stack with a patient seeded at two facilities.
