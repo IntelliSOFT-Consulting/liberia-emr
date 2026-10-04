@@ -28,6 +28,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class NutritionReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String PERSON_KEY = "a.person_key";
+	
+	/** Repeated in this file's SQL. */
+	private static final String ENCOUNTER_DATETIME = "a.encounter_datetime";
 
 	static final String ANTHROPOMETRY = "${etl}.mamba_fact_nutrition_anthropometry";
 
@@ -77,20 +83,20 @@ public class NutritionReportManager extends LiberiaReportManager {
 		String code = "NUT-008";
 		String low = "a.muac_cm < 11.5";
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "a.facility_location_id",
-		    Arrays.asList(IndicatorSql.countDistinct(column(code, "NUM"), "a.person_key", low),
-		        IndicatorSql.countDistinct(column(code, "DEN"), "a.person_key", "1 = 1"),
+		    Arrays.asList(IndicatorSql.countDistinct(column(code, "NUM"), PERSON_KEY, low),
+		        IndicatorSql.countDistinct(column(code, "DEN"), PERSON_KEY, "1 = 1"),
 		        IndicatorSql.percent(column(code, "PCT"), "COUNT(DISTINCT CASE WHEN " + low + " THEN a.person_key END)",
 		            "COUNT(DISTINCT a.person_key)")),
 		    "FROM " + ANTHROPOMETRY + " a\n" //
 		            + "WHERE " + muacChild("a") + "\n" //
-		            + "  AND " + Sql.inPeriod("a.encounter_datetime") + "\n" //
+		            + "  AND " + Sql.inPeriod(ENCOUNTER_DATETIME) + "\n" //
 		            + "  AND " + g.inScope("a") + "\n" //
 		            + "  AND NOT EXISTS (SELECT 1 FROM " + ANTHROPOMETRY + " b\n" //
 		            + "                  WHERE b.person_key = a.person_key\n" //
 		            + "                    AND " + muacChild("b") + "\n" //
 		            + "                    AND " + Sql.inPeriod("b.encounter_datetime") + "\n" //
 		            + "                    AND " + g.inSameScope("b", "a") + "\n" //
-		            + "                    AND " + Sql.before("a.encounter_datetime", "b.encounter_datetime",
+		            + "                    AND " + Sql.before(ENCOUNTER_DATETIME, "b.encounter_datetime",
 		                "a.encounter_id < b.encounter_id") + ")"),
 		    column(code, "NUM"), column(code, "DEN"), column(code, "PCT"));
 	}
@@ -106,10 +112,10 @@ public class NutritionReportManager extends LiberiaReportManager {
 	static IndicatorQuery moderateWasting() {
 		String num = column("NUT-009", "NUM");
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "a.facility_location_id",
-		    Arrays.asList(IndicatorSql.countDistinct(num, "a.person_key", "a.whz >= -3 AND a.whz < -2")),
+		    Arrays.asList(IndicatorSql.countDistinct(num, PERSON_KEY, "a.whz >= -3 AND a.whz < -2")),
 		    "FROM " + ANTHROPOMETRY + " a\n" //
 		            + "WHERE a.age_months BETWEEN 6 AND 59\n" //
-		            + "  AND " + Sql.inPeriod("a.encounter_datetime") + "\n" //
+		            + "  AND " + Sql.inPeriod(ENCOUNTER_DATETIME) + "\n" //
 		            + "  AND " + g.inScope("a")),
 		    num);
 	}

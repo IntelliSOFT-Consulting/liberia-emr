@@ -12,6 +12,7 @@ package org.openmrs.module.liberiaemrreports.context;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -70,8 +71,8 @@ public class ReportingContextServiceTest extends BaseModuleContextSensitiveTest 
 	}
 	
 	@Test
-	public void etlLastRun_shouldBeNullBeforeTheFirstRun() {
-		assertNull(service.getEtlLastRun());
+	public void etlLastRun_shouldBeEmptyBeforeTheFirstRun() {
+		assertTrue(service.getEtlLastRun().isEmpty());
 	}
 	
 	@Test

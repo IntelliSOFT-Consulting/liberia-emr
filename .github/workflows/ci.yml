@@ -861,19 +861,24 @@ jobs:
         run: qa/api/mfl-stub/gen-material.sh "$RUNNER_TEMP/mfl-stub"
 
       # Ephemeral credentials for a database that lives only as long as this job — never a
-      # facility secret. cypress.env.json is for local development only and must never drive
-      # a CI run (Cypress base URL comes from CYPRESS_BASE_URL below instead).
+      # facility secret. Random per run rather than literals, so nothing that looks like a
+      # password is committed; they are only ever read back from this env file.
+      # cypress.env.json is for local development only and must never drive a CI run
+      # (Cypress base URL comes from CYPRESS_BASE_URL below instead).
       - name: Start the disposable demo stack
         run: |
+          e2e_db_pw="$(openssl rand -hex 16)"
+          e2e_db_root_pw="$(openssl rand -hex 16)"
+          e2e_etl_pw="$(openssl rand -hex 16)"
           cat > "$RUNNER_TEMP/e2e.env" <<ENV
           REGISTRY=${REGISTRY}
           LIBERIAEMR_VERSION=${LIBERIAEMR_VERSION}
           FACILITY_CODE=careysburg
           MYSQL_DATABASE=openmrs
           MYSQL_USER=openmrs
-          MYSQL_PASSWORD=ci-ephemeral
-          MYSQL_ROOT_PASSWORD=ci-ephemeral-root
-          ETL_DB_PASSWORD=ci-ephemeral-etl
+          MYSQL_PASSWORD=${e2e_db_pw}
+          MYSQL_ROOT_PASSWORD=${e2e_db_root_pw}
+          ETL_DB_PASSWORD=${e2e_etl_pw}
           OMRS_CREATE_TABLES=true
           TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
           CENTRAL_URL=http://localhost

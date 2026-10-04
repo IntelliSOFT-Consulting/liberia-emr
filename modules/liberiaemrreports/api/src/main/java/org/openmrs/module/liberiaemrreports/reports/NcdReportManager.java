@@ -31,6 +31,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class NcdReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String COUNT_DISTINCT_CASE_WHEN = "COUNT(DISTINCT CASE WHEN ";
+	
+	/** Repeated in this file's SQL. */
+	private static final String ALL_ROWS = "1 = 1";
 
 	static final String DIAGNOSIS = "${etl}.mamba_fact_malaria_diagnosis";
 
@@ -72,7 +78,7 @@ public class NcdReportManager extends LiberiaReportManager {
 	static IndicatorQuery cancerDeaths() {
 		String num = column("NCD-002", "NUM");
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "d.facility_location_id",
-		    Arrays.asList(IndicatorSql.countDistinct(num, "pd.person_key", "1 = 1")),
+		    Arrays.asList(IndicatorSql.countDistinct(num, "pd.person_key", ALL_ROWS)),
 		    "FROM ${etl}.mamba_fact_ncd_death d" + Sql.joinPersonKey("d", "pd") + "\n" //
 		            + "WHERE d.cause_group = 'cancer'\n" //
 		            + "  AND d.age_years_at_death BETWEEN 30 AND 69\n" //
@@ -94,7 +100,7 @@ public class NcdReportManager extends LiberiaReportManager {
 			columns.add(num + site.getSuffix());
 		}
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "d.facility_location_id",
-		    IndicatorSql.disaggregated(num, "CONCAT(pc.person_key, '|', d.icd10_category)", "1 = 1", CANCER_SITES),
+		    IndicatorSql.disaggregated(num, "CONCAT(pc.person_key, '|', d.icd10_category)", ALL_ROWS, CANCER_SITES),
 		    "FROM " + DIAGNOSIS + " d" + Sql.joinPersonKey("d", "pc") + "\n" //
 		            + "WHERE d.icd10_group = 'cancer'\n" //
 		            + "  AND " + Sql.inPeriod("d.encounter_datetime") + "\n" //
@@ -113,7 +119,7 @@ public class NcdReportManager extends LiberiaReportManager {
 	 * reading in it is raised (SBP >= 140 or DBP >= 90). Crude.
 	 */
 	static IndicatorQuery raisedBloodPressure() {
-		return latestPerAdult("NCD-007", "b.is_raised = 1", "${etl}.mamba_fact_ncd_blood_pressure", "1 = 1",
+		return latestPerAdult("NCD-007", "b.is_raised = 1", "${etl}.mamba_fact_ncd_blood_pressure", ALL_ROWS,
 		    "encounter_datetime", "encounter_id");
 	}
 
@@ -136,8 +142,8 @@ public class NcdReportManager extends LiberiaReportManager {
 	        String id) {
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "b.facility_location_id",
 		    Arrays.asList(IndicatorSql.countDistinct(column(code, "NUM"), "pb.person_key", raised),
-		        IndicatorSql.countDistinct(column(code, "DEN"), "pb.person_key", "1 = 1"),
-		        IndicatorSql.percent(column(code, "PCT"), "COUNT(DISTINCT CASE WHEN " + raised + " THEN pb.person_key END)",
+		        IndicatorSql.countDistinct(column(code, "DEN"), "pb.person_key", ALL_ROWS),
+		        IndicatorSql.percent(column(code, "PCT"), COUNT_DISTINCT_CASE_WHEN + raised + " THEN pb.person_key END)",
 		            "COUNT(DISTINCT pb.person_key)")),
 		    "FROM " + table + " b" + Sql.joinPersonKey("b", "pb") + Sql.joinPerson("b", "p") + "\n" //
 		            + "WHERE " + qualifies.replace("#", "b") + "\n" //
@@ -164,8 +170,8 @@ public class NcdReportManager extends LiberiaReportManager {
 		return IndicatorQuery.of(g -> IndicatorQuery.select(g, "x.facility_location_id",
 		    Arrays.asList(IndicatorSql.countDistinct(column(code, "NUM"), "x.person_key", diagnosed),
 		        IndicatorSql.countDistinct(column(code, "DEN"), "x.person_key", tested),
-		        IndicatorSql.percent(column(code, "PCT"), "COUNT(DISTINCT CASE WHEN " + diagnosed + " THEN x.person_key END)",
-		            "COUNT(DISTINCT CASE WHEN " + tested + " THEN x.person_key END)")),
+		        IndicatorSql.percent(column(code, "PCT"), COUNT_DISTINCT_CASE_WHEN + diagnosed + " THEN x.person_key END)",
+		            COUNT_DISTINCT_CASE_WHEN + tested + " THEN x.person_key END)")),
 		    "FROM (" + renalPart(g, "N", DIAGNOSIS, "#.icd10_group = 'renal'", "encounter_datetime") //
 		            + "\n      UNION ALL\n      " //
 		            + renalPart(g, "D", LAB, "#.test_group = 'renal' AND #.result_obs_id <> 0", "resulted_at") + ") x"),

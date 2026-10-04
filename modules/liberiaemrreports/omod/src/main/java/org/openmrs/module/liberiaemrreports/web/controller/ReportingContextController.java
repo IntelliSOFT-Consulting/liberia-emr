@@ -18,10 +18,9 @@ import org.openmrs.module.liberiaemrreports.security.NationalReportPrivilege;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * {@code GET /ws/rest/v1/liberiaemrreports/context}: this instance's role, its own facility and the
@@ -30,15 +29,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * The path is spelled out rather than built from webservices.rest's {@code RestConstants}, so the
  * module needs no dependency on that module; /ws/rest/* reaches OpenMRS's dispatcher either way.
  */
-@Controller
+@RestController
 @RequestMapping("/rest/v1/liberiaemrreports")
 public class ReportingContextController {
 	
-	@Autowired
 	private ReportingContextService reportingContextService;
 	
-	@RequestMapping(value = "/context", method = RequestMethod.GET)
-	@ResponseBody
+	@GetMapping("/context")
 	public ResponseEntity<Map<String, Object>> getContext() {
 		if (!Context.isAuthenticated()) {
 			return error(HttpStatus.UNAUTHORIZED, "Authentication is required");
@@ -53,6 +50,7 @@ public class ReportingContextController {
 		return new ResponseEntity<Map<String, Object>>(Collections.<String, Object> singletonMap("error", message), status);
 	}
 	
+	@Autowired
 	void setReportingContextService(ReportingContextService reportingContextService) {
 		this.reportingContextService = reportingContextService;
 	}
