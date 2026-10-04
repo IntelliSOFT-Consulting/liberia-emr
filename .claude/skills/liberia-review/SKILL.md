@@ -82,6 +82,10 @@ For any edit to metadata that could already be in production, ask what happens o
 - Form changes that alter meaning create a **new form version** preserving the historical
   schema — they don't mutate the existing one in place.
 - The clean-DB CI job won't catch these — only the upgrade test would. Flag them here.
+- `scripts/validate/released-uuids.sh` fails a changed or removed UUID that the newest release
+  tag shipped. An edit to `scripts/validate/released-uuids.allowlist` is a deliberate exception:
+  it needs a **second human reviewer**, and its reason must say how databases that loaded the
+  old value are repaired. Say so in your output.
 
 ### Security — contractual, never loosen (§10, CONTRIBUTING "Review")
 Anything touching `docs/security/` or the RBAC CSVs (`privileges/`, `roles/`,

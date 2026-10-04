@@ -154,6 +154,12 @@ jobs:
         run: ./scripts/validate/tests/no-secrets.test.sh
       - name: Refuse demo content in a production distribution
         run: ./scripts/validate/no-demo-in-release.sh
+      # LE-399: shipped content is append-only. Fails a change that removes or re-UUIDs anything
+      # the newest liberiaemr-* release tag shipped (fetch-depth 0 above brings the tags).
+      - name: Refuse changes to UUIDs a release already shipped
+        run: ./scripts/validate/released-uuids.sh
+      - name: The released-UUID guard catches what it should
+        run: ./scripts/validate/tests/released-uuids.test.sh
       # LE-360: the release guard runs the same check, but only when a tag is cut. Reading the
       # site list from release.yml keeps one list and catches a colliding site on the PR.
       - name: Every image a release publishes has a distinct reference
