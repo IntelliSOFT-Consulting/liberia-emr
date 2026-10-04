@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
  * {@code GET /ws/rest/v1/liberiaemrreports/context}.
  */
 @Component("liberiaemrreportsReportingContextService")
-// java:S2143 - JDBC returns java.util.Date (a Timestamp) for the ETL schedule's DATETIME columns.
-@SuppressWarnings("java:S2143")
+// java.util.Date, not java.time: JDBC returns it (a Timestamp) for the ETL schedule's DATETIME
+// columns. SonarQube's java:S2143 is excluded for this file in the root pom.
 public class ReportingContextService {
 	
 	private static final Log log = LogFactory.getLog(ReportingContextService.class);

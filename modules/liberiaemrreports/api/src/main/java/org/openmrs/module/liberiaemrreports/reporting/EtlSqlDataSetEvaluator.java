@@ -57,8 +57,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * caller passes reaches the SQL except through these bindings.
  */
 @Handler(supports = { EtlSqlDataSetDefinition.class })
-// java:S2143 - the reporting module passes the period as java.util.Date and expects Date cells back.
-@SuppressWarnings("java:S2143")
+// java.util.Date, not java.time: the reporting module passes the period as Date and expects Date
+// cells back. SonarQube's java:S2143 is excluded for this file in the root pom.
 public class EtlSqlDataSetEvaluator implements DataSetEvaluator {
 	
 	/**
