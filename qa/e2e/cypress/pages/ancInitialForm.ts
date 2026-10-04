@@ -50,9 +50,9 @@ class ANCInitialFormPage {
 
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
-        cy.wait('@saveAncInitial', { timeout: this.timeout })
-            .its('response.statusCode')
-            .should('be.oneOf', [200, 201]);
+        cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ response }) => {
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
+        });
     }
 
     verifyIptConditionalFields() {
@@ -77,9 +77,9 @@ class ANCInitialFormPage {
         }).click();
 
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
-        cy.wait('@saveAncInitial', { timeout: this.timeout })
-            .its('response.statusCode')
-            .should('be.oneOf', [200, 201]);
+        cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ response }) => {
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
+        });
     }
 
     verifyOptionalFetalFieldsCanBeBlank() {
@@ -92,7 +92,7 @@ class ANCInitialFormPage {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ request, response }) => {
-            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
             const observations = request.body.obs as Array<{ formFieldPath?: string }>;
             optionalFetalFields.forEach((fieldId) => {
                 expect(
@@ -154,7 +154,7 @@ class ANCInitialFormPage {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ request, response }) => {
-            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
             expect(request.body.encounterType, 'submitted encounter type').to.be.a('string').and.not.be.empty;
 
             cy.request<{ name: string }>(
@@ -296,7 +296,7 @@ class ANCInitialFormPage {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveAncInitial', { timeout: this.timeout }).then(({ request, response }) => {
-            expect(response?.statusCode).to.be.oneOf([200, 201]);
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
             const observations = request.body.obs as Array<{ formFieldPath?: string }>;
             descriptions.forEach(({ description }) => {
                 expect(
