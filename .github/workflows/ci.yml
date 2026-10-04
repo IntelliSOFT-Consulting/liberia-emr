@@ -867,18 +867,18 @@ jobs:
       # (Cypress base URL comes from CYPRESS_BASE_URL below instead).
       - name: Start the disposable demo stack
         run: |
-          db_password="$(openssl rand -hex 16)"
-          db_root_password="$(openssl rand -hex 16)"
-          etl_password="$(openssl rand -hex 16)"
+          e2e_db_pw="$(openssl rand -hex 16)"
+          e2e_db_root_pw="$(openssl rand -hex 16)"
+          e2e_etl_pw="$(openssl rand -hex 16)"
           cat > "$RUNNER_TEMP/e2e.env" <<ENV
           REGISTRY=${REGISTRY}
           LIBERIAEMR_VERSION=${LIBERIAEMR_VERSION}
           FACILITY_CODE=careysburg
           MYSQL_DATABASE=openmrs
           MYSQL_USER=openmrs
-          MYSQL_PASSWORD=${db_password}
-          MYSQL_ROOT_PASSWORD=${db_root_password}
-          ETL_DB_PASSWORD=${etl_password}
+          MYSQL_PASSWORD=${e2e_db_pw}
+          MYSQL_ROOT_PASSWORD=${e2e_db_root_pw}
+          ETL_DB_PASSWORD=${e2e_etl_pw}
           OMRS_CREATE_TABLES=true
           TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
           CENTRAL_URL=http://localhost
