@@ -577,12 +577,23 @@ park and retry under `ReceiverErrors`, and apply by themselves once the metadata
      backend log. Shipped uuids are append-only; fix the content, then repair as below.
    - **The facility created it locally** (an admin added a ward, say). It must go into the
      facility's site package with the same uuid; central gets every site's locations (ADR 0012).
-3. Repair the placeholder **in place, keeping its uuid**: the records point at it, so deleting
+3. Back up the tables you are about to change, and check the file is not empty: a dump run
+   against the wrong container writes a 0-byte file without failing loudly.
+
+   ```bash
+   central exec -T db sh -c 'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction openmrs concept concept_name concept_numeric concept_description' > placeholder-repair-backup.sql
+   ls -l placeholder-repair-backup.sql
+   ```
+
+   Then repair the placeholder **in place, keeping its uuid**: the records point at it, so deleting
    it or creating a new row orphans them. Shipping the metadata in content with that uuid does
    it: on the next start Initializer finds the row by uuid and fills it in, unretires it and
    sets its parent. For a **concept** that already has observations, Initializer refuses to
    change the placeholder's datatype (`ConceptInUseException`). Set the datatype and class the
-   content declares first, then let Initializer do the rest:
+   content declares first, then let Initializer do the rest. **Make every database change in this
+   step, including retiring an older concept that holds the name (see the end of this section),
+   before the backend restarts.** A restart in between loads the file too early: the rows fail,
+   and Initializer still marks the file loaded, so step 4 has to be done again.
 
    ```bash
    central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs -e "UPDATE concept SET datatype_id = (SELECT concept_datatype_id FROM concept_datatype WHERE name = '\''<Data type>'\'' AND retired = 0), class_id = (SELECT concept_class_id FROM concept_class WHERE name = '\''<Data class>'\'' AND retired = 0) WHERE uuid = '\''<uuid>'\'' AND retire_reason = '\''[placeholder]'\''"'
@@ -591,8 +602,10 @@ park and retry under `ReceiverErrors`, and apply by themselves once the metadata
 4. Make Initializer read the file again even if its content has not changed, because it records
    a file as loaded even when a row in it failed. Delete that file's checksum, for example
    `central exec backend rm /openmrs/data/configuration_checksums/concepts/concepts-mch.checksum`,
-   and restart the backend (`central restart backend`). Check the backend log for the file's
-   `CSV FILE ERROR SUMMARY`; there should be none.
+   and restart the backend (`central restart backend`). Check the log of **this** start only, as
+   older failures stay in it: `central logs --since <time of the restart> backend | grep '<file>.*not saved'`
+   should print nothing. If it prints the file, read the exception above that summary,
+   fix its cause, and repeat this step.
 5. The alert clears at the next reconciliation pass (`SYNC_RECON_CHECK_SECONDS`, 10 minutes by
    default) once the table has no placeholders left.
 
