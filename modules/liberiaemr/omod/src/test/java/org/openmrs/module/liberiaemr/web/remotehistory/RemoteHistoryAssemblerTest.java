@@ -456,6 +456,33 @@ public class RemoteHistoryAssemblerTest {
 	}
 
 	@Test
+	public void anAccessAuditRecordsWhoAskedWhyAndWhatLeftCentral() {
+		RemoteHistoryAssembler.Record record = new RemoteHistoryAssembler.Record(patient);
+		record.encounters.add(encounter("e1", "consultation", barnersville, NOW));
+		record.encounters.add(encounter("e2", "consultation", careysburg, NOW));
+		ObjectNode out = assemble(null, record);
+
+		java.util.Map<String, Object> details = RemoteHistoryService.accessDetails("requester", "referral in",
+		    RemoteHistoryService.OUTCOME_SERVED, out);
+
+		assertEquals("SERVED", details.get("outcome"));
+		assertEquals("requester", details.get("requestingFacility"));
+		assertEquals("referral in", details.get("reason"));
+		assertEquals(2, details.get("resourceCount"));
+		assertEquals(Arrays.asList("barnersville", "careysburg"), details.get("sourceFacilities"));
+	}
+
+	@Test
+	public void aDeniedAccessIsAuditedWithNothingServed() {
+		java.util.Map<String, Object> details = RemoteHistoryService.accessDetails(null, null,
+		    RemoteHistoryService.OUTCOME_DENIED, null);
+
+		assertEquals("DENIED", details.get("outcome"));
+		assertEquals(0, details.get("resourceCount"));
+		assertTrue(((List<?>) details.get("sourceFacilities")).isEmpty());
+	}
+
+	@Test
 	public void excludedConceptsAreParsedFromTheGlobalProperty() {
 		assertTrue(RemoteHistoryService.excludedConcepts(null).isEmpty());
 		assertTrue(RemoteHistoryService.excludedConcepts("  ").isEmpty());

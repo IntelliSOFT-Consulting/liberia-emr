@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemr.web.remotehistory.InstanceRole;
 import org.openmrs.module.liberiaemr.web.remotehistory.RemoteHistoryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,30 +47,58 @@ public class RemoteHistoryController {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
+	private static final Logger log = LoggerFactory.getLogger(RemoteHistoryController.class);
+
 	@Autowired
 	private RemoteHistoryService remoteHistoryService;
 
 	/**
 	 * @param patientUuid the patient
 	 * @param requestingFacility the asking facility's location UUID; its own records are left out
+	 * @param reason the reason for access the facility recorded, kept in the audit (optional)
 	 * @return 200 with {@code sources} (empty, not 404, when nothing is visible); 400 for a bad UUID;
-	 *         403 without View Remote History; 404 on a facility, where there is nothing to serve
+	 *         403 without View Remote History; 404 on a facility, where there is nothing to serve; 503
+	 *         when the access cannot be audited (nothing is served unaudited)
 	 */
 	@RequestMapping(value = "/{patientUuid}", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<String> history(@PathVariable("patientUuid") String patientUuid,
-	        @RequestParam(value = "requestingFacility", required = false) String requestingFacility) throws Exception {
+	        @RequestParam(value = "requestingFacility", required = false) String requestingFacility,
+	        @RequestParam(value = "reason", required = false) String reason) throws Exception {
 		if (InstanceRole.current() != InstanceRole.CENTRAL) {
 			return error(HttpStatus.NOT_FOUND, "Remote history is served by central only");
 		}
-		if (!Context.isAuthenticated() || !Context.hasPrivilege(PRIVILEGE_VIEW_REMOTE_HISTORY)) {
+		if (!Context.isAuthenticated()) {
 			return error(HttpStatus.FORBIDDEN, PRIVILEGE_VIEW_REMOTE_HISTORY + " privilege is required");
 		}
-		if (!valid(patientUuid) || (requestingFacility != null && !valid(requestingFacility))) {
+		String facility = requestingFacility == null ? null : requestingFacility.trim();
+		String why = reason == null || reason.trim().isEmpty() ? null
+		        : reason.trim().substring(0, Math.min(255, reason.trim().length()));
+		if (!Context.hasPrivilege(PRIVILEGE_VIEW_REMOTE_HISTORY)) {
+			// A refused attempt is worth as much to an auditor as a served one.
+			if (valid(patientUuid)) {
+				try {
+					remoteHistoryService.audit(patientUuid.trim(), valid(facility) ? facility : null, why,
+					    RemoteHistoryService.OUTCOME_DENIED, null);
+				}
+				catch (IllegalStateException e) {
+					log.error("Could not audit a denied remote history request", e);
+				}
+			}
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_VIEW_REMOTE_HISTORY + " privilege is required");
+		}
+		if (!valid(patientUuid) || (facility != null && !valid(facility))) {
 			return error(HttpStatus.BAD_REQUEST, "patientUuid and requestingFacility must be UUIDs");
 		}
-		ObjectNode body = remoteHistoryService.historyFor(patientUuid.trim(),
-		    requestingFacility == null ? null : requestingFacility.trim());
+		ObjectNode body = remoteHistoryService.historyFor(patientUuid.trim(), facility);
+		try {
+			remoteHistoryService.audit(patientUuid.trim(), facility, why, RemoteHistoryService.OUTCOME_SERVED, body);
+		}
+		catch (IllegalStateException e) {
+			// Every access is audited (ADR 0007): no audit row, no data.
+			log.error("Could not audit a remote history request; refusing it", e);
+			return error(HttpStatus.SERVICE_UNAVAILABLE, "The access could not be audited; try again later");
+		}
 		return json(HttpStatus.OK, body);
 	}
 

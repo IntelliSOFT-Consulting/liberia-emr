@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.openmrs.Patient;
 import org.openmrs.PatientProgram;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemr.ContentUuids;
+import org.openmrs.module.liberiaemr.audit.AuditLogWriter;
 import org.openmrs.module.liberiaemr.identity.IdentityService;
 import org.openmrs.util.PrivilegeConstants;
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -63,8 +66,51 @@ public class RemoteHistoryService {
 	    PrivilegeConstants.GET_OBS, PrivilegeConstants.GET_CONCEPTS, PrivilegeConstants.GET_LOCATIONS,
 	    PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 
+	/** The audit log type of a remote history access at central. */
+	public static final String AUDIT_TYPE = "org.openmrs.module.liberiaemr.RemoteHistoryAccess";
+
+	public static final String OUTCOME_SERVED = "SERVED";
+
+	public static final String OUTCOME_DENIED = "DENIED";
+
 	@Autowired
 	private IdentityService identityService;
+
+	@Autowired
+	private AuditLogWriter auditLogWriter;
+
+	/**
+	 * Records the access in the AuditLog module's trail (ADR 0007 condition 4, at the source).
+	 *
+	 * @param response what was served, or null when the access was denied
+	 * @throws IllegalStateException when the row cannot be written; the caller then refuses
+	 */
+	public void audit(String patientUuid, String requestingFacilityUuid, String reason, String outcome,
+	        ObjectNode response) {
+		auditLogWriter.record(AUDIT_TYPE, patientUuid, Context.getAuthenticatedUser(),
+		    accessDetails(requestingFacilityUuid, reason, outcome, response), new Date());
+	}
+
+	/** The details an access row carries: who asked, why, and what left central. */
+	static Map<String, Object> accessDetails(String requestingFacilityUuid, String reason, String outcome,
+	        ObjectNode response) {
+		Map<String, Object> details = new LinkedHashMap<String, Object>();
+		details.put("outcome", outcome);
+		details.put("requestingFacility", requestingFacilityUuid);
+		details.put("reason", reason);
+		int resources = 0;
+		List<String> sourceFacilities = new ArrayList<String>();
+		if (response != null) {
+			for (JsonNode source : response.path("sources")) {
+				resources += source.path("bundle").path("entry").size();
+				sourceFacilities.add(source.path("sourceFacilityUuid").isNull() ? null
+				        : source.path("sourceFacilityUuid").asText());
+			}
+		}
+		details.put("resourceCount", resources);
+		details.put("sourceFacilities", sourceFacilities);
+		return details;
+	}
 
 	/**
 	 * @param patientUuid the patient asked about
