@@ -499,6 +499,43 @@ jobs:
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
   # ---------------------------------------------------------------------
+  # Stage 4a' — upgrade onto this commit from main (LE-400)
+  #
+  # The clean install above cannot see what an upgrade breaks: a shipped UUID moved to a name
+  # an existing row still holds, a datatype changed under recorded observations, metadata
+  # retired while patient data uses it. Both dev servers hit the first on 2026-10-03.
+  # run-upgrade.sh installs main's newest published backend image (liberia-emr-backend:<sha>,
+  # pushed by publish-latest for every green main commit), writes synthetic patient data,
+  # recreates the backend at this commit's image on the same database, and fails on any row
+  # Initializer rejects or any change to what the data references. Same trigger as the clean
+  # install, and the gate accepts the same skip. See qa/upgrade/README.md.
+  # ---------------------------------------------------------------------
+  upgrade-from-main:
+    name: Upgrade from main
+    runs-on: ubuntu-latest
+    needs: [build-test, changes]
+    if: needs.changes.outputs.metadata == 'true'
+    env:
+      OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # main's first-parent history, which run-upgrade.sh walks back to the newest commit
+          # whose image is published
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build the backend image under test
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version 0.0.0-ci --site careysburg --no-frontend
+      - name: Upgrade onto it from main's newest published image
+        run: ./qa/upgrade/run-upgrade.sh --to 0.0.0-ci
+
+  # ---------------------------------------------------------------------
   # Stage 4b — the three distribution images for this commit (not pushed).
   #
   # This calls scripts/build/build-distribution.sh directly instead of
@@ -1101,12 +1138,13 @@ jobs:
   # or was skipped. Point branch protection at this one job instead of
   # every job above — new jobs added later only need `gate` updated once.
   #
-  # One job may legitimately be skipped: initializer-clean-db, which the
-  # `changes` job stands down on a commit that cannot affect metadata. It is
+  # Jobs that may legitimately be skipped: initializer-clean-db and
+  # upgrade-from-main, which the `changes` job stands down on a commit that
+  # cannot affect metadata (and sync-hardening, on its own path list). They are
   # named explicitly rather than allowing "skipped" across the board — a skip
   # anywhere else means a dependency failed, and that must still block the
   # merge. `changes` is in this list too, so a fault in the detection itself
-  # fails the gate rather than quietly excusing the job it was meant to
+  # fails the gate rather than quietly excusing the jobs it was meant to
   # schedule.
   # ---------------------------------------------------------------------
   gate:
@@ -1131,6 +1169,7 @@ jobs:
       - sbom
       - dependency-check
       - initializer-clean-db
+      - upgrade-from-main
       - docker-build
       - sync-hardening
       - e2e
@@ -1146,7 +1185,8 @@ jobs:
               .key as $k
               | .value.result == "success"
                 or (.value.result == "skipped"
-                    and ($k == "initializer-clean-db" or $k == "sync-hardening"));
+                    and ($k == "initializer-clean-db" or $k == "upgrade-from-main"
+                         or $k == "sync-hardening"));
         run: |
           echo '${{ toJSON(needs) }}' | jq -e "$JQ_OK"'
             to_entries | all(acceptable)
