@@ -13,9 +13,10 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate } from '@openmrs/esm-framework';
+import { ConfigurableLink, formatDate, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { useIdentityStatus, useSyncStatus } from './sync-status.resource';
 import { useMflStatus } from '../mfl-sync/mfl-sync.resource';
+import { VIEW_MFL_SYNC } from '../privileges';
 import styles from './sync-status.scss';
 
 /** "12 minutes ago", in the reader's language, for an epoch time in seconds. */
@@ -38,11 +39,16 @@ function ago(epochSeconds: number, language: string): string {
   return format.format(-Math.round(seconds / 86400), 'day');
 }
 
-/** Where the MFL sync is set up, the page that runs it is one click away. */
+/**
+ * Where the MFL sync is set up, the page that runs it is one click away, for holders of View MFL
+ * Sync. The Sync Conflict Reviewer reads this page without it, and is not sent the 403.
+ */
 const MflSyncLink: React.FC = () => {
   const { t } = useTranslation();
-  const { status } = useMflStatus();
-  if (!status?.available) {
+  const session = useSession();
+  const permitted = Boolean(session?.user) && userHasAccess(VIEW_MFL_SYNC, session.user);
+  const { status } = useMflStatus(permitted);
+  if (!permitted || !status?.available) {
     return null;
   }
   return (

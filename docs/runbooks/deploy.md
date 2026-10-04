@@ -76,6 +76,16 @@ bind or `secrets:` entry added for it. With no host set in the env file or in th
 box, never at a facility. A user can reset only if their account carries an email
 address. Details: [modules/liberiaemr/README.md](../../modules/liberiaemr/README.md).
 
+### Locked sign-in
+
+An account locks on the fifth consecutive wrong password. It opens only after more than
+five minutes with no further sign-in attempt. Trying again while it is locked, even with
+the correct password, and even at the five-minute mark, rejects the sign-in and starts
+the five minutes over. A user who keeps retrying can stay locked for much longer than
+five minutes. This is how OpenMRS 2.8.8 behaves; it is not a bug in the facility.
+Evidence and the checks still to run:
+[account-lockout-verification.md](../security/account-lockout-verification.md).
+
 ### Sync to central
 
 The sync service starts only with `--profile sync`, so a facility deployed with the commands
@@ -87,7 +97,14 @@ statements in `distribution/compose/facility/initdb/10-sync-db-users.sh`.
 Enrol the facility first ([sync operations](sync-operations.md) section 1): that gives it
 `SYNC_CERTS_DIR`, and central the matching enrolment. Then set `FACILITY_CODE`, `ARTEMIS_URL`,
 `SYNC_CERTS_DIR` and the sync account in `facility.env`, and use the profile on every command
-from then on, including the upgrade and rollback commands below:
+from then on, including the upgrade and rollback commands below.
+
+The facility's network needs only HTTPS to central: with `ARTEMIS_URL=ssl://artemis:61617` and
+`SYNC_CENTRAL_URL=https://<central host>`, sync travels inside
+`https://<central host>/sync/broker/` ([ADR 0014](../adr/0014-sync-over-https-path.md)). Set
+`SYNC_HTTP_PROXY` if HTTPS must go through a proxy, and `SYNC_TUNNEL_CA_FILE` if the network
+inspects TLS. Pointing `ARTEMIS_URL` at `ssl://<central host>:61617` instead needs that port
+open from the facility to central.
 
 ```bash
 docker compose --env-file ../../env/facility.env --profile sync up -d
@@ -111,7 +128,13 @@ cd distribution/compose/central
 cp ../../env/central.env.example ../../env/central.env    # first time only; then fill it in
 docker compose --env-file ../../env/central.env pull
 docker compose --env-file ../../env/central.env up -d
+docker compose --env-file ../../env/central.env up -d --no-deps --force-recreate prometheus alertmanager
 ```
+
+The last line matters on every deploy after the first. Prometheus and Alertmanager mount their
+configuration and alert rules from this checkout one file at a time, and a running container
+keeps reading the file it started with after the checkout replaces it. `up -d` does not notice,
+so without it a release's new or changed alerts never load (LE-373).
 
 Before the first start, `BROKER_CERTS_DIR` needs the broker's enrolment (rendered by
 `scripts/security/render-broker-config.sh` from MOH-issued material) and `RECEIVER_CERTS_DIR`
@@ -127,8 +150,10 @@ sync runbook, section 2). Otherwise its records reference locations central does
 
 ## Upgrade
 
-On a facility that syncs, add `--profile sync` to the commands below, and do not upgrade while
-its first load to central is still running (sync runbook section 1). Upgrading does not make a
+Where facilities sync, upgrade central before any facility and the facilities one at a time,
+with the checks in section 19 of the [sync runbook](sync-operations.md). On a facility that
+syncs, add `--profile sync` to the commands below, and do not upgrade while its first load to
+central is still running (sync runbook section 1). Upgrading does not make a
 facility enrolled before this release send its earlier records: it already has a saved position,
 so nothing is backfilled. Send them with section 11 of the sync runbook.
 
@@ -136,9 +161,11 @@ so nothing is backfilled. Send them with section 11 of the sync runbook.
 2. **Back up the database and verify the backup restores** — not just that the file exists.
 3. `docker compose --env-file ../../env/facility.env pull`
 4. `docker compose --env-file ../../env/facility.env up -d`
-5. Watch migrations and Initializer complete.
-6. Run the post-deploy checks below.
-7. Release the instance back to clinical use.
+5. On a facility that syncs, and at central: `docker compose --env-file ../../env/<facility|central>.env up -d --no-deps --force-recreate prometheus alertmanager`,
+   so monitoring reads this release's alert rules (see Central deployment above for why).
+6. Watch migrations and Initializer complete.
+7. Run the post-deploy checks below.
+8. Release the instance back to clinical use.
 
 ## Post-deploy checks
 

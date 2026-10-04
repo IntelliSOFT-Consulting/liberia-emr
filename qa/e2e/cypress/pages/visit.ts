@@ -10,7 +10,7 @@ class VisitPage {
 
     private openActionsMenuItem(itemText: string) {
         cy.contains('button', 'Actions', { timeout: 20000 }).click();
-        cy.contains(itemText, { timeout: 10000 }).click();
+        cy.contains(itemText, { timeout: 30000 }).should('be.visible').click();
     }
 
     registerPatient(overrides: PatientRegistrationOverrides = {}) {

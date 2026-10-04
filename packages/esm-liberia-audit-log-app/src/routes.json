@@ -17,6 +17,27 @@
       "privileges": ["View Audit Log"],
       "online": true,
       "offline": false
+    },
+    {
+      "name": "audit-log-dashboard-link",
+      "component": "auditLogDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "privileges": ["View Audit Log"],
+      "meta": {
+        "name": "audit-log",
+        "slot": "audit-log-dashboard-slot",
+        "title": "Audit log"
+      },
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "audit-log-dashboard",
+      "component": "root",
+      "slot": "audit-log-dashboard-slot",
+      "privileges": ["View Audit Log"],
+      "online": true,
+      "offline": false
     }
   ]
 }

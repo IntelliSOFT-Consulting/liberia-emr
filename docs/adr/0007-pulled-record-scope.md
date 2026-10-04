@@ -1,7 +1,8 @@
 # 0007: Cross-facility pulled-record scope: demographics plus an enumerated clinical summary
 
-**Status:** Proposed, awaiting MOH ICT and MOH legal agreement (LE-22, target 21 August 2026)
-**Amended by:** [ADR 0013](0013-remote-patient-import.md) (Proposed), which relaxes condition 1
+**Status:** Accepted (3 October 2026), once both open items below were answered. Proposed
+under LE-22, with MOH ICT and MOH legal sign-off targeted for 21 August 2026.
+**Amended by:** [ADR 0013](0013-remote-patient-import.md) (Accepted 2 October 2026), which relaxes condition 1
 to allow a scoped, read-only cache outside sync for offline use. Every other condition stands.
 
 ## Context
@@ -75,6 +76,18 @@ query time or covered by the care relationship. An exclusion is a filter at the 
 Final scope is to be re-checked against the Data Protection Act as enacted; this ADR does
 not assume its final text.
 
+*Update (3 October 2026):* **No sensitive category is excluded for now.** Cross-facility
+responses, and the cache allowed by [ADR 0013](0013-remote-patient-import.md), carry the full
+enumerated list, HIV status included. The boundary filter stays in place with an empty
+exclusion list, so naming a category later means adding a concept set and a filter entry, not
+rebuilding the read path.
+
+*Update (3 October 2026):* **The lawful basis is the care relationship.** No separate
+patient consent is captured at query or import time. That basis holds only while the patient
+is in an active clinical interaction at the querying facility, which condition 2 already
+requires. The reason for access (condition 3) is still captured, because it is the audit
+record of that care relationship, not a consent.
+
 ## Consequences
 
 - The boundary filter is enumerated in one place and testable. `qa/api/` asserts that a
@@ -87,7 +100,8 @@ not assume its final text.
 - Widening the scope later is a new ADR and a fresh legal review, not a configuration
   change. Narrowing it is cheap. This asymmetry is intentional.
 - Sensitive-category exclusion needs a concept set in the content packages, so a late
-  answer to that question delays Sprint 4 rather than being absorbed by it.
+  answer to that question delays Sprint 4 rather than being absorbed by it. (Answered for now
+  on 3 October 2026: nothing is excluded.)
 - Audit volume grows with every cross-facility access, and the retention window (control
   C2, ≥3 months) is likely to be longer here than for ordinary access. This lands on the
   backup schedule in `docs/runbooks/backup-restore.md`.

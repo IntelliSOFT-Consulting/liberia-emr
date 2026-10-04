@@ -30,7 +30,7 @@ jobs:
           echo "== checkout: $(git rev-parse --short HEAD 2>/dev/null) $(git status --porcelain 2>/dev/null | wc -l) local changes"
           echo "== containers"; docker ps -a --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep liberiaemr || true
           echo "== sync settings in $ENV_FILE (names; values only where not secret)"
-          for k in FACILITY_CODE ARTEMIS_URL COMPOSE_PROFILES SYNC_SNAPSHOT_MODE SYNC_CERTS_DIR DB_SERVER_ID DEBEZIUM_SERVER_ID SYNC_RECON_SINCE; do
+          for k in FACILITY_CODE ARTEMIS_URL SYNC_CENTRAL_URL COMPOSE_PROFILES SYNC_SNAPSHOT_MODE SYNC_CERTS_DIR DB_SERVER_ID DEBEZIUM_SERVER_ID SYNC_RECON_SINCE; do
             v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); echo "  $k=${v:-<unset>}"; done
           for k in DEBEZIUM_DB_PASSWORD SYNC_MGMT_DB_PASSWORD SYNC_REST_USER SYNC_REST_PASSWORD; do
             v=$(sed -n "s/^$k=//p" "$ENV_FILE" | tail -1); [ -n "$v" ] && echo "  $k=<set>" || echo "  $k=<unset>"; done
@@ -40,6 +40,9 @@ jobs:
           docker exec liberiaemr-facility-db-1 sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -e "SELECT CONCAT(\"log_bin=\",@@log_bin,\" format=\",@@binlog_format,\" sync_binlog=\",@@sync_binlog,\" server_id=\",@@server_id); SELECT CONCAT(\"schema \",schema_name) FROM information_schema.schemata WHERE schema_name LIKE \"openmrs%\"; SELECT CONCAT(\"db user \",user) FROM mysql.user WHERE user NOT IN (\"root\",\"mariadb.sys\",\"healthcheck\"); SELECT CONCAT(\"openmrs user \",u.username,\" role \",r.role) FROM openmrs.users u JOIN openmrs.user_role r ON r.user_id=u.user_id WHERE r.role LIKE \"Sync%\";"' 2>&1 | sed 's/^/  /'
           echo "== reach central broker ${CENTRAL}:61617"
           timeout 6 bash -c "</dev/tcp/${CENTRAL}/61617" 2>/dev/null && echo "  reachable" || echo "  NOT reachable"
+          echo "== reach central's sync route https://${CENTRAL}/sync/broker/ (a 4xx other than 404 means the tunnel answers)"
+          echo "  HTTP $(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://${CENTRAL}/sync/broker/events" || true)"
+          echo "== facility sync-tunnel"; docker logs --tail 5 liberiaemr-facility-sync-tunnel-1 2>&1 | sed 's/^/  /' || true
           echo "== passwordless sudo: $(sudo -n true 2>/dev/null && echo yes || echo no)"
           EOF
 

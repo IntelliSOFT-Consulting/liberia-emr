@@ -53,9 +53,11 @@ At import the facility creates `person`, `patient`, `person_name`, `person_addre
   validator rejects `dead=true` without a cause.
 - Nothing else is written to the OpenMRS tables.
 
-Because the shell's rows match central's, sync pushes them up as no-op upserts. Section 7.5 of
-`sync-eip.md` (stale data never overwrites fresh) stops an older copy overwriting a newer one.
-No suppression is needed.
+Because the shell's rows match central's, sync pushes them up as no-op upserts, as long as
+central still holds what the import copied. If the home facility edits the patient first and
+the shell reaches central later (the importing facility went offline before pushing), the
+shell's older rows are applied: dbsync has no stale-update check (`sync-eip.md` §7.5, risk
+E17). ADR 0013 accepts that risk; no suppression is built. *(Corrected 3 October 2026.)*
 
 Records the importing facility creates afterwards (visits, encounters, obs, orders,
 enrolments, and any identifier it adds) are ordinary local rows and sync normally against the
@@ -101,6 +103,10 @@ bulk form):
 - Creates the shell, then fills the store, as two separate steps (see Data flow).
 - Refreshes on chart open when the facility is online and the bundle is older than
   `liberiaemr.remoteHistory.maxAgeHours` (a global property, default 24).
+- Purges a patient's bundles and their rows once the patient's cached history has gone
+  `liberiaemr.remoteHistory.retentionMonths` without access (a global property, default 12).
+  ADR 0013 caps it at 12, so a larger value is treated as 12. A scheduled task runs the purge,
+  and revoking a facility's access purges all of its bundles.
 
 ### 5. "External records" chart pieces (ESM, facility)
 

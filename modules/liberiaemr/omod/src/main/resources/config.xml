@@ -41,10 +41,15 @@
 		(/ws/rest/v1/liberiaemr/auditlog) reads the auditlog module's table when the module runs,
 		and answers 503 when it does not; this module starts either way. Being aware of it also
 		starts auditlog first, so its table exists before our liquibase indexes it.
+
+		labonfhir: aware of, never required. Starting it first means its liquibase has created
+		its scheduled tasks before LabOnFhirTasks turns them off (the LIS integration is out of
+		scope, LE-380).
 	-->
 	<aware_of_modules>
 		<aware_of_module>org.openmrs.module.legacyui</aware_of_module>
 		<aware_of_module>org.openmrs.module.auditlog</aware_of_module>
+		<aware_of_module>org.openmrs.module.labonfhir</aware_of_module>
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->

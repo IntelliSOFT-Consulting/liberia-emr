@@ -1,7 +1,9 @@
 # Sync layer: module evaluation and selection
 
 **Status:** Research complete, recommendation proposed, for review by Paul (IntelliSOFT) and
-the MOH ICT Unit.
+the MOH ICT Unit. **Outcome:** the recommendation was adopted and the sync layer is built on it
+([architecture](sync-eip.md)); ADR 0008's own status still awaits its owner. This document is
+the evidence for the choice; the build state is tracked in the architecture document.
 **Date:** 18 August 2026 · **Ticket:** LE-22 · **Decision recorded in:** [ADR 0008](../adr/0008-adopt-openmrs-dbsync.md)
 
 This is the evidence behind the sync design. It records what was evaluated, what was chosen,
@@ -209,8 +211,8 @@ the dependency tree.
 
 | | Documented / shipped | LiberiaEMR | Status |
 | --- | --- | --- | --- |
-| OpenMRS platform | README says **2.5 or 2.6** | **2.8.8** | ⚠ Outside |
-| Database | **MySQL 5.7.x / 8.0.x** | **MariaDB 10.11** | ⚠ Outside |
+| OpenMRS platform | README says **2.5 or 2.6** | **2.8.8** | ⚠ Outside; runs with a one-line patch (§5.2) |
+| Database | **MySQL 5.7.x / 8.0.x** | **MariaDB 10.11** | ⚠ Outside; tested and works (§5.1) |
 | Java | 17 | 17 | ✅ |
 | Directionality | one-way | one-way | ✅ |
 | Timezone | sender and receiver must match | both `Africa/Monrovia` | ✅ |
@@ -244,6 +246,8 @@ The README's "2.5 or 2.6" predates the 4.x line (which is Camel 4 / Java 17 and 
 modern), so it is likely stale rather than a hard ceiling. But the sender reads the
 **physical schema**, so the real question is narrow and answerable: *do any of the 34 synced
 tables differ between 2.6 and 2.8.8?* That is a schema diff plus a test run, not a debate.
+Settled 2 September 2026: one nullable column on `provider`, and a version gate that refuses
+2.8, cleared by a one-line patch pending upstream ([architecture](sync-eip.md) §1.8b).
 
 ### 5.3 The metadata assumption, and why we already satisfy it
 
@@ -253,36 +257,38 @@ centrally managed using the available metadata sharing tools."* ADR 0006 **dropp
 
 This is not a gap; we satisfy the precondition by a better mechanism. Metadata is managed by
 our **content packages via Initializer**, with every UUID declared once in
-`variables.properties` and referenced as `${var.*}` (ADR 0003). Facility and central run the
-**same** `liberia-emr-backend` image and therefore the same metadata with the same UUIDs.
-That is a stronger guarantee than metadata sharing provides, because it is built into the
-image rather than applied by an operator.
+`variables.properties` and referenced as `${var.*}` (ADR 0003). Facility and central images
+are built from the **same** national content packages and therefore hold the same metadata
+with the same UUIDs; central's own build adds every site package's locations (ADR 0011,
+ADR 0012). That is a stronger guarantee than metadata sharing provides, because it is built
+into the image rather than applied by an operator.
 
 **It does impose a rule:** facility and central must never run different content-package
 versions across an upgrade boundary. A concept UUID that exists at a facility but not at
-central is a sync failure. This belongs in the deployment runbook and in the upgrade
-rehearsal.
+central does not fail sync: the receiver inserts a retired placeholder and applies the record
+against it, silently ([coverage](sync-entity-coverage.md) §3). This belongs in the deployment
+runbook and in the upgrade rehearsal.
 
 ---
 
 ## 6. What we get, what we configure, what we must build
 
-| Concern | dbsync provides | We must do |
-| --- | --- | --- |
-| Change capture | ✅ Debezium | Enable binlog; dedicated replication user |
-| Entity coverage | ✅ 34 entities | Reconcile against our 5 routes ([coverage](sync-entity-coverage.md)) |
-| Transport | ✅ JMS | **Add an Artemis broker**: absent from compose |
-| Sender state | ✅ management DB | **Add a management database**: absent from compose |
-| Retry | ✅ retry queues | Configure policy; alerting |
-| Conflicts | ✅ conflict queue | Define who resolves them, and their SLA |
-| Encryption | ✅ PGP payload encryption | Key generation, distribution, rotation: an MOH ICT process |
-| Metrics | ✅ Prometheus | Wire to monitoring; define alerts |
-| App upgrades | ✅ documented procedure | Runbook: drain the conflict queue, upgrade the receiver first, then each sender |
-| mTLS | ➖ broker-level | Configure; **mount facility client certs**: absent |
-| **Identity / CPI** | ❌ | **Build at central**: §3 |
-| **Cross-facility query** | ❌ | **Build (Sprint 4)**: FHIR read path |
-| **Reconciliation reporting** | ◐ hashes exist | Build the periodic parity report on top |
-| Facility disk sizing | ❌ | Hardware spec: a clinical-safety item, see [architecture](sync-eip.md) §5.9 |
+| Concern | dbsync provides | We must do | Status |
+| --- | --- | --- | --- |
+| Change capture | ✅ Debezium | Enable binlog; dedicated replication user | Done |
+| Entity coverage | ✅ 34 entities | Reconcile against our 5 routes ([coverage](sync-entity-coverage.md)) | Done: `eip.watchedTables` |
+| Transport | ✅ JMS | **Add an Artemis broker**: absent from compose | Done: `artemis` at central |
+| Sender state | ✅ management DB | **Add a management database**: absent from compose | Done: created by `initdb/` |
+| Retry | ✅ retry queues | Configure policy; alerting | Alerting done; fixed 30-minute retries, backoff open (E16) |
+| Conflicts | ✅ conflict queue | Define who resolves them, and their SLA | Sync conflicts page built; owner and SLA open |
+| Encryption | ✅ PGP payload encryption | Key generation, distribution, rotation: an MOH ICT process | On at both ends; custody open (E13) |
+| Metrics | ✅ Prometheus | Wire to monitoring; define alerts | Done |
+| App upgrades | ✅ documented procedure | Runbook: drain the conflict queue, upgrade the receiver first, then each sender | Not yet in a runbook (E15) |
+| mTLS | ➖ broker-level | Configure; **mount facility client certs**: absent | Done; certificate lifecycle owner open |
+| **Identity / CPI** | ❌ | **Build at central**: §3 | Built through the National ID rule |
+| **Cross-facility query** | ❌ | **Build (Sprint 4)**: FHIR read path | Under way (ADR 0013) |
+| **Reconciliation reporting** | ◐ hashes exist | Build the periodic parity report on top | Existence check built; content not |
+| Facility disk sizing | ❌ | Hardware spec: a clinical-safety item, see [architecture](sync-eip.md) §5.9 | Open |
 
 ---
 
@@ -299,8 +305,8 @@ rehearsal.
 | 4 | mTLS + PGP keys, end to end | Facility authenticates; payloads encrypted at rest in transit | Built and proven by `qa/sync/verify-hardening.sh`. Certificate lifecycle is MOH ICT's: escalate early |
 | 5 | Entity/route reconciliation | Confirmed list of covered vs custom routes | Done: the set is declared as `eip.watchedTables`, and the subclass defect did not reproduce for test and drug orders on 4.0.0 |
 | 6 | Identity layer (CPI + link + review queue) at central | Duplicates surfaced, never auto-merged | ADR 0005 accepted (LE-22). CPI minting and the National ID rule built (LE-35, `qa/sync/verify-identity.sh`); scoring, the review queue page and its MOH owner still to do ([architecture](sync-eip.md) §2.5) |
-| 7 | **Offline acceptance test** ([architecture](sync-eip.md) §5.9) | Full drain and zero divergence after a long outage | The guarantee is unproven until this passes |
-| 8 | Cross-facility query (Sprint 4) | Read path over FHIR, scoped per ADR 0007 | Blocked on ADR 0007 sign-off |
+| 7 | **Offline acceptance test** ([architecture](sync-eip.md) §5.9) | Full drain and zero divergence after a long outage | The guarantee is unproven until this passes. Partly written: `qa/sync/outage-drill.sh` covers one facility ([architecture](sync-eip.md) §10 item 15) |
+| 8 | Cross-facility query (Sprint 4) | Read path over FHIR, scoped per ADR 0007 | Under way as remote patient import ([ADR 0013](../adr/0013-remote-patient-import.md)); ADR 0007's scope itself is still Proposed |
 
 ### 7.2 Expected outcomes
 
@@ -316,12 +322,12 @@ rehearsal.
 | --- | --- | --- | --- |
 | R1 | MariaDB unsupported by the shipped connector | Closed | Step 0 spike passed 2026-09-02 |
 | R2 | Facility disk filled by binlog → **database stops → care stops** | **Highest** | Size for full retention; separate volume; alarms |
-| R3 | Broker permissions let one facility read another's data | **Highest** | Send-only per facility, proven by negative test |
-| R4 | **Receiver not subscribed before a sender publishes → messages lost** | High | Durable topic subscription; enforce receiver-first start order |
-| R5 | Platform 2.8.8 schema drift | High | Step 1 schema diff |
+| R3 | Broker permissions let one facility read another's data | **Highest** | Send-only per facility, proven by negative test. Built: `qa/sync/verify-hardening.sh` in CI |
+| R4 | **Receiver not subscribed before a sender publishes → messages lost** | Closed | The broker declares the receiver's subscription queue, so messages wait from its first start; `qa/sync/verify-hardening.sh` checks it |
+| R5 | Platform 2.8.8 schema drift | Closed | Step 1 schema diff: one nullable column; version gate patched |
 | R6 | `Order` subclass sync defect | Closed | Did not reproduce for `TestOrder` and `DrugOrder` on 4.0.0; `qa/sync/verify-e2e-push.sh` checks both on every run. `ReferralOrder` unverified, not used by any form |
 | R7 | Unstaffed conflict / duplicate review queues | High | Named MOH owner with an SLA: ADR 0005 |
-| R8 | Content-package drift between facility and central | Medium | Same image; enforce in upgrade rehearsal |
+| R8 | Content-package drift between facility and central | Medium | Same content packages; enforce in upgrade rehearsal; `SyncPlaceholderMetadata` detects the drift at central |
 | R9 | PGP key management burden falls on nobody | Medium | Assign to MOH ICT with the certificate lifecycle |
 | R10 | Facility server theft | Medium | Full-disk encryption; central-side revocation |
 

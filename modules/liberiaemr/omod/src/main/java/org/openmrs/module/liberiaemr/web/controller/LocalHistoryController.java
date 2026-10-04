@@ -39,6 +39,13 @@ public class LocalHistoryController {
 	private static final Pattern UUID_PATTERN = Pattern
 	        .compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
+	/**
+	 * Other facilities' records are wider than this facility's own, so reading them takes its own
+	 * privilege, held by the clinical roles (Nurse, and Clinician and Midwife through it), not by
+	 * everyone with Get Patients. The same privilege gates central's history endpoint.
+	 */
+	public static final String PRIVILEGE_VIEW_REMOTE_HISTORY = "View Remote History";
+
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	@Autowired
@@ -46,13 +53,17 @@ public class LocalHistoryController {
 
 	/**
 	 * @return 200 with {@code status}, {@code centralReachable}, {@code fetchedAt}, {@code ageSeconds}
-	 *         and the cached {@code sources}; 400 for a bad UUID; 403 without Get Patients; 404 for a
+	 *         and the cached {@code sources}; 400 for a bad UUID; 403 without View Remote History or
+	 *         Get Patients; 404 for a
 	 *         patient who is not at this facility
 	 */
 	@RequestMapping(value = "/{patientUuid}", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<String> read(@PathVariable("patientUuid") String patientUuid) throws Exception {
-		if (!Context.isAuthenticated() || !Context.hasPrivilege("Get Patients")) {
+		if (!Context.isAuthenticated() || !Context.hasPrivilege(PRIVILEGE_VIEW_REMOTE_HISTORY)) {
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_VIEW_REMOTE_HISTORY + " privilege is required");
+		}
+		if (!Context.hasPrivilege("Get Patients")) {
 			return error(HttpStatus.FORBIDDEN, "Get Patients privilege is required");
 		}
 		if (patientUuid == null || !UUID_PATTERN.matcher(patientUuid.trim()).matches()) {
