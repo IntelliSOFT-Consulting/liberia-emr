@@ -407,7 +407,9 @@ public class AuditLogStore {
 	/**
 	 * Adds the recorded values: {@code changes} for an update (the module stores
 	 * {"property": [current, previous]}), {@code lastState} for a delete ({"property": value}).
-	 * A created row has none. Values of secret-looking properties are replaced.
+	 * The module stores nothing on a created row; one that carries data is an event this module
+	 * wrote ({@link AuditLogWriter}), and its JSON object is returned as {@code details}. Values of
+	 * secret-looking properties are replaced.
 	 */
 	private void addValues(Map<String, Object> row, byte[] data) {
 		String action = (String) row.get("action");
@@ -442,6 +444,16 @@ public class AuditLogStore {
 				state.add(property);
 			}
 			row.put("lastState", state);
+		} else if (AuditLogWriter.ACTION_CREATED.equals(action) && !values.isEmpty()) {
+			List<Map<String, Object>> details = new ArrayList<Map<String, Object>>();
+			for (Map.Entry<String, Object> entry : values.entrySet()) {
+				Map<String, Object> property = new LinkedHashMap<String, Object>();
+				property.put("property", entry.getKey());
+				property.put("value", AuditLogRedaction.value(type, identifier, entry.getKey(), entry.getValue()));
+				property.put("redacted", AuditLogRedaction.isRedacted(type, identifier, entry.getKey()));
+				details.add(property);
+			}
+			row.put("details", details);
 		}
 	}
 

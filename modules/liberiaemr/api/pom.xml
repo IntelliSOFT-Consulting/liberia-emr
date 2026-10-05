@@ -40,7 +40,7 @@
 	<build>
 		<!--
 			Everything except the UUID file is copied verbatim. The UUID file is resolved from the
-			national layer's variables.properties (ADR 0010 decision 7), the same way
+			national and MCH layers' variables.properties (ADR 0010 decision 7), the same way
 			modules/liberiaemrreports and content-packages/pom.xml resolve ${var.*}: delimiter ${*} only.
 		-->
 		<resources>
@@ -61,6 +61,7 @@
 		</resources>
 		<filters>
 			<filter>${liberiaemr.content.dir}/content-liberia-national/configuration/variables.properties</filter>
+			<filter>${liberiaemr.content.dir}/content-liberia-mch/configuration/variables.properties</filter>
 		</filters>
 		<!--
 			The MFL tests read the real fixture from integration/dhis2/mfl/fixtures (LE-318) rather
