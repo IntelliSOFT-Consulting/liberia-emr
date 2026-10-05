@@ -28,6 +28,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MalariaReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String RESULTED_AT = "r.resulted_at";
 
 	/** Episode window for confirmed malaria (ambiguity 6). */
 	static final int MALARIA_EPISODE_DAYS = 28;
@@ -97,15 +100,15 @@ public class MalariaReportManager extends LiberiaReportManager {
 		    Arrays.asList(IndicatorSql.count(num, "1 = 1")),
 		    "FROM " + LAB + " r" + Sql.joinPersonKey("r", "pr") + "\n" //
 		            + "WHERE r.is_malaria_positive = 1\n" //
-		            + "  AND " + Sql.inPeriod("r.resulted_at") + "\n" //
+		            + "  AND " + Sql.inPeriod(RESULTED_AT) + "\n" //
 		            + "  AND " + g.inScope("r") + "\n" //
 		            + "  AND NOT EXISTS (SELECT 1 FROM " + LAB + " q" + Sql.joinPersonKey("q", "pq") + "\n" //
 		            + "                  WHERE pq.person_key = pr.person_key\n" //
 		            + "                    AND q.is_malaria_positive = 1\n" //
 		            + "                    AND " + g.inSameScope("q", "r") + "\n" //
-		            + "                    AND " + Sql.before("q.resulted_at", "r.resulted_at",
+		            + "                    AND " + Sql.before("q.resulted_at", RESULTED_AT,
 		                "(q.order_id < r.order_id OR (q.order_id = r.order_id AND q.result_obs_id < r.result_obs_id))") + "\n" //
-		            + "                    AND " + Sql.withinDaysBefore("q.resulted_at", "r.resulted_at", MALARIA_EPISODE_DAYS)
+		            + "                    AND " + Sql.withinDaysBefore("q.resulted_at", RESULTED_AT, MALARIA_EPISODE_DAYS)
 		            + ")"),
 		    num);
 	}

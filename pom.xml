@@ -33,6 +33,19 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!--
+			SonarQube java:S2143 ("use java.time") does not apply to these three files: java.util.Date is
+			the reporting module's own parameter and value type, and what JDBC returns for a DATETIME
+			column. The rule reports at file level, which @SuppressWarnings on a class does not reach,
+			so the exclusion lives here, one entry per file. Any other file still gets the rule.
+		-->
+		<sonar.issue.ignore.multicriteria>s2143a,s2143b,s2143c</sonar.issue.ignore.multicriteria>
+		<sonar.issue.ignore.multicriteria.s2143a.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.s2143a.ruleKey>
+		<sonar.issue.ignore.multicriteria.s2143a.resourceKey>**/liberiaemrreports/reporting/ReportParameters.java</sonar.issue.ignore.multicriteria.s2143a.resourceKey>
+		<sonar.issue.ignore.multicriteria.s2143b.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.s2143b.ruleKey>
+		<sonar.issue.ignore.multicriteria.s2143b.resourceKey>**/liberiaemrreports/reporting/EtlSqlDataSetEvaluator.java</sonar.issue.ignore.multicriteria.s2143b.resourceKey>
+		<sonar.issue.ignore.multicriteria.s2143c.ruleKey>java:S2143</sonar.issue.ignore.multicriteria.s2143c.ruleKey>
+		<sonar.issue.ignore.multicriteria.s2143c.resourceKey>**/liberiaemrreports/context/ReportingContextService.java</sonar.issue.ignore.multicriteria.s2143c.resourceKey>
 	</properties>
 
 	<modules>

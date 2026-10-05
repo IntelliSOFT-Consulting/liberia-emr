@@ -1,0 +1,39 @@
+@use '@carbon/layout';
+@use '@carbon/themes';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.toggleCard {
+  margin-bottom: layout.$spacing-05;
+  border: 1px solid $ui-03;
+  padding: layout.$spacing-05;
+  background-color: $ui-02;
+  border-radius: 0;
+}
+
+.toggleHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: layout.$spacing-03;
+}
+
+.toggleTitle {
+  @include type.type-style('heading-compact-01');
+  color: $color-gray-100;
+  font-weight: 600;
+}
+
+.toggleHint {
+  @include type.type-style('label-01');
+  color: $text-02;
+  margin: 0;
+  line-height: 1.35;
+}
+
+// Inside the tablet "Add additional search criteria" dialog the fields are inset by the
+// dialog's own padding, so the card lines up with them instead of the dialog edge.
+.toggleCardInDialog {
+  @extend .toggleCard;
+  margin: 0 layout.$spacing-05 layout.$spacing-05;
+}

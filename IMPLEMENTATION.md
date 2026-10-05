@@ -345,6 +345,11 @@ patient data; mutate historical forms in ways that change meaning. Instead: reti
 incorrect concept → introduce a corrected one → migrate data; and for form changes, create a
 **new form version** preserving the historical schema.
 
+CI enforces the UUID part against the newest `liberiaemr-*` release tag
+(`scripts/validate/released-uuids.sh`, LE-399): a released UUID must stay declared and its CSV row
+must stay defined (retiring it is fine). A deliberate exception goes in
+`scripts/validate/released-uuids.allowlist` with its reason and a second reviewer.
+
 ---
 
 ## 10. Security (contractual — do not loosen)

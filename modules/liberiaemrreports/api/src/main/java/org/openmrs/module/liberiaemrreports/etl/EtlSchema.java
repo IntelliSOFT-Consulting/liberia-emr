@@ -44,7 +44,7 @@ public final class EtlSchema {
 	 * The resolved name is spliced into SQL, so it must be a bare identifier. Stricter than MariaDB
 	 * itself: no {@code $}, no quoting.
 	 */
-	private static final Pattern BARE_IDENTIFIER = Pattern.compile("[A-Za-z0-9_]+");
+	private static final Pattern BARE_IDENTIFIER = Pattern.compile("\\w+");
 	
 	private EtlSchema() {
 	}
