@@ -9,13 +9,9 @@
  */
 package org.openmrs.module.liberiaemr.web.remotesearch;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -27,17 +23,17 @@ import org.openmrs.Patient;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonName;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.liberiaemr.web.central.CentralClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Searches the central OpenMRS server for patients that are not on this facility and imports a
  * chosen one as a patient shell (demographics and identifiers only). The central server comes from
- * the deployment environment ({@link RemoteEndpointPolicy}); with none set the feature reports
+ * the deployment environment ({@link CentralClient}); with none set the feature reports
  * itself as disabled.
  */
 @Component("liberiaemr.RemoteSearchService")
@@ -45,26 +41,12 @@ public class RemoteSearchService {
 
 	private static final Logger log = LoggerFactory.getLogger(RemoteSearchService.class);
 
-	public static final String ENV_REMOTE_URL = "LIBERIAEMR_REMOTE_URL";
-	public static final String ENV_REMOTE_USER = "LIBERIAEMR_REMOTE_USER";
-	public static final String ENV_REMOTE_PASSWORD = "LIBERIAEMR_REMOTE_PASSWORD";
-	/** A path to a file holding the password, which wins over the plain variable (as for the MFL and SMTP secrets). */
-	public static final String ENV_REMOTE_PASSWORD_FILE = "LIBERIAEMR_REMOTE_PASSWORD_FILE";
-
-	/**
-	 * Fallback for the URL only, and only for a host on LIBERIAEMR_REMOTE_ALLOWED_HOSTS. The service
-	 * account's user name and password come from the environment alone: a global property is
-	 * readable and editable over REST, which is no place for a credential.
-	 */
-	public static final String GP_REMOTE_URL = "liberiaemr.remoteSearch.url";
-
 	/** Global property naming the facility's location, used when a central identifier location is unknown here. */
 	public static final String GP_FACILITY_LOCATION = "liberiaemr.facility.locationUuid";
 
 	/** Minimum query length; the UI enforces the same so this only guards direct API calls. */
 	public static final int MIN_QUERY_LENGTH = 2;
 
-	private static final int TIMEOUT_MS = 10000;
 	private static final int MAX_RESULTS = 20;
 
 
@@ -115,10 +97,24 @@ public class RemoteSearchService {
 		}
 	}
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final CentralClient central;
+
+	public RemoteSearchService() {
+		this(new CentralClient());
+	}
+
+	/** @param central the connection to central; tests pass one aimed at a stand-in server */
+	RemoteSearchService(CentralClient central) {
+		this.central = central;
+	}
+
+	/** The shared connection to central, for the remote history fetch. */
+	public CentralClient getCentral() {
+		return central;
+	}
 
 	public boolean isEnabled() {
-		return !getRemoteUrl().isEmpty();
+		return central.isEnabled();
 	}
 
 	/** Whether this facility already holds a patient with this UUID. A seam so the search can be tested without a Context. */
@@ -145,7 +141,7 @@ public class RemoteSearchService {
 		try {
 			String url = baseUrl + "/ws/rest/v1/patient?q=" + URLEncoder.encode(trimmed, "UTF-8") + "&limit=" + MAX_RESULTS
 					+ "&v=" + URLEncoder.encode(SEARCH_REP, "UTF-8");
-			JsonNode results = executeGet(url).path("results");
+			JsonNode results = central.executeGet(url).path("results");
 
 			List<JsonNode> remaining = new ArrayList<>();
 			int alreadyLocal = 0;
@@ -194,7 +190,7 @@ public class RemoteSearchService {
 	 * Brings a central patient to this facility as a <em>patient shell</em>: person, patient, names,
 	 * addresses and identifiers, each keeping central's UUID and preferred flag (design: remote import
 	 * sync isolation, Architecture §1). Nothing clinical is copied; the history is served by central and
-	 * cached outside the synced tables. Every call to central is a GET ({@link #executeGet}), so nothing
+	 * cached outside the synced tables. Every call to central is a GET ({@link CentralClient}), so nothing
 	 * there is changed.
 	 * <p>
 	 * Safe to repeat: when the shell already exists, the rows it lacks are added and nothing is
@@ -215,7 +211,7 @@ public class RemoteSearchService {
 			Patient existing = Context.getPatientService().getPatientByUuid(uuid);
 			JsonNode remotePatient;
 			try {
-				remotePatient = executeGet(baseUrl + "/ws/rest/v1/patient/" + uuid + "?v=full");
+				remotePatient = central.executeGet(baseUrl + "/ws/rest/v1/patient/" + uuid + "?v=full");
 			}
 			catch (Exception e) {
 				if (existing != null) {
@@ -374,107 +370,10 @@ public class RemoteSearchService {
 	}
 
 	private String requireRemoteUrl() throws RemoteSearchException {
-		String baseUrl = getRemoteUrl();
+		String baseUrl = central.getCentralUrl();
 		if (baseUrl.isEmpty()) {
 			throw new RemoteSearchException("Remote search is not configured", true, null);
 		}
 		return baseUrl;
-	}
-
-	JsonNode executeGet(String urlStr) throws Exception {
-		// The credentials go only to the vetted central URL, whatever a caller builds.
-		String base = getRemoteUrl();
-		if (base.isEmpty() || !urlStr.startsWith(base + "/")) {
-			throw new IllegalStateException("Refusing to call a URL outside the configured central server");
-		}
-		HttpURLConnection connection = (HttpURLConnection) new URL(urlStr).openConnection();
-		// A redirect could carry the credentials to another host.
-		connection.setInstanceFollowRedirects(false);
-		connection.setRequestMethod("GET");
-		connection.setConnectTimeout(TIMEOUT_MS);
-		connection.setReadTimeout(TIMEOUT_MS);
-		connection.setRequestProperty("Accept", "application/json");
-
-		String user = getRemoteUser();
-
-		if (!user.isEmpty()) {
-			String auth = user + ":" + getRemotePassword();
-			String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes("UTF-8"));
-			connection.setRequestProperty("Authorization", "Basic " + encodedAuth);
-		}
-
-		try {
-			if (connection.getResponseCode() != 200) {
-				throw new IllegalStateException("Remote server answered " + connection.getResponseCode());
-			}
-			try (InputStream body = connection.getInputStream()) {
-				return mapper.readTree(body);
-			}
-		}
-		finally {
-			connection.disconnect();
-		}
-	}
-
-	/**
-	 * @return the central instance root, or "" (feature off) when none is set or the one set breaks
-	 *         {@link RemoteEndpointPolicy}: https only, no user info, and a global-property URL must
-	 *         name an allowed host
-	 */
-	protected String getRemoteUrl() {
-		String value = System.getenv(ENV_REMOTE_URL);
-		boolean fromEnvironment = value != null && !value.trim().isEmpty();
-		if (!fromEnvironment) {
-			value = Context.getAdministrationService().getGlobalProperty(GP_REMOTE_URL, "");
-		}
-		value = value == null ? "" : value.trim();
-		while (value.endsWith("/")) {
-			value = value.substring(0, value.length() - 1);
-		}
-		if (value.isEmpty()) {
-			return "";
-		}
-		try {
-			RemoteEndpointPolicy.fromEnvironment(System.getenv()).check(value, fromEnvironment);
-		}
-		catch (IllegalArgumentException e) {
-			log.error("Remote search is switched off: {}", e.getMessage());
-			return "";
-		}
-		return value;
-	}
-
-	protected String getRemoteUser() {
-		String value = System.getenv(ENV_REMOTE_USER);
-		return value == null ? "" : value.trim();
-	}
-
-	/**
-	 * The service account's password. A mounted secret file (LIBERIAEMR_REMOTE_PASSWORD_FILE) wins over
-	 * the plain variable, which anyone with host access can read from docker inspect or /proc. A file
-	 * that is named but cannot be read gives an empty password, so central refuses the request, instead
-	 * of quietly falling back to a different secret.
-	 */
-	protected String getRemotePassword() {
-		String path = System.getenv(ENV_REMOTE_PASSWORD_FILE);
-		if (path != null && !path.trim().isEmpty()) {
-			return readSecretFile(path.trim());
-		}
-		String value = System.getenv(ENV_REMOTE_PASSWORD);
-		return value == null ? "" : value.trim();
-	}
-
-	/** Only a trailing newline is stripped: `echo secret > file` is how these files get written. */
-	static String readSecretFile(String path) {
-		try {
-			return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
-			    java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\r?\\n$", "");
-		}
-		catch (java.io.IOException e) {
-			// Never log anything read out of the file.
-			log.error("{} is set to '{}' but could not be read; Remote Search cannot sign in. Reason: {}",
-			    ENV_REMOTE_PASSWORD_FILE, path, e.getMessage());
-			return "";
-		}
 	}
 }

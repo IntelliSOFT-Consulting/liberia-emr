@@ -14,6 +14,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.openmrs.api.context.Context;
+import org.openmrs.module.liberiaemr.web.central.CentralClient;
+import org.openmrs.module.liberiaemr.web.remotehistory.FacilityHistoryService;
+import org.openmrs.module.liberiaemr.web.remotehistory.HistoryStatus.Attempt;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.ImportOutcome;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.RemoteSearchException;
@@ -40,8 +43,14 @@ public class RemoteSearchController {
 	public static final String PRIVILEGE_SEARCH_PATIENTS = "Get Patients";
 	public static final String PRIVILEGE_ADD_PATIENTS = "Add Patients";
 
+	/** LE-384: importing another facility's patient is its own permission, on top of Add Patients. */
+	public static final String PRIVILEGE_IMPORT_REMOTE_PATIENT = "Import Remote Patient";
+
 	@Autowired
 	private RemoteSearchService remoteSearchService;
+
+	@Autowired
+	private FacilityHistoryService facilityHistoryService;
 
 	/** Whether remote search is configured, so the UI can hide the toggle instead of failing on use. */
 	@RequestMapping(value = "/remotesearch/status", method = RequestMethod.GET)
@@ -80,10 +89,24 @@ public class RemoteSearchController {
 		if (!Context.isAuthenticated() || !Context.hasPrivilege(PRIVILEGE_ADD_PATIENTS)) {
 			return forbidden(PRIVILEGE_ADD_PATIENTS);
 		}
+		if (!Context.hasPrivilege(PRIVILEGE_IMPORT_REMOTE_PATIENT)) {
+			return forbidden(PRIVILEGE_IMPORT_REMOTE_PATIENT);
+		}
 
-		String remoteUuid = payload == null ? null : payload.get("remoteUuid");
+		if (payload == null) {
+			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "request body is required"),
+					HttpStatus.BAD_REQUEST);
+		}
+		String remoteUuid = payload.get("remoteUuid");
 		if (!remoteSearchService.isValidUuid(remoteUuid)) {
 			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "remoteUuid must be a patient UUID"),
+					HttpStatus.BAD_REQUEST);
+		}
+
+		// ADR 0007: every access to another facility's record states why. It is logged with the fetch.
+		String reason = payload.get("reason");
+		if (reason == null || reason.trim().isEmpty()) {
+			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "reason (for access) is required"),
 					HttpStatus.BAD_REQUEST);
 		}
 
@@ -93,6 +116,11 @@ public class RemoteSearchController {
 			response.put("localUuid", outcome.getLocalUuid());
 			// false when the patient was already here (a repeat import only adds the rows it lacked)
 			response.put("created", outcome.isCreated());
+			// The history is a separate step after the shell: a failure here keeps the patient, and the
+			// next import or chart open tries again.
+			Attempt history = facilityHistoryService.refresh(outcome.getLocalUuid(), reason.trim(),
+			    CentralClient.DEFAULT_TIMEOUT_MS);
+			response.put("history", history == Attempt.OK ? "retrieved" : "notRetrieved");
 			response.put("status", "success");
 			return new ResponseEntity<>(response, HttpStatus.OK);
 		}

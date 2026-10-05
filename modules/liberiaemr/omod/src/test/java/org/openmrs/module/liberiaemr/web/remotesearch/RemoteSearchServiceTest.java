@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.Patient;
 import org.openmrs.PersonName;
+import org.openmrs.module.liberiaemr.web.central.CentralClient;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.RemoteSearchException;
 import org.openmrs.module.liberiaemr.web.remotesearch.RemoteSearchService.SearchOutcome;
 
@@ -71,6 +72,8 @@ public class RemoteSearchServiceTest {
 
 	private final Set<String> localUuids = new HashSet<>();
 
+	private CentralClient client;
+
 	private RemoteSearchService service;
 
 	@Before
@@ -99,7 +102,7 @@ public class RemoteSearchServiceTest {
 		localUuids.clear();
 		localUuids.add(LOCAL_UUID);
 
-		service = new RemoteSearchService() {
+		client = new CentralClient() {
 
 			@Override
 			protected String getRemoteUrl() {
@@ -115,6 +118,8 @@ public class RemoteSearchServiceTest {
 			protected String getRemotePassword() {
 				return "pw";
 			}
+		};
+		service = new RemoteSearchService(client) {
 
 			@Override
 			protected boolean existsLocally(String uuid) {
@@ -219,7 +224,7 @@ public class RemoteSearchServiceTest {
 		body = "{\"results\":[" + patient(NEW_UUID) + "]}";
 
 		service.searchPatients("kate");
-		service.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID + "?v=full");
+		client.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID + "?v=full");
 
 		assertEquals(2, methods.size());
 		for (String method : methods) {
@@ -298,7 +303,7 @@ public class RemoteSearchServiceTest {
 	@Test
 	public void refusesToCallAnyUrlOutsideTheConfiguredCentral() throws Exception {
 		try {
-			service.executeGet("http://127.0.0.1:1/ws/rest/v1/patient");
+			client.executeGet("http://127.0.0.1:1/ws/rest/v1/patient");
 			fail("expected a refusal");
 		}
 		catch (IllegalStateException expected) {
@@ -310,7 +315,7 @@ public class RemoteSearchServiceTest {
 	public void refusesWhenNoCentralIsConfigured() throws Exception {
 		remoteUrl = "";
 		try {
-			service.executeGet(base + "/ws/rest/v1/patient");
+			client.executeGet(base + "/ws/rest/v1/patient");
 			fail("expected a refusal");
 		}
 		catch (IllegalStateException expected) {
@@ -332,7 +337,7 @@ public class RemoteSearchServiceTest {
 			}
 		});
 		try {
-			service.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID);
+			client.executeGet(base + "/ws/rest/v1/patient/" + NEW_UUID);
 			fail("a redirect is not a 200");
 		}
 		catch (IllegalStateException expected) {
@@ -351,14 +356,14 @@ public class RemoteSearchServiceTest {
 
 	@Test
 	public void aSecretFileIsReadVerbatimApartFromItsTrailingNewline() throws Exception {
-		assertEquals("pa ss$word", RemoteSearchService.readSecretFile(secretFile("pa ss$word\n")));
-		assertEquals("pa ss$word", RemoteSearchService.readSecretFile(secretFile("pa ss$word\r\n")));
-		assertEquals(" spaced ", RemoteSearchService.readSecretFile(secretFile(" spaced ")));
+		assertEquals("pa ss$word", CentralClient.readSecretFile(secretFile("pa ss$word\n")));
+		assertEquals("pa ss$word", CentralClient.readSecretFile(secretFile("pa ss$word\r\n")));
+		assertEquals(" spaced ", CentralClient.readSecretFile(secretFile(" spaced ")));
 	}
 
 	@Test
 	public void anUnreadableSecretFileGivesAnEmptyPasswordNotAFallback() {
-		assertEquals("", RemoteSearchService.readSecretFile("/no/such/file"));
+		assertEquals("", CentralClient.readSecretFile("/no/such/file"));
 	}
 
 	@Test

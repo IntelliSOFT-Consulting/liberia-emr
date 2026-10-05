@@ -7,7 +7,7 @@
  * Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
  * graphic logo is a trademark of OpenMRS Inc.
  */
-package org.openmrs.module.liberiaemr.web.remotesearch;
+package org.openmrs.module.liberiaemr.web.central;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;

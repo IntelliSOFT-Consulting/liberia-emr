@@ -1121,6 +1121,18 @@ sys.exit(1 if problems else 0)
 PY
 ok "10-minute human-idle config and Tomcat session timeout"
 
+# ADR 0013 / LE-384: the facility's cache of other facilities' history must never reach central.
+# eip.watchedTables is an allow-list of what dbsync sends, so a remote history table in it is a
+# leak of another facility's records back to central under their UUIDs.
+section "remote history tables stay out of sync"
+for f in "$ROOT"/distribution/sync/*.template "$ROOT"/distribution/sync/*.properties; do
+  [[ -f "$f" ]] || continue
+  if grep -iE '^[[:space:]]*eip\.watchedTables[[:space:]]*=' "$f" | grep -iqE 'liberiaemr_remote_history'; then
+    err "${f#$ROOT/}: eip.watchedTables names a liberiaemr_remote_history table; the remote history cache must never sync"
+  fi
+done
+ok "no liberiaemr_remote_history table in eip.watchedTables"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2
