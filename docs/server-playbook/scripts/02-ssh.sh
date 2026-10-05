@@ -3,11 +3,15 @@
 # Usage: ADMIN_USER=youruser ./02-ssh.sh
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Run as root"; exit 1; }
-ADMIN_USER="${ADMIN_USER:?Set ADMIN_USER}"
-KEYS="/home/${ADMIN_USER}/.ssh/authorized_keys"
+ADMIN_USERS="${ADMIN_USERS:-${ADMIN_USER:-}}"
+[ -n "$ADMIN_USERS" ] || { echo "Set ADMIN_USERS (space-separated) or ADMIN_USER"; exit 1; }
 
-# Safety check: never disable passwords without a working key in place
-[ -s "$KEYS" ] || { echo "No authorized_keys for ${ADMIN_USER}. Aborting to avoid lockout."; exit 1; }
+# Safety check: every listed user must exist and have a key, or we abort before locking anyone out
+for u in $ADMIN_USERS; do
+  id "$u" >/dev/null 2>&1 || { echo "User ${u} does not exist."; exit 1; }
+  home="$(getent passwd "$u" | cut -d: -f6)"
+  [ -s "${home}/.ssh/authorized_keys" ] || { echo "No authorized_keys for ${u}. Aborting to avoid lockout."; exit 1; }
+done
 
 echo "Authorized use only. Activity on this system is logged and monitored." | tee /etc/issue.net >/dev/null
 
@@ -25,7 +29,7 @@ ClientAliveCountMax 2
 X11Forwarding no
 AllowAgentForwarding no
 AllowTcpForwarding no
-AllowUsers ${ADMIN_USER}
+AllowUsers ${ADMIN_USERS}
 LogLevel VERBOSE
 Banner /etc/issue.net
 EOF

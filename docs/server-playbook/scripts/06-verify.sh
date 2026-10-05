@@ -27,5 +27,9 @@ if command -v docker >/dev/null; then
   docker ps --format '{{.Names}}: {{.Ports}}' | grep '0.0.0.0' || echo "none"
 fi
 
-echo; echo "== Lynis quick audit =="
-lynis audit system --quick --no-colors | tail -n 40
+echo; echo "== Lynis audit =="
+LYNIS_LOG="lynis-$(hostname)-$(date +%F).log"
+LYNIS_REPORT="lynis-$(hostname)-$(date +%F).dat"
+lynis audit system --quick --no-colors --logfile "$LYNIS_LOG" --report-file "$LYNIS_REPORT"
+echo; echo "== Lynis summary =="
+grep -E '^(hardening_index|warning\[\]|suggestion\[\])' "$LYNIS_REPORT"

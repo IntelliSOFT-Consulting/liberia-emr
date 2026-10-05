@@ -13,25 +13,25 @@ Scope is the server and the software deployed on it (operating system, SSH, fire
 - Ubuntu LTS or Debian server, reachable over the internet, with root or sudo access for the initial setup.
 - Applications run in Docker behind Nginx.
 - There is a single deployment target, with no separate staging or production servers.
-- Administrators log in with SSH keys from known, fixed IP addresses.
+- Each administrator has a named personal account and their own SSH key. Shared accounts are not allowed, because the audit trail depends on it.
 - The server clock uses the Africa/Monrovia time zone and syncs over NTP so logs line up across systems.
 
 ## 3. Deployment phases
 
-1. **Prepare.** Confirm the admin username, install your public SSH key for that user, and list the admin IP addresses that will be allowed to connect. Keep a second console or session open until the end.
+1. **Prepare.** Confirm the admin usernames, install each person's public SSH key for their own account, and list the admin IP addresses that will be allowed to connect. Keep a second console or session open until the end.
 2. **Baseline.** Patch the system, enable automatic security updates, set time sync, apply kernel network settings and load audit rules (`01-baseline.sh`).
-3. **Secure SSH.** Disable root and password logins, limit access to the admin user (`02-ssh.sh`).
+3. **Secure SSH.** Disable root and password logins, limit access to the listed admin users (`02-ssh.sh`).
 4. **Firewall.** Deny all inbound traffic by default and open only SSH from admin IPs plus HTTP and HTTPS (`03-firewall.sh`).
 5. **Fail2Ban.** Ban IP addresses that repeatedly fail to log in (`04-fail2ban.sh`).
 6. **Docker.** Apply log rotation, no-new-privileges and related runtime defaults, then deploy the application (`05-docker.sh`).
-7. **Verify.** Run the verification script and a Lynis audit, then file the output with the deployment record (`06-verify.sh`).
+7. **Verify.** Run the verification script and a Lynis audit, then file the output with the deployment record (`06-verify.sh`). File three files together: the verify output, the Lynis log (`lynis-<host>-<date>.log`) and the Lynis report (`lynis-<host>-<date>.dat`).
 
 ### Running the scripts
 
-Run as root on a fresh server, in order. Set `ADMIN_USER` and `ADMIN_IPS` (space-separated) first. Test every SSH and firewall change from a second session before closing the first one.
+Run as root on a fresh server, in order. Set `ADMIN_USERS` and `ADMIN_IPS` (space-separated) first. Test every SSH and firewall change from a second session before closing the first one.
 
 ```bash
-export ADMIN_USER=youruser
+export ADMIN_USERS="alice bob"
 export ADMIN_IPS="use server IP"
 
 sudo -E ./scripts/01-baseline.sh
@@ -85,7 +85,7 @@ Take a daily backup of the application database and uploaded files, and copy it 
 | Frequency | Task |
 |---|---|
 | Weekly | Review auth, Fail2Ban and firewall logs; check pending updates and reboot if a kernel update needs it |
-| Monthly | Run script 06 and compare with the previous output; review admin IP list and SSH keys; rebuild and rescan container images |
+| Monthly | Run script 06 and compare with the previous output (the verify file and the Lynis `.dat` report), and file all three files with the deployment record; review admin IP list and SSH keys; rebuild and rescan container images |
 | Quarterly | Restore test from backup; run a full Lynis audit; review this playbook and the scripts |
 | After any change | Re-run script 06 and confirm no control has regressed |
 
@@ -94,6 +94,7 @@ Take a daily backup of the application database and uploaded files, and copy it 
 - **Fail2Ban ban time.** The scripts use 10 minutes as the default and 7 days for the sshd jail. Adjust if the team wants different values.
 - **Fail2Ban retries.** 5 by default and 3 for SSH.
 - **Admin IP addresses.** Scripts 03 and 04 refuse to run without `ADMIN_IPS`. Use the real admin addresses; the examples here use documentation-only addresses.
+- **Admin users.** `ADMIN_USERS` must list individual people, each with their own account and key, not a shared operations account. Script 02 allows SSH only for these users, and the audit trail depends on one account per person.
 - **Docker and the firewall.** Ports published by Docker bypass ufw. Publish internal services on `127.0.0.1` in the compose files and let Nginx be the only public entry point.
 - **Nginx in a container.** The `nginx-http-auth` jail cannot read container logs from the host. Enable that jail only if Nginx logs are available on the host.
 - **Testing.** The scripts have not been run on a live server. Test on a throwaway VM first.
