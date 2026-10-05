@@ -4,7 +4,8 @@
 # that the same National ID with agreeing sex and date of birth links two records to one
 # person, that a National ID whose sex disagrees is held for review instead, that a record
 # without a National ID stays its own person, and that a user without View Identity Links is
-# refused.
+# refused. Then a person decides the two reviews through the review queue: same person links the
+# pair, different people separates a linked record from its person, and a review is decided once.
 #
 #   qa/sync/verify-identity.sh [--facility-url https://localhost] \
 #     [--second-facility-url https://localhost:9443] [--central-url https://localhost:8443] \
@@ -173,6 +174,41 @@ after="$(central "$CENTRAL_URL/openmrs/ws/rest/v1/liberiaemr/identity/status")"
 [[ "$(json 'd["openReviews"]' <<<"$after")" -ge 1 && "$(json 'd["linked"]' <<<"$after")" -ge 1 ]] \
   || fail "the status counts reflect the link and the review" "$after"
 pass "status counts: $(json 'd["people"]' <<<"$after") people, $(json 'd["linked"]' <<<"$after") linked, $(json 'd["openReviews"]' <<<"$after") for review"
+
+echo "== a person decides the reviews (Review Identity Matches) =="
+reviews() { central "$CENTRAL_URL/openmrs/ws/rest/v1/liberiaemr/identity/reviews$1" "${@:2}"; }
+decide() { # review-id decision reason
+  reviews "/$1/decision" -H 'Content-Type: application/json' -X POST -o /dev/null -w '%{http_code}' \
+    -d "{\"decision\":\"$2\",\"reason\":\"$3\"}"
+}
+CLASH_REVIEW="$(identity "$D" | json 'd["openReviews"][0]["id"]')"
+pair="$(reviews "/$CLASH_REVIEW")"
+[[ "$(json 'len(d["records"])' <<<"$pair")" == "2" && "$(json 'd["records"][1]["sex"]' <<<"$pair")" != "$(json 'd["records"][0]["sex"]' <<<"$pair")" ]] \
+  || fail "the review shows both records, with the sex that differs" "$(head -c 400 <<<"$pair")"
+[[ "$(json 'any(r["id"] == '"$CLASH_REVIEW"' for r in d["reviews"])' <<<"$(reviews "")")" == "True" ]] \
+  || fail "the queue lists the review"
+[[ "$(decide "$CLASH_REVIEW" SAME_PERSON "")" == "400" ]] || fail "a decision without a reason is refused"
+[[ "$(decide "$CLASH_REVIEW" SAME_PERSON "QA: sex was entered wrongly at one clinic")" == "201" ]] \
+  || fail "the reviewer records same person"
+[[ "$(identity "$C" | json 'd["code"]')" == "$(identity "$D" | json 'd["code"]')" ]] || fail "same person links the pair" "$(identity "$D" | head -c 300)"
+[[ "$(decide "$CLASH_REVIEW" DIFFERENT_PEOPLE "QA: second reviewer")" == "409" ]] || fail "a decided review cannot be decided again"
+pass "same person: the pair is linked, the reason is required, and the review is decided once"
+
+CHANGED_REVIEW="$(identity "$A" | json 'next(r["id"] for r in d["openReviews"] if "changed after" in r["reason"])')"
+[[ "$(decide "$CHANGED_REVIEW" DIFFERENT_PEOPLE "QA: the corrected ID belongs to someone else")" == "201" ]] \
+  || fail "the reviewer records different people"
+[[ "$(identity "$A" | json 'd["code"]')" != "$(identity "$B" | json 'd["code"]')" ]] || fail "different people separates the linked record" "$(identity "$A" | head -c 300)"
+[[ "$(person_count "$A")" == "1" && "$(person_count "$B")" == "1" ]] || fail "each is its own person again"
+recent="$(reviews "")"
+[[ "$(json 'sum(r["id"] in ('"$CLASH_REVIEW"', '"$CHANGED_REVIEW"') for r in d["recent"])' <<<"$recent")" == "2" ]] \
+  || fail "both decisions are listed with who decided" "$(head -c 400 <<<"$recent")"
+pass "different people: the linked record is separated, and both decisions are on record"
+if [[ -n "$RECEIVER" ]]; then
+  code="$(curl -sk -u "$(env_of "$RECEIVER" OPENMRS_REST_USER):$(env_of "$RECEIVER" OPENMRS_REST_PASSWORD)" -o /dev/null -w '%{http_code}' \
+    "$CENTRAL_URL/openmrs/ws/rest/v1/liberiaemr/identity/reviews")"
+  [[ "$code" == "403" ]] || fail "a user without Review Identity Matches is refused" "got HTTP $code"
+  pass "a user without Review Identity Matches is refused (403)"
+fi
 
 echo
 echo "PASS: all $PASSES identity checks held."

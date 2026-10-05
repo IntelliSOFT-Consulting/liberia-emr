@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -27,13 +28,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 /**
  * The Central Person Identifier at read time (sync-eip.md 2.5.4). Counts need View Sync Status;
  * a record's links need View Identity Links, because they say which other facilities hold the
- * same person.
+ * same person. The review queue, reads included, needs Review Identity Matches: a review shows
+ * two patients' names, birth dates and identifiers side by side.
  */
 @Controller
 @RequestMapping("/rest/" + RestConstants.VERSION_1 + "/liberiaemr/identity")
 public class IdentityController {
 
 	public static final String PRIVILEGE_VIEW_IDENTITY_LINKS = "View Identity Links";
+	
+	public static final String PRIVILEGE_REVIEW_IDENTITY_MATCHES = "Review Identity Matches";
 
 	@Autowired
 	private IdentityService identityService;
@@ -61,6 +65,59 @@ public class IdentityController {
 		}
 	}
 
+	@RequestMapping(value = "/reviews", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity<Map<String, Object>> reviews() {
+		if (!mayReview()) {
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_REVIEW_IDENTITY_MATCHES + " is required");
+		}
+		return new ResponseEntity<Map<String, Object>>(identityService.listReviews(), HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/reviews/{id}", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity<Map<String, Object>> review(@PathVariable("id") int id) {
+		if (!mayReview()) {
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_REVIEW_IDENTITY_MATCHES + " is required");
+		}
+		try {
+			return new ResponseEntity<Map<String, Object>>(identityService.getReview(id), HttpStatus.OK);
+		}
+		catch (IdentityService.NotFoundException e) {
+			return error(HttpStatus.NOT_FOUND, e.getMessage());
+		}
+	}
+	
+	@RequestMapping(value = "/reviews/{id}/decision", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<Map<String, Object>> decide(@PathVariable("id") int id, @RequestBody Map<String, Object> body) {
+		if (!mayReview()) {
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_REVIEW_IDENTITY_MATCHES + " is required");
+		}
+		try {
+			return new ResponseEntity<Map<String, Object>>(identityService.decide(id, text(body, "decision"), text(body,
+			    "reason"), Context.getAuthenticatedUser()), HttpStatus.CREATED);
+		}
+		catch (IdentityService.NotFoundException e) {
+			return error(HttpStatus.NOT_FOUND, e.getMessage());
+		}
+		catch (IdentityService.StaleException e) {
+			return error(HttpStatus.CONFLICT, e.getMessage());
+		}
+		catch (IllegalArgumentException | IllegalStateException e) {
+			return error(HttpStatus.BAD_REQUEST, e.getMessage());
+		}
+	}
+	
+	private static boolean mayReview() {
+		return Context.isAuthenticated() && Context.hasPrivilege(PRIVILEGE_REVIEW_IDENTITY_MATCHES);
+	}
+	
+	private static String text(Map<String, Object> body, String key) {
+		Object value = body == null ? null : body.get(key);
+		return value == null ? null : value.toString();
+	}
+	
 	private static ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
 		return new ResponseEntity<Map<String, Object>>(Collections.<String, Object> singletonMap("error", message), status);
 	}
