@@ -1,0 +1,208 @@
+@use '@carbon/layout';
+@use '@carbon/themes';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.bodyShort01 {
+  @include type.type-style('body-compact-01');
+}
+
+.label01 {
+  @include type.type-style('label-01');
+}
+
+.headingCompact01 {
+  @include type.type-style('heading-compact-01');
+}
+
+.resultsContainer {
+  width: 100%;
+  background-color: $ui-02;
+}
+
+// Same grey bar as the "LOCAL SEARCH" heading the patch puts on the local results.
+.toggleOffFooter,
+.remoteHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  background-color: $ui-01;
+  border-top: 1px solid $ui-03;
+
+  :global(.cds--toggle) {
+    margin: 0;
+  }
+}
+
+.toggleOffHint {
+  @extend .bodyShort01;
+  color: $text-02;
+  margin: 0;
+}
+
+.sectionHeader {
+  @extend .label01;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: $text-02;
+  font-weight: 600;
+  margin: 0;
+}
+
+// The list of remote patients: joined banners, exactly like the local results above.
+.cardsList,
+.cardsListScrollable,
+.rowsList {
+  display: flex;
+  flex-direction: column;
+}
+
+// Many matches must scroll inside their own box: the dropdown and workspace containers clip
+// their overflow, so an unbounded list would be cut off with no way to reach the rest.
+.cardsListScrollable,
+.rowsList {
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+// In the header dropdown the local results (their own scroll box, about 24rem) sit above this
+// section, so the height left for it is what remains of the viewport; a fixed 50vh ran off-screen.
+.rowsList {
+  max-height: clamp(10rem, calc(100vh - 28rem), 24rem);
+}
+
+// Sizes and spacing below are those of OpenMRS's own patient banner (esm-patient-search-app
+// patient-banner.scss / compact-patient-banner.scss); the text inside comes from the same
+// framework component, so fonts match too.
+.container,
+.rowContainer {
+  background-color: $ui-02;
+  border-bottom: 1px solid $ui-03;
+}
+
+.patientBanner {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr; // 3.5rem avatar + 2 x 1rem margins
+  flex: 1;
+  min-width: 0;
+}
+
+.patientAvatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: layout.$spacing-05;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.rowContainer {
+  display: flex;
+  align-items: center;
+}
+
+.rowAction {
+  flex-shrink: 0;
+  margin-right: layout.$spacing-05;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 layout.$spacing-05 layout.$spacing-03 0;
+}
+
+.rightActions {
+  margin-left: auto;
+  display: flex;
+}
+
+// "Show more": same shape as OpenMRS's contact-details panel (full width, divider on top,
+// heading-compact-01 labels over body-compact-01 values).
+.moreDetails {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  width: 100%;
+  margin: 0;
+  padding: layout.$spacing-05;
+  border-top: 1px solid $ui-03;
+  color: $text-02;
+
+  dt {
+    @extend .headingCompact01;
+    color: $text-02;
+  }
+
+  dd {
+    @extend .bodyShort01;
+    margin: layout.$spacing-03 0 0;
+    color: $text-02;
+  }
+}
+
+.loadingRow {
+  padding: layout.$spacing-04 layout.$spacing-05;
+}
+
+.notificationWrapper {
+  padding: layout.$spacing-03 0;
+
+  :global(.cds--inline-notification) {
+    max-width: none;
+  }
+}
+
+.emptyState {
+  padding: layout.$spacing-05;
+  color: $text-02;
+  @extend .bodyShort01;
+}
+
+.summary {
+  margin-bottom: layout.$spacing-05;
+}
+
+.summaryHeading {
+  @include type.type-style('heading-03');
+  margin: layout.$spacing-05 0 layout.$spacing-02;
+}
+
+.summarySubheading {
+  @extend .bodyShort01;
+  color: $text-02;
+  margin: 0;
+}
+
+.loadingCaption {
+  @extend .label01;
+  color: $text-02;
+  margin: 0;
+  padding: layout.$spacing-04 layout.$spacing-05 0;
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.skeletonAvatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+}
+
+.skeletonText {
+  flex: 1;
+  min-width: 0;
+}
