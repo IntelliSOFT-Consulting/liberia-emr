@@ -16,6 +16,7 @@ import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
 import org.openmrs.module.liberiaemr.identity.IdentitySchedule;
+import org.openmrs.module.liberiaemr.lab.LabOnFhirTasks;
 import org.openmrs.module.liberiaemr.mfl.MflSchedule;
 import org.openmrs.module.liberiaemr.mfl.MflSettings;
 import org.openmrs.module.liberiaemr.mfl.MflSyncService;
@@ -64,6 +65,7 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		scheduleIdentityTask();
 		scheduleMflTask();
+		LabOnFhirTasks.apply();
 	}
 
 	/**

@@ -20,6 +20,75 @@
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
     }
   },
+  "_comment_home_dashboards": [
+    "LE-395. /home opens the dashboard defaultDashboardPerRole names for one of the user's roles,",
+    "else 'service-queues', else the first dashboard left in homepage-dashboard-slot. Each",
+    "dashboard below is shown only to a user holding EVERY privilege its data needs, so no role",
+    "lands on, or sees a link to, a dashboard that can only answer 403.",
+    "LE-397. The national roles land on their own app's dashboard, which the app registers in",
+    "homepage-dashboard-slot gated by the same privilege as its page (routes.json): audit-log",
+    "(View Audit Log), indicator-reports (Export National Report), sync-status (View Sync Status),",
+    "sync-conflicts (Resolve Sync Conflicts). A name whose dashboard is missing (an app build",
+    "older than LE-397) falls back to the first dashboard left, as before. A user with several",
+    "mapped roles lands on the first of them in the session's role order.",
+    "Privilege names: docs/security/moh-ict-sop-mapping.md, 'The login roles'."
+  ],
+  "@openmrs/esm-home-app": {
+    "defaultDashboardPerRole": {
+      "National Reporting Officer": "indicator-reports",
+      "Sync Administrator": "sync-status",
+      "ICT Auditor": "audit-log",
+      "Sync Conflict Reviewer": "sync-conflicts"
+    },
+    "extensionSlots": {
+      "homepage-dashboard-slot": {
+        "configure": {
+          "service-queues-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Queues", "Get Queue Entries", "Get Visits"] }
+          },
+          "clinical-appointments-dashboard-link": {
+            "Display conditions": { "privileges": ["View Appointments"] }
+          },
+          "laboratory-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Orders", "Get Patients"] }
+          },
+          "billing-dashboard-link": {
+            "Display conditions": { "privileges": ["View Cashier Bills"] }
+          },
+          "ward-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Beds", "Get Admission Locations", "Assign Beds"] }
+          },
+          "patient-lists-dashboard-link": {
+            "Display conditions": { "privileges": ["Get Patient Cohorts"] }
+          }
+        }
+      }
+    }
+  },
+  "_comment_app_menu": [
+    "LE-397. The RefApp's app menu entries carry no privilege of their own, so every signed-in user",
+    "saw them, the national roles included. Each is shown only to a user holding what its page",
+    "needs: System Administration the legacy admin's View Administration Functions, the queue",
+    "screen the same queue privileges as the service queues dashboard, Dispensing Get Medication",
+    "Dispense (the Pharmacist). LiberiaEMR's own entries are gated in their routes.json."
+  ],
+  "@openmrs/esm-primary-navigation-app": {
+    "extensionSlots": {
+      "app-menu-slot": {
+        "configure": {
+          "system-administration-app-menu-link": {
+            "Display conditions": { "privileges": ["View Administration Functions"] }
+          },
+          "queue-screen-link": {
+            "Display conditions": { "privileges": ["Get Queues", "Get Queue Entries", "Get Visits"] }
+          },
+          "dispensing-link": {
+            "Display conditions": { "privileges": ["Get Medication Dispense"] }
+          }
+        }
+      }
+    }
+  },
   "@openmrs/esm-app-shell": {
     "Enabled feature flags": [
       "patient-flags"
@@ -143,14 +212,14 @@
       ]
     }
   },
-  "@openmrs/esm-primary-navigation-app": {
-    "_comment_timeout": [
-      "MOH ICT SOP: 10-minute inactivity timeout. This client-side timer is HALF the",
-      "control — it ends the user's session in the browser but does not invalidate a",
-      "stolen server session. The matching server-side timeout is configured in the",
-      "backend image; both must be present. See the globalproperties/README.md table."
+  "@liberiaemr/esm-liberia-login-app": {
+    "_comment_idle_timeout": [
+      "Minutes of human inactivity for the login-app watcher. Maven filtering leaves this as a string such as \"10\".",
+      "This is not logoutIdleTimeoutMinutes. See docs/security/moh-ict-sop-mapping.md."
     ],
-    "logoutIdleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+    "session": {
+      "idleTimeoutMinutes": "${var.security.session.timeout-minutes}"
+    }
   },
   "@openmrs/esm-styleguide": {
     "Brand color #1": "#002A86",

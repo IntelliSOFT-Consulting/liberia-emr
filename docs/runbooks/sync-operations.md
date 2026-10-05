@@ -6,9 +6,10 @@ rotating certificates and keys, and handling what the alerts raise. The design i
 [distribution/broker/README.md](../../distribution/broker/README.md) and
 [distribution/sync/README.md](../../distribution/sync/README.md).
 
-**Rehearsal status:** sections 7 to 9, 11 and 13 are exercised by the `qa/sync/` checks named in
-them. Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material; do that
-before go-live.
+**Rehearsal status:** sections 7 to 9, 11 and 13 to 17 are exercised by the `qa/sync/` checks
+named in them. Sections 1 and 6 run on the dev pair with throwaway material (section 18).
+Sections 1 to 6 have not yet been rehearsed end to end with MOH-issued material, and section
+19 not at all; do both before go-live.
 
 Commands assume the repository is checked out on the host and the stacks run with Docker
 Compose. At central, `central` below stands for
@@ -78,8 +79,12 @@ certificate, the PGP key and the broker address, and must be the facility's `FAC
      --facility careysburg=careysburg.pem --facility <code>=<code>.pem
    central restart artemis && central restart sync-receiver
    ```
-5. **Facility.** Set `FACILITY_CODE`, `ARTEMIS_URL=ssl://<central host>:61617`,
-   `SYNC_CERTS_DIR` and the sync account (section 6) in the facility env, then `facility up -d`.
+5. **Facility.** Set `FACILITY_CODE`, `ARTEMIS_URL`, `SYNC_CERTS_DIR` and the sync account
+   (section 6) in the facility env, then `facility up -d`. For `ARTEMIS_URL`, prefer HTTPS,
+   which needs nothing from the facility's network but HTTPS to central:
+   `ARTEMIS_URL=ssl://artemis:61617` with `SYNC_CENTRAL_URL=https://<central host>`, and
+   `SYNC_HTTP_PROXY` if the network forces a proxy (distribution/broker/README.md, "Reaching it
+   over HTTPS"). Directly, where 61617 is open: `ssl://<central host>:61617`.
 
    On its first start the sender sends every record already in the facility database, then
    carries on with new changes (`SYNC_SNAPSHOT_MODE=initial`). The clinic can keep working
@@ -422,7 +427,9 @@ DELETE FROM receiver_retry_queue WHERE
 ## 13. The sync status page
 
 `Sync status` in the app menu at central shows, per facility, whether it is still sending, how
-much arrived in the last day, the total received, and when its certificate expires. Above that
+many records arrived in the last day and the last 7 days, when central last received from it
+("Not in the last 7 days" beyond that), the reconciliation result, and when its certificate
+expires. Totals since the broker started are not shown, because a broker restart resets them. Above that
 it shows what is waiting at central: records still to apply, records retrying, conflicts to
 resolve, records set aside, whether the receiver and broker are running, and any sync alert
 currently firing. It reads central's own monitoring
@@ -539,4 +546,166 @@ facility watches for it (distribution/monitoring/README.md).
 
 Records are safe in the facility database throughout, and clinical work carries on as normal.
 `SyncCaptureCheckBlind` means the exporter itself cannot see: it is down, or cannot sign in to
-the database with the Debezium account.
+the database with the Debezium account. `qa/sync/verify-capture-stall.sh` exercises this section.
+
+## 17. Placeholder metadata at central: `SyncPlaceholderMetadata`
+
+A facility sent records that reference metadata central does not hold: a location, concept,
+encounter type, visit type, encounter role, relationship type or programme. The receiver did not
+park them. It inserted a placeholder row with the missing uuid and applied the records against
+it: retired, retire reason `[placeholder]` (a programme is named `[Default] - <uuid>` instead), no
+name, no parent. The records are intact, but they hang off metadata that reports and the
+location hierarchy cannot read. The alert names the table; the reconciliation check at central
+counts placeholders on every pass (sync-entity-coverage.md section 3, LE-373).
+
+A missing patient identifier type or person attribute type gets no placeholder. Its records
+park and retry under `ReceiverErrors`, and apply by themselves once the metadata is loaded.
+
+1. List them. dbsync keeps a few shared rows of its own whose uuid starts `PLACEHOLDER_`;
+   ignore those.
+
+   ```bash
+   central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs -e "SELECT uuid FROM <table> WHERE retire_reason = '\''[placeholder]'\'' AND uuid NOT LIKE '\''PLACEHOLDER%'\''"'
+   ```
+
+2. Find each uuid in the content packages (`grep -r <uuid> content-packages`, and the
+   resolved values in each `variables.properties`). The usual causes:
+   - **Central's image is older than the facility's.** Deploy central at the facility's release
+     version. Central must never run older content (sync-entity-coverage.md section 3).
+   - **A content change gave shipped metadata a new uuid.** A database that already held the old
+     row by the same name cannot load the new one, and Initializer reports it only in the
+     backend log. Shipped uuids are append-only; fix the content, then repair as below.
+   - **The facility created it locally** (an admin added a ward, say). It must go into the
+     facility's site package with the same uuid; central gets every site's locations (ADR 0012).
+3. Back up the tables you are about to change, and check the file is not empty: a dump run
+   against the wrong container writes a 0-byte file without failing loudly.
+
+   ```bash
+   central exec -T db sh -c 'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction openmrs concept concept_name concept_numeric concept_description' > placeholder-repair-backup.sql
+   ls -l placeholder-repair-backup.sql
+   ```
+
+   Then repair the placeholder **in place, keeping its uuid**: the records point at it, so deleting
+   it or creating a new row orphans them. Shipping the metadata in content with that uuid does
+   it: on the next start Initializer finds the row by uuid and fills it in, unretires it and
+   sets its parent. For a **concept** that already has observations, Initializer refuses to
+   change the placeholder's datatype (`ConceptInUseException`). Set the datatype and class the
+   content declares first, then let Initializer do the rest. **Make every database change in this
+   step, including retiring an older concept that holds the name (see the end of this section),
+   before the backend restarts.** A restart in between loads the file too early: the rows fail,
+   and Initializer still marks the file loaded, so step 4 has to be done again.
+
+   ```bash
+   central exec db sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" openmrs -e "UPDATE concept SET datatype_id = (SELECT concept_datatype_id FROM concept_datatype WHERE name = '\''<Data type>'\'' AND retired = 0), class_id = (SELECT concept_class_id FROM concept_class WHERE name = '\''<Data class>'\'' AND retired = 0) WHERE uuid = '\''<uuid>'\'' AND retire_reason = '\''[placeholder]'\''"'
+   ```
+
+4. Make Initializer read the file again even if its content has not changed, because it records
+   a file as loaded even when a row in it failed. Delete that file's checksum, for example
+   `central exec backend rm /openmrs/data/configuration_checksums/concepts/concepts-mch.checksum`,
+   and restart the backend (`central restart backend`). Check the log of **this** start only, as
+   older failures stay in it: `central logs --since <time of the restart> backend | grep '<file>.*not saved'`
+   should print nothing. If it prints the file, read the exception above that summary,
+   fix its cause, and repeat this step.
+5. The alert clears at the next reconciliation pass (`SYNC_RECON_CHECK_SECONDS`, 10 minutes by
+   default) once the table has no placeholders left.
+
+If the content row's name is already taken by another concept (the "new uuid" cause above),
+Initializer rejects the row as a duplicate name. Retire or rename the other, older concept first,
+and check whether any observations still point at it.
+
+`qa/sync/verify-second-facility.sh --negative-control` raises a placeholder location on a staging
+pair, and leaves it behind for this procedure to repair.
+
+## 18. The dev pair
+
+The facility dev server (`careysburg`) syncs to central dev. It is set up and checked by two
+manual GitHub workflows, never by hand, and never against a production server: the certificates
+are throwaway material from `scripts/security/gen-sync-certs.sh`, and the dev CA is kept on
+central dev, readable by root only, so a later run reuses it.
+
+- **Enable sync on dev** (`.github/workflows/enable-dev-sync.yml`, input `facility`, default
+  `careysburg`) runs sections 1 and 6 end to end: it publishes the sync images, issues and
+  installs the certificates, starts central with the broker and monitoring, creates both sync
+  accounts (`scripts/deploy/dev-sync-user.sh`), turns on the facility's binary log and starts
+  the sender, then proves a record travels by registering a test patient at the facility,
+  waiting for it at central, and voiding it again (`scripts/deploy/dev-sync-proof.sh`). Each
+  server's steps are `scripts/deploy/dev-sync-central.sh` and `dev-sync-facility.sh`; every step
+  can be run again, and the pre-flight backs up the env file and the database first. It stops
+  before touching a server if a secret it needs is missing (the list is in the workflow header).
+- **Dev sync check** (`.github/workflows/dev-sync-check.yml`) is read-only: what runs on both
+  servers, which sync settings are present, and whether the facility reaches central's broker.
+
+A facility that cannot reach central on 61617 is the hosting provider's firewall in front of
+central, not the servers (neither runs a host firewall): allow TCP 61617 from the facility
+server's address there. The enable run does not fail on it; the sender captures and queues
+until the port opens, then sends by itself. Run Dev sync check afterwards.
+
+The CI deploy keeps sync running across releases: it publishes the sync images with every dev
+build and fast-forwards each server's checkout to the deployed commit, so the compose file
+matches the images. A checkout with local changes stops the deploy rather than being
+overwritten. Run git on a dev server only as the deploy user (`DEV_USER`); a checkout touched
+as root fails the next deploy's fetch with a permission error.
+
+## 19. Upgrade a release across central and the facilities
+
+**Central first, then the facilities one at a time.** dbsync's own guidance is to upgrade the
+receiver before any sender, and the content rule says the same: a facility must never run
+newer content than central, or its records reference metadata central lacks and land on
+placeholders (section 17). Upgrading central first keeps both true throughout, because a
+newer receiver and newer content at central accept what older facilities send. Each stack is
+upgraded with the steps in [deploy.md](deploy.md) ("Upgrade"); this section is the order
+around them and the sync checks between.
+
+Facilities keep working and keep recording throughout. While central is down their messages
+wait at the broker, or in their own queues while the broker restarts; nothing needs to be
+stopped at a facility for central's upgrade.
+
+1. **Before anything changes, at central.** No conflicts queued (`ReceiverConflicts` quiet,
+   `scripts/sync/conflicts.sh list` empty) and no dead letters (`SyncDeadLetters` quiet):
+   resolve them first (sections 7 and 8), because a hash rebuild after the upgrade refuses to
+   run with conflicts queued. Check no facility is still in its first load (section 1); it
+   waits until the load has finished.
+2. **Find out whether the release changes synced rows.** Compare `war.openmrs` and the module
+   versions in `distribution/distro.properties`, and any new liquibase changeset in our
+   modules, with the last release. A platform or module upgrade whose migrations update rows
+   in the tables the sender watches (`eip.watchedTables`) changes them at central outside
+   sync, so dbsync's stored hashes no longer match and the next facility update to each such
+   row becomes a conflict. A release that changes only content (concepts, forms, locations)
+   does not. Note the tables, if any, for step 6.
+   A new `sync.dbsync` or `war.openmrs` also needs the checks in sync-eip.md 1.8 run again:
+   the platform-version patch in `distribution/sync/patches/` and streaming from MariaDB.
+3. **Back up central:** the OpenMRS database, the management schema (`SYNC_MGMT_DB_NAME`), the
+   identity schema, and the `receiver-state` and `broker-data` volumes, at the same point in
+   time ([backup-restore.md](backup-restore.md)).
+4. **Upgrade central** (deploy.md "Upgrade", with the central env file). The receiver waits for
+   the backend to report healthy before it starts. Then check: the receiver logs `Started
+   Application`, `ReceiverDown` and `SyncBrokerDown` are quiet, and the subscription queue
+   (`broker-admin.sh ... queue stat --queueName DB-SYNC-REC.DB-SYNC-RECEIVER`) drains as
+   facilities' waiting messages apply. Facilities may raise `SyncPushErrors` briefly while the
+   broker restarts; their senders retry on their 30-minute cycle.
+5. **Upgrade each facility, one at a time** (deploy.md "Upgrade", with `--profile sync`), backing
+   up its database, management schema and `sync-queue` volume together first. The sender stops
+   with the stack and resumes from its saved position, so what was recorded during the window
+   follows once it is back. Check its records arrive at central (`Entity: ..., source=<code>`
+   in the receiver log) before moving to the next facility.
+6. **After every facility is on the release**, if step 2 found synced tables changed: conflicts
+   raised since step 4 for those tables are expected. Resolve them as in section 8, then rebuild
+   the hashes for those tables so later updates apply cleanly. With the receiver stopped:
+
+   ```bash
+   central stop sync-receiver
+   central run --rm --no-deps -e SYNC_HASHES_UPDATE=true -e SYNC_HASHES_UPDATE_TABLES=<table>[,<table>...] sync-receiver
+   central start sync-receiver
+   ```
+
+   The run logs `Successfully updated entity hashes` and exits. It accepts central's current
+   copy of every row in those tables, so it also hides any other change made at central to
+   them; it is safe only because central is read-only for clinical data (sync-eip.md 1.8c).
+
+**Rolling back.** Roll facilities back before central, never central below any facility's
+release, for the same content reason. Restoring central's database from the step 3 backup loses
+what arrived since; send those facilities' records again (section 11).
+
+This order has not yet been rehearsed on a staging pair; do that before the first production
+upgrade.
+

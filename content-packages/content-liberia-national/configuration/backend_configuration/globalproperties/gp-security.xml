@@ -31,14 +31,19 @@
       <description>Left empty deliberately - a custom regex would override the rules above</description>
     </globalProperty>
     <globalProperty>
-      <property>security.loginAttemptsBeforeLockout</property>
-      <value>${var.security.login.max-attempts}</value>
-      <description>Account locks after this many consecutive failures</description>
+      <property>security.allowedFailedLoginsBeforeLockout</property>
+      <value>${var.security.login.allowed-failures-before-lockout}</value>
+      <description>OpenMRS 2.8.8 locks when attempts &gt; this value: 4 means lock on the fifth consecutive failure, not 5 (which would lock on failure 6).</description>
+    </globalProperty>
+    <globalProperty>
+      <property>security.unlockAccountWaitingTime</property>
+      <value>5</value>
+      <description>Lockout recovery interval in minutes. While the account is locked, another authentication attempt resets lockoutTimestamp and starts this interval again.</description>
     </globalProperty>
     <globalProperty>
       <property>security.validTime</property>
       <value>300000</value>
-      <description>Lockout duration in milliseconds (5 minutes) after the attempt limit is hit</description>
+      <description>Password-reset activation-key validity in milliseconds (5 minutes). Not account-lockout duration.</description>
     </globalProperty>
   </globalProperties>
 </config>

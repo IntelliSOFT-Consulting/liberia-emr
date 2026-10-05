@@ -67,10 +67,12 @@ services:
       # true for the FIRST boot on an empty database only, then back to false.
       OMRS_CONFIG_CREATE_TABLES: "${OMRS_CREATE_TABLES:-false}"
       OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
-      # Legacy admin UI, MOH ICT SOP control D5. Hard-coded false here, unlike the
-      # facility stack: central holds the national data set and has no dev/staging
-      # deployment of its own, so there is no environment that should ever unblock it.
-      OMRS_CONFIG_MODULE_WEB_ADMIN: "false"
+      # Legacy admin UI, MOH ICT SOP control D5. Same single switch as the facility stack:
+      # one variable drives this AND the gateway below, so the two layers cannot be
+      # half-set. Unset means false, so central production — whose env file never mentions
+      # it — stays blocked. Only the central dev deploy (ci.yml deploy-central-dev, LE-376)
+      # passes true, on the command line rather than in central.env.
+      OMRS_CONFIG_MODULE_WEB_ADMIN: "${LEGACY_ADMIN_UI:-false}"
       # Indicator report scope (ADR 0010 decision 5). Hard-coded, never from .env, and the ONLY
       # thing that makes this a central instance to the reports module: central has no site
       # package of its own and runs the facility image, whose site layer seeds a facility's
@@ -167,6 +169,10 @@ services:
     image: ${REGISTRY}/liberia-emr-gateway:${LIBERIAEMR_VERSION}
     restart: unless-stopped
     depends_on: [frontend, backend]
+    environment:
+      # Same variable as the backend above: false blocks /openmrs/admin/ at the edge,
+      # true lets it through. The image itself defaults to false.
+      LEGACY_ADMIN_UI: "${LEGACY_ADMIN_UI:-false}"
     ports:
       - "443:443"
     volumes:
@@ -196,6 +202,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    networks: [liberiaemr]
+
+  # Facility to central sync over HTTPS (LE-372, ADR 0014). The gateway hands
+  # https://<central>/sync/broker/ to this WebSocket tunnel server, which forwards to the broker
+  # and nowhere else. Inside each tunnel is the facility's own mutual TLS session with the
+  # broker, so the certificate checks stay at the broker. Plain ws here: the outer TLS ends at
+  # the gateway, the inner one is never opened. Publishes no port. The image is wstunnel,
+  # pinned by digest in distribution/sync-tunnel/Dockerfile.
+  sync-tunnel:
+    image: ${REGISTRY}/liberia-emr-sync-tunnel:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    command: ["/home/app/wstunnel", "server", "ws://0.0.0.0:8080",
+              "--restrict-to", "artemis:61617", "--restrict-http-upgrade-path-prefix", "sync"]
     networks: [liberiaemr]
 
   # Applies facility pushes to the central database: the dbsync receiver

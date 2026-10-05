@@ -292,6 +292,52 @@ services:
     profiles: ["sync"]
     networks: [liberiaemr]
 
+  # Carries sync to central over HTTPS on 443 (LE-372, ADR 0014), for networks that allow
+  # nothing else. It answers here as "artemis", a name the broker certificate always holds, so
+  # the sender keeps ARTEMIS_URL=ssl://artemis:61617, opens its mutual TLS session as before,
+  # and that session travels inside wss://<SYNC_CENTRAL_URL host>/sync/broker/ unopened.
+  # SYNC_CENTRAL_URL unset leaves it idle, for a facility that still reaches 61617 directly.
+  # SYNC_HTTP_PROXY sends it through the network's forward proxy (HTTP CONNECT).
+  # SYNC_TUNNEL_CA_FILE adds a CA to the ones it trusts for central's web certificate, for a
+  # network that inspects TLS; the broker's own certificate check is unaffected.
+  sync-tunnel:
+    image: ${REGISTRY}/liberia-emr-sync-tunnel:${LIBERIAEMR_VERSION}
+    restart: unless-stopped
+    environment:
+      SYNC_CENTRAL_URL: ${SYNC_CENTRAL_URL:-}
+      SYNC_HTTP_PROXY: ${SYNC_HTTP_PROXY:-}
+    volumes:
+      - ${SYNC_TUNNEL_CA_FILE:-/dev/null}:/etc/liberiaemr/extra-ca.pem:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        url="$${SYNC_CENTRAL_URL%/}"
+        case "$$url" in
+          "")
+            echo "sync-tunnel: SYNC_CENTRAL_URL is unset; sync is not carried over HTTPS here"
+            exec sleep infinity ;;
+          https://*/*)
+            echo "sync-tunnel: SYNC_CENTRAL_URL must be https://host[:port] with no path, got '$$url'" >&2
+            exit 1 ;;
+          https://*) ;;
+          *)
+            echo "sync-tunnel: SYNC_CENTRAL_URL must start with https://, got '$$url'" >&2
+            exit 1 ;;
+        esac
+        cat /etc/ssl/certs/ca-certificates.crt /etc/liberiaemr/extra-ca.pem > /tmp/ca.pem
+        export SSL_CERT_FILE=/tmp/ca.pem
+        # From the environment rather than the command line, which ps shows to anyone.
+        [ -z "$${SYNC_HTTP_PROXY:-}" ] || export HTTP_PROXY="$$SYNC_HTTP_PROXY"
+        exec /home/app/wstunnel client -L tcp://0.0.0.0:61617:artemis:61617 \
+          --tls-verify-certificate --http-upgrade-path-prefix sync/broker \
+          --websocket-ping-frequency 30s "wss://$${url#https://}"
+    profiles: ["sync"]
+    networks:
+      liberiaemr:
+        aliases: [artemis]
+
   # Watches the sync sender (distribution/monitoring/); rides the sync profile because
   # it monitors nothing else. UI binds loopback by default: reach it over an SSH tunnel,
   # or set PROM_BIND_ADDR consciously.

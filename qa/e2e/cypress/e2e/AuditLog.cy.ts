@@ -1,4 +1,6 @@
-import AuthenticationPage from '../pages/AuthenticationPage';
+import { ERROR_NOTIFICATION } from '../support/landing';
+import { DASHBOARD_APPS, loadLocalEsms } from '../support/local-esm';
+import { api, asAdmin, type Auth, createUser, loginAs as loginAsUser, REST, runPassword } from '../support/users';
 
 /**
  * The ICT Unit's audit log viewer (MOH ICT SOP control B3): @liberiaemr/esm-liberia-audit-log-app
@@ -9,131 +11,29 @@ import AuthenticationPage from '../pages/AuthenticationPage';
  * created here with that role alone, finds both in the viewer with their previous and new values
  * and downloads them as CSV. A user without the role sees no menu entry and gets 403 from the API.
  *
- * Until the app is pinned in distribution/distro.properties, the SPA the gateway serves does not
- * include it (a new package has no published version before its first merge). Then, and only
- * then, loadAuditLogApp() adds this checkout's build to the page: it intercepts importmap.json and
- * routes.registry.json to add the module, and serves packages/esm-liberia-audit-log-app/dist/
- * under /openmrs/spa/__e2e__/. CI's E2E job builds that dist first. Once the app is pinned, the
- * served import map has it and the spec tests exactly what the distribution ships.
+ * Until distribution/distro.properties pins a build of the app with the behaviour under test (here,
+ * since LE-397, its home dashboard), loadAuditLogApp() serves this checkout's build in place of the
+ * served one (support/local-esm.ts). CI's E2E job builds that dist first. Once the pin carries it,
+ * the spec tests exactly what the distribution ships.
  */
 
-const MODULE = '@liberiaemr/esm-liberia-audit-log-app';
-const DIST = '../../packages/esm-liberia-audit-log-app/dist';
-// The same directory for the readDist task, which runs from qa/e2e.
-const DIST_DIR = '../../packages/esm-liberia-audit-log-app/dist';
-const OVERLAY = '__e2e__/esm-liberia-audit-log-app';
-const REST = '/openmrs/ws/rest/v1';
 const AUDIT = `${REST}/liberiaemr/auditlog`;
 
 // Throwaway accounts on a disposable demo stack, created by this spec with a password generated
 // per run: nothing here is a credential of any real server.
 const run = `${Date.now()}`;
-const password = `Audit-${Cypress._.random(100000, 999999)}-e2E!${Cypress._.random(1000, 9999)}`;
+const password = runPassword('Audit');
 const auditor = { username: `e2e-ict-auditor-${run}`, password };
 const clerk = { username: `e2e-no-audit-${run}`, password };
 const gpName = `liberiaemr.e2e.auditMarker${run}`;
 const oldValue = `before-${run}`;
 const newValue = `after-${run}`;
 
-type Auth = { username: string; password: string };
+const loginAs = (user: Auth) => loginAsUser(user, 'audit-log');
 
-const admin = (): Cypress.Chainable<Auth> =>
-  cy.env<{ USERNAME?: string; PASSWORD?: string }>(['USERNAME', 'PASSWORD']).then(({ USERNAME, PASSWORD }) => {
-    if (!USERNAME || !PASSWORD) {
-      throw new Error('Missing Cypress credentials: set CYPRESS_USERNAME/CYPRESS_PASSWORD');
-    }
-    return { username: USERNAME, password: PASSWORD };
-  });
-
-/**
- * A REST call as this user alone. cy.request sends the browser's cookies, and OpenMRS answers a
- * request carrying an authenticated JSESSIONID as that session's user whatever the Authorization
- * header says; so the session cookie goes first, or every call would run as whoever called last.
- */
-const api = (auth: Auth, method: string, url: string, body?: Cypress.RequestBody, failOnStatusCode = true) =>
-  cy
-    .clearCookie('JSESSIONID')
-    .then(() => cy.request({ method, url, body, auth, failOnStatusCode, headers: { Accept: 'application/json' } }));
-
-const asAdmin = (method: string, url: string, body?: Cypress.RequestBody) =>
-  admin().then((auth) => api(auth, method, url, body));
-
-/** A user with the given roles (by name), created through REST as the admin. */
-const createUser = (user: Auth, roleNames: Array<string>) => {
-  const roles: Array<string> = [];
-  // The role resource has no search by name; list them all (a few dozen) and pick by name.
-  asAdmin('GET', `${REST}/role?v=custom:(uuid,display)&limit=100`).then(({ body }) => {
-    roleNames.forEach((name) => {
-      const role = body.results.find((candidate: { display: string }) => candidate.display === name);
-      expect(role, `role ${name}`).to.exist;
-      roles.push(role.uuid);
-    });
-  });
-  return cy.then(() =>
-    asAdmin('POST', `${REST}/user`, {
-      username: user.username,
-      password: user.password,
-      person: {
-        names: [{ givenName: 'E2E', familyName: user.username.replace(/[^A-Za-z]/g, '') }],
-        gender: 'U',
-      },
-      roles,
-    }).its('status').should('eq', 201),
-  );
-};
-
-const loginAs = (user: Auth) =>
-  cy.session(['audit-log', user.username], () => {
-    const page = new AuthenticationPage();
-    page.visitPage();
-    page.verifyLoginPageLoaded();
-    page.login(user.username, user.password);
-  });
-
-/** Serve this checkout's build of the app, unless the SPA already includes it (see the header). */
+/** Serve this checkout's build of the app, unless the served SPA already has it (see the header). */
 const loadAuditLogApp = () =>
-  cy.request('/openmrs/spa/importmap.json').then(({ body }) => {
-    if (body.imports?.[MODULE]) {
-      return;
-    }
-    cy.readFile(`${DIST}/routes.json`, { log: false }).then((routes) => {
-      // No cached copy: a 304 would carry no body to add the module to.
-      const fresh = (req: { headers: Record<string, unknown> }) => {
-        delete req.headers['if-none-match'];
-        delete req.headers['if-modified-since'];
-      };
-      cy.intercept('GET', '**/openmrs/spa/importmap.json*', (req) => {
-        fresh(req);
-        req.continue((res) => {
-          const map = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
-          map.imports[MODULE] = `./${OVERLAY}/liberiaemr-esm-liberia-audit-log-app.js`;
-          res.body = map;
-        });
-      });
-      cy.intercept('GET', '**/openmrs/spa/routes.registry.json*', (req) => {
-        fresh(req);
-        req.continue((res) => {
-          const registry = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
-          registry[MODULE] = routes;
-          res.body = registry;
-        });
-      });
-      // Served from memory: a .js fixture would be evaluated by Cypress, not sent as text.
-      cy.task<Record<string, string>>('readDist', DIST_DIR, { log: false }).then((files) => {
-        cy.intercept('GET', `**/openmrs/spa/${OVERLAY}/*`, (req) => {
-          const file = new URL(req.url).pathname.split('/').pop() ?? '';
-          if (!(file in files)) {
-            req.reply({ statusCode: 404, body: '' });
-            return;
-          }
-          req.reply({
-            body: files[file],
-            headers: { 'content-type': file.endsWith('.json') ? 'application/json' : 'application/javascript' },
-          });
-        });
-      });
-    });
-  });
+  loadLocalEsms(DASHBOARD_APPS.filter(({ module }) => module === '@liberiaemr/esm-liberia-audit-log-app'));
 
 /** The saved file's text, once the browser has finished writing it. */
 const waitForDownload = (prefix: string, attempts = 40): Cypress.Chainable<string> =>
@@ -149,14 +49,15 @@ const waitForDownload = (prefix: string, attempts = 40): Cypress.Chainable<strin
 
 const openAppMenu = () => cy.get('[aria-label="App Menu"], [aria-label="Open menu"]', { timeout: 30000 }).first().click();
 
-// Opens the app menu until the named entry is visible. For the ICT Auditor the home page's queue
-// widget fails with a 403 whose toast can land just as the menu opens and close it again (seen in
-// CI, not locally), so one click is not enough; a user without the entry never gets here.
+// Opens the app menu until the named entry is visible. Before LE-395 the home page's queue widget
+// failed for the ICT Auditor with a 403 whose toast could land just as the menu opened and close it
+// again (seen in CI, not locally); the retry stays as a guard against any late re-render. A user
+// without the entry never gets here.
 const openAppMenuTo = (entry: string, attempts = 4) => {
   openAppMenu();
   cy.wait(2000);
   cy.get('body').then(($body) => {
-    const shown = $body.find('a').filter((_, a) => Cypress.$(a).is(':visible') && a.textContent?.trim() === entry);
+    const shown = $body.find('.cds--header-panel--expanded a').filter((_, a) => Cypress.$(a).is(':visible') && a.textContent?.trim() === entry);
     if (!shown.length && attempts > 1) {
       openAppMenuTo(entry, attempts - 1);
     }
@@ -168,8 +69,7 @@ describe('Audit log', () => {
 
   before(() => {
     createUser(auditor, ['ICT Auditor']);
-    // A national role that can sign in to O3 (it holds Get People, which the app shell needs to
-    // show a signed-in user) but holds no audit privilege.
+    // A national role that signs in to O3 but holds no audit privilege.
     createUser(clerk, ['Sync Conflict Reviewer']);
 
     // The changes the auditor must find: a global property set and then changed, and a location
@@ -207,21 +107,28 @@ describe('Audit log', () => {
     loginAs(auditor);
     loadAuditLogApp();
     cy.visit('/openmrs/spa/home');
+    // Since LE-397 the role lands on its audit log dashboard, which the side navigation links as
+    // "Audit log" too; this is the menu's entry, to the page's own route.
+    cy.location('pathname', { timeout: 30000 }).should('eq', '/openmrs/spa/home/audit-log');
     openAppMenuTo('Audit log');
-    cy.contains('a', 'Audit log', { timeout: 30000 }).should('be.visible').click();
+    cy.get('.cds--header-panel--expanded', { timeout: 30000 }).contains('a', 'Audit log').should('be.visible').click();
     cy.url().should('include', '/openmrs/spa/audit-log');
     cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
-    // The home page's service queue widget, which the role cannot read, leaves a 403 toast over
-    // the page; a reload clears it.
-    cy.reload();
-    cy.contains('h3', 'Audit log', { timeout: 30000 }).should('be.visible');
+    // Since LE-395 the home page shows the role no queue dashboard, so no 403 toast follows it here.
+    cy.get(ERROR_NOTIFICATION).should('not.exist');
 
-    cy.intercept('GET', `${AUDIT}?*`).as('list');
+    // Matches only the filtered request. The page's own unfiltered first load can still be in
+    // flight when this is set, and a plain `${AUDIT}?*` alias then caught that one instead.
+    cy.intercept({
+      method: 'GET',
+      pathname: AUDIT,
+      query: { type: 'org.openmrs.GlobalProperty', action: 'UPDATED', user: 'admin' },
+    }).as('list');
     cy.get('#audit-type').select('org.openmrs.GlobalProperty');
     cy.get('#audit-action').select('UPDATED');
     cy.get('#audit-user').type('admin');
     cy.contains('button', 'Apply filters').click();
-    cy.wait('@list').its('request.url').should('include', 'type=org.openmrs.GlobalProperty').and('include', 'user=admin');
+    cy.wait('@list', { timeout: 30000 });
 
     cy.contains('[data-testid="audit-row"]', gpName, { timeout: 30000 }).should('be.visible');
     // Scoped to the visible row: in CI the label matched two elements (a second, hidden one).
@@ -314,7 +221,10 @@ describe('Audit log', () => {
     cy.visit('/openmrs/spa/home');
     openAppMenu();
     // The menu has rendered its other entries before the absence of this one means anything.
-    cy.get('[aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 }).should('have.length.greaterThan', 0);
+    // (Since LE-395 this role has no home dashboard, so the home page's side navigation no longer
+    // holds a link; the open app menu panel's own entries are what count.)
+    cy.get('.cds--header-panel--expanded a, [aria-label="App Menu"] a, [role="dialog"] a, nav a', { timeout: 30000 })
+      .should('have.length.greaterThan', 0);
     cy.contains('a', 'Audit log').should('not.exist');
 
     cy.visit('/openmrs/spa/audit-log');

@@ -127,7 +127,7 @@ jobs:
             echo "-> nothing here can change what Initializer loads; skipping the clean-database gate."
           fi
 
-          if grep -qE '^(distribution/(sync|broker|monitoring|compose|env)/|distribution/distro\.properties$|scripts/(security|sync)/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
+          if grep -qE '^(distribution/(sync|broker|monitoring|compose|env|gateway)/|distribution/distro\.properties$|scripts/(security|sync)/|qa/sync/|\.github/workflows/ci\.yml$)' <<<"$files"; then
             echo "sync=true" >> "$GITHUB_OUTPUT"
             echo "-> the sync security surface changed; the broker refusal suite will run."
           else
@@ -154,6 +154,12 @@ jobs:
         run: ./scripts/validate/tests/no-secrets.test.sh
       - name: Refuse demo content in a production distribution
         run: ./scripts/validate/no-demo-in-release.sh
+      # LE-399: shipped content is append-only. Fails a change that removes or re-UUIDs anything
+      # the newest liberiaemr-* release tag shipped (fetch-depth 0 above brings the tags).
+      - name: Refuse changes to UUIDs a release already shipped
+        run: ./scripts/validate/released-uuids.sh
+      - name: The released-UUID guard catches what it should
+        run: ./scripts/validate/tests/released-uuids.test.sh
       # LE-360: the release guard runs the same check, but only when a tag is cut. Reading the
       # site list from release.yml keeps one list and catches a colliding site on the PR.
       - name: Every image a release publishes has a distinct reference
@@ -499,13 +505,50 @@ jobs:
         run: 'echo "TODO: qa/api — see qa/api/README.md"'
 
   # ---------------------------------------------------------------------
+  # Stage 4a' — upgrade onto this commit from main (LE-400)
+  #
+  # The clean install above cannot see what an upgrade breaks: a shipped UUID moved to a name
+  # an existing row still holds, a datatype changed under recorded observations, metadata
+  # retired while patient data uses it. Both dev servers hit the first on 2026-10-03.
+  # run-upgrade.sh installs main's newest published backend image (liberia-emr-backend:<sha>,
+  # pushed by publish-latest for every green main commit), writes synthetic patient data,
+  # recreates the backend at this commit's image on the same database, and fails on any row
+  # Initializer rejects or any change to what the data references. Same trigger as the clean
+  # install, and the gate accepts the same skip. See qa/upgrade/README.md.
+  # ---------------------------------------------------------------------
+  upgrade-from-main:
+    name: Upgrade from main
+    runs-on: ubuntu-latest
+    needs: [build-test, changes]
+    if: needs.changes.outputs.metadata == 'true'
+    env:
+      OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # main's first-parent history, which run-upgrade.sh walks back to the newest commit
+          # whose image is published
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build the backend image under test
+        run: |
+          ./scripts/build/build-distribution.sh \
+            --version 0.0.0-ci --site careysburg --no-frontend
+      - name: Upgrade onto it from main's newest published image
+        run: ./qa/upgrade/run-upgrade.sh --to 0.0.0-ci
+
+  # ---------------------------------------------------------------------
   # Stage 4b — the three distribution images for this commit (not pushed).
   #
   # This calls scripts/build/build-distribution.sh directly instead of
   # hand-rolling the build — an earlier version of this job reimplemented
   # its steps piecemeal (reading spa.core, computing SPA_CONFIG_URLS,
   # collecting frontend config) and, in doing so, missed a step the script
-  # doesn't skip: resolving the 32 OMODs pinned in distro.properties into
+  # doesn't skip: resolving the 31 OMODs pinned in distro.properties into
   # distribution/backend/modules/. Since that directory isn't git-tracked,
   # a fresh checkout has it empty, and `COPY distribution/backend/modules/`
   # on an empty directory does not error — it silently ships a backend
@@ -598,6 +641,14 @@ jobs:
           format: sarif
           output: trivy-gateway.sarif
           exit-code: '0'
+      # The one third-party binary on the sync path (LE-372): upstream wstunnel, rebuilt as ours.
+      - name: Trivy scan — sync tunnel
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/liberia-emr-sync-tunnel:${{ github.sha }}
+          format: sarif
+          output: trivy-sync-tunnel.sarif
+          exit-code: '0'
 
       # Uploaded as three separate calls, each with its own category —
       # GitHub Code Scanning rejects multiple SARIF runs sharing a category
@@ -640,6 +691,13 @@ jobs:
         with:
           sarif_file: trivy-gateway.sarif
           category: trivy-gateway
+      - name: Upload Trivy results — sync tunnel
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-sync-tunnel.sarif
+          category: trivy-sync-tunnel
 
   # Sync broker hardening (sync-eip.md sections 7.2 and 7.3): every permission and
   # certificate control is proven by a refusal, over OpenWire, the protocol both sync
@@ -662,6 +720,8 @@ jobs:
             -t lemr-cert-expiry:ci distribution/monitoring/cert-expiry
           docker build -f distribution/monitoring/sync-capture/Dockerfile \
             -t lemr-sync-capture:ci distribution/monitoring/sync-capture
+          docker build -f distribution/gateway/Dockerfile -t lemr-gateway:ci distribution/gateway
+          docker build -f distribution/sync-tunnel/Dockerfile -t lemr-sync-tunnel:ci distribution/sync-tunnel
       - name: Compose keeps the sync security wiring
         run: qa/sync/verify-compose-wiring.sh
       # The binlog Debezium reads is kept for up to 99 days; a CREATE USER logged there is a
@@ -672,6 +732,12 @@ jobs:
         run: |
           qa/sync/verify-hardening.sh --broker-image lemr-broker:ci --sender-image lemr-sync:ci \
             --exporter-image lemr-cert-expiry:ci
+      # Sync over HTTPS on 443 (LE-372, ADR 0014): through the gateway path, with every
+      # certificate control still held by the broker, and through a forward proxy.
+      - name: Sync over HTTPS through the gateway
+        run: |
+          qa/sync/verify-broker-path.sh --gateway-image lemr-gateway:ci --broker-image lemr-broker:ci \
+            --sender-image lemr-sync:ci --stub-image lemr-sync-capture:ci --tunnel-image lemr-sync-tunnel:ci
       - name: Sender refuses a weaker configuration
         run: |
           set -euo pipefail
@@ -800,14 +866,17 @@ jobs:
       - name: Install Cypress test dependencies
         working-directory: qa/e2e
         run: npm ci
-      # AuditLog.cy.ts adds this build to the served SPA while the app is not yet pinned in
-      # distro.properties (a new package has no published version before its first merge); once
-      # it is pinned the spec uses the served one and this build goes unused.
-      - name: Build the audit log app for AuditLog.cy.ts
-        working-directory: packages/esm-liberia-audit-log-app
+      # RoleSignIn.cy.ts and AuditLog.cy.ts serve these builds in place of the SPA's own while
+      # distro.properties pins builds without the behaviour under test (the home dashboards,
+      # LE-397): a change here is published only after merge and pinned in a follow-up PR.
+      # Once the pin carries it, the specs use the served builds and these go unused
+      # (qa/e2e/cypress/support/local-esm.ts).
+      - name: Build the LiberiaEMR apps the specs may overlay
         run: |
-          yarn install --frozen-lockfile
-          yarn build
+          set -euo pipefail
+          for app in esm-liberia-audit-log-app esm-liberia-reports-app esm-liberia-sync-status-app; do
+            (cd "packages/$app" && yarn install --frozen-lockfile && yarn build)
+          done
 
       # --demo: the priority journeys log in as admin/Admin123, which only content-demo
       # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —
@@ -835,19 +904,24 @@ jobs:
         run: qa/api/mfl-stub/gen-material.sh "$RUNNER_TEMP/mfl-stub"
 
       # Ephemeral credentials for a database that lives only as long as this job — never a
-      # facility secret. cypress.env.json is for local development only and must never drive
-      # a CI run (Cypress base URL comes from CYPRESS_BASE_URL below instead).
+      # facility secret. Random per run rather than literals, so nothing that looks like a
+      # password is committed; they are only ever read back from this env file.
+      # cypress.env.json is for local development only and must never drive a CI run
+      # (Cypress base URL comes from CYPRESS_BASE_URL below instead).
       - name: Start the disposable demo stack
         run: |
+          e2e_db_pw="$(openssl rand -hex 16)"
+          e2e_db_root_pw="$(openssl rand -hex 16)"
+          e2e_etl_pw="$(openssl rand -hex 16)"
           cat > "$RUNNER_TEMP/e2e.env" <<ENV
           REGISTRY=${REGISTRY}
           LIBERIAEMR_VERSION=${LIBERIAEMR_VERSION}
           FACILITY_CODE=careysburg
           MYSQL_DATABASE=openmrs
           MYSQL_USER=openmrs
-          MYSQL_PASSWORD=ci-ephemeral
-          MYSQL_ROOT_PASSWORD=ci-ephemeral-root
-          ETL_DB_PASSWORD=ci-ephemeral-etl
+          MYSQL_PASSWORD=${e2e_db_pw}
+          MYSQL_ROOT_PASSWORD=${e2e_db_root_pw}
+          ETL_DB_PASSWORD=${e2e_etl_pw}
           OMRS_CREATE_TABLES=true
           TLS_CERT_DIR=$RUNNER_TEMP/e2e-certs
           CENTRAL_URL=http://localhost
@@ -1070,12 +1144,13 @@ jobs:
   # or was skipped. Point branch protection at this one job instead of
   # every job above — new jobs added later only need `gate` updated once.
   #
-  # One job may legitimately be skipped: initializer-clean-db, which the
-  # `changes` job stands down on a commit that cannot affect metadata. It is
+  # Jobs that may legitimately be skipped: initializer-clean-db and
+  # upgrade-from-main, which the `changes` job stands down on a commit that
+  # cannot affect metadata (and sync-hardening, on its own path list). They are
   # named explicitly rather than allowing "skipped" across the board — a skip
   # anywhere else means a dependency failed, and that must still block the
   # merge. `changes` is in this list too, so a fault in the detection itself
-  # fails the gate rather than quietly excusing the job it was meant to
+  # fails the gate rather than quietly excusing the jobs it was meant to
   # schedule.
   # ---------------------------------------------------------------------
   gate:
@@ -1100,6 +1175,7 @@ jobs:
       - sbom
       - dependency-check
       - initializer-clean-db
+      - upgrade-from-main
       - docker-build
       - sync-hardening
       - e2e
@@ -1115,7 +1191,8 @@ jobs:
               .key as $k
               | .value.result == "success"
                 or (.value.result == "skipped"
-                    and ($k == "initializer-clean-db" or $k == "sync-hardening"));
+                    and ($k == "initializer-clean-db" or $k == "upgrade-from-main"
+                         or $k == "sync-hardening"));
         run: |
           echo '${{ toJSON(needs) }}' | jq -e "$JQ_OK"'
             to_entries | all(acceptable)
@@ -1347,6 +1424,11 @@ jobs:
             cd "${{ secrets.DEV_COMPOSE_DIR }}"
             LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env pull
             LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d
+            # Monitoring mounts its config and rules one file at a time, so a running container
+            # keeps the old files and up -d does not notice. Recreate it where the sync profile runs it.
+            if LIBERIAEMR_VERSION=latest docker compose --env-file facility.env ps --services --status running | grep -qx prometheus; then
+              LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose --env-file facility.env up -d --no-deps --force-recreate prometheus alertmanager
+            fi
           '
 
   # ---------------------------------------------------------------------
@@ -1486,9 +1568,11 @@ jobs:
   # Central dev (LE-368): https://liberiaemrcentraldev.intellisoftkenya.com, a separate
   # server running the CENTRAL composition (distribution/compose/central, ADR 0011). Same
   # shape as deploy-dev / smoke-test / rollback-dev, with three differences:
-  #   - it updates only backend and frontend (the -central images, LE-339) and gateway, with --no-deps.
-  #     The broker, sync receiver and monitoring images are not published as :latest, so
-  #     they stay at whatever the server runs;
+  #   - it updates only backend and frontend (the -central images, LE-339), gateway and the sync
+  #     receiver, with --no-deps; the broker stays at whatever the server runs. It then recreates
+  #     prometheus and alertmanager, which mount their config and rules from the checkout one file
+  #     at a time: a running container keeps the file it started with, so without that a rule
+  #     change never reached central dev (LE-373);
   #   - it refuses to deploy unless the server runs the liberiaemr-central compose project,
   #     so CI never starts a second stack beside a facility one;
   #   - it skips cleanly until its secrets exist. Create, under Settings > Secrets and
@@ -1498,7 +1582,9 @@ jobs:
   #     repo, owned by CENTRAL_DEV_USER), and optionally CENTRAL_DEV_ENV_FILE (relative to
   #     that directory; default ../../env/central.env, where ansible/central-server.yaml and
   #     docs/runbooks/deploy.md put it).
-  # No LEGACY_ADMIN_UI: the central compose file has no such switch.
+  # LEGACY_ADMIN_UI=true is passed on the deploy command, as deploy-dev does and for the
+  # same reason (LE-376): central dev needs Manage Modules and the legacy scheduler. It is
+  # never written to central.env, so it cannot travel into a production central server.
   # ---------------------------------------------------------------------
   deploy-central-dev:
     name: Update central dev environment
@@ -1521,6 +1607,7 @@ jobs:
       backend_digest: ${{ steps.previous-version.outputs.backend_digest }}
       frontend_digest: ${{ steps.previous-version.outputs.frontend_digest }}
       gateway_digest: ${{ steps.previous-version.outputs.gateway_digest }}
+      receiver_digest: ${{ steps.previous-version.outputs.receiver_digest }}
       checkout_sha: ${{ steps.previous-checkout.outputs.checkout_sha }}
     steps:
       - name: Check the central dev secrets exist
@@ -1555,7 +1642,7 @@ jobs:
               docker ps --format "{{.Names}}" | sed "s/^/running: /"
               exit 0
             fi
-            for service in backend frontend gateway; do
+            for service in backend frontend gateway sync-receiver; do
               # A container has no RepoDigests; its image does. Ask the container for its image
               # ID, then that image for the registry digest a rollback can pull.
               image=$(docker inspect --format="{{.Image}}" "liberiaemr-central-${service}-1" 2>/dev/null || true)
@@ -1572,6 +1659,7 @@ jobs:
           echo "backend_digest=$(echo "$output" | awk -F': ' '/^backend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "frontend_digest=$(echo "$output" | awk -F': ' '/^frontend:/{print $2}')" >> "$GITHUB_OUTPUT"
           echo "gateway_digest=$(echo "$output" | awk -F': ' '/^gateway:/{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "receiver_digest=$(echo "$output" | awk -F': ' '/^sync-receiver:/{print $2}')" >> "$GITHUB_OUTPUT"
       # The compose file on the server has to match the images being deployed: an old checkout
       # names the facility frontend, and lacks newer services and settings. So the compose
       # directory MUST sit in a git checkout (the Ansible playbook clones one); anything else
@@ -1637,8 +1725,10 @@ jobs:
               exit 1
             fi
             echo \"checkout \$top now at \$head\"
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway
-            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' pull backend frontend gateway sync-receiver
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps backend frontend gateway sync-receiver
+            # Their config and rules are single-file mounts from this checkout; only a new container sees the new files.
+            REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest LEGACY_ADMIN_UI=true docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' up -d --no-deps --force-recreate prometheus alertmanager
           "
 
   # A central deploy is healthy only if the SPA answers AND it is the central build: a
@@ -1720,8 +1810,9 @@ jobs:
           backend="${{ needs.deploy-central-dev.outputs.backend_digest }}"
           frontend="${{ needs.deploy-central-dev.outputs.frontend_digest }}"
           gateway="${{ needs.deploy-central-dev.outputs.gateway_digest }}"
+          receiver="${{ needs.deploy-central-dev.outputs.receiver_digest }}"
           checkout="${{ needs.deploy-central-dev.outputs.checkout_sha }}"
-          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "checkout:$checkout"; do
+          for pair in "backend:$backend" "frontend:$frontend" "gateway:$gateway" "sync-receiver:$receiver" "checkout:$checkout"; do
             svc="${pair%%:*}"; digest="${pair#*:}"
             if [ -z "$digest" ] || [ "$digest" = "unknown" ]; then
               echo "::error::No previous ${svc} captured; cannot roll back automatically. Manual intervention required on the central dev server."
@@ -1732,6 +1823,7 @@ jobs:
           echo "  backend:  $backend"
           echo "  frontend: $frontend"
           echo "  gateway:  $gateway"
+          echo "  receiver: $receiver"
           echo "  checkout: $checkout"
           # The compose file goes back FIRST, and each image is tagged under the name THAT file
           # gives its service: an older compose file may name a different image (the facility
@@ -1770,14 +1862,15 @@ jobs:
             echo \"checkout back at \$(git rev-parse HEAD)\"
             compose() { REGISTRY='${{ env.REGISTRY }}' LIBERIAEMR_VERSION=latest docker compose -f docker-compose.yml --env-file '${CENTRAL_DEV_ENV_FILE:-../../env/central.env}' \"\$@\"; }
             config=\$(compose config --format json)
-            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway'; do
+            for pair in 'backend=$backend' 'frontend=$frontend' 'gateway=$gateway' 'sync-receiver=$receiver'; do
               svc=\${pair%%=*}; digest=\${pair#*=}
               name=\$(printf '%s' \"\$config\" | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"services\"][sys.argv[1]][\"image\"])' \"\$svc\")
               docker pull \"\$digest\"
               docker tag \"\$digest\" \"\$name\"
               echo \"\$svc: \$digest tagged as \$name\"
             done
-            compose up -d --no-deps backend frontend gateway
+            compose up -d --no-deps backend frontend gateway sync-receiver
+            compose up -d --no-deps --force-recreate prometheus alertmanager
           "
       # Same bar as the smoke test: the SPA answering is not enough, since the frontend serves
       # it with the backend down. A rollback that leaves the backend unhealthy fails here.

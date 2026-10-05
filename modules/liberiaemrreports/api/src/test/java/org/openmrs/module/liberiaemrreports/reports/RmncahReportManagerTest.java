@@ -12,7 +12,6 @@ package org.openmrs.module.liberiaemrreports.reports;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.openmrs.module.liberiaemrreports.EtlTestSupport.DISTRICT;
-import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_ONE;
 import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_ONE_OPD;
 import static org.openmrs.module.liberiaemrreports.EtlTestSupport.FACILITY_TWO;
 
