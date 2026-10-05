@@ -1,0 +1,55 @@
+Backport of BED-39 (0187cb7, openmrs/openmrs-module-bedmanagement#116, merged 2026-06-15) to
+the 7.2.0 tag: prevent a premature Hibernate flush in EncounterWithBedPatientAssignmentSaveHandler.
+
+7.2.0 predates it. There, saving a visit also runs the save handlers of its encounters, and
+EncounterWithBedPatientAssignmentSaveHandler calls saveBedPatientAssignment() for every
+non-voided bed assignment on those encounters, ended ones included. saveBedPatientAssignment()
+needs "Assign Beds" and "Edit Admission Locations". So even with patch 0001, a user without bed
+write access could not end a visit in which the patient had a bed that has since been freed.
+
+Pointed out in review of openmrs/openmrs-module-bedmanagement#119. On the 7.2.0 tag, with 0001
+alone the module's api tests run 121 with 1 error (APIAuthenticationException from
+saveBedPatientAssignment); with this patch as well, all 124 pass. Main source only, as in the
+upstream commit; its unit test is not part of the build.
+
+Applied by distribution/backend/Dockerfile (bedmanagement stage), after 0001. Tracked in
+packages/modify-pr/.patches/0006-openmrs-module-bedmanagement-backport-bed-39.md.
+
+diff --git a/api/src/main/java/org/openmrs/module/bedmanagement/aop/EncounterWithBedPatientAssignmentSaveHandler.java b/api/src/main/java/org/openmrs/module/bedmanagement/aop/EncounterWithBedPatientAssignmentSaveHandler.java
+index cf34fe0..720d7b0 100644
+--- a/api/src/main/java/org/openmrs/module/bedmanagement/aop/EncounterWithBedPatientAssignmentSaveHandler.java
++++ b/api/src/main/java/org/openmrs/module/bedmanagement/aop/EncounterWithBedPatientAssignmentSaveHandler.java
+@@ -48,10 +48,24 @@ public class EncounterWithBedPatientAssignmentSaveHandler implements SaveHandler
+ 			List<BedPatientAssignment> bpaList = bedManagementService.getBedPatientAssignmentByEncounter(encounter.getUuid(),
+ 			    true);
+ 			
++			// The bpa instances below are already persistent and attached to the current
++			// Hibernate
++			// session, so mutating them is enough: the changes are flushed with the
++			// surrounding
++			// transaction. We deliberately avoid calling the @Transactional
++			// bedManagementService
++			// save/delete methods here, because their commit forces an early flush of the
++			// whole
++			// session and can trip over unrelated, not-yet-populated entities (e.g. a
++			// VisitAttribute
++			// whose NOT NULL valueReference has not been serialized yet).
+ 			if (encounter.getVoided()) {
+ 				log.debug("Voiding beds due to voided encounter");
+ 				for (BedPatientAssignment bpa : bpaList) {
+-					bedManagementService.deleteBedPatientAssignment(bpa, "encounter voided");
++					bpa.setVoided(true);
++					bpa.setDateVoided(date);
++					bpa.setVoidReason("encounter voided");
++					bpa.setVoidedBy(user);
+ 					log.debug("Voided bedPatientAssignment for bed " + bpa.getBed());
+ 				}
+ 			}
+@@ -60,7 +74,6 @@ public class EncounterWithBedPatientAssignmentSaveHandler implements SaveHandler
+ 			for (BedPatientAssignment bpa : bpaList) {
+ 				log.debug("updating bedPatientAssignment starttime for bed " + bpa.getBed());
+ 				bpa.setStartDatetime(encounterDatetime);
+-				bedManagementService.saveBedPatientAssignment(bpa);
+ 			}
+ 		}
+ 		
