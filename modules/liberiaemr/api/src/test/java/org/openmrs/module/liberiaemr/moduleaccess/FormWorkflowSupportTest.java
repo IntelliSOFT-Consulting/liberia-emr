@@ -92,7 +92,7 @@ public class FormWorkflowSupportTest extends BaseModuleContextSensitiveTest {
 		concept = new Concept();
 		concept.setDatatype(Context.getConceptService().getConceptDatatypeByName("N/A"));
 		concept.setConceptClass(Context.getConceptService().getConceptClassByName("Misc"));
-		ConceptName name = new ConceptName("LE39 workflow " + System.nanoTime(), Locale.ENGLISH);
+		ConceptName name = new ConceptName("Module access workflow " + System.nanoTime(), Locale.ENGLISH);
 		name.setLocalePreferred(true);
 		concept.addName(name);
 		concept = Context.getConceptService().saveConcept(concept);

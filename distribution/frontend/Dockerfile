@@ -86,7 +86,7 @@ COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
 RUN node /app/patch-patient-orders.cjs
 
 # Dispensing 1.11.1 lists prescriptions through a generic encounter query and gates the
-# Dispense button on a task privilege outside the LE-39 matrix. The patch reads
+# Dispense button on a task privilege outside the module access matrix. The patch reads
 # MedicationRequest and shows Dispense for Manage Pharmacy.
 COPY patch-dispensing-pharmacy.cjs /app/patch-dispensing-pharmacy.cjs
 RUN node /app/patch-dispensing-pharmacy.cjs

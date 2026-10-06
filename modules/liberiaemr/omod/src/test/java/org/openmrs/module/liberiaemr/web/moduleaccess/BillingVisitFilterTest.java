@@ -48,16 +48,10 @@ public class BillingVisitFilterTest extends BaseModuleContextSensitiveTest {
 		assertFalse(BillingVisitAccess.openNow());
 	}
 
-	@Test public void financeReceivesTheProxyOnlyDuringBillPost() throws Exception {
-		assertWriter("Finance");
-	}
-
-	@Test public void systemsAdministratorReceivesTheProxyOnlyDuringBillPost() throws Exception {
-		assertWriter("Systems Administrator");
-	}
-
-	@Test public void facilityInChargeReceivesTheProxyOnlyDuringBillPost() throws Exception {
-		assertWriter("Facility in-charge");
+	@Test public void billingWritersReceiveTheProxyOnlyDuringBillPost() throws Exception {
+		for (String role : new String[] { "Finance", "Systems Administrator", "Facility in-charge" }) {
+			assertWriter(role);
+		}
 	}
 
 	@Test public void anExistingPrivilegeIsNotRemoved() throws Exception {

@@ -33,7 +33,7 @@ public class ModuleEntitlementsTest {
 
 	static Map<String, String[]> roles() throws Exception {
 		Map<String, String[]> rows = new HashMap<>();
-		try (InputStream in = ModuleEntitlementsTest.class.getResourceAsStream("/le39-content/roles/roles-common.csv")) {
+		try (InputStream in = ModuleEntitlementsTest.class.getResourceAsStream("/module-access-content/roles/roles-common.csv")) {
 			assertNotNull("Real role CSV must be on test classpath", in);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 			reader.readLine();
@@ -214,7 +214,7 @@ public class ModuleEntitlementsTest {
 		        "Manage ANC", "Manage Laboratory", "Manage PNC", "Manage Pharmacy", "Read Labor and Delivery",
 		        "Write Labor and Delivery", "Read Immunization", "Write Immunization", "Manage Family Planning"));
 		Set<String> actual = new HashSet<>();
-		try (InputStream in = getClass().getResourceAsStream("/le39-content/privileges/privileges-le39-common.csv")) {
+		try (InputStream in = getClass().getResourceAsStream("/module-access-content/privileges/privileges-module-access-common.csv")) {
 			assertNotNull(in);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
 			reader.readLine();

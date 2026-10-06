@@ -144,7 +144,7 @@ FROM maven:3.9-eclipse-temurin-17 AS module
 ARG LIBERIAEMR_VERSION=
 
 WORKDIR /build
-# The module's content UUIDs include the Health Facility tag and LE-39 ownership evidence.
+# The module's content UUIDs include the Health Facility tag and module-access ownership evidence.
 # Copy each filter used by its API build; unresolved UUID tokens fail the build.
 COPY content-packages/content-common/configuration/variables.properties /build/content-packages/content-common/configuration/variables.properties
 COPY content-packages/content-liberia-mch/configuration/variables.properties /build/content-packages/content-liberia-mch/configuration/variables.properties

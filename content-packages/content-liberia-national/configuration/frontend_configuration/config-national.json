@@ -24,7 +24,7 @@
     }
   },
   "@openmrs/esm-appointments-app": {
-    "_comment_display": "Appointments is outside the LE-39 matrix. AppointmentsService.getAllAppointments requires View Appointments (appointments-api 2.1.0). The home link is the extension clinical-appointments-dashboard-link; module display conditions apply to that extension. The framework privilege check still shows the extension to System Developer. Direct URL access is unchanged.",
+    "_comment_display": "Appointments is outside the module access matrix. AppointmentsService.getAllAppointments requires View Appointments (appointments-api 2.1.0). The home link is the extension clinical-appointments-dashboard-link; module display conditions apply to that extension. The framework privilege check still shows the extension to System Developer. Direct URL access is unchanged.",
     "Display conditions": {
       "privileges": ["View Appointments"]
     }
