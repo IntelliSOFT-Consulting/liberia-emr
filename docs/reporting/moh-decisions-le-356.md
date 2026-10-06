@@ -1,8 +1,8 @@
 # Indicator definitions: decisions for the MOH (LE-356)
 
-**For:** the MOH owner of the indicator list in *Liberia EMR Indicator.xlsx*
-**From:** the Liberia EMR technical team
-**Prepared:** 6 October 2026
+- **For:** the MOH owner of the indicator list in *Liberia EMR Indicator.xlsx*
+- **From:** the Liberia EMR technical team
+- **Prepared:** 6 October 2026
 
 ## Why we are asking
 
@@ -19,7 +19,7 @@ There are seven decisions:
 | 1 | NUT-005 Vitamin A Blue | One Blue dose at 6–11 months, or two doses in 12 months at 6–59 months? | One Blue dose at 6–11 months (the name) | Keep one Blue dose at 6–11 months | |
 | 2 | NUT-007 SAM treated and cured | Cure rate, or number of children with SAM? | Nothing. It is not built | Keep the cure rate; build the treatment programme first | |
 | 3 | NUT-009 weight-for-height | Moderate wasting, or stunting? | Moderate wasting (the name) | Keep moderate wasting | |
-| 4 | MAL-003 IPTp in the third trimester | Two doses, or three or more doses? | A 2nd or later dose at a third-trimester visit | Keep this reading, and reword the name | |
+| 4 | MAL-003 IPTp in the third trimester | Two doses, or three or more doses? | At least two doses by a third-trimester visit | Keep this reading, and reword the name | |
 | 5 | NCD-008 adult overweight and obesity | Should the EMR report a clinic-based estimate? | Nothing. The survey is the source | Yes, clearly labelled as a clinic-based estimate | |
 | 6 | NCD-010 adult raised blood glucose | Should the EMR report a clinic-based estimate? | Nothing. The survey is the source | No separate indicator; show NCD-009 for adults instead | |
 | 7 | EMR Priority, all rows | Confirm or change the proposed High / Medium / Low | Proposed only | See the tables in decision 7 | |
@@ -36,10 +36,10 @@ answer. Where your answer matches what the EMR already does, the only change is 
 ### Words used in this paper
 
 - **Workbook.** *Liberia EMR Indicator.xlsx*, the MOH's indicator list. We quote it exactly,
-  including its spelling. Where a quote is long we show it in a box.
-- **Report.** The EMR has one report per workbook sheet: *Nutrition*, *Malaria*, *NCD*,
-  *RMNCAH* and *EMR Operations*. Each shows numbers for a facility, a district, a county or
-  the whole country.
+  including its spelling.
+- **Report.** The EMR has one report per workbook sheet, such as *MOH Nutrition Indicators*
+  and *MOH Malaria Indicators*. Each shows numbers for a facility, a district, a county or the
+  whole country. A report's description says how each indicator is counted.
 - **Feasibility class.** How hard it is for the EMR to produce an indicator:
   - *Feasible now*: the EMR already records everything needed.
   - *Feasible with content change*: a small addition is needed first, such as a new answer on
@@ -72,7 +72,7 @@ numerator text, so the text looks copied between the two rows.
 
 ### What the EMR reports today
 
-The *Nutrition* report, column `NUT_005_NUM`, counts **children aged 6 to 11 completed months
+The *MOH Nutrition Indicators* report, column `NUT_005_NUM`, counts **children aged 6 to 11 completed months
 who received one Vitamin A Blue (100,000 IU) dose in the period**. Each child is counted
 once. A dose counts if it was recorded in either of two places:
 
@@ -86,7 +86,7 @@ the count by socio-economic status, because the EMR does not record it.
 
 *For the technical team:* `NutritionReportManager.vitaminABlue()`, reading
 `mamba_fact_nutrition_vitamin_a` (`dose_iu = 100000`, `age_months BETWEEN 6 AND 11`). It is
-one of the 21 reports built in LE-334, with 16 expected values in
+one of the 21 indicators built in LE-334, with 16 expected values in
 `qa/reporting/expected-values.csv`.
 
 ### The options
@@ -130,6 +130,7 @@ the MOH wants that measure, it should be a separate indicator (option C), not NU
 
 > **MOH answer, NUT-005:** ☐ Option A ☐ Option B ☐ Option C ☐ Other:
 > ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -152,7 +153,7 @@ treatment works.
 
 ### What the EMR reports today
 
-**Nothing.** NUT-007 is not one of the 21 reports built in LE-334. No report, query or test
+**Nothing.** NUT-007 is not one of the 21 indicators built in LE-334. No report, query or test
 data exists for it. The feasibility matrix classes it as *Needs new data capture*.
 
 ### The options
@@ -197,6 +198,7 @@ SAM case count (option B) can be reported meanwhile under a **different name**, 
 
 > **MOH answer, NUT-007:** ☐ Option A ☐ Option A, plus option B under a different name until
 > then ☐ Option B ☐ Other: ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -218,7 +220,7 @@ but not below −3. The numerator says **stunted**. Stunting is a different meas
 
 ### What the EMR reports today
 
-The *Nutrition* report, column `NUT_009_NUM`, counts **children aged 6–59 months with a
+The *MOH Nutrition Indicators* report, column `NUT_009_NUM`, counts **children aged 6–59 months with a
 weight-for-height z-score of −3 or more, but below −2, in the period**. This is moderate
 wasting, as the name says. Each child is counted once, if any of their measurements in the
 period falls in that band.
@@ -231,7 +233,7 @@ the OPD Consultation Form. The Triage form's own *W/Z score* field is weight-for
 is not used.
 
 *For the technical team:* `NutritionReportManager.moderateWasting()`, reading
-`mamba_fact_nutrition_anthropometry` (`whz >= -3 AND whz < -2`). It is one of the 21 reports
+`mamba_fact_nutrition_anthropometry` (`whz >= -3 AND whz < -2`). It is one of the 21 indicators
 built in LE-334, with 16 expected values.
 
 ### The options
@@ -265,6 +267,7 @@ NUT-009.
 
 > **MOH answer, NUT-009:** ☐ Option A ☐ Option B (all stunting, below −2) ☐ Option B
 > (moderate stunting only, −3 to −2) ☐ Other: ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -286,7 +289,7 @@ period.
 
 ### What the EMR reports today
 
-The *Malaria* report, columns `MAL_003_NUM`, `MAL_003_DEN` and `MAL_003_PCT`:
+The *MOH Malaria Indicators* report, columns `MAL_003_NUM`, `MAL_003_DEN` and `MAL_003_PCT`:
 
 - **Denominator:** women with an antenatal (ANC) visit in the period at which they were in the
   third trimester. "Third trimester" means the trimester recorded as 3rd, or a gestational age
@@ -308,7 +311,7 @@ The gestational age is CIEL 1438 on the Initial Visit form and a local *Gestatio
 
 *For the technical team:* `MalariaReportManager.iptp2ThirdTrimester()`, reading
 `mamba_fact_rmncah_anc_visit` (`is_third_trimester = 1 AND iptp_dose_number >= 2`, over
-`is_third_trimester = 1`). It is one of the 21 reports built in LE-334, with 16 expected
+`is_third_trimester = 1`). It is one of the 21 indicators built in LE-334, with 16 expected
 values. Sex is not split, because all are women.
 
 ### The options
@@ -354,6 +357,7 @@ third trimester have had time to receive three doses.
 
 > **MOH answer, MAL-003:** ☐ Option A ☐ Option B, with the name reworded ☐ Option B, name
 > unchanged ☐ Option C ☐ Other: ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -407,7 +411,7 @@ had a BMI recorded, so that readers can judge how complete the figure is.
 
 ### What reporting it would need
 
-A new count in the *NCD* report (numerator, denominator and percentage), read from the
+A new count in the *MOH NCD Indicators* report (numerator, denominator and percentage), read from the
 existing measurement table (`mamba_fact_nutrition_anthropometry`, age 18 or over, a BMI
 recorded). Then come test patients and new expected values, and the feasibility row is
 updated to say the EMR gives a labelled clinic-based estimate. **No form change** is needed.
@@ -424,6 +428,7 @@ STEPS stays the official source for NCD-008.
 > **MOH answer, NCD-008:** ☐ Report the clinic-based estimate under the label above ☐ Report it
 > under this label: ______________________________ ☐ Do not report; use STEPS only
 > ☐ Other: ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -490,6 +495,7 @@ prevalence."* STEPS stays the official source for NCD-010.
 > above ☐ Report a separate clinic-based NCD-010 under this label:
 > ______________________________ ☐ Do not report; use STEPS only ☐ Other:
 > ______________________________________________
+>
 > Name: ____________________ Date: ____________
 
 ---
@@ -512,7 +518,7 @@ reading of the review's notes, so that you can check it. The pattern it followed
   supervision reports, staff records), and three the EMR sees only poorly: home deliveries
   (RMNCAH-028), neurological disorders (RMNCAH-030) and micronutrient powder (NUT-004).
 
-*Built today* means the indicator is in one of the 21 reports built in LE-334.
+*Built today* means the indicator is one of the 21 built in LE-334 and appears in a report now.
 
 To answer, write **OK** in the last column, or the priority you want instead.
 
@@ -640,6 +646,7 @@ The workbook's EMR-Operational sheet has no EMR Priority column, so the review p
 
 > **MOH answer, EMR Priority:** ☐ Confirmed as proposed ☐ Confirmed with the changes marked in
 > the tables above
+>
 > Name: ____________________ Date: ____________
 
 ---
