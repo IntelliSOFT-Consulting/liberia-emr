@@ -22,8 +22,10 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonName;
+import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.liberiaemr.web.central.CentralClient;
+import org.openmrs.util.PrivilegeConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -261,7 +263,6 @@ public class RemoteSearchService {
 
 	/** The OpenMRS-backed lookups the shell builder uses. */
 	private PatientShellBuilder.Lookups lookups() {
-		final Location fallback = getFallbackLocation();
 		return new PatientShellBuilder.Lookups() {
 
 			@Override
@@ -275,8 +276,21 @@ public class RemoteSearchService {
 			}
 
 			@Override
-			public Location fallbackLocation() {
-				return fallback;
+			public Location placeholderLocation(String locationUuid, String name) {
+				return createPlaceholderLocation(locationUuid, name);
+			}
+
+			@Override
+			public User user(String userUuid) {
+				// Users are looked up only to copy central's audit fields, which a Records Officer
+				// importing a patient has no privilege to read.
+				Context.addProxyPrivilege(PrivilegeConstants.GET_USERS);
+				try {
+					return Context.getUserService().getUserByUuid(userUuid);
+				}
+				finally {
+					Context.removeProxyPrivilege(PrivilegeConstants.GET_USERS);
+				}
 			}
 
 			@Override
@@ -297,15 +311,38 @@ public class RemoteSearchService {
 		};
 	}
 
-	private Location getFallbackLocation() {
-		String uuid = Context.getAdministrationService().getGlobalProperty(GP_FACILITY_LOCATION, "");
-		if (uuid != null && !uuid.trim().isEmpty()) {
-			Location location = Context.getLocationService().getLocationByUuid(uuid.trim());
-			if (location != null) {
-				return location;
-			}
+	/**
+	 * Central's identifier location, created here retired with central's UUID, as dbsync's receiver
+	 * does for a location it lacks. Being retired keeps it out of every location picker. Location
+	 * rows are not in {@code eip.watchedTables}, so it stays at this facility. Saved on its own: an
+	 * import that fails afterwards leaves it for the next attempt to reuse.
+	 *
+	 * @return the saved location, or null when it cannot be saved (an active local location with the
+	 *         same name, for one)
+	 */
+	private Location createPlaceholderLocation(String locationUuid, String name) {
+		Location location = new Location();
+		location.setUuid(locationUuid);
+		location.setName(name == null || name.trim().isEmpty() ? locationUuid : name.trim());
+		location.setDescription("Central location of an imported patient's identifier");
+		location.setRetired(true);
+		location.setRetireReason("Imported from central for a patient identifier; not a location of this facility");
+		Context.addProxyPrivilege(PrivilegeConstants.MANAGE_LOCATIONS);
+		Context.addProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+		try {
+			Location saved = Context.getLocationService().saveLocation(location);
+			log.info("Brought central location {} ({}) here, retired, for an imported identifier", locationUuid,
+			    saved.getName());
+			return saved;
 		}
-		return Context.getUserContext().getLocation();
+		catch (Exception e) {
+			log.warn("Could not bring central location " + locationUuid + " here", e);
+			return null;
+		}
+		finally {
+			Context.removeProxyPrivilege(PrivilegeConstants.GET_LOCATIONS);
+			Context.removeProxyPrivilege(PrivilegeConstants.MANAGE_LOCATIONS);
+		}
 	}
 
 	private Patient findLocalByIdentifier(JsonNode identifiersNode, JsonNode remotePerson) {
