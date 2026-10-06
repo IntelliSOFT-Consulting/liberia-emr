@@ -2,7 +2,7 @@
 
 **Date:** 18 August 2026 · **Ticket:** LE-22
 **Verified against:** `openmrs-dbsync` `TableToSyncEnum` (master), release 4.0.0
-**Last reviewed against the build:** 1 October 2026
+**Last reviewed against the build:** 6 October 2026 (`medication_dispense`, LE-358)
 
 What actually synchronises facility → central, in what order, what is covered out of the box,
 and what needs custom work. Companion to [Sync & EIP architecture](sync-eip.md) and the
@@ -184,7 +184,75 @@ content after both dev databases had loaded the old ones (LE-373).
 | `DRUG_ORDER`, `TEST_ORDER`, `REFERRAL_ORDER` | dbsync README states **sync of Order subclasses fails** (EIP-142). Models exist (`DrugOrderModel`, `TestOrderModel`, `ReferralOrderModel`) | **Disproven on 4.0.0 for `DrugOrder` and `TestOrder`**: both arrive at central as their subclass rows, checked by `qa/sync/verify-e2e-push.sh` on every run. `ReferralOrder` stays unverified: the REST module on platform 2.8 cannot create one, and no form issues one. `order-push` stays enabled |
 | `USERS` | Supported; the concern was credential material | **Confirmed safe**: `UserModel` carries uuid, username, system id, person uuid and audit fields only, no password, salt or secret question. Kept, because every synced row references its creator by user uuid; the receiver skips the daemon user itself |
 | `DATAFILTER_ENTITY_BASIS_MAP` | Belongs to the `datafilter` module, which we do not run; the table does not exist on a facility database | **Left out** of `eip.watchedTables`. Relevant only if central ever becomes a point-of-care system (it must not; see [architecture](sync-eip.md) §1.8c) |
+| `MEDICATION_DISPENSE` | Not one of the 34. Central has no dispensing data, so a dispense-time indicator cannot be computed there | **Not synced; decided 6 October 2026 (LE-358).** dbsync 4.0.0 has no entity for it, and adding it to `eip.watchedTables` breaks every dispense event rather than syncing it. Central uses the drug order's time. Review in §4.1 |
 | Complex obs (attachments) | `ComplexObsProcessor` / `ComplexObsHash` exist, so binary obs are handled | Confirm whether any MCH/OPD form captures complex obs. If so, size the queue and bandwidth for it: attachments dominate transfer volume on a poor link |
+
+### 4.1 `medication_dispense` (LE-358)
+
+Reviewed against core 2.8.8 (`liquibase-schema-only-2.7.x.xml` in `openmrs-api-2.8.8.jar`; the
+table dates from 2.6, TRUNK-6071), dbsync 4.0.0 and openmrs-eip 4.2.0 sources, and Debezium
+2.4.0.Final (the `debezium-version` of Camel 4.1.0, which eip 4.2.0 pins).
+
+**Who writes it here.** `@openmrs/esm-dispensing-app` 1.11.1 (`distro.properties`), over FHIR
+`MedicationDispense` in fhir2 4.2.0; there is no O2 dispensing module. The app's menu entry
+needs *Get Medication Dispense*, which only the Pharmacist role holds (`roles-common.csv`,
+`config-national.json`). Every site package has a pharmacy location. Whether pharmacists at the
+pilot facilities record dispenses in it, and so whether the table holds anything, is not known
+from the repository: `qa/` writes no dispense.
+
+**dbsync cannot sync it.** `TableToSyncEnum` (`api/.../service/TableToSyncEnum.java:107-177`)
+has no `MEDICATION_DISPENSE`, and there is no entity, model, mapper or hash table for it.
+Nothing checks the watched list against the enum at start-up: eip passes the names straight to
+Debezium's `table.include.list` (`openmrs-watcher/.../config/WatcherConfig.java:80-94`). Each
+event then fails when the sender looks the table up: `openmrs:extract?tableToSync=…`
+(`sender-app/.../camel/sender-db-sync-route.xml:28`) binds to a `TableToSyncEnum` parameter
+(`api/.../camel/OpenmrsEndpoint.java:26-27`), and deletes call
+`TableToSyncEnum.getTableToSyncEnum`, which is `valueOf` (`sender-db-sync-route.xml:16`,
+`TableToSyncEnum.java:204-206`). The failed event goes to `sender_retry_queue` and is retried
+every 30 minutes (`db-event.retry.interval`) without end. Syncing it would mean writing the
+entity, model, mapper, hash entity and their management-database tables, carried as a second
+patch in `distribution/sync/patches/` on every dbsync upgrade.
+
+**Adding a table does not send its existing rows.** With a saved offset, Debezium's MySQL
+connector snapshots neither schema nor data: `MySqlSnapshotChangeEventSource.getSnapshottingTask`
+returns early when "a previous offset indicating a completed snapshot has been found"
+(`MySqlSnapshotChangeEventSource.java:98-103`). `snapshot.new.tables` is still declared
+(`MySqlConnectorConfig.java:795`) and parsed (`:979-980`), but nothing in the 2.4.0 connector
+reads it. `debezium.snapshotMode` (`SYNC_SNAPSHOT_MODE`) applies only to a sender with no saved
+offset. A facility already syncing would therefore send only dispenses made after the change.
+Its earlier ones would need a resend of the whole database ([sync-operations.md](../runbooks/sync-operations.md)
+section 11), or an incremental snapshot through a Debezium signal table, which eip does not set up.
+
+**If it were synced**, the rest would be in order:
+
+| Column | References | At central |
+| --- | --- | --- |
+| `patient_id`, `encounter_id` | `patient`, `encounter` | synced |
+| `drug_order_id` | `drug_order` | synced (`DRUG_ORDER`) |
+| `dispenser` | `provider` | synced (`PROVIDER`) |
+| `creator`, `changed_by`, `voided_by` | `users` | synced (`USERS`) |
+| `concept`, `status`, `status_reason`, `type`, `quantity_units`, `dose_units`, `route`, `substitution_type`, `substitution_reason` | `concept` | content-package image (§3) |
+| `drug_id` | `drug` | content-package image (`drugs/`); dbsync's `DrugLight` already serves `drug_order` |
+| `frequency` | `order_frequency` | content-package image (`orderfrequencies/`); `OrderFrequencyLight` likewise |
+| `location_id` | `location` | image, every site's locations (ADR 0012) |
+
+- **Ordering.** A dispense is committed after the order it fills, so binlog order already
+  delivers `drug_order` first; it would ride the same per-patient FIFO as orders (§2.2).
+- **Volume.** At most one row per dispensed order line, so no more than `drug_order`, and far
+  below `obs`.
+- **PHI.** The same class as `drug_order`, which already syncs: the patient, the drug, the dose,
+  free-text `dosing_instructions`. It would add no new category, and the payload is encrypted
+  like every other.
+- **Updates.** A dispense changes status (preparation, in progress, completed, declined, on
+  hold, cancelled) and the app can edit or delete it. These are ordinary updates, voids or
+  deletes, under the receiver's conflict rules like any other row (§2.4).
+
+**Decision: (b), accept the order time at central.** Only MAL-001's 24-hour window uses the
+dispense time. MAL-001 is not built yet, and the formulary has no ACT for it to count. The
+indicators that are built use the order, so central and the facility agree on them.
+[reporting-etl.md](../runbooks/reporting-etl.md) section 7 sets out the difference.
+Reopen this if the MOH needs dispense time nationally, or if a dbsync release adds the entity.
+Either way, plan the resend for facilities already syncing.
 
 ---
 
@@ -210,4 +278,5 @@ Each of these is a test, not an assertion:
 - [x] `Order` subclass defect reproduced or disproven on 4.0.0 (disproven for `DrugOrder` and `TestOrder`, `qa/sync/verify-e2e-push.sh`; `ReferralOrder` not creatable, §4)
 - [x] `UserModel` payload inspected and confirmed to carry no credential material (§4)
 - [ ] Metadata UUID parity asserted between facility and central images (the e2e check relies on it for the visit type, encounter type, concepts and programme it uses; `qa/sync/verify-second-facility.sh` covers every facility location; nothing covers the rest of the set, and a gap shows up as a placeholder, not a failure, §3)
+- [x] `medication_dispense` reviewed: not synced, central uses the order time (§4.1, LE-358)
 - [ ] Complex obs behaviour confirmed, and sized if in use

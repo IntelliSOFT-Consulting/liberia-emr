@@ -16,7 +16,9 @@ db-sync.senderId=${DBSYNC_SENDER_ID}
 # entities; it never watches concepts, locations or their attributes, which come from the
 # shared image, nor provider attributes) minus DATAFILTER_ENTITY_BASIS_MAP, whose module this
 # distribution does not run. USERS carries references only (uuid, username, system id), never
-# credentials.
+# credentials. A table outside dbsync's 34 cannot simply be added: MEDICATION_DISPENSE, for one,
+# has no dbsync entity, so every dispense event would fail into the retry queue, and existing
+# rows would never be sent (sync-entity-coverage.md section 4.1).
 eip.watchedTables=PERSON,PERSON_NAME,PERSON_ADDRESS,PERSON_ATTRIBUTE,PATIENT,PATIENT_IDENTIFIER,RELATIONSHIP,VISIT,VISIT_ATTRIBUTE,ENCOUNTER,ENCOUNTER_PROVIDER,ENCOUNTER_DIAGNOSIS,OBS,CONDITIONS,ALLERGY,DIAGNOSIS_ATTRIBUTE,PATIENT_PROGRAM,PATIENT_STATE,PATIENT_PROGRAM_ATTRIBUTE,ORDERS,DRUG_ORDER,TEST_ORDER,REFERRAL_ORDER,ORDER_GROUP,ORDER_ATTRIBUTE,ORDER_GROUP_ATTRIBUTE,USERS,PROVIDER
 
 db-event.destinations=direct:sender-db-sync
