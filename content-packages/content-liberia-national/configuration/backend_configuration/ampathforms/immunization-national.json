@@ -98,7 +98,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
                 "rendering": "date"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && formatDate(myValue, 'YYYY-MM-DD') <= formatDate(today(), 'YYYY-MM-DD')",
+                  "message": "Return date must be a future date."
+                }
+              ]
             }
           ]
         }
