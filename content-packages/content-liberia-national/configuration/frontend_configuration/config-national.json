@@ -94,6 +94,12 @@
       "patient-flags"
     ]
   },
+  "@openmrs/esm-patient-label-printing-app": {
+    "_comment": [
+      "The banner's Actions > Print identifier sticker prints it."
+    ],
+    "showPrintIdentifierStickerButton": true
+  },
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": [
       "${var.identifiertype.moh-health-record.uuid}",
@@ -272,7 +278,15 @@
     ]
   },
   "@openmrs/esm-billing-app": {
-    "defaultCurrency": "LRD"
+    "defaultCurrency": "LRD",
+    "_comment_logo": [
+      "Printed invoice header. With logo.src and logo.alt both empty the app draws the OpenMRS"
+    ],
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/moh-liberia-seal.svg",
+      "alt": "Ministry of Health, Republic of Liberia"
+    },
+    "country": "Republic of Liberia"
   },
   "@openmrs/esm-patient-chart-app": {
     "showServiceQueueFields": true,
