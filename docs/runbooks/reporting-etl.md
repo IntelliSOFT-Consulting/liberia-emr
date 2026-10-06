@@ -310,14 +310,44 @@ once, incrementally. It does not rebuild the tables.
 | `LIBERIAEMR_INSTANCE_ROLE` | `facility`, hard-coded | `central`, hard-coded |
 | EMR-OPS-007, EMR-OPS-015 | the facility definitions | central's own definitions, from CPI links, so they differ from the facility's by design |
 | Sync backlog tables (EMR-OPS-005) | filled from the sender's queues | empty: central has no sender |
+| Treatment time (`mamba_fact_malaria_drug.treated_at`) | the first live dispense's `date_handed_over`, else the order's `date_activated` | always the order's `date_activated`: `medication_dispense` is not synced |
 
-**Consistency.** Apart from EMR-OPS-007 and EMR-OPS-015, a facility's report equals central's
-report scoped to that facility once both hold the same rows. The reports module's unit tests
+**Consistency.** Apart from EMR-OPS-007 and EMR-OPS-015, and from the dispense-time indicators
+below, a facility's report equals central's report scoped to that facility once both hold the
+same rows. The reports module's unit tests
 prove it for the SQL (`assertFacilityEqualsCentralForIt` and
 `assertByFacilityMatchesFacilityRuns` in `IndicatorReportTestBase`), and section 10 checks it
 on two stacks. If central shows different figures for a facility, then sync has not caught up,
 an ETL has not run since, or the facility's locations are missing at central (the receiver
 rejects records at an unknown location).
+
+**Dispense time is facility-only (LE-358).** `medication_dispense` is not in
+`eip.watchedTables`, and dbsync 4.0.0 cannot sync it
+([sync-entity-coverage.md](../architecture/sync-entity-coverage.md) §4.1). This was decided on
+6 October 2026: central uses the order time. The ETL is the same SQL at both instances.
+`sp_mamba_fact_malaria_drug` sets `treated_at` to `dispensed_at` when the order has a live
+dispense, and to `prescribed_at` (`orders.date_activated`) when it has none. At central no order
+has one.
+
+- **Which indicators.** Only a time window that reads `treated_at` or `dispensed_at` can
+  differ. Today that is MAL-001 alone ("treated with ACT within 24 hours" of the positive result),
+  and it is not built yet (its formulary has no ACT). MAL-016 would join it if it counts only
+  completed dispenses at facility level, as its feasibility row suggests.
+- **Which do not.** RMNCAH-018, RMNCAH-021, NCD-009 and NCD-017 are built or proposed on the
+  drug order, not the dispense, so the two instances agree on them.
+- **How MAL-001 will differ.** The window is `resulted_at <= treated_at <= resulted_at + 24h`.
+  For a child whose ACT was dispensed:
+  - prescribed within 24 hours but handed over later: counted at central, not at the facility;
+  - prescribed before the result was entered, and handed over after it within 24 hours: counted
+    at the facility, not at central;
+  - an order with no dispense, or a facility that does not use the dispensing app: the same at
+    both.
+
+  Central's MAL-001 therefore measures *prescribed* within 24 hours. The facility's measures
+  *handed over* within 24 hours wherever pharmacists record dispenses. The report description
+  must say which one a reader is looking at.
+- **Checking.** `qa/reporting/compare-instances.py` skips MAL-001 by default for this reason
+  (section 10).
 
 ## 8. Upgrading `mamba-core-api`
 
@@ -484,7 +514,10 @@ qa/reporting/compare-instances.py qa/reporting/.out/facility-careysburg.json qa/
 ```
 
 EMR-OPS-007 and EMR-OPS-015 are skipped by default, because central has its own definition of
-each. On 29 September 2026 the Careysburg facility and central scoped to Careysburg agreed on
+each. MAL-001 is skipped too: at a facility it uses the dispense time, which central does not
+have (section 7). The fixtures hold no dispense, so to compare MAL-001 anyway, name the
+exclusions yourself:
+`--exclude EMR-OPS-007 --exclude EMR-OPS-015`. On 29 September 2026 the Careysburg facility and central scoped to Careysburg agreed on
 all 84 compared cells (5 reports, 2 quarters), and differed only on the 12 skipped EMR-OPS-007
 and EMR-OPS-015 cells, as expected. The indicators with look-back windows (MAL-004's 28-day
 episodes, the 42-day delivery episodes of RMNCAH-026 and 028) are compared too: their windows

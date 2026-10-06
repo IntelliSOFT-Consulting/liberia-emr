@@ -23,7 +23,7 @@ and the `*-gaps.md` files beside it. The deployment model and location attributi
 | `expected-values.csv` | CSV, 14 columns | 336 rows: 21 indicators × 2 periods × 8 instance and scope pairs |
 | `load-fixtures.py` | Python 3, standard library only | Lints the fixtures, prints the SQL, or loads it into a stack's database. `load-late-row` adds the one row the incremental-run check needs |
 | `compare-reports.py` | Python 3, standard library only | Runs the five reports on a stack through reportingrest and compares them with `expected-values.csv`; `--dump` writes every data set it read |
-| `compare-instances.py` | Python 3, standard library only | From two `--dump` files, checks that a facility's reports equal central's reports scoped to it, every column, EMR-OPS-007 and 015 excepted |
+| `compare-instances.py` | Python 3, standard library only | From two `--dump` files, checks that a facility's reports equal central's reports scoped to it, every column, EMR-OPS-007, EMR-OPS-015 and MAL-001 excepted by default |
 | `run-stack-check.sh` | bash | The ETL's definition of done on a fresh stack: loads the fixtures, runs the ETL in full and then incrementally, compares the reports, and checks the ETL user, its error log and the binlog |
 
 The `purpose` column explains each row that exists for a particular indicator or edge case.
@@ -255,7 +255,10 @@ alternatives give the same number wherever possible.
    - The order is used, not a dispense. There are no `medication_dispense` rows, so the
      facility and central values are equal.
    - No row in this set has a dispense-based time window. The central order-time rule (LE-358)
-     matters from MAL-001 on.
+     matters from MAL-001 on: `medication_dispense` is not synced, so central times treatment by
+     the order and a facility by the dispense (`docs/runbooks/reporting-etl.md` section 7).
+     `compare-instances.py` skips MAL-001 by default for that reason. A fixture that adds a
+     dispense must add an expected row for each instance, and they may differ.
 8. **Numerators that are not subsets of their denominators.** For MAL-002 and NCD-015 the CSV
    defines the numerator independently of the denominator. Careysburg Q2 for MAL-002 is
    therefore 2/1 (200.0%), and this is deliberate. The CSV says to report both parts and let
