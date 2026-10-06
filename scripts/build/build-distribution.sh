@@ -5,7 +5,7 @@
 #                                       [--no-frontend] [--no-sync]
 #   scripts/build/build-distribution.sh --version 1.0.0 --site central
 #
-# Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry|-sync-capture :<version>
+# Images: liberia-emr-backend|-frontend|-gateway|-sync|-sync-receiver|-broker|-cert-expiry|-sync-capture|-sync-tunnel :<version>
 #
 # Per-site names (LE-360): a facility build ALSO tags its two site-bearing images as
 # liberia-emr-backend-<site> and liberia-emr-frontend-<site> (scripts/build/image-refs.sh).
@@ -66,75 +66,101 @@ esac
 "$ROOT/scripts/validate/validate-content.sh"
 "$ROOT/scripts/validate/no-secrets.sh"
 
+ocl_dir="$ROOT/content-packages/content-common/configuration/backend_configuration/ocl"
+
 if [[ "$DEMO" == "false" ]]; then
   "$ROOT/scripts/validate/no-demo-in-release.sh"
   suffix=""
   demo_package=""
-  ocl_dir="$ROOT/content-packages/content-common/configuration/backend_configuration/ocl"
 
-  # Two different dictionaries land here and they are NOT interchangeable, so each is guarded
-  # by its own file name. A single "any *.zip present" guard made them mutually exclusive:
-  # whichever ran first satisfied it and the other never ran at all.
+  # Two different dictionaries land in content-common's ocl/ and they are NOT
+  # interchangeable, so each is guarded by its own file name. A single "any *.zip present"
+  # guard made them mutually exclusive: whichever ran first satisfied it and the other never
+  # ran at all.
   #
   # 1. The upstream reference-application exports (*-common.zip) — no credentials needed.
+  # A demo build skips this: content-demo lifts the same exports from the same pinned tag.
   if ! compgen -G "$ocl_dir/*-common.zip" >/dev/null; then
     echo "== fetching the common OCL exports =="
     "$ROOT/scripts/build/lift-common-content.sh"
   fi
+else
+  echo "WARNING: building DEMO images — training and test use only."
+  suffix="-demo"
+  demo_package="liberiaemr-demo"
+  # content-demo is lifted from upstream; its OCL exports are gitignored, so a fresh
+  # checkout has the CSVs and forms but none of the concepts they reference.
+  if ! compgen -G "$ROOT/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip" >/dev/null; then
+    echo "== fetching the demo OCL exports =="
+    "$ROOT/scripts/build/lift-demo-content.sh" --ocl-only
+  fi
+  "$ROOT/scripts/build/sanitize-ocl-export.sh" \
+    "$ROOT"/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip
+fi
 
-  # 2. The MOH's own curated CIEL collections (lib-<collection>-ciel-*.zip). This is the
-  # subset the ocl/ README means by "Do not load all of CIEL": a build that skips it still
-  # produces images, but every concept mapping to a CIEL source fails to load, so say so
-  # rather than let it pass silently.
-  ocl_org="$(sed -n 's/^ocl\.org=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
-  ocl_collections="$(sed -n 's/^ocl\.collections=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
-  ocl_version="$(sed -n 's/^ocl\.collection\.version=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+# 2. The MOH's own curated CIEL collections (lib-<collection>-ciel-*.zip). This is the
+# subset the ocl/ README means by "Do not load all of CIEL": a build that skips it still
+# produces images, but every concept mapping to a CIEL source fails to load, so say so
+# rather than let it pass silently.
+#
+# A demo build needs it exactly as much as a release does (LE-398). It loads the same
+# national and MCH layers, and their forms record against CIEL concepts only LIB/mch
+# supplies — the upstream demo exports carry none of the ANC obstetric history terms, so
+# without it every ANC Initial Visit save answered 400 with a null obs concept.
+ocl_org="$(sed -n 's/^ocl\.org=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+ocl_collections="$(sed -n 's/^ocl\.collections=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
+ocl_version="$(sed -n 's/^ocl\.collection\.version=//p' "$ROOT/distribution/distro.properties" | tr -d '[:space:]')"
 
+if [[ -z "$ocl_version" ]]; then
+  echo "WARNING: ocl.collection.version is empty in distro.properties — exporting HEAD." >&2
+  echo "         A release must pin a published collection version; HEAD is not reproducible." >&2
+fi
+for collection in ${ocl_collections//,/ }; do
+  expected_zip="$ocl_dir/lib-${collection}-ciel-${ocl_version:-head}.zip"
+  # A pinned version is immutable, so an export already on disk is the one a fetch would
+  # return, and it needs no token.
+  if [[ -f "$expected_zip" ]]; then
+    echo "== OCL collection ${collection} already present =="
+    continue
+  fi
   if [[ -z "${OCL_API_TOKEN:-}" ]]; then
-    echo "WARNING: OCL_API_TOKEN is not set — skipping the MOH CIEL collections." >&2
+    echo "WARNING: OCL_API_TOKEN is not set — skipping the MOH CIEL collection ${collection}." >&2
     echo "         Concepts that map to a CIEL source will not load in these images." >&2
     echo "         See content-packages/content-common/configuration/backend_configuration/ocl/README.md" >&2
-  else
-    if [[ -z "$ocl_version" ]]; then
-      echo "WARNING: ocl.collection.version is empty in distro.properties — exporting HEAD." >&2
-      echo "         A release must pin a published collection version; HEAD is not reproducible." >&2
-    fi
-    for collection in ${ocl_collections//,/ }; do
-      expected_zip="$ocl_dir/lib-${collection}-ciel-${ocl_version:-head}.zip"
-      if [[ -f "$expected_zip" ]]; then
-        echo "== OCL collection ${collection} already present =="
-        continue
-      fi
-      # Delete stale cached zips for this collection if the version changed
-      rm -f "$ocl_dir/lib-${collection}-ciel-"*.zip
-      echo "== fetching the OCL collection ${ocl_org}/${collection} =="
-      # Only MCH has smoke-test expectations in fetch-ciel.sh.
-      smoke=()
-      [[ "$collection" == "mch" ]] || smoke=(--no-smoke-test)
-      # ${smoke[@]+"${smoke[@]}"}, not "${smoke[@]}": under `set -u` bash 3.2 — which is
-      # what macOS still ships — treats expanding an EMPTY array as an unbound variable and
-      # aborts. That is precisely the mch case, where smoke stays empty, so the fetch died
-      # the first time a token made this branch reachable at all. bash 4.4+ (every CI runner
-      # here) is happy either way, so this would have stayed a macOS-only failure.
-      OCL_ORG="$ocl_org" OCL_COLLECTION="$collection" \
-        "$ROOT/scripts/build/fetch-ciel.sh" \
-          ${ocl_version:+--version "$ocl_version"} ${smoke[@]+"${smoke[@]}"}
-    done
+    continue
   fi
+  # Delete stale cached zips for this collection if the version changed
+  rm -f "$ocl_dir/lib-${collection}-ciel-"*.zip
+  echo "== fetching the OCL collection ${ocl_org}/${collection} =="
+  # Only MCH has smoke-test expectations in fetch-ciel.sh.
+  smoke=()
+  [[ "$collection" == "mch" ]] || smoke=(--no-smoke-test)
+  # ${smoke[@]+"${smoke[@]}"}, not "${smoke[@]}": under `set -u` bash 3.2 — which is
+  # what macOS still ships — treats expanding an EMPTY array as an unbound variable and
+  # aborts. That is precisely the mch case, where smoke stays empty, so the fetch died
+  # the first time a token made this branch reachable at all. bash 4.4+ (every CI runner
+  # here) is happy either way, so this would have stayed a macOS-only failure.
+  OCL_ORG="$ocl_org" OCL_COLLECTION="$collection" \
+    "$ROOT/scripts/build/fetch-ciel.sh" \
+      ${ocl_version:+--version "$ocl_version"} ${smoke[@]+"${smoke[@]}"}
+done
 
-  "$ROOT/scripts/build/sanitize-ocl-export.sh" \
-    "$ROOT"/content-packages/content-common/configuration/backend_configuration/ocl/*.zip
+# A tokenless demo build can leave content-common's ocl/ empty, and the sanitizer refuses
+# an unmatched glob.
+if compgen -G "$ocl_dir/*.zip" >/dev/null; then
+  "$ROOT/scripts/build/sanitize-ocl-export.sh" "$ocl_dir"/*.zip
+fi
 
-  # Every ${var.*} holding a CIEL-style UUID must match the external_id the export actually
-  # carries. Most CIEL concepts use <id> padded with A to 36 characters, so that convention
-  # gets assumed — but it is NOT universal: newer concepts (the 167xxx-169xxx range at least)
-  # have random UUIDs. Padding one of those yields a UUID no concept has, and the failure
-  # surfaces an hour later as "The object identified by '169401AAAA...' could not be found in
-  # database" on whichever row referenced it, naming neither the variable nor the file.
-  #
-  # Only checkable here: the exports are gitignored, so validate-content.sh cannot see them.
-  echo "== checking CIEL variables against the shipped exports =="
-  python3 - "$ROOT" <<'PY' || { echo "FAIL: CIEL UUID mismatch (see above)" >&2; exit 1; }
+# Every ${var.*} holding a CIEL-style UUID must match the external_id the export actually
+# carries. Most CIEL concepts use <id> padded with A to 36 characters, so that convention
+# gets assumed — but it is NOT universal: newer concepts (the 167xxx-169xxx range at least)
+# have random UUIDs. Padding one of those yields a UUID no concept has, and the failure
+# surfaces an hour later as "The object identified by '169401AAAA...' could not be found in
+# database" on whichever row referenced it, naming neither the variable nor the file.
+#
+# Only checkable here: the exports are gitignored, so validate-content.sh cannot see them.
+echo "== checking CIEL variables against the shipped exports =="
+python3 - "$ROOT" <<'PY' || { echo "FAIL: CIEL UUID mismatch (see above)" >&2; exit 1; }
 import glob, json, os, re, sys, zipfile
 
 root = sys.argv[1]
@@ -168,19 +194,6 @@ for pkg, k, cid, declared, actual in bad:
     print(f"      CIEL:{cid} is {actual}, not {declared}", file=sys.stderr)
 sys.exit(1 if bad else 0)
 PY
-else
-  echo "WARNING: building DEMO images — training and test use only."
-  suffix="-demo"
-  demo_package="liberiaemr-demo"
-  # content-demo is lifted from upstream; its OCL exports are gitignored, so a fresh
-  # checkout has the CSVs and forms but none of the concepts they reference.
-  if ! compgen -G "$ROOT/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip" >/dev/null; then
-    echo "== fetching the demo OCL exports =="
-    "$ROOT/scripts/build/lift-demo-content.sh" --ocl-only
-  fi
-  "$ROOT/scripts/build/sanitize-ocl-export.sh" \
-    "$ROOT"/content-packages/content-demo/configuration/backend_configuration/ocl/*.zip
-fi
 
 
 # Builds the content ZIPs and, with them, target/configuration — the tree with ${var.*}
@@ -197,20 +210,32 @@ mvn -B -q -DskipTests -f "$ROOT/pom.xml" clean package
 # file nor the dictionary it collided with. validate-content.sh catches the same clash
 # between two content CSVs; the exports are gitignored, so it cannot see this half.
 echo "== checking concept names against the shipped dictionaries =="
-python3 - "$ROOT" "$DEMO" <<'PY' || { echo "FAIL: concept name collides with the dictionary (see above)" >&2; exit 1; }
-import csv, glob, json, os, sys, zipfile
+python3 - "$ROOT" "$DEMO" "$SITE" <<'PY' || { echo "FAIL: concept name collides with the dictionary (see above)" >&2; exit 1; }
+import csv, fnmatch, glob, json, os, sys, zipfile
 
-root, demo = sys.argv[1], sys.argv[2] == "true"
+root, demo, site = sys.argv[1], sys.argv[2] == "true", sys.argv[3]
 
 # (locale, casefolded name) -> (external_id, dictionary) for every FULLY_SPECIFIED name the
 # exports carry. Synonyms are excluded: OpenMRS only enforces uniqueness on the fully
 # specified name.
 owned = {}
 
+# Demo files distribution/backend/Dockerfile leaves out of the image (LE-395).
+DROPPED_FROM_DEMO = ("openmrs_DemoQueueConcepts_*.zip",)
+
+def package_of(path):
+    return path[len(f"{root}/content-packages/"):].split(os.sep)[0]
+
 def in_this_build(path):
-    """A distribution ships the demo layer or the production layers, never both."""
-    pkg = path[len(f"{root}/content-packages/"):].split(os.sep)[0]
-    return (pkg == "content-demo") == demo
+    """A release ships the production layers and this site's. A demo build loads the demo
+    layer ON TOP of them, so its dictionaries can take a name a production concept needs
+    (LE-395: the RefApp demo 'Waiting' and 'Emergency' did, and the queue broke)."""
+    pkg = package_of(path)
+    if pkg == "content-demo":
+        return demo and not any(fnmatch.fnmatch(os.path.basename(path), p) for p in DROPPED_FROM_DEMO)
+    if pkg.startswith("content-site-") or pkg == "content-central":
+        return pkg in (f"content-site-{site}", f"content-{site}")
+    return True
 
 for z in glob.glob(f"{root}/content-packages/*/configuration/backend_configuration/ocl/*.zip"):
     if not in_this_build(z):
@@ -234,9 +259,16 @@ for z in glob.glob(f"{root}/content-packages/*/configuration/backend_configurati
             text = (name.get("name") or "").strip()
             if text:
                 owned.setdefault(((name.get("locale") or "en"), text.casefold()),
-                                 (ext, os.path.basename(z)))
+                                 (ext, os.path.basename(z), package_of(z)))
 
 collisions = []
+# LE-398: a content-demo row that loses its name to a PRODUCTION dictionary. The RefApp demo
+# CSVs give local UUIDs to drugs and findings the MOH's CIEL collection carries under CIEL
+# ones, and Initializer loads ocl/ before concepts/, so the MOH concept loads and the demo
+# duplicate is the row rejected. The production layers are whole; the demo loses rows nothing
+# Liberian uses. Counted, not failed — failing would keep the MOH dictionary out of every
+# demo build, and with it the ANC forms' CIEL terms. The reverse (LE-395) still fails below.
+demo_losses = {}
 for f in sorted(glob.glob(
         f"{root}/content-packages/*/target/configuration/backend_configuration/concepts/*.csv")):
     if not in_this_build(f):
@@ -253,11 +285,16 @@ for f in sorted(glob.glob(
             if not uuid or not text:
                 continue
             held = owned.get((locale, text.casefold()))
-            if held and held[0] != uuid:
+            if held and held[0] != uuid and package_of(f) == "content-demo" and held[2] != "content-demo":
+                demo_losses[os.path.basename(f)] = demo_losses.get(os.path.basename(f), 0) + 1
+            elif held and held[0] != uuid:
                 collisions.append(
                     f"{os.path.basename(f)}:{n} names {uuid} '{text}' in locale '{locale}', "
                     f"but {held[1]} already gives that name to {held[0]}")
 
+for name, count in sorted(demo_losses.items()):
+    print(f"  WARNING: {name}: {count} demo concept name(s) already owned by a production "
+          "dictionary; those demo rows will be rejected", file=sys.stderr)
 for c in collisions:
     print(f"  {c}", file=sys.stderr)
 sys.exit(1 if collisions else 0)
@@ -391,8 +428,14 @@ if [[ "$SYNC" == "true" && "$DEMO" == "false" ]]; then
     --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
     -t "${REGISTRY}/liberia-emr-sync-capture:${VERSION}" \
     "$ROOT/distribution/monitoring/sync-capture"
+  echo "== sync tunnel =="
+  docker build \
+    -f "$ROOT/distribution/sync-tunnel/Dockerfile" \
+    --build-arg "LIBERIAEMR_VERSION=${VERSION}" \
+    -t "${REGISTRY}/liberia-emr-sync-tunnel:${VERSION}" \
+    "$ROOT/distribution/sync-tunnel"
 else
-  echo "== sync sender/receiver/broker/cert-expiry/sync-capture == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
+  echo "== sync sender/receiver/broker/cert-expiry/sync-capture/sync-tunnel == SKIPPED ($([[ "$DEMO" == "true" ]] && echo demo build || echo --no-sync))"
 fi
 
 echo

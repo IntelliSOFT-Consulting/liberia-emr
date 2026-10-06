@@ -27,7 +27,9 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
   `distribution/compose/facility/initdb/10-sync-db-users.sh`; on an existing database,
   run its statements by hand once.
 - The broker at central as `ARTEMIS_URL=ssl://<central>:61617`, where the host is one of
-  the names in the broker certificate. Plain `tcp://` and URL options are refused. Before
+  the names in the broker certificate. Or over HTTPS on 443, where the network allows nothing
+  else: `ARTEMIS_URL=ssl://artemis:61617` with `SYNC_CENTRAL_URL=https://<central>`, through the
+  facility's `sync-tunnel` service ([broker README](../broker/README.md#reaching-it-over-https)). Plain `tcp://` and URL options are refused. Before
   central is reachable, a `file:` output endpoint (`SYNC_OUTPUT_ENDPOINT`) is upstream's
   QA-only testing mode.
 - This facility's security material mounted at `/app/sync-certs`: `client.p12`,
@@ -56,8 +58,8 @@ Dockerfile to the released `-exe.jar`s from Mekom's Nexus.
 - Reconciliation (`recon/`, sync-eip.md 5.5), built into both images and started by both
   entrypoints beside the app. At a facility it sends a nightly digest of what the facility
   holds to its own broker queue; at central it compares every digest with the database, keeps
-  the gaps in the management schema and serves them on `:9103/metrics`
-  (docs/runbooks/sync-operations.md section 15). `SYNC_RECON=false` turns it off.
+  the gaps in the management schema, counts placeholder metadata, and serves both on
+  `:9103/metrics` (docs/runbooks/sync-operations.md sections 15 and 17). `SYNC_RECON=false` turns it off.
 - A sync account (`SYNC_REST_USER`) with the `Sync Receiver` role only, and for the sender
   one with `Sync Sender` (docs/runbooks/sync-operations.md section 6).
 - Its subscription queue, `DB-SYNC-REC.DB-SYNC-RECEIVER`, is declared by the broker, so
@@ -108,6 +110,8 @@ of clinical data at rest (sync-eip.md section 7.4).
 
 ## Verifying (QA)
 
+The full catalogue, with flags and what each needs, is [qa/sync/README.md](../../qa/sync/README.md).
+
 - `qa/sync/verify-sender-capture.sh`: facility-only check, registration to captured
   payload, no PHI in logs.
 - `qa/sync/verify-e2e-push.sh`: the full chain. A patient registered at the facility, then
@@ -147,6 +151,16 @@ of clinical data at rest (sync-eip.md section 7.4).
   decisions (another record, no reason, no privilege) change nothing.
 - `qa/sync/verify-alert-delivery.sh`: alerts arrive by email over STARTTLS and by webhook.
   Runs in CI.
+- `qa/sync/verify-identity.sh`: the Central Person Identifier across two facilities: every
+  record gets one, a matching National ID links, a disagreeing one is held for review.
+- `qa/sync/verify-reconciliation.sh`: a record removed from central's replica is found by the
+  nightly digest, confirmed, alerted (`SyncRecordsMissing`), and closed once it arrives again.
+- `qa/sync/verify-capture-stall.sh`: a sender whose position is torn stays up but stops
+  capturing, and `SyncCaptureStalled` fires and then clears.
+- `qa/sync/verify-second-facility.sh`: a second facility's records reach central on its own
+  locations with no placeholder; `--negative-control` raises one.
+- `qa/sync/verify-binlog-secrets.sh`: a fresh facility database's binlog holds no account
+  password. Runs in CI.
 - `qa/sync/verify-alerting.sh`: acceptance criterion 3. Provokes a real push failure,
   asserts the SyncPushErrors alert fires and is admin visible, and that it resolves on
   recovery (resolution rides the sender's 30 minute retry cycle).

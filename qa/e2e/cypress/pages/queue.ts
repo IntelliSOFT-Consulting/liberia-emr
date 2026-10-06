@@ -20,10 +20,12 @@ class QueuePage {
             .click({ force: true });
     }
 
-    // The visit form now includes the queue fields (location/service/priority) as part of the same submit
+    // The visit form now includes the queue fields (location/service/priority) as part of the same submit.
+    // paymentDetails null: the billing app's payment fields are not shown (a role without billing
+    // privileges, LE-395), so none is chosen.
     startVisitFromSearch(
         visitType = 'Outpatient',
-        paymentDetails: 'paying' | 'non-paying' = 'paying',
+        paymentDetails: 'paying' | 'non-paying' | null = 'paying',
         service = 'TB Screening',
         priority: 'Routine' | 'Emergency (status)' = 'Routine',
         queueLocation = 'Careysburg OPD'
@@ -32,7 +34,9 @@ class QueuePage {
             .find('input[name="visit-types"]')
             .check({ force: true });
 
-        cy.get(`#payment-details-${paymentDetails}`, { timeout: 20000 }).check({ force: true });
+        if (paymentDetails) {
+            cy.get(`#payment-details-${paymentDetails}`, { timeout: 20000 }).check({ force: true });
+        }
 
         // These fields render lower in the form and can be scrolled out of view within the workspace panel
         cy.get('#queueLocation', { timeout: 20000 }).scrollIntoView().should('be.visible').select(queueLocation, { force: true });

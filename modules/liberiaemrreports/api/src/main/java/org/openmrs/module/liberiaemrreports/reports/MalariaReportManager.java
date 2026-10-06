@@ -24,10 +24,14 @@ import org.springframework.stereotype.Component;
 /**
  * The Malaria sheet: the Feasible-now rows MAL-002, MAL-003 and MAL-004, read as
  * {@code qa/reporting/README.md} fixes them (ambiguities 1, 6 and 8). The ANC rows read RPT 6's
- * {@code mamba_fact_rmncah_anc_visit} (its ANC/IPTp contract), not a table of their own.
+ * {@code mamba_fact_rmncah_anc_visit} (its ANC/IPTp contract), not a table of their own. MAL-003's
+ * definition waits on the MOH (LE-356, {@code docs/reporting/moh-decisions-le-356.md}).
  */
 @Component
 public class MalariaReportManager extends LiberiaReportManager {
+	
+	/** Repeated in this file's SQL. */
+	private static final String RESULTED_AT = "r.resulted_at";
 
 	/** Episode window for confirmed malaria (ambiguity 6). */
 	static final int MALARIA_EPISODE_DAYS = 28;
@@ -45,7 +49,7 @@ public class MalariaReportManager extends LiberiaReportManager {
 	protected List<String> getNotes() {
 		return Arrays.asList(
 		    "MAL-002: the numerator (women given a 3rd or later IPTp dose) is not a subset of the denominator (women at a first ANC contact), as the matrix defines them; both are reported",
-		    "MAL-003: pending the MOH's decision on the sheet's conflicting texts, women given a 2nd or later IPTp dose at a 3rd-trimester ANC contact; sex not meaningful (all are women)",
+		    "MAL-003: denominator, women with an ANC contact in the 3rd trimester (trimester 3rd, or gestational age of 28 weeks or more); numerator, those of them whose IPTp dose at such a contact is the 2nd or later (at least two doses by the 3rd trimester); this is neither the sheet's numerator text (three or more doses) nor two doses both given within the 3rd trimester, pending the MOH's decision (LE-356); sex not meaningful (all are women)",
 		    "MAL-004: numerator only (the population at risk is not in the EMR); one case per person per 28 days; point-of-care RDTs without a lab order not captured");
 	}
 
@@ -97,15 +101,15 @@ public class MalariaReportManager extends LiberiaReportManager {
 		    Arrays.asList(IndicatorSql.count(num, "1 = 1")),
 		    "FROM " + LAB + " r" + Sql.joinPersonKey("r", "pr") + "\n" //
 		            + "WHERE r.is_malaria_positive = 1\n" //
-		            + "  AND " + Sql.inPeriod("r.resulted_at") + "\n" //
+		            + "  AND " + Sql.inPeriod(RESULTED_AT) + "\n" //
 		            + "  AND " + g.inScope("r") + "\n" //
 		            + "  AND NOT EXISTS (SELECT 1 FROM " + LAB + " q" + Sql.joinPersonKey("q", "pq") + "\n" //
 		            + "                  WHERE pq.person_key = pr.person_key\n" //
 		            + "                    AND q.is_malaria_positive = 1\n" //
 		            + "                    AND " + g.inSameScope("q", "r") + "\n" //
-		            + "                    AND " + Sql.before("q.resulted_at", "r.resulted_at",
+		            + "                    AND " + Sql.before("q.resulted_at", RESULTED_AT,
 		                "(q.order_id < r.order_id OR (q.order_id = r.order_id AND q.result_obs_id < r.result_obs_id))") + "\n" //
-		            + "                    AND " + Sql.withinDaysBefore("q.resulted_at", "r.resulted_at", MALARIA_EPISODE_DAYS)
+		            + "                    AND " + Sql.withinDaysBefore("q.resulted_at", RESULTED_AT, MALARIA_EPISODE_DAYS)
 		            + ")"),
 		    num);
 	}

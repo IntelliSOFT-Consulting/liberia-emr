@@ -57,6 +57,10 @@ server {
         return 302 /openmrs/spa/;
     }
 
+    # Facility to central sync over this same port and name (LE-372). Its settings are in the
+    # snippet, apart from the web routes above.
+    include /etc/nginx/snippets/sync-broker-path.conf;
+
     # Legacy admin UI. MOH ICT SOP control D5 keeps this off in production; dev and
     # staging turn it on to reach Manage Modules and the legacy scheduler, which have no
     # O3 equivalent yet. LEGACY_ADMIN_UI is true|false and defaults to false in the

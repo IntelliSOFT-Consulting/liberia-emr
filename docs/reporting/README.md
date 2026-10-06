@@ -33,6 +33,12 @@ group, so the parallel branches never edit the same file:
 Each file has a `<name>-gaps.md` beside it. It explains every row that is not *Feasible now*:
 what is missing, and which content change or new capture would close it.
 
+**Open MOH decisions.** [`moh-decisions-le-356.md`](moh-decisions-le-356.md) (LE-356) asks the
+MOH to rule on the rows whose workbook definitions contradict their names (NUT-005, NUT-007,
+NUT-009, MAL-003), on facility-attendee proxies for two survey indicators (NCD-008, NCD-010),
+and on the proposed `emr_priority` of every row. Until the MOH answers, the matrix and the
+reports keep the readings that the brief describes as implemented today.
+
 **The schema is fixed.** Every file has exactly this header, in this order:
 
 ```

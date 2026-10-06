@@ -19,7 +19,7 @@ facility or on the central server, or against a log of production size (section 
 | What is recorded | global properties in `content-liberia-national` `gp-audit.xml`: every entity type except `LoginCredential` and the OCL importer's bookkeeping; a deleted item's last state is kept |
 | The viewer | **Audit log** in the app menu, `/openmrs/spa/audit-log` (`packages/esm-liberia-audit-log-app`) |
 | Its API | `/ws/rest/v1/liberiaemr/auditlog` ([contract](../../modules/liberiaemr/README.md#audit-log-viewer)) |
-| Who may read it | the **ICT Auditor** role (`content-liberia-national` `roles-national.csv`): `View Audit Log` shows the menu entry, `Get Audit Logs` is what the server checks, `Get People` lets O3 sign the officer in. No clinical privileges |
+| Who may read it | the **ICT Auditor** role (`content-liberia-national` `roles-national.csv`): `View Audit Log` shows the menu entry, `Get Audit Logs` is what the server checks. No clinical privileges and no person reads; O3 signs the officer in without them |
 
 **Each server has its own log.** A facility's log is not synced to central
 (`auditlog_audit_log` is not in `eip.watchedTables`), and central's log covers only what was
@@ -51,8 +51,9 @@ when the investigation closes.
 2. Do not add the role to a clinical account, and do not give an auditor a clinical role to
    "see more": reading the audit log and reading patient records are separate permissions.
 3. The officer logs out and in again. **Audit log** appears in the app menu. The home page
-   may show "Error loading queue entries … 403": the role cannot read the patient queue, by
-   design. Close it.
+   shows no dashboard ("The dashboard you are looking for does not exist"): the role reads no
+   patient queue, by design, so the queue dashboard is hidden from it (LE-395). Open the app
+   menu instead. An error notification on the home page is a fault; report it.
 
 Someone who opens `/openmrs/spa/audit-log` without the role sees "You cannot read the audit
 log", and the API answers `403`.

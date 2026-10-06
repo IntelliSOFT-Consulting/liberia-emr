@@ -1,0 +1,11 @@
+# Deliberate changes to content a release already shipped, which released-uuids.sh lets through
+# (LE-399, IMPLEMENTATION.md section 9).
+#
+# One entry per line: a var key (var.concept.x.uuid), a key=uuid pair, or a bare uuid. Everything
+# after " #" is the reason, and every entry must have one. An entry for a variable also covers
+# the CSV rows defined through it.
+#
+# Adding an entry needs a SECOND REVIEWER. A database that loaded the released value keeps it, so
+# the reason must say how every such database is repaired (docs/runbooks/sync-operations.md
+# section 17) and who does it. Prefer not to need an entry: restore the released value, retire a
+# row with Void/Retire instead of deleting it, and add new metadata under a new key.

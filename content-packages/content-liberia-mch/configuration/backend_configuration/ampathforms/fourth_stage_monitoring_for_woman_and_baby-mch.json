@@ -159,13 +159,14 @@
                 "rendering": "number",
                 "min": 0,
                 "max": 250,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
-                  "message": "Value must be between 0 and 250"
+                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
                 }
               ]
             },
@@ -177,14 +178,15 @@
                 "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 200,
-                "step": 1
+                "max": 150,
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
-                  "message": "Value must be between 0 and 200"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150)",
+                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
                 }
               ]
             }
@@ -203,13 +205,14 @@
                 "rendering": "number",
                 "min": 0,
                 "max": 230,
-                "step": 1
+                "step": 1,
+                "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
-                  "message": "Value must be between 0 and 230"
+                  "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
                 }
               ]
             },

@@ -1,0 +1,48 @@
+Only un-assign beds when an ended visit actually has an active bed assignment, so ending a
+visit of a patient who has no bed needs no bed write privilege.
+
+openmrs-module-bedmanagement (7.2.0 and master) runs VisitWithBedPatientAssignmentSaveHandler
+on every save of a visit that has a stop time, and it calls
+BedManagementService.unAssignBedsInEndedVisit() unconditionally
+(VisitWithBedPatientAssignmentSaveHandler.java:47-49). That method is annotated
+@Authorized({"Assign Beds", "Edit Admission Locations"}, requireAll = true)
+(BedManagementService.java:121), and the authorization advice checks it before the method
+looks for an assignment. So every user who may end visits but not manage beds gets
+"403 Assign Beds" when ending ANY visit, bed or no bed. In LiberiaEMR that is every login role
+but the administrator: the queue roles end visits, and none of them should manage beds.
+
+The fix asks getBedPatientAssignmentByVisit(uuid, false) first and calls
+unAssignBedsInEndedVisit() only when it returns an assignment. That read needs "Get Beds" and
+"Get Admission Locations", which every visit save already needs: the module's
+VisitWithBedPatientAssignmentValidator calls the same method on every visit save. Ending a
+visit that DOES hold a bed still requires both write privileges, unchanged.
+
+Applied by distribution/backend/Dockerfile (bedmanagement stage), against
+source.bedmanagement.commit in distribution/distro.properties (the 7.2.0 tag). Tracked in
+packages/modify-pr/.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md.
+
+diff --git a/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java b/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
+index 61f182f..a5ceb00 100644
+--- a/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
++++ b/api/src/main/java/org/openmrs/module/bedmanagement/aop/VisitWithBedPatientAssignmentSaveHandler.java
+@@ -42,12 +42,14 @@ public class VisitWithBedPatientAssignmentSaveHandler implements SaveHandler<Vis
+ 	
+ 	@Override
+ 	public void handle(Visit visit, User user, Date date, String s) {
+-		if (visit.getVisitId() != null) {
+-			
+-			if (visit.getStopDatetime() != null) {
+-				log.debug("Unassigning bed from patient (if any) due to stopped visit on " + visit.getStopDatetime());
+-				bedManagementService.unAssignBedsInEndedVisit(visit);
+-			}
++		// unAssignBedsInEndedVisit requires "Assign Beds" and "Edit Admission
++		// Locations", and this handler runs on every save of an ended visit. Only
++		// call it when there is a bed to free, so ending a visit of a patient who
++		// has no bed needs no bed write privilege.
++		if (visit.getVisitId() != null && visit.getStopDatetime() != null
++		        && !bedManagementService.getBedPatientAssignmentByVisit(visit.getUuid(), false).isEmpty()) {
++			log.debug("Unassigning bed from patient due to stopped visit on " + visit.getStopDatetime());
++			bedManagementService.unAssignBedsInEndedVisit(visit);
+ 		}
+ 	}
+ }

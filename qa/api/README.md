@@ -147,3 +147,14 @@ The MFL sync suite is written against the contract. It fails until the backend (
 LE-322) is merged. Nothing else is written yet. The `API tests` placeholder at the end of the
 `initializer-clean-db` job in `ci.yml`, and the one in `release.yml`'s `full-stack-tests`, are
 still `echo` steps.
+
+## Remote history (`remote-history/`)
+
+The contract test for central's remote history endpoint (LE-382, [ADR 0013](../../docs/adr/0013-remote-patient-import.md)).
+`verify-remote-history.py` reads one patient's history from a central instance and checks that the
+response holds only the ADR 0013 resource types (`RemoteHistoryAssembler.RESOURCE_TYPES`), that
+observations appear only as the tagged ANC contact summary, that the requesting facility's own
+records are left out, and that an unknown patient is an empty list, not a 404. It only reads, and
+refuses any host but localhost unless you pass `--allow-host`. Certificates are always verified; pass
+a self-signed test gateway's certificate with `--cacert`. Not yet wired into CI: it needs a
+central stack with a patient seeded at two facilities.

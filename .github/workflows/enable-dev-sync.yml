@@ -184,18 +184,21 @@ jobs:
           OPENMRS_ADMIN_PASSWORD="$FAC_ADMIN" SERVICE_PASSWORD="$pass" \
             scripts/deploy/dev-sync-user.sh "https://$FAC_HOST" "$user" "Sync Sender"
 
-      # Not a stopper: with the port closed the sender still captures everything and queues it at
-      # the facility. Once the port opens it connects by itself, sends what is new at once and
-      # the queued backlog on its next retry pass (every 30 minutes). No second run is needed.
-      - name: Facility reaches central's broker
+      # Sync travels over HTTPS on 443, inside https://<central>/sync/broker/ (LE-372, ADR 0014),
+      # so this needs only what the EMR already needs. Not a stopper: if the route does not
+      # answer yet, the sender still captures everything and queues it at the facility, and
+      # sends it by itself once the route answers. No second run is needed.
+      - name: Facility reaches central's sync route
         id: broker
         run: |
-          if ssh "$FAC_USER@$FAC_HOST" "timeout 8 bash -c '</dev/tcp/$CEN_HOST/61617'"; then
-            echo "the facility reaches $CEN_HOST:61617"
+          # The tunnel server answers a plain GET with a client error; 000, 404 or 5xx means the
+          # route or the tunnel behind it is not there.
+          code="$(ssh "$FAC_USER@$FAC_HOST" "curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://$CEN_HOST/sync/broker/events" || true)"
+          if [[ "$code" =~ ^4 && "$code" != 404 ]]; then
+            echo "the facility reaches https://$CEN_HOST/sync/broker/ (HTTP $code)"
             echo "reachable=true" >> "$GITHUB_OUTPUT"
           else
-            ip="$(ssh "$FAC_USER@$FAC_HOST" "curl -4 -s --max-time 5 ifconfig.me" || true)"
-            echo "::warning::The facility cannot reach $CEN_HOST:61617 yet: allow TCP 61617 to central from ${ip:-the facility server} in the hosting provider's firewall. Setup carries on; the facility queues its records and sync starts by itself once the port opens."
+            echo "::warning::The facility cannot reach https://$CEN_HOST/sync/broker/ yet (HTTP ${code:-none}): check that central runs the sync-tunnel service and a gateway with the sync route. Setup carries on; the facility queues its records and sync starts by itself once the route answers."
             echo "reachable=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -211,7 +214,7 @@ jobs:
       - name: Proof waits for the firewall
         if: steps.broker.outputs.reachable != 'true'
         run: |
-          echo "::notice::Sync is set up on both servers but cannot connect until TCP 61617 is open to central. After opening it, run Dev sync check, or register a patient at the facility and look for it at central within 30 minutes."
+          echo "::notice::Sync is set up on both servers but cannot connect until https://$CEN_HOST/sync/broker/ answers. Once it does, run Dev sync check, or register a patient at the facility and look for it at central within 30 minutes."
 
       - name: What runs now
         if: always()

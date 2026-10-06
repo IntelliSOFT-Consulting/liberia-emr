@@ -684,6 +684,41 @@ sys.exit(1 if problems else 0)
 PY
 ok "location tags resolve and are declared once"
 
+# Initializer loads a CSV row by row, keyed by its Uuid column, and re-applies every row on each
+# start: a second row with the same UUID silently overwrites the first, so a merge that keeps
+# both sides of a conflict (an old and a new role row, say) reverts the newer one in production.
+# content-demo is lifted unchanged from upstream (lift-demo-content.sh --check), so it is skipped.
+section "duplicate UUID rows"
+if ! python3 - "$PKG_DIR" <<'PY'
+import csv, glob, os, sys
+root = sys.argv[1]
+problems = []
+for path in sorted(glob.glob(os.path.join(root, "*", "configuration", "**", "*.csv"), recursive=True)):
+    rel = os.path.relpath(path, root)
+    if "/target/" in path or rel.startswith("content-demo" + os.sep):
+        continue
+    with open(path, encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    if not rows or not rows[0] or rows[0][0].strip().lower() != "uuid":
+        continue
+    first = {}
+    for number, row in enumerate(rows[1:], start=2):
+        key = row[0].strip() if row else ""
+        if not key:
+            continue
+        if key in first:
+            problems.append(f"{rel}: {key} on line {number} repeats line {first[key]}")
+        else:
+            first[key] = number
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+then
+  err "an Initializer CSV has two rows with the same UUID; the later one silently wins on every start"
+fi
+ok "no Initializer CSV repeats a UUID"
+
 section "CSV row column counts"
 # Initializer's CsvLine.get(header) accesses line[columnIndex] directly.
 # If a row has fewer columns than the non-metadata headers, it throws ArrayIndexOutOfBoundsException.
@@ -1085,6 +1120,18 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
 ok "10-minute human-idle config and Tomcat session timeout"
+
+# ADR 0013 / LE-384: the facility's cache of other facilities' history must never reach central.
+# eip.watchedTables is an allow-list of what dbsync sends, so a remote history table in it is a
+# leak of another facility's records back to central under their UUIDs.
+section "remote history tables stay out of sync"
+for f in "$ROOT"/distribution/sync/*.template "$ROOT"/distribution/sync/*.properties; do
+  [[ -f "$f" ]] || continue
+  if grep -iE '^[[:space:]]*eip\.watchedTables[[:space:]]*=' "$f" | grep -iqE 'liberiaemr_remote_history'; then
+    err "${f#$ROOT/}: eip.watchedTables names a liberiaemr_remote_history table; the remote history cache must never sync"
+  fi
+done
+ok "no liberiaemr_remote_history table in eip.watchedTables"
 
 echo
 if [[ $fail -ne 0 ]]; then

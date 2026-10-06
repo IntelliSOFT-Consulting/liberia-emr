@@ -1,9 +1,13 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, useSession, userHasAccess } from '@openmrs/esm-framework';
 import SyncStatus from './sync-status.component';
+import SyncStatusAppMenuItem from './sync-status-app-menu-item.component';
+import routes from '../routes.json';
 
 const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockUseSession = useSession as jest.Mock;
+const mockUserHasAccess = userHasAccess as jest.Mock;
 
 // The page is asserted through the words an operator reads, so t returns its default text.
 jest.mock('react-i18next', () => ({
@@ -11,10 +15,13 @@ jest.mock('react-i18next', () => ({
 }));
 
 // The status and the identity counts are separate requests; the identity one answers only when set.
+// A null key is a request not sent; every key asked for is kept, so a test can say what was not.
 jest.mock('swr', () => ({
   __esModule: true,
-  default: (key: string) =>
-    key.endsWith('/identity/status')
+  default: (key: string | null) =>
+    ((global as any).__swrKeys.push(key), key === null)
+      ? { data: undefined, error: undefined, isLoading: false }
+      : key.endsWith('/identity/status')
       ? { data: (global as any).__swrIdentity, error: undefined, isLoading: false }
       : key.endsWith('/mfl/status')
       ? { data: (global as any).__swrMfl, error: undefined, isLoading: false }
@@ -36,6 +43,17 @@ function givenRefused() {
   (global as any).__swrData = undefined;
   (global as any).__swrError = Object.assign(new Error('Forbidden'), { response: { status: 403 } });
 }
+
+/** Who reads the page: by default a Sync Administrator, holding every privilege it checks. */
+function givenPrivileges(privileges: Array<string> = ['View Sync Status', 'View MFL Sync']) {
+  mockUseSession.mockReturnValue({ authenticated: true, user: { uuid: 'u', privileges: [], roles: [] } });
+  mockUserHasAccess.mockImplementation((privilege: string) => privileges.includes(privilege));
+}
+
+beforeEach(() => {
+  (global as any).__swrKeys = [];
+  givenPrivileges();
+});
 
 describe('sync status page', () => {
   beforeEach(() => {
@@ -222,5 +240,44 @@ describe('sync status page', () => {
     (global as any).__swrMfl = { data: { available: true } };
     render(<SyncStatus />);
     expect(screen.getByText(/Master Facility List sync/)).toBeInTheDocument();
+  });
+
+  it('does not ask for the MFL status for a reader without View MFL Sync', () => {
+    // The Sync Conflict Reviewer: View Sync Status, not View MFL Sync.
+    givenPrivileges(['View Sync Status', 'Resolve Sync Conflicts']);
+    givenStatus({ enabled: true, available: true, facilities: [], central: null, alerts: [] });
+    (global as any).__swrMfl = { data: { available: true } };
+
+    render(<SyncStatus />);
+
+    expect(screen.queryByText(/Master Facility List sync/)).not.toBeInTheDocument();
+    expect((global as any).__swrKeys.filter((key: string | null) => key?.endsWith('/mfl/status'))).toEqual([]);
+  });
+});
+
+describe('sync status menu entry', () => {
+  it('is gated by View Sync Status in routes.json, the privilege its endpoint requires', () => {
+    const extension = routes.extensions.find((candidate) => candidate.name === 'sync-status-app-menu-item');
+    expect(extension.privileges).toEqual(['View Sync Status']);
+  });
+
+  it('links to the page where the national view is on', () => {
+    givenStatus({ enabled: true });
+    render(<SyncStatusAppMenuItem />);
+    expect(screen.getByRole('link', { name: 'Sync status' })).toHaveAttribute('href', '/openmrs/spa/sync-status');
+  });
+
+  it('is absent at a facility', () => {
+    givenStatus({ enabled: false });
+    const { container } = render(<SyncStatusAppMenuItem />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('sends no request for a user without View Sync Status, who would only get a 403', () => {
+    givenPrivileges([]);
+    givenStatus({ enabled: true });
+    const { container } = render(<SyncStatusAppMenuItem />);
+    expect(container).toBeEmptyDOMElement();
+    expect((global as any).__swrKeys).toEqual([null]);
   });
 });

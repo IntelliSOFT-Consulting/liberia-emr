@@ -374,4 +374,95 @@
 		</createIndex>
 	</changeSet>
 
+	<!--
+		Remote patient history at a facility (LE-384, ADR 0013): a read-only cache of the scoped
+		bundle central serves, and an audit row for every access. Neither table is a dbsync entity
+		(eip.watchedTables is an allow-list), and validate-content.sh fails the build if one is ever
+		added there, so nothing in them can reach central.
+	-->
+	<changeSet id="liberiaemr-2026-10-02-create-remote-history" author="liberiaemr">
+		<preConditions onFail="MARK_RAN">
+			<not><tableExists tableName="liberiaemr_remote_history"/></not>
+		</preConditions>
+		<comment>Cached remote history: one FHIR bundle per patient and source facility</comment>
+		<createTable tableName="liberiaemr_remote_history">
+			<column name="history_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="patient_uuid" type="char(38)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="source_facility_uuid" type="varchar(38)" defaultValue="">
+				<constraints nullable="false"/>
+			</column>
+			<column name="source_facility_name" type="varchar(255)"/>
+			<column name="bundle_json" type="clob">
+				<constraints nullable="false"/>
+			</column>
+			<column name="content_hash" type="char(64)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="fetched_at" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+		<addUniqueConstraint constraintName="liberiaemr_rh_patient_source_uq" tableName="liberiaemr_remote_history"
+			columnNames="patient_uuid, source_facility_uuid"/>
+	</changeSet>
+
+	<changeSet id="liberiaemr-2026-10-02-create-remote-history-fetch" author="liberiaemr">
+		<preConditions onFail="MARK_RAN">
+			<not><tableExists tableName="liberiaemr_remote_history_fetch"/></not>
+		</preConditions>
+		<comment>Audit of every remote history access: who, which patient, why, and the outcome</comment>
+		<createTable tableName="liberiaemr_remote_history_fetch">
+			<column name="fetch_id" type="int" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="user_id" type="int"/>
+			<column name="patient_uuid" type="char(38)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="reason" type="varchar(255)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="outcome" type="varchar(20)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="resource_count" type="int" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="date_fetched" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+		<addForeignKeyConstraint constraintName="liberiaemr_rhf_user_fk" baseTableName="liberiaemr_remote_history_fetch"
+			baseColumnNames="user_id" referencedTableName="users" referencedColumnNames="user_id"/>
+		<createIndex indexName="liberiaemr_rhf_patient_idx" tableName="liberiaemr_remote_history_fetch">
+			<column name="patient_uuid"/>
+		</createIndex>
+	</changeSet>
+
+	<!--
+		The LIS (OpenELIS) integration is out of scope (LE-380), so labonfhir's scheduled tasks stay
+		off. runAlways, because labonfhir's own liquibase inserts them with start_on_startup=1 and
+		an admin may switch them on. It has to happen here, not only in LiberiaEMRActivator: the
+		scheduler starts tasks on a background thread after the context refresh, at the same time
+		as module activators run, so a task the activator shuts down can still be mid-run and save
+		its started/start_on_startup flags back. Module liquibase runs before that refresh, so the
+		scheduler never sees these tasks as start-on-startup. config.xml is aware of labonfhir, so
+		its rows exist by now. Remove this when the LIS integration is taken on.
+	-->
+	<changeSet id="liberiaemr-2026-10-03-labonfhir-tasks-off" author="liberiaemr" runAlways="true">
+		<preConditions onFail="CONTINUE">
+			<tableExists tableName="scheduler_task_config"/>
+		</preConditions>
+		<comment>Keep labonfhir's scheduled tasks from starting: the LIS integration is out of scope</comment>
+		<update tableName="scheduler_task_config">
+			<column name="started" valueBoolean="false"/>
+			<column name="start_on_startup" valueBoolean="false"/>
+			<where>schedulable_class LIKE 'org.openmrs.module.labonfhir.%'</where>
+		</update>
+	</changeSet>
+
 </databaseChangeLog>

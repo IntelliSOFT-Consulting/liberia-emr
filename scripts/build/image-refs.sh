@@ -33,7 +33,7 @@ done
 
 shared() {
   printf '%s\n' liberia-emr-gateway liberia-emr-sync liberia-emr-sync-receiver \
-    liberia-emr-broker liberia-emr-cert-expiry liberia-emr-sync-capture
+    liberia-emr-broker liberia-emr-cert-expiry liberia-emr-sync-capture liberia-emr-sync-tunnel
 }
 
 site_images() {

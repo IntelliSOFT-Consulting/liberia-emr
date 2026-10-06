@@ -48,7 +48,7 @@ Verified end to end on 2026-07-30 against `1.0.0` built from this repository: 67
 
 Allow 15–25 minutes on a cold cache. In order, this validates the content, builds the
 content packages (resolving `${var.*}` into `target/configuration`), fetches the demo OCL
-concept exports if they are missing, resolves the 32 OMODs pinned in `distro.properties`,
+concept exports if they are missing, resolves the 31 OMODs pinned in `distro.properties`,
 generates the import map, collects the frontend config in layer order, checks that order
 against `SPA_CONFIG_URLS` in the demo compose file, and builds three images:
 
@@ -191,7 +191,15 @@ Expected in the backend log; none of them stop the stack or the training path.
   parts of the MCH programme content (partograph numerics, workflow states) do not load. The
   demo package's own OCL exports do load, which is why there are still 4,176 concepts. To
   pull one into an existing checkout by hand:
-  `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`.
+  `OCL_API_TOKEN=... scripts/build/fetch-ciel.sh`. The ANC forms' obstetric history
+  (gravida, parity, births, gestational age) is among what does not load, so ANC Initial
+  Visit saves answer 400 on a tokenless build (LE-398).
+- **With CIEL loaded, some RefApp demo rows are rejected as duplicate names.** The demo
+  package's concept CSVs give local UUIDs to drugs and findings the MOH collection carries
+  as CIEL concepts (mostly `drugs_concepts-core_demo.csv`, so about half the demo drug list).
+  Initializer loads `ocl/` first, so the MOH concept wins and the demo duplicate is the row
+  rejected; `build-distribution.sh` prints a per-file count as a warning. Liberia content is
+  unaffected.
 - **`Bad concept class name 'State'`** in the MCH package — a content bug, not a build one.
 - **A healthy stack does not mean the metadata loaded.** Initializer records a rejected row
   and carries on, and its module failing to start does not stop the web application, so

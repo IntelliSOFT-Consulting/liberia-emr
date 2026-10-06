@@ -220,10 +220,16 @@ alternatives give the same number wherever possible.
    counted once. A 200 000 IU order does not count.
 3. **NUT-009 (LE-356).** Implemented as named, per the CSV: moderate wasting, with WHZ in
    [−3, −2).
-   - WHZ is computed from same-encounter weight and height, with the WHO 2006 weight-for-height
-     LMS tables (24–59 months).
+   - WHZ is computed from same-encounter weight and height, with the WHO 2006 LMS tables:
+     weight-for-length under 731 days of age, weight-for-height from then on. The WHZ fixture
+     children (`C-WHZ*`, `B-WHZ*`) are all 24–59 months old, so they exercise only the
+     weight-for-height table.
    - The triage W/Z score is weight-for-age and is ignored.
-   - Each child has one measurement, so "latest" and "any" give the same count.
+   - The report counts a child if **any** measurement in the period is in the band. Each
+     fixture child has one measurement, so "latest" and "any" give the same count.
+
+   The MOH's options for all three rows, and NUT-007's, are in
+   [`docs/reporting/moh-decisions-le-356.md`](../../docs/reporting/moh-decisions-le-356.md).
    - NUT-007 is *Needs new data capture*, so it is not in this set.
 4. **Numerator-only rows.** These are RMNCAH-017, 019, 020 and 028, NUT-005, MAL-004, NCD-002
    and NCD-005. NUT-009 is a count. They have no denominator or value; the population is not
