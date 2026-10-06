@@ -138,6 +138,11 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       UUIDs recorded in the CSV: Home, SVD, the FP methods, the IPT doses and Vit-A Blue.
     * No Feasible-now row depends on a coded answer that fails to resolve. Every answer used
       exists either as a local concept or as a CIEL concept in the collection.
+18. **MOH definitions: NUT-005, NUT-007, NUT-009.** The workbook's numerator text contradicts
+    the name in each: two Vitamin A doses at 6–59 months against one Blue dose at 6–11 months;
+    SAM cases against a cure rate; "stunted" against a weight-for-height band. NUT-005 and
+    NUT-009 are built as named; NUT-007 is not built. The ruling is asked in
+    [`../moh-decisions-le-356.md`](../moh-decisions-le-356.md) (LE-356), decisions 1 to 3.
 
 ## 2. Data elements shared with other sheets
 
@@ -164,6 +169,10 @@ One flat table per group below should serve every listed indicator.
 * **Anthropometry table** (weight 5089, height 5090, MUAC 1343, W/Z score `67bae27d-…`, BMI
   1342 from Triage, OPD and the vitals app, plus ETL-derived WHZ/HAZ/WAZ). It serves NUT-008,
   NUT-009, NUT-012 to 014 proxies and **NCD-008** (adult BMI proxy).
+  * As built (`mamba_fact_nutrition_anthropometry`, LE-332), it derives WHZ and BMI only. BMI
+    is computed from same-encounter weight and height; a stored BMI (1342) is not read. HAZ
+    and WAZ are not derived, so a stunting reading of NUT-009 or a NUT-012 proxy would need
+    them added.
 * **Delivery table** (L&D forms: delivery method, baby sex, weight, APGAR, and birth outcome once
   gap 1 lands). It serves RMNCAH-014, 016, 026, 027, NUT-019, and any live-birth denominator.
 * **Deaths table** (`person.dead`, `death_date`, `cause_of_death`, age at death, last visit
