@@ -7,6 +7,7 @@ directory at `/openmrs/data/configuration/branding/`.
 | File | Referenced from |
 | --- | --- |
 | `moh-liberia-seal.png` | `jsonkeyvalues/patientdocuments-national.json`: `report.patientIdSticker.logourl` (patient card) and `report.encounterPrinting.logopath` (printed encounter forms) |
+| | `globalproperties/gp-billing.xml`: `billing.receipt.logoPath` (bill receipt PDF from the billing module) |
 
 The seal is the raster embedded in `distribution/frontend/branding/moh-liberia-logo.svg`,
 extracted unchanged. The SVG itself does not work here: its lettering is white for the blue
