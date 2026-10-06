@@ -195,7 +195,7 @@ table dates from 2.6, TRUNK-6071), dbsync 4.0.0 and openmrs-eip 4.2.0 sources, a
 
 **Who writes it here.** `@openmrs/esm-dispensing-app` 1.11.1 (`distro.properties`), over FHIR
 `MedicationDispense` in fhir2 4.2.0; there is no O2 dispensing module. The app's menu entry
-needs *Get Medication Dispense*, which only the Pharmacist role holds (`roles-common.csv`,
+needs *Get Medication Dispense*, which of the distribution's roles only Pharmacist holds (`roles-common.csv`,
 `config-national.json`). Every site package has a pharmacy location. Whether pharmacists at the
 pilot facilities record dispenses in it, and so whether the table holds anything, is not known
 from the repository: `qa/` writes no dispense.
