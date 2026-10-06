@@ -24,7 +24,8 @@ import org.springframework.stereotype.Component;
 /**
  * The Nutrition sheet: the Feasible-now rows NUT-005, NUT-008 and NUT-009, read as
  * {@code qa/reporting/README.md} fixes them (ambiguities 2 to 4). NUT-005 and NUT-009 follow the
- * indicator names while the MOH decides the sheet's conflicting numerator texts.
+ * indicator names while the MOH decides the sheet's conflicting numerator texts (LE-356,
+ * {@code docs/reporting/moh-decisions-le-356.md}).
  */
 @Component
 public class NutritionReportManager extends LiberiaReportManager {
@@ -45,9 +46,9 @@ public class NutritionReportManager extends LiberiaReportManager {
 	@Override
 	protected List<String> getNotes() {
 		return Arrays.asList(
-		    "NUT-005: numerator only (the population of children aged 6-11 months is not in the EMR); implemented as named (one Vitamin A Blue 100,000 IU dose) pending the MOH's decision on the sheet's numerator text; socio-economic status/wealth quintile and urban/rural not captured",
+		    "NUT-005: numerator only (the population of children aged 6-11 months is not in the EMR); implemented as named: children aged 6-11 completed months given one Vitamin A Blue 100,000 IU dose, on the Immunization form or as a drug order; the sheet's numerator text (two doses in 12 months, ages 6-59 months) is not implemented, pending the MOH's decision (LE-356); socio-economic status/wealth quintile and urban/rural not captured",
 		    "NUT-008: denominator is children aged 6-59 months with a MUAC recorded (the sheet's is a sampled population); socio-economic status/wealth quintile and urban/rural not captured",
-		    "NUT-009: count indicator (moderate wasting, weight-for-height z-score in [-3, -2)), implemented as named pending the MOH's decision on the sheet's numerator text; socio-economic status/wealth quintile and urban/rural not captured");
+		    "NUT-009: count indicator, implemented as named: children aged 6-59 months with a weight-for-height z-score in [-3, -2) (moderate wasting), computed from same-encounter weight and height; the sheet's numerator text (stunted) is not implemented, pending the MOH's decision (LE-356); socio-economic status/wealth quintile and urban/rural not captured");
 	}
 
 	@Override

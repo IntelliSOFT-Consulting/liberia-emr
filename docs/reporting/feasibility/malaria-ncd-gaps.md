@@ -87,7 +87,10 @@ Each gap is written so it can become a content ticket.
   opioids*, *glucose-lowering drugs* and *antibiotics for pneumonia*, so that the ETL does not
   hard-code drug UUIDs.
 - **MOH definition: MAL-003.** The numerator text says "three or more doses" (copied from
-  MAL-002), but the name says "two doses in the third trimester". Get a ruling.
+  MAL-002), but the name says "two doses in the third trimester". Get a ruling. Asked in
+  [`../moh-decisions-le-356.md`](../moh-decisions-le-356.md) (LE-356), decision 4, together
+  with whether to report the facility-attendee proxies for NCD-008 and NCD-010 (decisions 5
+  and 6).
 
 ## 2. Derived data the ETL needs
 
