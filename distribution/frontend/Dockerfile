@@ -5,6 +5,20 @@
 # See IMPLEMENTATION.md §8.
 
 # ---------------------------------------------------------------------------
+# Stage 0 — this commit's chart modules
+# ---------------------------------------------------------------------------
+# distro.properties still names the npm pins assemble downloads below. Those pins
+# do not contain this commit's privilege-aware partograph or chart extension.
+# Build that source here and overlay it before the SPA is bundled.
+FROM node:22-bookworm-slim AS local-chart-esms
+
+WORKDIR /src
+COPY local-esm/ /src/
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate \
+  && cd /src/esm-liberia-epartograph-app && yarn install --frozen-lockfile && yarn build \
+  && cd /src/esm-liberia-patient-chart-extension && yarn install --frozen-lockfile && yarn build
+
+# ---------------------------------------------------------------------------
 # Stage 1 — assemble the SPA from the pinned import map
 # ---------------------------------------------------------------------------
 FROM node:20-alpine AS assemble
@@ -24,6 +38,13 @@ RUN [ -n "$SPA_CORE" ] || { echo "SPA_CORE build-arg is required (spa.core in di
 COPY spa-assemble-config.json /app/spa-assemble-config.json
 
 RUN openmrs assemble --manifest --mode config --config /app/spa-assemble-config.json --target /app/spa
+
+COPY --from=local-chart-esms /src/esm-liberia-epartograph-app/dist/ /tmp/local-dist/epartograph/dist/
+COPY --from=local-chart-esms /src/esm-liberia-epartograph-app/src/routes.json /tmp/local-dist/epartograph/routes.json
+COPY --from=local-chart-esms /src/esm-liberia-patient-chart-extension/dist/ /tmp/local-dist/chart/dist/
+COPY --from=local-chart-esms /src/esm-liberia-patient-chart-extension/src/routes.json /tmp/local-dist/chart/routes.json
+COPY overlay-local-chart-esms.cjs /app/overlay-local-chart-esms.cjs
+RUN node /app/overlay-local-chart-esms.cjs
 
 # assemble downloads the frontend modules and writes the import map. It does NOT produce an
 # app shell — no index.html, no bootstrap script — so an image built from assemble alone
@@ -63,6 +84,12 @@ RUN node /app/patch-patient-registration.cjs
 # validation errors and displays them.
 COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
 RUN node /app/patch-patient-orders.cjs
+
+# Dispensing 1.11.1 lists prescriptions through a generic encounter query and gates the
+# Dispense button on a task privilege outside the LE-39 matrix. The patch reads
+# MedicationRequest and shows Dispense for Manage Pharmacy.
+COPY patch-dispensing-pharmacy.cjs /app/patch-dispensing-pharmacy.cjs
+RUN node /app/patch-dispensing-pharmacy.cjs
 
 # Service queues app 11.1.0: the QueueFields component sets `queueLocation` default as
 # `sessionLocation?.uuid ?? ''` in react-hook-form's `defaultValues`, but because

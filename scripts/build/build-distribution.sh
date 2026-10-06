@@ -318,6 +318,18 @@ if [[ "$SITE" == "central" ]]; then
 fi
 
 if [[ "$FRONTEND" == "true" ]]; then
+  echo "== staging local chart frontend modules =="
+  # The npm pins are what assemble downloads. These two packages are built from
+  # this commit and overlaid before the SPA bundle, so the image matches the source.
+  local_esm="$ROOT/distribution/frontend/local-esm"
+  rm -rf "$local_esm"
+  mkdir -p "$local_esm"
+  for pkg in esm-liberia-epartograph-app esm-liberia-patient-chart-extension; do
+    mkdir -p "$local_esm/$pkg"
+    tar -C "$ROOT/packages/$pkg" \
+      --exclude node_modules --exclude dist --exclude coverage --exclude .turbo \
+      -cf - . | tar -C "$local_esm/$pkg" -xf -
+  done
   echo "== frontend =="
   spa_core="$(grep -E '^spa\.core=' "$ROOT/distribution/distro.properties" | cut -d= -f2)"
   [[ -n "$spa_core" ]] || { echo "spa.core is not pinned in distro.properties" >&2; exit 1; }

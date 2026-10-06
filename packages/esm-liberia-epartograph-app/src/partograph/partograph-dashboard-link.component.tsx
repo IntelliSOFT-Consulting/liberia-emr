@@ -12,14 +12,23 @@
 import React, { useMemo } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { DashboardExtension } from '@openmrs/esm-styleguide';
-import { getGlobalStore, usePatient } from '@openmrs/esm-framework';
+import { getGlobalStore, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
 import type { PatientChartStore } from '@openmrs/esm-patient-common-lib';
+import { moduleEntryVisible } from './module-entry';
 
 interface PartographDashboardLinkProps {
   basePath: string;
 }
 
 const PartographDashboardLink: React.FC<PartographDashboardLinkProps> = ({ basePath }) => {
+  const session = useSession();
+  const canSee =
+    !session?.user ||
+    moduleEntryVisible(
+      (name) => userHasAccess(name, session.user),
+      'Read Labor and Delivery',
+      'Write Labor and Delivery',
+    );
   const patientUuid = useMemo(() => {
     const match = basePath?.match(/patient\/([0-9a-fA-F-]+)/);
     return match ? match[1] : '';
@@ -30,6 +39,10 @@ const PartographDashboardLink: React.FC<PartographDashboardLinkProps> = ({ baseP
 
   const currentPatient = patient ?? chartStorePatient;
   const gender = currentPatient?.gender?.toLowerCase();
+
+  if (session?.user && !canSee) {
+    return null;
+  }
 
   // Hide the Partograph dashboard link if the patient is not female
   if (!currentPatient || (gender !== 'female' && gender !== 'f')) {

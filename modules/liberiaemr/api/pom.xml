@@ -40,7 +40,7 @@
 	<build>
 		<!--
 			Everything except the UUID file is copied verbatim. The UUID file is resolved from the
-			national layer's variables.properties (ADR 0010 decision 7), the same way
+			content layers' variables.properties (ADR 0010 decision 7), the same way
 			modules/liberiaemrreports and content-packages/pom.xml resolve ${var.*}: delimiter ${*} only.
 		-->
 		<resources>
@@ -60,7 +60,10 @@
 			</resource>
 		</resources>
 		<filters>
+			<filter>${liberiaemr.content.dir}/content-common/configuration/variables.properties</filter>
 			<filter>${liberiaemr.content.dir}/content-liberia-national/configuration/variables.properties</filter>
+			<filter>${liberiaemr.content.dir}/content-liberia-mch/configuration/variables.properties</filter>
+			<filter>${liberiaemr.content.dir}/content-liberia-opd-ipd/configuration/variables.properties</filter>
 		</filters>
 		<!--
 			The MFL tests read the real fixture from integration/dhis2/mfl/fixtures (LE-318) rather
@@ -69,6 +72,15 @@
 			too, so that build is unaffected.
 		-->
 		<testResources>
+			<!-- Exercise actual configured grants, including role inheritance, rather than a copied model. -->
+			<testResource>
+				<directory>${liberiaemr.content.dir}/content-common/configuration/backend_configuration</directory>
+				<includes>
+					<include>roles/roles-common.csv</include>
+					<include>privileges/privileges-le39-common.csv</include>
+				</includes>
+				<targetPath>le39-content</targetPath>
+			</testResource>
 			<testResource>
 				<directory>src/test/resources</directory>
 			</testResource>
@@ -108,7 +120,7 @@
 						</goals>
 						<configuration>
 							<target>
-								<fail message="unresolved variable in target/classes/liberiaemr-uuids.properties; declare it in content-liberia-national/configuration/variables.properties">
+								<fail message="unresolved variable in target/classes/liberiaemr-uuids.properties; declare it in the filtered content layers">
 									<condition>
 										<resourcecontains resource="${project.build.outputDirectory}/liberiaemr-uuids.properties" substring="{var."/>
 									</condition>

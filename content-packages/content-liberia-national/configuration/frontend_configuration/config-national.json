@@ -18,6 +18,15 @@
       "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
       "defaultPriorityConceptUuid": "${var.concept.national.queue-routine.uuid}",
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
+    },
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Get Queues') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-appointments-app": {
+    "_comment_display": "Appointments is outside the LE-39 matrix. AppointmentsService.getAllAppointments requires View Appointments (appointments-api 2.1.0). The home link is the extension clinical-appointments-dashboard-link; module display conditions apply to that extension. The framework privilege check still shows the extension to System Developer. Direct URL access is unchanged.",
+    "Display conditions": {
+      "privileges": ["View Appointments"]
     }
   },
   "@openmrs/esm-app-shell": {
@@ -203,11 +212,93 @@
     ]
   },
   "@openmrs/esm-billing-app": {
-    "defaultCurrency": "LRD"
+    "defaultCurrency": "LRD",
+    "_comment_display": "Billing=W holds View Cashier Bills. Other matrix roles do not see the billing shell. Clinician has no Get People and keeps the previous shell. The server still enforces cashier privileges.",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'View Cashier Bills') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-laboratory-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-dispensing-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-orders-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory' || p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-medications-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-tests-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-immunizations-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Immunization' || p.display == 'Write Immunization') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@liberiaemr/esm-liberia-epartograph-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Labor and Delivery' || p.display == 'Write Labor and Delivery') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-primary-navigation-app": {
+    "extensionSlots": {
+      "top-nav-actions-slot": {
+        "configure": {
+          "add-patient-action": {
+            "Display conditions": {
+              "privileges": ["Add Patients"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "@openmrs/esm-patient-search-app": {
+    "extensionSlots": {
+      "patient-search-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      }
+    }
   },
   "@openmrs/esm-patient-chart-app": {
     "showServiceQueueFields": true,
     "extensionSlots": {
+      "patient-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      },
+      "patient-chart-immunizations-dashboard-slot": {
+        "add": [],
+        "remove": [
+          "immunization-detailed-history-card",
+          "immunization-details-widget",
+          "immunization-overview-widget"
+        ]
+      },
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
@@ -246,6 +337,11 @@
       "${var.encountertype.tb-screening.uuid}"
     ],
     "formUuid": "${var.form.tb-screening.uuid}",
+    "readPrivilege": "Read TB Screening",
+    "writePrivilege": "Write TB Screening",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read TB Screening' || p.display == 'Write TB Screening') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
     "data": [
       {
         "concept": "${var.concept.national.coughing-2-weeks-or-more.uuid}",
@@ -270,6 +366,42 @@
       {
         "concept": "${var.concept.national.total-score.uuid}",
         "label": "Total Score"
+      }
+    ]
+  },
+  "liberia-immunization-history": {
+    "displayMode": "table",
+    "title": "Immunization",
+    "encounterTypes": [
+      "${var.encountertype.consultation.uuid}",
+      "${var.encountertypes.immunizations.uuid}"
+    ],
+    "formUuids": [
+      "${var.form.immunization.uuid}",
+      "${var.form.aefi.uuid}"
+    ],
+    "dedicatedTypeUuids": [
+      "${var.encountertypes.immunizations.uuid}"
+    ],
+    "formUuid": "${var.form.immunization.uuid}",
+    "readPrivilege": "Read Immunization",
+    "writePrivilege": "Write Immunization",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Immunization' || p.display == 'Write Immunization') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
+    "summarizeObs": true,
+    "data": [
+      {
+        "concept": "${var.concept.national.vaccine-name.uuid}",
+        "label": "Vaccine"
+      },
+      {
+        "concept": "${var.concept.national.route.uuid}",
+        "label": "Route"
+      },
+      {
+        "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
+        "label": "Return date"
       }
     ]
   }

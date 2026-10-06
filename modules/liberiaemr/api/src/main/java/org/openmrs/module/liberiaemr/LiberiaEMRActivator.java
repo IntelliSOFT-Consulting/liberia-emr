@@ -52,6 +52,7 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	 */
 	public void started() {
 		log.info("Started LiberiaEMR");
+		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.install();
 		try {
 			org.openmrs.event.Event.subscribe(
 			    org.openmrs.Obs.class,
