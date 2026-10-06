@@ -325,6 +325,8 @@ public class RemoteSearchService {
 		location.setUuid(locationUuid);
 		location.setName(name == null || name.trim().isEmpty() ? locationUuid : name.trim());
 		location.setDescription("Central location of an imported patient's identifier");
+		// saveLocation runs RetireSaveHandler, which sets retiredBy (the authenticated user) and
+		// dateRetired (now) when they are null, so no separate retireLocation call is needed.
 		location.setRetired(true);
 		location.setRetireReason("Imported from central for a patient identifier; not a location of this facility");
 		Context.addProxyPrivilege(PrivilegeConstants.MANAGE_LOCATIONS);
