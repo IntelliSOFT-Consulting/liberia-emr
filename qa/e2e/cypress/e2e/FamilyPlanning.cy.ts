@@ -29,4 +29,22 @@ describe('Family Planning form', () => {
     });
 
     it('validates the initial Family Planning form contract');
+
+    it('FP-02: blocks saving for each independently missing required answer', () => {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
+
+        familyPlanningForm.selectCounsellingDone('Yes');
+        familyPlanningForm.selectPurposeForCommodities();
+        familyPlanningForm.verifyRequiredFieldBlocksSave('familyPlanningClientType');
+
+        familyPlanningForm.reopenForm();
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        cy.get('input[id^="purposeOfVisit-"]').should('not.exist');
+        familyPlanningForm.verifyRequiredFieldBlocksSave('counsellingDone');
+
+        familyPlanningForm.reopenForm();
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('Yes');
+        familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
+    });
 });
