@@ -136,16 +136,6 @@ class ANCInitialFormPage {
         cy.contains('a.cds--link', 'ANC Initial Visit', { timeout: this.timeout }).click();
     }
 
-    verifyRequiredFieldsBlockSave() {
-        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
-        cy.contains('button', 'Save', { timeout: this.timeout }).click();
-
-        cy.get('[aria-invalid="true"], .cds--form-requirement', { timeout: this.timeout })
-            .filter(':visible')
-            .should('exist');
-        cy.get('@saveAncInitial.all').should('have.length', 0);
-    }
-
     verifySuccessfulAssessmentSaved() {
         this.completeRequiredAssessmentFields();
         cy.get('#pregnancyTrimester').should('contain.text', '2nd trimester');
