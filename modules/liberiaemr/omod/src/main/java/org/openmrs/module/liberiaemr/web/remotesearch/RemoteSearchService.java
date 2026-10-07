@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Searches the central OpenMRS server for patients that are not on this facility and imports a
@@ -78,7 +79,10 @@ public class RemoteSearchService {
 		}
 	}
 
-	/** Central matches to list, plus how many more were left out because they are already on this facility. */
+	/**
+	 * Central matches to list, each already at this facility flagged {@code alreadyLocal: true}, plus
+	 * how many are.
+	 */
 	public static class SearchOutcome {
 
 		private final List<JsonNode> results;
@@ -129,8 +133,9 @@ public class RemoteSearchService {
 	}
 
 	/**
-	 * @return the matching central patients that are not already on this facility, and the count of
-	 *         matches left out because they are; the list is empty (not an error) when nothing matches
+	 * @return the matching central patients, those already on this facility flagged
+	 *         {@code alreadyLocal: true}, and how many are; the list is empty (not an error) when
+	 *         nothing matches
 	 * @throws RemoteSearchException when the feature is off or central cannot be reached
 	 */
 	public SearchOutcome searchPatients(String query) throws RemoteSearchException {
@@ -145,21 +150,24 @@ public class RemoteSearchService {
 					+ "&v=" + URLEncoder.encode(SEARCH_REP, "UTF-8");
 			JsonNode results = central.executeGet(url).path("results");
 
-			List<JsonNode> remaining = new ArrayList<>();
+			List<JsonNode> matches = new ArrayList<>();
 			int alreadyLocal = 0;
 			if (results.isArray()) {
 				for (JsonNode result : results) {
-					// A patient that syncs between sites shares one UUID; if it is already here the
-					// local search shows it, and listing it again would only be a duplicate row.
+					// A patient imported earlier shares central's UUID. It stays in the list, flagged, so
+					// the UI offers "Open" instead of a second import (LE-387, mockup 3c).
 					String uuid = result.path("uuid").asText("");
-					if (isValidUuid(uuid) && existsLocally(uuid)) {
+					boolean local = isValidUuid(uuid) && existsLocally(uuid);
+					if (local) {
 						alreadyLocal++;
-						continue;
 					}
-					remaining.add(result);
+					if (result.isObject()) {
+						((ObjectNode) result).put("alreadyLocal", local);
+					}
+					matches.add(result);
 				}
 			}
-			return new SearchOutcome(remaining, alreadyLocal);
+			return new SearchOutcome(matches, alreadyLocal);
 		}
 		catch (Exception e) {
 			log.error("Error searching remote patients", e);
