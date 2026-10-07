@@ -102,8 +102,8 @@ SERVER_CMD=(); while IFS= read -r line; do SERVER_CMD+=("$line"); done < <(servi
 # The facility's command is sh -c and a multi-line script: keep the script as one argument.
 CLIENT_CMD=()
 { IFS= read -r a; IFS= read -r b; CLIENT_CMD=("$a" "$b" "$(cat)"); } < <(service facility command)
-pass "both stacks define the tunnel, on $TUNNEL_IMAGE"
 TUNNEL_IMAGE="${TUNNEL_IMAGE_OVERRIDE:-$TUNNEL_IMAGE}"
+pass "both stacks define the tunnel, run here on $TUNNEL_IMAGE"
 
 echo "== issuing throwaway security material =="
 "$ROOT/scripts/security/gen-sync-certs.sh" --out "$WORK/pki" --broker-host "$CENTRAL_HOST" \
