@@ -34,7 +34,7 @@ describe('Family Planning form', () => {
 
     it('validates the initial Family Planning form contract');
 
-    it('FP-02: blocks saving for each independently missing required answer', () => {
+    it('blocks saving for each independently missing required answer', () => {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
 
         familyPlanningForm.selectCounsellingDone('Yes');
@@ -52,7 +52,7 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
     });
 
-    it('FP-03/FP-04: hides downstream fields and saves when counselling is not done', () => {
+    it('hides downstream fields and saves when counselling is not done', () => {
         familyPlanningForm.selectClientType('New Family Planning Client');
         familyPlanningForm.selectCounsellingDone('No');
         familyPlanningForm.verifyCounsellingNoHidesDownstreamFields();
@@ -65,7 +65,7 @@ describe('Family Planning form', () => {
         familyPlanningForm.saveAndVerifyCounsellingNo('Continuing Family Planning Client');
     });
 
-    it('FP-05/FP-06: shows core fields for counselling Yes and blocks saving without purpose', () => {
+    it('shows core fields for counselling Yes and blocks saving without purpose', () => {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
 
         familyPlanningForm.selectClientType('New Family Planning Client');
@@ -74,7 +74,7 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
     });
 
-    it('FP-11: gates method-specific sections by chosen and dispensed method', () => {
+    it('gates method-specific sections by chosen and dispensed method', () => {
         familyPlanningForm.selectClientType('New Family Planning Client');
         familyPlanningForm.selectCounsellingDone('Yes');
         familyPlanningForm.verifyLamIsNotADispensedOption();
@@ -82,13 +82,13 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyDispensedImplantOpensImplantSections();
     });
 
-    it('FP-12: reveals implant sections when implants are dispensed only, and Pregnancy only once chosen', () => {
+    it('reveals implant sections when implants are dispensed only, and Pregnancy only once chosen', () => {
         familyPlanningForm.selectClientType('New Family Planning Client');
         familyPlanningForm.selectCounsellingDone('Yes');
         familyPlanningForm.verifyImplantGatesWithoutChosenMethod();
     });
 
-    it('FP-20: submits a fully completed implant visit and persists every answered field', () => {
+    it('submits a fully completed implant visit and persists every answered field', () => {
         familyPlanningForm.completeAndSubmitImplantVisit();
     });
 });
@@ -112,27 +112,27 @@ describe('Family Planning form clinical decision support (one shared patient)', 
         familyPlanningForm.startCounselledVisit();
     });
 
-    it('FP-13: requires a past or present insertion date when an implant is inserted', () => {
+    it('requires a past or present insertion date when an implant is inserted', () => {
         familyPlanningForm.verifyImplantInsertionDateRules();
     });
 
-    it('FP-14: ranks implant screening warnings and withholds clearance until all four are No', () => {
+    it('ranks implant screening warnings and withholds clearance until all four are No', () => {
         familyPlanningForm.verifyImplantScreeningCombinations();
     });
 
-    it('FP-15: shows method-specific guidance after a negative pregnancy test with amenorrhea', () => {
+    it('shows method-specific guidance after a negative pregnancy test with amenorrhea', () => {
         familyPlanningForm.verifyNegativePregnancyTestGuidance();
     });
 
-    it('FP-16: offers emergency contraception only within five days and rejects invalid day counts', () => {
+    it('offers emergency contraception only within five days and rejects invalid day counts', () => {
         familyPlanningForm.verifyEmergencyContraceptionThresholds();
     });
 
-    it('FP-17: calculates a read-only repeat pregnancy test date and drops it when no longer applicable', () => {
+    it('calculates a read-only repeat pregnancy test date and drops it when no longer applicable', () => {
         familyPlanningForm.verifyRepeatPregnancyTestDate();
     });
 
-    it('FP-18: evaluates LAM eligibility across amenorrhea, breastfeeding and six-month boundaries', () => {
+    it('evaluates LAM eligibility across amenorrhea, breastfeeding and six-month boundaries', () => {
         familyPlanningForm.verifyLamEligibilityCombinations();
     });
 });
