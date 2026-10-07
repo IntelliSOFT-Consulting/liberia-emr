@@ -9,6 +9,7 @@
  */
 package org.openmrs.module.liberiaemr.web.moduleaccess;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
@@ -100,12 +101,39 @@ public class ClinicalJsonTest {
 		assertTrue(ModuleAccessPolicy.read(classifier.assessOrder(test), ModuleAccess.LABORATORY.writePrivileges()) == Verdict.ALLOW);
 	}
 
-	@Test public void unreadableClinicalJsonFailsClosedAndUnrelatedJsonStays() {
+	@Test public void unreadableClinicalContentFailsClosed() {
 		String filtered = ClinicalJson.filter("{\"resourceType\":\"Bundle\",\"entry\":[{\"resource\":{\"resourceType\":\"Observation\"",
 		    (kind, uuid, form, type) -> true);
 		assertFalse(filtered.contains("Observation"));
 		assertTrue(filtered.contains("entry"));
-		assertTrue(ClinicalJson.filter("not-json-and-not-clinical", (kind, uuid, form, type) -> false).contains("not-json"));
+		assertEquals("{\"results\":[]}", ClinicalJson.filter("truncated sensitive content", (kind, uuid, form, type) -> true));
+	}
+
+	@Test public void fhirXmlCannotPassThroughOnAFilteredClinicalUrl() {
+		String xml = "<Observation xmlns=\"http://hl7.org/fhir\"><id value=\"protected-result\"/>"
+		        + "<valueString value=\"sensitive content\"/></Observation>";
+		assertEquals("{\"results\":[]}", ClinicalJson.filter(xml, (kind, uuid, form, type) -> true));
+	}
+
+	@Test public void keeperFailureDropsTheClinicalRecord() {
+		String body = "{\"resourceType\":\"Observation\",\"id\":\"protected-result\"}";
+		assertFalse(ClinicalJson.filter(body, (kind, uuid, form, type) -> {
+			throw new IllegalStateException("lookup failed");
+		}).contains("protected-result"));
+	}
+
+	@Test public void corruptGzipFailsClosedAndValidGzipStillDecodes() throws Exception {
+		java.lang.reflect.Method gunzip = ClinicalResponseFilter.class.getDeclaredMethod("gunzip", byte[].class);
+		gunzip.setAccessible(true);
+		byte[] plain = "{\"resourceType\":\"Observation\",\"id\":\"protected-result\"}"
+		        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+		try (java.util.zip.GZIPOutputStream zip = new java.util.zip.GZIPOutputStream(out)) { zip.write(plain); }
+		byte[] compressed = out.toByteArray();
+		org.junit.Assert.assertArrayEquals(plain, (byte[]) gunzip.invoke(null, (Object) compressed));
+		byte[] truncated = Arrays.copyOf(compressed, compressed.length - 4);
+		assertEquals("{\"results\":[]}", new String((byte[]) gunzip.invoke(null, (Object) truncated),
+		    java.nio.charset.StandardCharsets.UTF_8));
 	}
 
 	@Test public void filterCoversDirectEncounterButNotObsOrdersMetadataOrAppointments() {

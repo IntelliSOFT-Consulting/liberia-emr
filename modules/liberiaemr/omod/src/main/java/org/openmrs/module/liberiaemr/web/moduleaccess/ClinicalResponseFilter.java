@@ -202,7 +202,7 @@ public class ClinicalResponseFilter implements Filter {
 			return out.toByteArray();
 		}
 		catch (IOException e) {
-			return ClinicalJson.looksClinical(body) ? "{\"results\":[]}".getBytes(StandardCharsets.UTF_8) : body;
+			return "{\"results\":[]}".getBytes(StandardCharsets.UTF_8);
 		}
 	}
 

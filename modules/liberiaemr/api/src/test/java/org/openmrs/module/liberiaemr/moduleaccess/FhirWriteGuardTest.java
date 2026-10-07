@@ -9,6 +9,7 @@
  */
 package org.openmrs.module.liberiaemr.moduleaccess;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -288,6 +289,48 @@ public class FhirWriteGuardTest extends BaseModuleContextSensitiveTest {
 		admin();
 		as("Lab Technician", "Manage Laboratory");
 		guard.authorizeFhirDelete(TestOrder.class, test.getUuid(), new ArrayList<String>());
+	}
+
+	@Test public void persistedNestedOrderTypesMatchLiveOwnershipAndCannotBypassDeleteOrPurge() throws Exception {
+		for (boolean drug : new boolean[] { true, false }) {
+			admin();
+			Encounter encounter = Context.getEncounterService().saveEncounter(labor());
+			Order order = drug ? preparedDrug(encounter) : preparedTest(encounter);
+			OrderType root = order.getOrderType();
+			OrderType child = nestedType(root, "child");
+			OrderType grandchild = nestedType(child, "grandchild");
+			order.setOrderType(grandchild);
+			order = Context.getOrderService().saveOrder(order, null);
+			Obs obs = observation(encounter);
+			obs.setOrder(order);
+			obs = Context.getObsService().saveObs(obs, null);
+			Context.flushSession();
+			Context.clearSession();
+			ModuleRecordClassifier classifier = new ModuleRecordClassifier();
+			Order live = Context.getOrderService().getOrder(order.getId());
+			Obs liveObs = Context.getObsService().getObs(obs.getId());
+			ModuleAccess expected = drug ? ModuleAccess.PHARMACY : ModuleAccess.LABORATORY;
+			assertEquals(expected, classifier.assessOrder(live).module);
+			assertEquals(classifier.assessOrder(live).module, PersistedOwnership.order(classifier, live.getId()).module);
+			assertEquals(expected, classifier.assessObservation(liveObs).module);
+			assertEquals(classifier.assessObservation(liveObs).module,
+			    PersistedOwnership.observation(classifier, liveObs.getId()).module);
+			as(drug ? "Lab Technician" : "Pharmacist", drug ? "Manage Laboratory" : "Manage Pharmacy",
+			    PrivilegeConstants.DELETE_ORDERS, PrivilegeConstants.PURGE_ORDERS, PrivilegeConstants.DELETE_OBS);
+			denyDelete(drug ? DrugOrder.class : TestOrder.class, live.getUuid());
+			denyDelete(Obs.class, liveObs.getUuid());
+			try {
+				Context.getOrderService().purgeOrder(live);
+				fail("persisted nested protected order must not be purged");
+			}
+			catch (RuntimeException e) { assertTrue(e.toString(), denied(e)); }
+		}
+	}
+
+	private OrderType nestedType(OrderType parent, String suffix) {
+		OrderType type = new OrderType(parent.getName() + " " + suffix, "Ancestry regression", parent.getJavaClassName());
+		type.setParent(parent);
+		return Context.getOrderService().saveOrderType(type);
 	}
 
 	@Test public void persistedEncounterCannotBeRelabeledOutOfItsModule() throws Exception {

@@ -19,6 +19,11 @@ View Appointments, View Appointment Services, and Manage Appointments. Registrat
 and billing have no custom service advice. Appointments has none on the methods
 the appointments module already authorizes. Recurring saves are the exception below.
 
+The existing observation-backed Date of Referral registration field is intentionally
+unavailable under LE-39 because the approved Registration privilege bundle cannot
+safely support it. Supporting this field requires separate Registration workflow
+work and is outside LE-39.
+
 The other nine modules are not in that group. OpenMRS authorizes their encounters, observations,
 and orders by operation (`Get Encounters`, `Add Observations`, `Edit Orders`), not
 by module. Several forms share the Consultation encounter type (general

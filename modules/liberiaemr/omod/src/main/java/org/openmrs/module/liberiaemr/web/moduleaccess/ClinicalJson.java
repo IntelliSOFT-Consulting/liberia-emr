@@ -19,8 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Removes encounter, observation, and order objects from visit and FHIR JSON. A keeper failure
- * drops that node. A document that cannot be parsed is emptied only when it already looks like one
- * of those clinical payloads; other malformed bodies are left as they are.
+ * drops that node. A document that cannot be safely parsed or filtered is emptied.
  */
 public final class ClinicalJson {
 
@@ -47,7 +46,7 @@ public final class ClinicalJson {
 		}
 		catch (Exception e) {
 			log.warn("Clinical JSON filter failed closed", e);
-			return looksClinical(body) ? empty(body) : body;
+			return empty(body);
 		}
 	}
 

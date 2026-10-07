@@ -44,6 +44,11 @@ public final class ModuleAccessInstaller {
 
 	private ModuleAccessInstaller() { }
 
+	/** OpenMRS will replace the advised proxies during the pending context refresh. */
+	public static synchronized void resetForContextRefresh() {
+		installed = false;
+	}
+
 	public static synchronized void install() {
 		if (installed) { return; }
 		ModuleAccessGuard guard = new ModuleAccessGuard();

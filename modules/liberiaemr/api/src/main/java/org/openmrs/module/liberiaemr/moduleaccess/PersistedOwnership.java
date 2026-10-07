@@ -61,12 +61,11 @@ final class PersistedOwnership {
 
 	private static Ownership observation(ModuleRecordClassifier classifier, Integer id, Set<Integer> visited) {
 		if (id == null || !visited.add(id) || visited.size() > 100) { return Ownership.ambiguous(); }
-		Object[] row = one("select o.obs_group_id as group_id, f.uuid as form_uuid, t.uuid as type_uuid, ot.uuid as order_type_uuid from obs o "
+		Object[] row = one("select o.obs_group_id as group_id, f.uuid as form_uuid, t.uuid as type_uuid, ord.order_type_id as order_type_id from obs o "
 		        + "left join encounter e on o.encounter_id = e.encounter_id "
 		        + "left join form f on e.form_id = f.form_id "
 		        + "left join encounter_type t on e.encounter_type = t.encounter_type_id "
 		        + "left join orders ord on o.order_id = ord.order_id "
-		        + "left join order_type ot on ord.order_type_id = ot.order_type_id "
 		        + "where o.obs_id = :id", id);
 		if (row == null) { return Ownership.ambiguous(); }
 		Ownership parent = null;
@@ -79,7 +78,7 @@ final class PersistedOwnership {
 		if ((encounter != null && encounter.excluded) || (parent != null && parent.excluded)) { return Ownership.excluded(); }
 		Ownership direct = encounter;
 		if (row[3] != null) {
-			Ownership order = orderType(classifier, text(row, 3));
+			Ownership order = orderType(classifier, Integer.valueOf(row[3].toString()));
 			if (order.ambiguous) { return Ownership.ambiguous(); }
 			if (direct != null && (direct.module == ModuleAccess.LABORATORY || direct.module == ModuleAccess.PHARMACY)
 			        && order.module != null && direct.module != order.module) {
@@ -96,30 +95,17 @@ final class PersistedOwnership {
 
 	static Ownership order(ModuleRecordClassifier classifier, Integer id) {
 		if (id == null) { return null; }
-		Object[] row = one("select ot.uuid as type_uuid, parent.uuid as parent_uuid from orders o "
-		        + "left join order_type ot on o.order_type_id = ot.order_type_id "
-		        + "left join order_type parent on ot.parent = parent.order_type_id "
-		        + "where o.order_id = :id", id);
+		Object[] row = one("select o.order_type_id from orders o where o.order_id = :id", id);
 		if (row == null) { return null; }
-		return orderType(classifier, text(row, 0), text(row, 1));
+		return orderType(classifier, row[0] == null ? null : Integer.valueOf(row[0].toString()));
 	}
 
-	private static Ownership orderType(ModuleRecordClassifier classifier, String typeUuid) {
-		return orderType(classifier, typeUuid, null);
-	}
-
-	private static Ownership orderType(ModuleRecordClassifier classifier, String typeUuid, String parentUuid) {
-		if (typeUuid == null) { return Ownership.ambiguous(); }
-		OrderType type = new OrderType();
-		type.setUuid(typeUuid);
-		if (parentUuid != null) {
-			OrderType parent = new OrderType();
-			parent.setUuid(parentUuid);
-			type.setParent(parent);
-		}
-		boolean drug = OrderType.DRUG_ORDER_TYPE_UUID.equals(typeUuid) || OrderType.DRUG_ORDER_TYPE_UUID.equals(parentUuid);
-		boolean test = OrderType.TEST_ORDER_TYPE_UUID.equals(typeUuid) || OrderType.TEST_ORDER_TYPE_UUID.equals(parentUuid);
-		org.openmrs.Order order = drug ? new org.openmrs.DrugOrder() : test ? new org.openmrs.TestOrder() : new org.openmrs.Order();
+	private static Ownership orderType(ModuleRecordClassifier classifier, Integer typeId) {
+		if (typeId == null) { return Ownership.ambiguous(); }
+		SessionFactory factory = Context.getRegisteredComponents(SessionFactory.class).get(0);
+		OrderType type = (OrderType) factory.getCurrentSession().get(OrderType.class, typeId);
+		if (type == null) { return Ownership.ambiguous(); }
+		org.openmrs.Order order = new org.openmrs.Order();
 		order.setOrderType(type);
 		return classifier.assessOrder(order);
 	}

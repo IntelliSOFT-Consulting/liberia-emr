@@ -48,12 +48,21 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		return daemonToken;
 	}
 
+	@Override
+	public void willRefreshContext() {
+		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.resetForContextRefresh();
+	}
+
+	@Override
+	public void contextRefreshed() {
+		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.install();
+	}
+
 	/**
 	 * @see #started()
 	 */
 	public void started() {
 		log.info("Started LiberiaEMR");
-		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.install();
 		try {
 			org.openmrs.event.Event.subscribe(
 			    org.openmrs.Obs.class,
