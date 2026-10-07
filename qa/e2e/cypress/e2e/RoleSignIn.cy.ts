@@ -13,7 +13,9 @@ import { api, asAdmin, type Auth, createUser, loginAs, REST, runPassword } from 
  *
  * modules/liberiaemr's OwnPersonSessionAdvice puts the own person back without granting Get People,
  * so the non-clinical roles sign in while /person stays closed to them; the last tests check that,
- * and a sample of what each role must NOT read.
+ * and a sample of reads each role must not have. A role outside the module matrix is refused
+ * observations. The Pharmacist, a matrix role with no standing Get Observations, gets a filtered
+ * observation search instead: TB Screening stays, Laboratory does not.
  *
  * Each role's landing page must also load cleanly (LE-395): no REST call answering an error and no
  * error notification. The six facility roles work the patient queue and land on the service queues
@@ -81,6 +83,120 @@ const userFor = (role: string): Auth => ({
   username: `e2e-${role.replace(/[^A-Za-z]/g, '').toLowerCase()}-${run}`,
   password,
 });
+
+type Named = { uuid: string; display: string };
+
+const uuidNamed = (results: Array<Named>, label: string) => {
+  const match = results.find((row) => row.display === label);
+  expect(match, label).to.exist;
+  return match!.uuid;
+};
+
+/**
+ * One patient, two observations, found by getObservations(q) on that patient's identifier.
+ * TB Screening is a module the Pharmacist may read. Lab Results is Laboratory, which the
+ * matrix marks N. The test remembers the obs uuids it created; it does not classify them.
+ */
+const filteredObservationProbe = () => {
+  const found: {
+    location?: string;
+    visitType?: string;
+    tb?: string;
+    lab?: string;
+    concept?: string;
+    identifierType?: string;
+    source?: string;
+    marker?: string;
+    patient?: string;
+    visit?: string;
+    allowed?: string;
+    forbidden?: string;
+  } = {};
+  const when = new Date().toISOString();
+
+  const saveObs = (encounterType: string, value: number) =>
+    asAdmin('POST', `${REST}/encounter?v=custom:(obs:(uuid))`, {
+      patient: found.patient,
+      encounterType,
+      location: found.location,
+      visit: found.visit,
+      encounterDatetime: when,
+      obs: [{ concept: found.concept, value }],
+    }).then(({ body }) => {
+      expect(body.obs, 'saved observations').to.have.length(1);
+      const saved = body.obs[0];
+      return (typeof saved === 'string' ? saved : saved.uuid) as string;
+    });
+
+  return asAdmin('GET', `${REST}/location?v=custom:(uuid,display)&limit=1`)
+    .then(({ body }) => {
+      expect(body.results, 'a location').to.have.length.greaterThan(0);
+      found.location = body.results[0].uuid;
+      return asAdmin('GET', `${REST}/visittype?v=custom:(uuid,display)&limit=1`);
+    })
+    .then(({ body }) => {
+      expect(body.results, 'a visit type').to.have.length.greaterThan(0);
+      found.visitType = body.results[0].uuid;
+      return asAdmin('GET', `${REST}/encountertype?v=custom:(uuid,display)&limit=100`);
+    })
+    .then(({ body }) => {
+      found.tb = uuidNamed(body.results, 'TB Screening');
+      found.lab = uuidNamed(body.results, 'Lab Results');
+      return asAdmin('GET', `${REST}/concept?q=${encodeURIComponent('Weight (kg)')}&v=custom:(uuid,display)&limit=20`);
+    })
+    .then(({ body }) => {
+      found.concept = uuidNamed(body.results, 'Weight (kg)');
+      return asAdmin('GET', `${REST}/patientidentifiertype?v=custom:(uuid,display)&limit=20`);
+    })
+    .then(({ body }) => {
+      found.identifierType = uuidNamed(body.results, 'OpenMRS ID');
+      return asAdmin('GET', `${REST}/idgen/identifiersource?v=custom:(uuid,display)&limit=20`);
+    })
+    .then(({ body }) => {
+      found.source = uuidNamed(body.results, 'Generator for OpenMRS ID');
+      return asAdmin('POST', `${REST}/idgen/identifiersource/${found.source}/identifier`, { comment: 'RoleSignIn' });
+    })
+    .then(({ body }) => {
+      expect(body.identifier, 'generated OpenMRS ID').to.be.a('string');
+      found.marker = body.identifier;
+      return asAdmin('POST', `${REST}/patient`, {
+        person: {
+          names: [{ givenName: 'Probe', familyName: `Filter${run}` }],
+          gender: 'F',
+          birthdate: '1990-01-01',
+        },
+        identifiers: [
+          {
+            identifier: found.marker,
+            identifierType: found.identifierType,
+            location: found.location,
+            preferred: true,
+          },
+        ],
+      });
+    })
+    .then(({ body }) => {
+      found.patient = body.uuid;
+      return asAdmin('POST', `${REST}/visit`, {
+        patient: found.patient,
+        visitType: found.visitType,
+        location: found.location,
+        startDatetime: when,
+      });
+    })
+    .then(({ body }) => {
+      found.visit = body.uuid;
+      return saveObs(found.tb!, 61);
+    })
+    .then((allowed) => {
+      found.allowed = allowed;
+      return saveObs(found.lab!, 62);
+    })
+    .then((forbidden) => {
+      found.forbidden = forbidden;
+      return { marker: found.marker!, allowed: found.allowed!, forbidden: found.forbidden! };
+    });
+};
 
 /** The signed-in user's own person, from the session the browser holds. */
 const sessionPerson = () =>
@@ -194,10 +310,21 @@ describe('Sign-in for every login role', () => {
   });
 
   it('refuses each sampled role what it must not read', () => {
-    // Registration and dispensing, not clinical observations. (A search by an unknown patient
-    // answers 200 with nothing before any privilege check, so this searches by text.)
-    ['Records Officer', 'Pharmacist'].forEach((role) => {
-      api(userFor(role), 'GET', `${REST}/obs?q=E2E`, undefined, false).its('status').should('eq', 403);
+    // A search by an unknown patient answers 200 with nothing before any privilege check, so
+    // this searches by text. Records Officer is outside the matrix and holds no Get Observations.
+    api(userFor('Records Officer'), 'GET', `${REST}/obs?q=E2E`, undefined, false).its('status').should('eq', 403);
+    // Pharmacist holds no Get Observations either. LE-39 still answers 200 and returns only the
+    // observation in a module that role may read.
+    filteredObservationProbe().then(({ marker, allowed, forbidden }) => {
+      api(userFor('Pharmacist'), 'GET', `${REST}/obs?q=${encodeURIComponent(marker)}`, undefined, false).then(
+        ({ status, body }) => {
+          expect(status, 'Pharmacist observation search').to.eq(200);
+          const uuids = (body.results as Array<{ uuid: string }>).map((row) => row.uuid);
+          expect(uuids, 'TB Screening observation').to.include(allowed);
+          expect(uuids, 'Lab Results observation').to.not.include(forbidden);
+          expect(uuids, 'filtered to the TB Screening observation').to.have.length(1);
+        },
+      );
     });
     // The Nurse, who records vitals, can.
     api(userFor('Nurse'), 'GET', `${REST}/obs?q=E2E`).its('status').should('eq', 200);
