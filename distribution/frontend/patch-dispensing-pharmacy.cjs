@@ -40,7 +40,7 @@ const replacements = [
   ['&location=${location}', '', 4],
 ];
 
-for (const [from, to, expected] of replacements) {
+for (const [from, , expected] of replacements) {
   let found = 0;
   for (const file of fs.readdirSync(moduleDir).filter((name) => name.endsWith('.js'))) {
     found += fs.readFileSync(path.join(moduleDir, file), 'utf8').split(from).length - 1;
