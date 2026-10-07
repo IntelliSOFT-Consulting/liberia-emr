@@ -102,6 +102,66 @@ class FamilyPlanningFormPage {
         });
     }
 
+    private selectDropdownOption(fieldId: string, option: string) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                cy.get('button[role="combobox"]').click();
+            });
+        cy.contains('[role="option"], .cds--list-box__menu-item', new RegExp(`^${this.escapeRegExp(option)}$`), {
+            timeout: this.timeout,
+        }).click();
+        cy.get(`#${fieldId}`).should('contain.text', option);
+    }
+
+    private escapeRegExp(value: string) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    private verifySectionVisibility(section: string, expectedVisible: boolean) {
+        if (expectedVisible) {
+            cy.contains(section, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        } else {
+            cy.contains(section).should('not.exist');
+        }
+    }
+
+    verifyChosenMethodSectionGates() {
+        this.chosenMethods.forEach(({ label, pregnancy, lam, implant }) => {
+            cy.log(`Chosen method: ${label}`);
+            this.selectDropdownOption('chosenFamilyPlanningMethod', label);
+            this.verifySectionVisibility('Pregnancy Assessment', pregnancy);
+            this.verifySectionVisibility('LAM Assessment', lam);
+            this.verifySectionVisibility('Implant Eligibility Assessment', implant);
+            this.verifySectionVisibility('Implant Procedure', implant);
+        });
+    }
+
+    verifyDispensedImplantOpensImplantSections() {
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Male condom');
+        this.verifySectionVisibility('Implant Eligibility Assessment', false);
+
+        this.selectDropdownOption('familyPlanningMethodDispensed', 'Contraceptive Implants');
+        this.verifySectionVisibility('Implant Eligibility Assessment', true);
+        this.verifySectionVisibility('Implant Procedure', true);
+        this.verifySectionVisibility('Pregnancy Assessment', false);
+        this.verifySectionVisibility('LAM Assessment', false);
+    }
+
+    verifyLamIsNotADispensedOption() {
+        cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout })
+            .scrollIntoView()
+            .within(() => {
+                cy.get('button[role="combobox"]').click();
+                cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
+                    const labels = [...$options].map((option) => option.textContent?.trim());
+                    expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
+                    expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
+                });
+                cy.get('button[role="combobox"]').click();
+            });
+    }
+
     saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
         cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
@@ -136,6 +196,19 @@ class FamilyPlanningFormPage {
         'parity',
         'chosenFamilyPlanningMethod',
         'familyPlanningMethodDispensed',
+    ];
+
+    private readonly chosenMethods = [
+        { label: 'Contraceptive Implants', pregnancy: true, lam: false, implant: true },
+        { label: 'Cycle Beads', pregnancy: false, lam: false, implant: false },
+        { label: 'Female condom', pregnancy: false, lam: false, implant: false },
+        { label: 'Injectable contraceptives', pregnancy: true, lam: false, implant: false },
+        { label: 'Intrauterine device', pregnancy: true, lam: false, implant: false },
+        { label: 'Lactational Amenorrhea Method (LAM)', pregnancy: true, lam: true, implant: false },
+        { label: 'Male condom', pregnancy: false, lam: false, implant: false },
+        { label: 'Oral Contraceptive Pills (Microgynon)', pregnancy: true, lam: false, implant: false },
+        { label: 'Oral Contraceptive Pills (Microlut)', pregnancy: true, lam: false, implant: false },
+        { label: 'Sayana Press', pregnancy: true, lam: false, implant: false },
     ];
 
     private readonly methodSpecificSections = [

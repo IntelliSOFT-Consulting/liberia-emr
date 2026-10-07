@@ -69,4 +69,12 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyCounsellingYesShowsCoreFields();
         familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
     });
+
+    it('FP-11: gates method-specific sections by chosen and dispensed method', () => {
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('Yes');
+        familyPlanningForm.verifyLamIsNotADispensedOption();
+        familyPlanningForm.verifyChosenMethodSectionGates();
+        familyPlanningForm.verifyDispensedImplantOpensImplantSections();
+    });
 });
