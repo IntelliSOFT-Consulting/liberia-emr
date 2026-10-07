@@ -1,4 +1,26 @@
+import { DateParts, toDateParts } from '../support/faker';
+
+type Guidance = keyof typeof FamilyPlanningFormPage.guidanceText;
+
 class FamilyPlanningFormPage {
+    static readonly guidanceText = {
+        provideMethod: 'Provide the method now.',
+        provideImplant: 'Provide the implant now.',
+        deferIud: 'Do not insert the IUD at this visit.',
+    };
+
+    private readonly implantMessages = {
+        breastCancer: 'Breast cancer reported',
+        caution: 'WHO MEC Category 3 condition present',
+        negative: 'No Category 3 or 4 condition found',
+    };
+
+    private readonly lamMessages = {
+        met: 'LAM criteria met.',
+        notEligible: 'LAM cannot be relied on.',
+        uncertain: 'Breastfeeding criterion not confirmed.',
+    };
+
     constructor(
         private readonly timeout = 20000,
         private readonly chartLoadTimeout = 60000,
@@ -198,6 +220,251 @@ class FamilyPlanningFormPage {
         });
         cy.contains('button', /^Save$/, { timeout: this.timeout }).should('not.exist');
     }
+
+    startCounselledVisit() {
+        this.selectClientType('New Family Planning Client');
+        this.selectCounsellingDone('Yes');
+        this.selectPurposeForCommodities();
+    }
+
+    private answer(fieldId: string, answer: string) {
+        this.checkOption(`${fieldId}-${answer}`);
+    }
+
+    private setNumber(fieldId: string, value: string) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView().clear();
+        if (value) {
+            cy.get(`#${fieldId}`).type(value);
+        }
+        cy.get(`#${fieldId}`).blur();
+    }
+
+    private enterDate(fieldId: string, date: Date) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView().within(() => {
+            Object.entries(toDateParts(date)).forEach(([part, value]) => {
+                cy.get(`[data-type="${part}"]`, { timeout: this.timeout }).click().type(value);
+            });
+        });
+    }
+
+    private verifyDate(fieldId: string, expected: DateParts) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView().within(() => {
+            Object.entries(expected).forEach(([part, value]) => {
+                cy.get(`[data-type="${part}"]`).should('have.text', value);
+            });
+        });
+    }
+
+    private daysFromToday(days: number) {
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        return date;
+    }
+
+    // Matches dayjs subtract(months): the day is clamped to the target month's last day.
+    private monthsAgo(months: number) {
+        const today = new Date();
+        const target = new Date(today.getFullYear(), today.getMonth() - months, 1);
+        const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+        target.setDate(Math.min(today.getDate(), lastDay));
+        return target;
+    }
+
+    private isoDate(date: Date) {
+        const { year, month, day } = toDateParts(date);
+        return `${year}-${month}-${day}`;
+    }
+
+    private verifyMessages(messages: Record<string, string>, shown: string[]) {
+        Object.entries(messages).forEach(([key, text]) => {
+            if (shown.includes(key)) {
+                cy.contains(text, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+            } else {
+                cy.contains(text).should('not.exist');
+            }
+        });
+    }
+
+    private verifySaveBlocked() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('blockedSave');
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
+        // A blocked save shows nothing to wait on, so give any request time to be sent.
+        cy.wait(3000);
+        cy.get('@blockedSave.all').should('have.length', 0);
+        cy.contains('button', /^Save$/).should('be.visible');
+    }
+
+    private saveAndGetObservations() {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
+        return cy.wait('@saveFamilyPlanning', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
+            return request.body.obs as Array<{ formFieldPath?: string; value?: unknown }>;
+        });
+    }
+
+    private observationValue(observations: Array<{ formFieldPath?: string; value?: unknown }>, fieldId: string) {
+        const value = observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`)?.value;
+        return typeof value === 'object' && value !== null ? (value as { uuid?: string }).uuid : value;
+    }
+
+    verifyImplantInsertionDateRules() {
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Contraceptive Implants');
+        this.answer('implantInserted', 'Yes');
+
+        this.verifySaveBlocked();
+        cy.contains('Implant insertion date is required when an implant has been inserted', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible');
+
+        this.enterDate('implantInsertionDate', this.daysFromToday(1));
+        this.verifySaveBlocked();
+
+        const today = new Date();
+        this.enterDate('implantInsertionDate', today);
+        this.saveAndGetObservations().then((observations) => {
+            expect(this.observationValue(observations, 'implantInserted'), 'saved implant inserted').to.equal(this.yesAnswer);
+            expect(String(this.observationValue(observations, 'implantInsertionDate')), 'saved insertion date').to.contain(
+                this.isoDate(today)
+            );
+        });
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).should('not.exist');
+    }
+
+    verifyImplantScreeningCombinations() {
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Contraceptive Implants');
+        this.verifyMessages(this.implantMessages, []);
+
+        this.answer('unexplainedVaginalBleeding', 'No');
+        this.answer('historyOfBreastCancer', 'No');
+        this.answer('severeLiverDisease', 'No');
+        this.verifyMessages(this.implantMessages, []);
+
+        this.answer('currentDvtOrPulmonaryEmbolism', 'No');
+        this.verifyMessages(this.implantMessages, ['negative']);
+
+        this.answer('severeLiverDisease', 'Yes');
+        this.verifyMessages(this.implantMessages, ['caution']);
+
+        this.answer('historyOfBreastCancer', 'Yes');
+        this.verifyMessages(this.implantMessages, ['breastCancer']);
+
+        this.answer('severeLiverDisease', 'No');
+        this.verifyMessages(this.implantMessages, ['breastCancer']);
+    }
+
+    private answerNegativePregnancyScreen(method: string) {
+        this.selectDropdownOption('chosenFamilyPlanningMethod', method);
+        this.answer('amenorrhea', 'Yes');
+        this.answer('pregnancyTestResult', 'Negative');
+    }
+
+    verifyNegativePregnancyTestGuidance() {
+        this.answerNegativePregnancyScreen('Oral Contraceptive Pills (Microgynon)');
+        this.guidanceByMethod.forEach(({ method, guidance }) => {
+            cy.log(`Chosen method: ${method}`);
+            this.selectDropdownOption('chosenFamilyPlanningMethod', method);
+            this.verifyMessages(FamilyPlanningFormPage.guidanceText, guidance ? [guidance] : []);
+        });
+
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Oral Contraceptive Pills (Microgynon)');
+        this.answer('pregnancyTestResult', 'Positive');
+        this.verifyMessages(FamilyPlanningFormPage.guidanceText, []);
+        this.answer('pregnancyTestResult', 'Negative');
+        this.answer('amenorrhea', 'No');
+        this.verifyMessages(FamilyPlanningFormPage.guidanceText, []);
+    }
+
+    verifyEmergencyContraceptionThresholds() {
+        const emergency = { emergency: 'Offer emergency contraception.' };
+        this.answerNegativePregnancyScreen('Oral Contraceptive Pills (Microgynon)');
+
+        this.verifyMessages(emergency, []);
+        [
+            { days: '0', shown: true },
+            { days: '5', shown: true },
+            { days: '6', shown: false },
+            { days: '', shown: false },
+        ].forEach(({ days, shown }) => {
+            cy.log(`Days since unprotected sex: ${days || 'blank'}`);
+            this.setNumber('daysSinceUnprotectedSex', days);
+            this.verifyMessages(emergency, shown ? ['emergency'] : []);
+        });
+
+        this.setNumber('daysSinceUnprotectedSex', '3');
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Oral Contraceptive Pills (Microlut)');
+        this.verifyMessages(emergency, []);
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Oral Contraceptive Pills (Microgynon)');
+
+        ['-1', '2.5'].forEach((days) => {
+            cy.log(`Invalid days since unprotected sex: ${days}`);
+            this.setNumber('daysSinceUnprotectedSex', days);
+            this.verifySaveBlocked();
+        });
+    }
+
+    verifyRepeatPregnancyTestDate() {
+        // Expected from today's date; a forced month/year rollover needs a controlled clock (follow-up).
+        const expected = toDateParts(this.daysFromToday(21));
+        this.answerNegativePregnancyScreen('Oral Contraceptive Pills (Microgynon)');
+        this.verifyDate('repeatPregnancyTestDate', expected);
+        cy.get('#repeatPregnancyTestDate [data-type="day"]').should('not.have.attr', 'contenteditable', 'true');
+
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Intrauterine device');
+        this.verifyDate('repeatPregnancyTestDate', expected);
+
+        this.answer('pregnancyTestResult', 'Positive');
+        cy.get('#repeatPregnancyTestDate').should('not.exist');
+        this.answer('pregnancyTestResult', 'Negative');
+        this.verifyDate('repeatPregnancyTestDate', expected);
+
+        this.answer('pregnancyTestResult', 'Positive');
+        cy.get('#repeatPregnancyTestDate').should('not.exist');
+        this.saveAndGetObservations().then((observations) => {
+            expect(
+                observations.some((observation) => observation.formFieldPath === 'rfe-forms-repeatPregnancyTestDate'),
+                'stale repeat pregnancy test date observation'
+            ).to.equal(false);
+        });
+    }
+
+    verifyLamEligibilityCombinations() {
+        // LAM rules compare against today, not the encounter date; month-end boundaries need a controlled clock (follow-up).
+        const exactlySixMonthsAgo = this.monthsAgo(6);
+        const justUnderSixMonthsAgo = new Date(exactlySixMonthsAgo);
+        justUnderSixMonthsAgo.setDate(justUnderSixMonthsAgo.getDate() + 1);
+
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Lactational Amenorrhea Method (LAM)');
+        this.answer('amenorrhea', 'Yes');
+        this.answer('exclusiveBreastfeeding', 'Yes');
+        this.verifyMessages(this.lamMessages, []);
+
+        this.enterDate('dateOfLastDelivery', justUnderSixMonthsAgo);
+        this.verifyMessages(this.lamMessages, ['met']);
+
+        this.enterDate('dateOfLastDelivery', exactlySixMonthsAgo);
+        this.verifyMessages(this.lamMessages, ['notEligible']);
+
+        this.enterDate('dateOfLastDelivery', justUnderSixMonthsAgo);
+        this.answer('exclusiveBreastfeeding', 'No');
+        this.verifyMessages(this.lamMessages, ['uncertain']);
+
+        this.answer('exclusiveBreastfeeding', 'Yes');
+        this.answer('amenorrhea', 'No');
+        this.verifyMessages(this.lamMessages, ['notEligible']);
+    }
+
+    private readonly yesAnswer = '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+    private readonly guidanceByMethod: Array<{ method: string; guidance: Guidance | null }> = [
+        { method: 'Oral Contraceptive Pills (Microgynon)', guidance: 'provideMethod' },
+        { method: 'Injectable contraceptives', guidance: 'provideMethod' },
+        { method: 'Sayana Press', guidance: 'provideMethod' },
+        { method: 'Contraceptive Implants', guidance: 'provideImplant' },
+        { method: 'Intrauterine device', guidance: 'deferIud' },
+        { method: 'Oral Contraceptive Pills (Microlut)', guidance: null },
+        { method: 'Lactational Amenorrhea Method (LAM)', guidance: null },
+    ];
 
     private readonly noAnswer = '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
