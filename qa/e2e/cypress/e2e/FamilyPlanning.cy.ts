@@ -60,4 +60,13 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyCounsellingNoHidesDownstreamFields();
         familyPlanningForm.saveAndVerifyCounsellingNo('Continuing Family Planning Client');
     });
+
+    it('FP-05/FP-06: shows core fields for counselling Yes and blocks saving without purpose', () => {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
+
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('Yes');
+        familyPlanningForm.verifyCounsellingYesShowsCoreFields();
+        familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
+    });
 });

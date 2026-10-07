@@ -89,6 +89,19 @@ class FamilyPlanningFormPage {
         });
     }
 
+    verifyCounsellingYesShowsCoreFields() {
+        cy.get('input[id="counsellingDone-Yes"]', { timeout: this.timeout }).should('be.checked');
+        this.downstreamQuestionIds.forEach((fieldId) => {
+            cy.get(`[data-testid="${fieldId}-label"]`, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        });
+        ['Obstetric Profile', 'Method Record'].forEach((section) => {
+            cy.contains(section, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        });
+        this.methodSpecificSections.forEach((section) => {
+            cy.contains(section).should('not.exist');
+        });
+    }
+
     saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
         cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
@@ -123,6 +136,14 @@ class FamilyPlanningFormPage {
         'parity',
         'chosenFamilyPlanningMethod',
         'familyPlanningMethodDispensed',
+    ];
+
+    private readonly methodSpecificSections = [
+        'Pregnancy Assessment',
+        'LAM Assessment',
+        'Implant Eligibility Assessment',
+        'Implant Procedure',
+        'Method Removal',
     ];
 
     private readonly downstreamSections = [
