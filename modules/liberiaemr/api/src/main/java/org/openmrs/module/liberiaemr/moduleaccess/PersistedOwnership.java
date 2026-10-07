@@ -70,7 +70,9 @@ final class PersistedOwnership {
 		if (row == null) { return Ownership.ambiguous(); }
 		Ownership parent = null;
 		if (row[0] != null) {
-			parent = observation(classifier, Integer.valueOf(row[0].toString()), visited);
+			Integer parentId = integer(row[0]);
+			if (parentId == null) { return Ownership.ambiguous(); }
+			parent = observation(classifier, parentId, visited);
 			if (parent.ambiguous) { return Ownership.ambiguous(); }
 		}
 		Ownership encounter = row[2] == null ? null : classifier.assessEncounterIdentity(text(row, 1), text(row, 2), text(row, 2));
@@ -78,7 +80,7 @@ final class PersistedOwnership {
 		if ((encounter != null && encounter.excluded) || (parent != null && parent.excluded)) { return Ownership.excluded(); }
 		Ownership direct = encounter;
 		if (row[3] != null) {
-			Ownership order = orderType(classifier, Integer.valueOf(row[3].toString()));
+			Ownership order = orderType(classifier, integer(row[3]));
 			if (order.ambiguous) { return Ownership.ambiguous(); }
 			if (direct != null && (direct.module == ModuleAccess.LABORATORY || direct.module == ModuleAccess.PHARMACY)
 			        && order.module != null && direct.module != order.module) {
@@ -97,7 +99,7 @@ final class PersistedOwnership {
 		if (id == null) { return null; }
 		Object[] row = one("select o.order_type_id from orders o where o.order_id = :id", id);
 		if (row == null) { return null; }
-		return orderType(classifier, row[0] == null ? null : Integer.valueOf(row[0].toString()));
+		return orderType(classifier, integer(row[0]));
 	}
 
 	private static Ownership orderType(ModuleRecordClassifier classifier, Integer typeId) {
@@ -113,7 +115,24 @@ final class PersistedOwnership {
 	private static Integer identifier(String sql, String uuid) {
 		Object[] row = row(sql, "uuid", uuid);
 		if (row == null || row[0] == null) { return null; }
-		return Integer.valueOf(row[0].toString());
+		return integer(row[0]);
+	}
+
+	/**
+	 * An integer id from a SQL cell. Null and unreadable values are null so callers fail closed
+	 * instead of throwing from an authorization path. OpenMRS ids on these columns are signed
+	 * INT, which fits in a Java int, so narrowing a JDBC Number is exact for the values the
+	 * driver returns.
+	 */
+	private static Integer integer(Object value) {
+		if (value == null) { return null; }
+		if (value instanceof Number) { return Integer.valueOf(((Number) value).intValue()); }
+		try {
+			return Integer.valueOf(value.toString());
+		}
+		catch (NumberFormatException e) {
+			return null;
+		}
 	}
 
 	private static Object[] one(String sql, Integer id) {
