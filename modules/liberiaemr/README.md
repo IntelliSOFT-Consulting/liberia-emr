@@ -46,6 +46,22 @@ set, `available: false` when monitoring cannot be reached (4-second timeout), ot
 `central` (`recordsWaiting`, `recordsRetrying`, `conflicts`, `deadLetters`, `receiverUp`,
 `brokerUp`) and the firing `alerts`.
 
+### Identity review queue
+Backs the `Possible matches` page (`packages/esm-liberia-sync-status-app`, ADR 0005 band 2):
+pairs of records at central that the National ID rule could not settle, decided by a person.
+Central only; a facility answers `enabled: false`.
+
+| Request | Does |
+|---|---|
+| **GET** `/ws/rest/v1/liberiaemr/identity/reviews` | Open reviews, oldest first (up to 200, with the `total`), and decisions of the last 30 days |
+| **GET** `/ws/rest/v1/liberiaemr/identity/reviews/{id}` | One review with both records: name, sex, date of birth, National ID, identifiers, facility, CPI code |
+| **POST** `/ws/rest/v1/liberiaemr/identity/reviews/{id}/decision` | `{"decision": "SAME_PERSON" or "DIFFERENT_PEOPLE", "reason": "..."}`; `201` with the review, `400` without a reason, `409` when decided already |
+
+Every call needs the `Review Identity Matches` privilege, held by no role until the MOH names
+the queue's owner. Same person aliases the record under review's person to the other's; different
+people on linked records separates the record under review, its aliases moving to its primary.
+No CPI is deleted or minted, and every change is a `cpi_event` with the reviewer's user id.
+
 ### MOH Master Facility List sync
 Caches the MOH Master Facility List (a DHIS2 instance) as OpenMRS locations: counties,
 districts and facilities, matched on the `MFL UID` location attribute. The design is

@@ -38,3 +38,4 @@ ${var.privilege.import-remote-patient.uuid},Import Remote Patient,Bring a patien
 ${var.privilege.resolve-sync-conflicts.uuid},Resolve Sync Conflicts,Review sync conflicts at central with the record they hold and record the decision the receiver applies,
 ${var.privilege.view-identity-links.uuid},View Identity Links,See which records at other facilities central has linked to the same person through the Central Person Identifier,
 ${var.privilege.view-remote-history.uuid},View Remote History,Read an imported patient's history from other facilities (ADR 0013): at a facility the cached External records; at central the history endpoint (held by the facility service account),
+${var.privilege.review-identity-matches.uuid},Review Identity Matches,Review possible matches at central with both records side by side and record whether they are the same person; held by no role until the MOH names the review queue owner (ADR 0005),
