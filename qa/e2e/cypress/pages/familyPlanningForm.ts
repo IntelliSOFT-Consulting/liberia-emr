@@ -148,6 +148,21 @@ class FamilyPlanningFormPage {
         this.verifySectionVisibility('LAM Assessment', false);
     }
 
+    verifyImplantGatesWithoutChosenMethod() {
+        cy.get('#chosenFamilyPlanningMethod', { timeout: this.timeout }).should('not.contain.text', 'Contraceptive Implants');
+        this.selectDropdownOption('familyPlanningMethodDispensed', 'Contraceptive Implants');
+        this.verifySectionVisibility('Implant Eligibility Assessment', true);
+        this.verifySectionVisibility('Implant Procedure', true);
+        this.verifySectionVisibility('Pregnancy Assessment', false);
+        this.verifySectionVisibility('LAM Assessment', false);
+
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Contraceptive Implants');
+        this.verifySectionVisibility('Implant Eligibility Assessment', true);
+        this.verifySectionVisibility('Implant Procedure', true);
+        this.verifySectionVisibility('Pregnancy Assessment', true);
+        this.verifySectionVisibility('LAM Assessment', false);
+    }
+
     verifyLamIsNotADispensedOption() {
         cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout })
             .scrollIntoView()

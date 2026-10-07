@@ -77,4 +77,10 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyChosenMethodSectionGates();
         familyPlanningForm.verifyDispensedImplantOpensImplantSections();
     });
+
+    it('FP-12: reveals implant sections when implants are dispensed only, and Pregnancy only once chosen', () => {
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('Yes');
+        familyPlanningForm.verifyImplantGatesWithoutChosenMethod();
+    });
 });
