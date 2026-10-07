@@ -227,6 +227,78 @@ class FamilyPlanningFormPage {
         this.selectPurposeForCommodities();
     }
 
+    completeAndSubmitImplantVisit() {
+        const today = new Date();
+        const removalPurpose = 'Jadelle or IUCD Removal';
+
+        this.selectClientType('New Family Planning Client');
+        this.selectCounsellingDone('Yes');
+        this.selectPurposeForCommodities();
+        cy.contains('label', new RegExp(`^${this.escapeRegExp(removalPurpose)}$`), { timeout: this.timeout })
+            .invoke('attr', 'for')
+            .then((id) => this.checkOption(String(id)));
+        this.verifySectionVisibility('Method Removal', true);
+        this.enterDate('dateMethodRemoved', today);
+
+        this.setNumber('parity', '2');
+        this.selectDropdownOption('chosenFamilyPlanningMethod', 'Contraceptive Implants');
+        this.selectDropdownOption('familyPlanningMethodDispensed', 'Contraceptive Implants');
+        this.verifySectionVisibility('LAM Assessment', false);
+
+        this.answer('amenorrhea', 'Yes');
+        this.answer('missedOrLateMenses', 'No');
+        this.setNumber('daysSinceUnprotectedSex', '3');
+        this.answer('pregnancyTestResult', 'Negative');
+        cy.contains(FamilyPlanningFormPage.guidanceText.provideImplant, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        cy.contains('Offer emergency contraception.', { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        this.verifyDate('repeatPregnancyTestDate', toDateParts(this.daysFromToday(21)));
+
+        ['unexplainedVaginalBleeding', 'historyOfBreastCancer', 'severeLiverDisease', 'currentDvtOrPulmonaryEmbolism'].forEach(
+            (fieldId) => this.answer(fieldId, 'No')
+        );
+        this.verifyMessages(this.implantMessages, ['negative']);
+
+        this.answer('implantInserted', 'Yes');
+        this.enterDate('implantInsertionDate', today);
+
+        this.saveAndGetObservations().then((observations) => {
+            const value = (fieldId: string) => this.observationValue(observations, fieldId);
+            const purposes = observations
+                .filter((observation) => observation.formFieldPath === 'rfe-forms-purposeOfVisit')
+                .map((observation) => {
+                    const answer = observation.value;
+                    return typeof answer === 'object' && answer !== null ? (answer as { uuid?: string }).uuid : answer;
+                });
+
+            expect(value('familyPlanningClientType'), 'client type').to.equal(this.clientTypeAnswers['New Family Planning Client']);
+            expect(value('counsellingDone'), 'counselling done').to.equal(this.yesAnswer);
+            expect(purposes, 'purposes of visit').to.have.members([
+                this.submitAnswers.forCommodities,
+                this.submitAnswers.jadelleIucdRemoval,
+            ]);
+            expect(Number(value('parity')), 'parity').to.equal(2);
+            expect(value('chosenFamilyPlanningMethod'), 'chosen method').to.equal(this.submitAnswers.implants);
+            expect(value('familyPlanningMethodDispensed'), 'dispensed method').to.equal(this.submitAnswers.implants);
+            expect(value('amenorrhea'), 'amenorrhea').to.equal(this.yesAnswer);
+            expect(value('missedOrLateMenses'), 'missed or late menses').to.equal(this.noAnswer);
+            expect(Number(value('daysSinceUnprotectedSex')), 'days since unprotected sex').to.equal(3);
+            expect(value('pregnancyTestResult'), 'pregnancy test result').to.equal(this.submitAnswers.negative);
+            expect(String(value('repeatPregnancyTestDate')), 'repeat pregnancy test date').to.contain(
+                this.isoDate(this.daysFromToday(21))
+            );
+            ['unexplainedVaginalBleeding', 'historyOfBreastCancer', 'severeLiverDisease', 'currentDvtOrPulmonaryEmbolism'].forEach(
+                (fieldId) => expect(value(fieldId), fieldId).to.equal(this.noAnswer)
+            );
+            expect(value('implantInserted'), 'implant inserted').to.equal(this.yesAnswer);
+            expect(String(value('implantInsertionDate')), 'implant insertion date').to.contain(this.isoDate(today));
+            expect(String(value('dateMethodRemoved')), 'date method removed').to.contain(this.isoDate(today));
+            ['exclusiveBreastfeeding', 'dateOfLastDelivery'].forEach((fieldId) =>
+                expect(value(fieldId), `${fieldId} (hidden LAM field)`).to.equal(undefined)
+            );
+        });
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).should('not.exist');
+    }
+
     private answer(fieldId: string, answer: string) {
         this.checkOption(`${fieldId}-${answer}`);
     }
@@ -467,6 +539,13 @@ class FamilyPlanningFormPage {
     ];
 
     private readonly noAnswer = '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+    private readonly submitAnswers = {
+        forCommodities: 'a43bf815-94e8-4a04-84c1-dced08b31a4f',
+        jadelleIucdRemoval: '1e9c4f70-6a8d-4e01-88a9-48b2c6f0d3fc',
+        implants: 'fc2a46e5-489b-4eaf-a875-26e4d3a5607e',
+        negative: '664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    };
 
     private readonly clientTypeAnswers = {
         'New Family Planning Client': '5f3c9e14-0a27-4e5a-b243-e2c608a4d7f6',

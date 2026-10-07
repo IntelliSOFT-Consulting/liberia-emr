@@ -87,6 +87,10 @@ describe('Family Planning form', () => {
         familyPlanningForm.selectCounsellingDone('Yes');
         familyPlanningForm.verifyImplantGatesWithoutChosenMethod();
     });
+
+    it('FP-20: submits a fully completed implant visit and persists every answered field', () => {
+        familyPlanningForm.completeAndSubmitImplantVisit();
+    });
 });
 
 describe('Family Planning form clinical decision support (one shared patient)', () => {
