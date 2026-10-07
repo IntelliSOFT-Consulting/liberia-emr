@@ -52,9 +52,11 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		as("Finance", BILLING);
 		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_VISITS));
 		denied("ordinary active visits", new Runnable() {
+			@Override
 			public void run() { Context.getVisitService().getActiveVisitsByPatient(visit.getPatient()); }
 		});
 		denied("ordinary visit", new Runnable() {
+			@Override
 			public void run() { Context.getVisitService().getVisit(visit.getVisitId()); }
 		});
 		BillingVisitAccess.open();
@@ -63,6 +65,7 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 			assertEquals(visit.getVisitId(), Context.getVisitService().getVisit(visit.getVisitId()).getVisitId());
 			assertEquals(visit.getUuid(), Context.getVisitService().getVisitByUuid(visit.getUuid()).getUuid());
 			denied("visit listing", new Runnable() {
+				@Override
 				public void run() { Context.getVisitService().getAllVisits(); }
 			});
 		}
@@ -71,6 +74,7 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		}
 		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_VISITS));
 		denied("after bill save", new Runnable() {
+			@Override
 			public void run() { Context.getVisitService().getVisit(visit.getVisitId()); }
 		});
 	}
@@ -82,6 +86,7 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		assertNotNull(Context.getProviderService().getProviderByUuid(providerUuid));
 		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_PROVIDERS));
 		denied("provider listing", new Runnable() {
+			@Override
 			public void run() { Context.getProviderService().getAllProviders(); }
 		});
 	}
@@ -91,12 +96,14 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		Person person = Context.getAuthenticatedUser().getPerson();
 		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_PROVIDERS));
 		denied("ordinary providers for person", new Runnable() {
+			@Override
 			public void run() { Context.getProviderService().getProvidersByPerson(person); }
 		});
 		BillingVisitAccess.open();
 		try {
 			assertNotNull(Context.getProviderService().getProvidersByPerson(person));
 			denied("provider listing", new Runnable() {
+				@Override
 				public void run() { Context.getProviderService().getAllProviders(); }
 			});
 		}
@@ -111,6 +118,7 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		assertFalse(Context.hasPrivilege(BillingMetadataAccess.MANAGE_CASHIER_METADATA));
 		BillingMetadataAccess access = new BillingMetadataAccess();
 		assertEquals(Boolean.TRUE, access.invoke(named("getCashPointByUuid", new Runnable() {
+			@Override
 			public void run() {
 				if (!Context.hasPrivilege(BillingMetadataAccess.MANAGE_CASHIER_METADATA)) {
 					throw new org.openmrs.api.APIAuthenticationException("Manage Cashier Metadata");
@@ -120,6 +128,7 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		assertFalse(Context.hasPrivilege(BillingMetadataAccess.MANAGE_CASHIER_METADATA));
 		try {
 			access.invoke(named("saveCashPoint", new Runnable() {
+				@Override
 				public void run() {
 					if (!Context.hasPrivilege(BillingMetadataAccess.MANAGE_CASHIER_METADATA)) {
 						throw new org.openmrs.api.APIAuthenticationException("Manage Cashier Metadata");
@@ -183,9 +192,11 @@ public class BillingVisitAccessTest extends BaseModuleContextSensitiveTest {
 		BillingVisitAccess.open();
 		try {
 			denied("nurse bill post", new Runnable() {
+				@Override
 				public void run() { Context.getVisitService().getActiveVisitsByPatient(visit.getPatient()); }
 			});
 			denied("nurse supplied visit", new Runnable() {
+				@Override
 				public void run() { Context.getVisitService().getVisit(visit.getVisitId()); }
 			});
 		}
