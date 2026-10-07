@@ -848,6 +848,34 @@ public class ModuleAccessGuardTest extends BaseModuleContextSensitiveTest {
 		return false;
 	}
 
+	@Test public void appointmentReadCannotSaveRecurringAppointments() throws Exception {
+		as("Registrar", "View Appointments", "View Appointment Services");
+		try {
+			ModuleAccessInstaller.requireAppointmentWrite();
+			fail("Registrar is appointments read only");
+		}
+		catch (ContextAuthenticationException expected) { }
+		admin();
+		as("Facility in-charge", "View Appointments", "View Appointment Services");
+		try {
+			ModuleAccessInstaller.requireAppointmentWrite();
+			fail("Facility in-charge is appointments read only");
+		}
+		catch (ContextAuthenticationException expected) { }
+		admin();
+		as("Nurse", "View Appointments", "View Appointment Services", "Manage Appointments");
+		ModuleAccessInstaller.requireAppointmentWrite();
+		admin();
+		as("Physician Assistant", "View Appointments", "View Appointment Services", "Manage Appointments");
+		ModuleAccessInstaller.requireAppointmentWrite();
+		admin();
+		as("Systems Administrator", "View Appointments", "View Appointment Services", "Manage Appointments");
+		ModuleAccessInstaller.requireAppointmentWrite();
+		admin();
+		as("Clinician", PrivilegeConstants.GET_PATIENTS);
+		ModuleAccessInstaller.requireAppointmentWrite();
+	}
+
 	private static boolean denied(Throwable error) {
 		while (error != null) {
 			if (error instanceof ContextAuthenticationException || error instanceof org.openmrs.api.APIAuthenticationException) {

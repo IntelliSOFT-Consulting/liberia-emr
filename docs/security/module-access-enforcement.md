@@ -1,6 +1,6 @@
 # Module access enforcement
 
-Nine facility roles are limited to eleven modules. The server is the authority.
+Nine facility roles are limited to twelve modules. The server is the authority.
 OpenMRS 3 display conditions only hide entry points. A typed URL still reaches
 the page, and the API denies it.
 
@@ -14,11 +14,13 @@ from another role does not bypass a matrix role.
 ## Why OpenMRS privileges are not enough
 
 Registration stays on Patient, Person, identifier, and relationship privileges.
-Billing stays on the cashier view and manage privileges. Those two modules have
-no custom service advice.
+Billing stays on the cashier view and manage privileges. Appointments stays on
+View Appointments, View Appointment Services, and Manage Appointments. Registration
+and billing have no custom service advice. Appointments has none on the methods
+the appointments module already authorizes. Recurring saves are the exception below.
 
-The other nine modules do not. OpenMRS authorizes encounters, observations, and
-orders by operation (`Get Encounters`, `Add Observations`, `Edit Orders`), not
+The other nine modules are not in that group. OpenMRS authorizes their encounters, observations,
+and orders by operation (`Get Encounters`, `Add Observations`, `Edit Orders`), not
 by module. Several forms share the Consultation encounter type (general
 consultation, national ANC, national PNC, national family planning, immunization,
 AEFI). A formless encounter is protected only when its type is dedicated
@@ -27,8 +29,8 @@ other dedicated types in `ModuleRecordClassifier`). Drug and test orders are
 recognized from order-type ancestry, including a `DrugOrder` or `TestOrder`
 that has not yet been given its type. Concept text is not evidence.
 
-Triage, Vitals, and appointments stay outside the model. An order attached to
-a Vitals or Triage encounter does not reclassify that encounter. The order is
+Triage and Vitals stay outside the model. Appointment records are not encounters.
+An order attached to a Vitals or Triage encounter does not reclassify that encounter. The order is
 still Laboratory or Pharmacy and is decided on its own.
 
 ## Where a decision is made
@@ -73,7 +75,8 @@ advice does not run: a visit representation (`VisitResource` returns
 representation, and FHIR Encounter, Observation, ServiceRequest,
 MedicationRequest, Immunization, and MedicationDispense payloads. A nested
 record without a uuid cannot be decided and is dropped. Direct obs and order
-resources are not filtered again. Appointments are not filtered.
+resources are not filtered again. Appointments are not filtered; the appointments
+module authorizes them.
 
 Call-scoped privileges, added only after the module decision allows the call
 and removed before it returns:
@@ -110,6 +113,7 @@ performs no clinical write.
 | TB, ANC, PNC, Family Planning, Labor and Delivery, Immunization, General Consultation | Encounter and observation advice. Ownership is the form and encounter type. |
 | Laboratory | Test-order ancestry, lab-result encounters, and observations linked to a test order. |
 | Pharmacy | Drug-order ancestry, FHIR MedicationRequest reads, and MedicationDispense writes linked to a drug order. |
+| Appointments | Existing View Appointments and View Appointment Services for read. Manage Appointments for create, status change, and reschedule. Recurring saves are advised because that service has no privilege check. |
 
 ## Frontend
 
@@ -139,6 +143,9 @@ still use their upstream task privileges.
   flush first.
 * A Clinician who does not hold a matrix role is not guarded. Hiding a button
   does not deny that API.
+* A matrix role without Appointments write is denied on recurring appointment
+  saves. Appointments 2.1.0 does not check `AppointmentRecurringPatternService`.
+  A user who holds no matrix role keeps that upstream behavior.
 * Nested encounter, visit, and FHIR filtering is proven on the JSON walker and
   the policy tests, not by an HTTP call against a running backend.
 

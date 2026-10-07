@@ -29,7 +29,7 @@ public class ModuleEntitlementsTest {
 
 	// Independent transcription of the approved matrix, module rows / role columns.
 	private static final String[] MATRIX = { "WRRRRRRWW", "NWRRRRRWW", "NWWNNNNWW", "NNNNNNWWW", "NWWNNWNWW",
-	        "NNWWNWNWW", "NWNNNWNWW", "NWWNWWNWW", "NWRNNWNWW", "NWRNNWNWW", "NWNNNWNWW" };
+	        "NNWWNWNWW", "NWNNNWNWW", "NWWNWWNWW", "NWRNNWNWW", "NWRNNWNWW", "NWNNNWNWW", "RWWRRRRWR" };
 
 	static Map<String, String[]> roles() throws Exception {
 		Map<String, String[]> rows = new HashMap<>();
@@ -62,8 +62,10 @@ public class ModuleEntitlementsTest {
 
 	@Test public void configuredEffectiveGrantsMatchAll99CellsIncludingReadAndWrite() throws Exception {
 		Map<String, String[]> rows = roles();
-		assertEquals(11, ModuleAccess.values().length);
+		assertEquals(12, ModuleAccess.values().length);
+		assertEquals(ModuleAccess.APPOINTMENTS, ModuleAccess.values()[11]);
 		assertEquals("Labor & Delivery row", "NWRNNWNWW", MATRIX[8]);
+		assertEquals("Appointments row", "RWWRRRRWR", MATRIX[11]);
 		for (int r = 0; r < ROLES.length; r++) {
 			Set<String> privileges = grants(ROLES[r], rows, new HashSet<String>());
 			for (int m = 0; m < MATRIX.length; m++) {
@@ -207,6 +209,36 @@ public class ModuleEntitlementsTest {
 		for (String role : new String[] { "Registrar", "Lab Technician", "Finance" }) {
 			assertFalse(role, grants(role, rows, new HashSet<String>()).contains("Get Concept Sources"));
 		}
+	}
+
+	@Test public void appointmentsReadNeverIncludesManageAndDoesNotCountAsClinicalRead() throws Exception {
+		Map<String, String[]> rows = roles();
+		String[] readOnly = { "Registrar", "Lab Technician", "Pharmacist", "Midwife", "Finance", "Facility in-charge" };
+		String[] write = { "Nurse", "Physician Assistant", "Systems Administrator" };
+		String[] notGranted = { "Manage Own Appointments", "Manage Appointment Services", "Manage Appointment Specialities",
+		        "Reset Appointment Status", "Appointments: Invite Providers", "app:appointments:manageServices",
+		        "app:appointments:manageServiceAvailability" };
+		for (String role : readOnly) {
+			Set<String> privileges = grants(role, rows, new HashSet<String>());
+			assertEquals(role, Access.READ, ModuleAccess.APPOINTMENTS.access(privileges));
+			assertFalse(role, privileges.contains("Manage Appointments"));
+			for (String privilege : notGranted) {
+				assertFalse(role + " " + privilege, privileges.contains(privilege));
+			}
+		}
+		for (String role : write) {
+			Set<String> privileges = grants(role, rows, new HashSet<String>());
+			assertEquals(role, Access.WRITE, ModuleAccess.APPOINTMENTS.access(privileges));
+			assertTrue(role, privileges.contains("Manage Appointments"));
+			assertTrue(role, privileges.contains("View Appointments"));
+			assertTrue(role, privileges.contains("View Appointment Services"));
+			for (String privilege : notGranted) {
+				assertFalse(role + " " + privilege, privileges.contains(privilege));
+			}
+		}
+		assertFalse(ModulePrivileges.anyClinicalRead(grants("Registrar", rows, new HashSet<String>())));
+		assertFalse(ModulePrivileges.anyClinicalRead(ModuleAccess.APPOINTMENTS.readPrivileges()));
+		assertFalse(ModuleAccess.APPOINTMENTS.allows(ModuleAccess.APPOINTMENTS.readPrivileges(), Access.WRITE));
 	}
 
 	@Test public void onlyTheTwelveApprovedPrivilegesAreCreated() throws Exception {

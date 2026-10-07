@@ -67,7 +67,11 @@ public final class ModulePrivileges {
 
 	public static boolean anyClinicalRead(Collection<String> privileges) {
 		for (ModuleAccess module : ModuleAccess.values()) {
-			if (module == ModuleAccess.REGISTRATION || module == ModuleAccess.BILLING) { continue; }
+			// Appointments is its own privilege bundle. Counting it here would proxy Get Encounters for Registrar.
+			if (module == ModuleAccess.REGISTRATION || module == ModuleAccess.BILLING
+			        || module == ModuleAccess.APPOINTMENTS) {
+				continue;
+			}
 			if (module.allows(privileges, Access.READ)) { return true; }
 		}
 		return false;

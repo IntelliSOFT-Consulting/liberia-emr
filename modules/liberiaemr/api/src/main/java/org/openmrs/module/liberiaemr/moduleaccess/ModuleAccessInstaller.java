@@ -55,7 +55,58 @@ public final class ModuleAccessInstaller {
 		adviseDispense();
 		adviseFhirWrites();
 		advisePharmacyReads();
+		adviseRecurringAppointmentWrites();
 		installed = true;
+	}
+
+	/**
+	 * Appointments 2.1.0 authorizes single saves, status changes, and reschedules. Recurring saves
+	 * go through a service with no {@code @Authorized} check, so a matrix role needs Appointments write.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static void adviseRecurringAppointmentWrites() {
+		try {
+			Class type = Class.forName("org.openmrs.module.appointments.service.AppointmentRecurringPatternService");
+			List<?> beans = Context.getRegisteredComponents(type);
+			if (beans == null || beans.isEmpty()) {
+				log.info("Recurring appointment writes stay on their own checks; the service is not installed");
+				return;
+			}
+			RecurringAppointmentWrite advice = new RecurringAppointmentWrite();
+			boolean advised = false;
+			for (Object bean : beans) {
+				if (!(bean instanceof Advised)) { continue; }
+				((Advised) bean).addAdvisor(0, new StaticMethodMatcherPointcutAdvisor(advice) {
+					@Override
+					public boolean matches(Method method, Class<?> targetClass) {
+						String name = method.getName();
+						return "validateAndSave".equals(name) || "update".equals(name) || "changeStatus".equals(name);
+					}
+				});
+				advised = true;
+			}
+			if (!advised) { log.warn("Module access could not advise recurring appointment writes"); }
+		}
+		catch (ClassNotFoundException e) {
+			log.info("Recurring appointment writes stay on their own checks; appointments is not installed");
+		}
+		catch (RuntimeException e) {
+			log.info("Recurring appointment writes stay on their own checks");
+		}
+	}
+
+	/** Matrix roles need Appointments write. Everyone else keeps the appointments module's own check. */
+	static void requireAppointmentWrite() {
+		if (ModulePrivileges.matrixRole() && !ModuleAccess.APPOINTMENTS.allows(ModulePrivileges.current(), Access.WRITE)) {
+			throw new ContextAuthenticationException("Module access denied");
+		}
+	}
+
+	static final class RecurringAppointmentWrite implements MethodInterceptor {
+		public Object invoke(MethodInvocation invocation) throws Throwable {
+			requireAppointmentWrite();
+			return invocation.proceed();
+		}
 	}
 
 	/**

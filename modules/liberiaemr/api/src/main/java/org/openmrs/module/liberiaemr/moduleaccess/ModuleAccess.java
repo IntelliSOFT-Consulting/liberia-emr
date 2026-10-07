@@ -15,9 +15,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The approved module entitlements. Registration and billing name the existing OpenMRS bundles.
- * Clinical modules add a privilege OpenMRS does not have. These checks supplement operation
- * privileges; they do not replace them.
+ * The approved module entitlements. Registration, billing, and appointments name the existing
+ * OpenMRS bundles. Clinical modules add a privilege OpenMRS does not have. These checks supplement
+ * operation privileges; they do not replace them.
  */
 public enum ModuleAccess {
 	REGISTRATION(new String[] { "Get Patients", "Get People", "Get Patient Identifiers", "Get Relationships" },
@@ -34,7 +34,9 @@ public enum ModuleAccess {
 	PHARMACY("Manage Pharmacy"),
 	LABOR_AND_DELIVERY("Read Labor and Delivery", "Write Labor and Delivery"),
 	IMMUNIZATION("Read Immunization", "Write Immunization"),
-	FAMILY_PLANNING("Manage Family Planning");
+	FAMILY_PLANNING("Manage Family Planning"),
+	APPOINTMENTS(new String[] { "View Appointments", "View Appointment Services" },
+	        new String[] { "View Appointments", "View Appointment Services", "Manage Appointments" });
 
 	public enum Access { NONE, READ, WRITE }
 
