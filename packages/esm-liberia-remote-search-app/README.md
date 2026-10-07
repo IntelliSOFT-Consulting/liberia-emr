@@ -45,8 +45,12 @@ patient-search app fails the image build instead of shipping without the feature
 | Call | Needs | Purpose |
 | --- | --- | --- |
 | `GET /ws/rest/v1/liberiaemr/remotesearch/status` | Get Patients | whether central is configured |
-| `GET /ws/rest/v1/liberiaemr/remotesearch?q=` | Get Patients | search central; leaves out patients already here and returns `alreadyLocalCount` |
-| `POST /ws/rest/v1/liberiaemr/importpatient` `{ "remoteUuid" }` | Add Patients | copy the patient and their clinical history |
+| `GET /ws/rest/v1/liberiaemr/remotesearch?q=` | Get Patients | search central; a patient already here is flagged `alreadyLocal: true` and offered as Open |
+| `POST /ws/rest/v1/liberiaemr/importpatient` `{ "remoteUuid", "reason" }` | Add Patients, Import Remote Patient | create the patient shell and fetch their history from other facilities; the reason for access is logged with the fetch |
+
+Import & Open shows only to a user with both privileges; anyone else sees "Ask a Records Officer
+to import this patient." Before anything is sent, a modal asks for the reason for access
+(ADR 0007 condition 3): Visiting patient, Referral in, Emergency, or Other with a description.
 
 The central URL and service account are **backend** settings, not this app's: `LIBERIAEMR_REMOTE_URL`
 (https only), `LIBERIAEMR_REMOTE_USER` and `LIBERIAEMR_REMOTE_PASSWORD` (or
@@ -70,7 +74,7 @@ The central URL and service account are **backend** settings, not this app's: `L
 
 Messages shown to clinicians. Empty uses the built-in translated text; set one to replace it
 (`{{query}}`, `{{count}}` are filled in where noted in `config-schema.ts`):
-`searchingMessage`, `noResultsMessage`, `alreadyLocalMessage`, `minCharactersMessage`,
+`searchingMessage`, `noResultsMessage`, `minCharactersMessage`,
 `unavailableTitle`, `unavailableMessage`, `offlineMessage`, `importSuccessMessage`.
 
 ## Development

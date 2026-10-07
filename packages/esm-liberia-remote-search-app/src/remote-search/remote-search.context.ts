@@ -1,4 +1,4 @@
-import { createGlobalStore, getConfig, useConfig, useStore } from '@openmrs/esm-framework';
+import { createGlobalStore, getConfig, useConfig, useSession, userHasAccess, useStore } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useState } from 'react';
 import { useRemoteSearchStatus } from './import-patient.resource';
 
@@ -131,4 +131,15 @@ export function useRemoteSearchAvailability() {
     isAvailable: config?.enabled !== false && status?.enabled === true,
     isOffline,
   };
+}
+
+/**
+ * The server's import endpoint needs both: Add Patients, and Import Remote Patient on top of it
+ * (LE-384). A user without them sees a hint instead of the Import & Open button.
+ */
+export const importPrivileges = ['Add Patients', 'Import Remote Patient'];
+
+export function useCanImportRemotePatient() {
+  const session = useSession();
+  return Boolean(session?.user && userHasAccess(importPrivileges, session.user));
 }

@@ -46,7 +46,11 @@ const RemoteSearchToggle: React.FC<RemoteSearchToggleProps> = (props) => {
       </div>
       <p className={styles.toggleHint}>
         {isOffline
-          ? message('offlineMessage', 'remoteSearchOffline', 'Remote Search is unavailable while offline')
+          ? message(
+              'offlineMessage',
+              'remoteSearchOffline',
+              'Remote Search is unavailable offline. This facility cannot reach central.',
+            )
           : (config?.emptyStateHint ??
             t('remoteSearchHint', "Can't find the patient you're looking for? Try Remote Search"))}
       </p>

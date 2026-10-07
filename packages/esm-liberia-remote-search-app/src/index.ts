@@ -28,3 +28,5 @@ export const remoteSearchSummary = getAsyncLifecycle(
   () => import('./remote-search/remote-search-summary.component'),
   options,
 );
+
+export const reasonForAccessModal = getAsyncLifecycle(() => import('./remote-search/reason-for-access.modal'), options);

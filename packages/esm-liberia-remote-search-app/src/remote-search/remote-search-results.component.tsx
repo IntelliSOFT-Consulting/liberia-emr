@@ -7,6 +7,7 @@ import {
   PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
+  showModal,
   showSnackbar,
   useConfig,
 } from '@openmrs/esm-framework';
@@ -22,6 +23,7 @@ import {
 import {
   resetRemoteSearchToggle,
   setRemoteCount,
+  useCanImportRemotePatient,
   useRemoteSearchAvailability,
   useRemoteSearchToggle,
 } from './remote-search.context';
@@ -52,7 +54,9 @@ type RemoteSearchResultsProps = SlotState & { state?: SlotState };
 
 interface RemotePatientCardProps {
   patient: RemoteSearchedPatient;
+  canImport: boolean;
   onImport: (uuid: string) => void;
+  onOpen: (uuid: string) => void;
   isImporting: boolean;
   buttonLabel?: string;
   variant: 'row' | 'card';
@@ -60,7 +64,9 @@ interface RemotePatientCardProps {
 
 const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
   patient,
+  canImport,
   onImport,
+  onOpen,
   isImporting,
   buttonLabel,
   variant,
@@ -70,11 +76,31 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
   const fhirPatient = useMemo(() => toFhirPatient(patient), [patient]);
   const patientName = getPatientName(fhirPatient);
 
-  const importButton = (
-    <Button kind="primary" size="md" onClick={() => onImport(patient.uuid)} disabled={isImporting}>
-      {isImporting ? t('importing', 'Importing...') : (buttonLabel ?? t('importAndOpen', 'Import & Open'))}
-    </Button>
-  );
+  // Imported earlier: open the existing chart, with no reason asked and nothing imported (mockup 3c).
+  // Otherwise Import & Open for those allowed to import (1a), and a hint for everyone else (1b).
+  let action: React.ReactNode;
+  if (patient.alreadyLocal) {
+    action = (
+      <div className={styles.actionWithHint}>
+        <span className={styles.actionHint}>{t('alreadyImported', 'Already imported at this facility')}</span>
+        <Button kind="primary" size="md" onClick={() => onOpen(patient.uuid)}>
+          {t('open', 'Open')}
+        </Button>
+      </div>
+    );
+  } else if (canImport) {
+    action = (
+      <Button kind="primary" size="md" onClick={() => onImport(patient.uuid)} disabled={isImporting}>
+        {isImporting ? t('importing', 'Importing...') : (buttonLabel ?? t('importAndOpen', 'Import & Open'))}
+      </Button>
+    );
+  } else {
+    action = (
+      <span className={styles.actionHint}>
+        {t('askRecordsOfficer', 'Ask a Records Officer to import this patient.')}
+      </span>
+    );
+  }
 
   const banner = (
     <div className={styles.patientBanner}>
@@ -90,7 +116,7 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
     return (
       <div className={styles.rowContainer} role="banner">
         {banner}
-        <div className={styles.rowAction}>{importButton}</div>
+        <div className={styles.rowAction}>{action}</div>
       </div>
     );
   }
@@ -103,7 +129,7 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
           showContactDetails={showMore}
           toggleContactDetails={() => setShowMore((open) => !open)}
         />
-        <div className={styles.rightActions}>{importButton}</div>
+        <div className={styles.rightActions}>{action}</div>
       </div>
       {showMore && (
         <dl className={styles.moreDetails}>
@@ -148,6 +174,7 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
   const config = useConfig();
   const { isAvailable, isOffline } = useRemoteSearchAvailability();
   const { isRemoteSearchEnabled, toggleRemoteSearch } = useRemoteSearchToggle();
+  const canImport = useCanImportRemotePatient();
   const [importingUuids, setImportingUuids] = useState<Set<string>>(new Set());
 
   const slot = readSlotProps<SlotState>(props);
@@ -163,11 +190,7 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
   const hasSidebarToggle = isFullPage && !inTabletOrOverlay;
   const searchActive = isAvailable && !isOffline && isRemoteSearchEnabled;
 
-  const { results, alreadyLocalCount, isLoading, error, hasSearched } = useRemotePatientSearch(
-    query,
-    searchActive,
-    minLength,
-  );
+  const { results, isLoading, error, hasSearched } = useRemotePatientSearch(query, searchActive, minLength);
 
   // Each new search starts with Remote Search off (or the configured default): the user turns it
   // on when they need it. The slot mounts with the search and unmounts when it is closed.
@@ -199,16 +222,30 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
     return (
       <div className={styles.toggleOffFooter}>
         <span className={styles.toggleOffHint}>
-          {message('offlineMessage', 'remoteSearchOffline', 'Remote Search is unavailable while offline')}
+          {message(
+            'offlineMessage',
+            'remoteSearchOffline',
+            'Remote Search is unavailable offline. This facility cannot reach central.',
+          )}
         </span>
       </div>
     );
   }
 
-  const handleImport = async (remoteUuid: string) => {
+  const openPatient = async (patientUuid: string) => {
+    if (onPatientSelected) {
+      // Inside a workspace the flow (add to queue, book appointment...) takes over.
+      onPatientSelected(patientUuid, await fetchFhirPatient(patientUuid));
+    } else {
+      onPatientOpened?.(patientUuid);
+      navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart` });
+    }
+  };
+
+  const runImport = async (remoteUuid: string, reason: string) => {
     setImportingUuids((prev) => new Set(prev).add(remoteUuid));
     try {
-      const { localUuid } = await importRemotePatient(remoteUuid);
+      const { localUuid } = await importRemotePatient(remoteUuid, reason);
 
       showSnackbar({
         isLowContrast: true,
@@ -216,13 +253,7 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
         kind: 'success',
       });
 
-      if (onPatientSelected) {
-        // Inside a workspace the flow (add to queue, book appointment...) takes over.
-        onPatientSelected(localUuid, await fetchFhirPatient(localUuid));
-      } else {
-        onPatientOpened?.(localUuid);
-        navigate({ to: `\${openmrsSpaBase}/patient/${localUuid}/chart` });
-      }
+      await openPatient(localUuid);
     } catch (err: any) {
       showSnackbar({
         isLowContrast: true,
@@ -238,6 +269,13 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
         return next;
       });
     }
+  };
+
+  // ADR 0007: the reason for access comes first. Cancelling the modal sends nothing.
+  const handleImport = (remoteUuid: string) => {
+    showModal('liberia-reason-for-access-modal', {
+      onConfirm: (reason: string) => runImport(remoteUuid, reason),
+    });
   };
 
   // Off state on the dropdown/workspace: just the hint and the toggle. The sidebar card is the toggle there.
@@ -314,19 +352,12 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
                     'Enter at least {{count}} characters to search the central server.',
                     { count: minLength },
                   )
-                : alreadyLocalCount > 0
-                  ? message(
-                      'alreadyLocalMessage',
-                      'alreadyAtFacility',
-                      '{{count}} matching patient(s) on the central server are already at this facility. See the local results.',
-                      { count: alreadyLocalCount, query: query.trim() },
-                    )
-                  : message(
-                      'noResultsMessage',
-                      'noRemoteResults',
-                      'No patients on the central server match "{{query}}".',
-                      { query: query.trim() },
-                    )}
+                : message(
+                    'noResultsMessage',
+                    'noRemoteResults',
+                    'No patients on the central server match "{{query}}".',
+                    { query: query.trim() },
+                  )}
             </div>
           )}
 
@@ -341,7 +372,9 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
                   key={patient.uuid}
                   patient={patient}
                   variant={isFullPage ? 'card' : 'row'}
+                  canImport={canImport}
                   onImport={handleImport}
+                  onOpen={openPatient}
                   isImporting={importingUuids.has(patient.uuid)}
                   buttonLabel={config?.importButtonLabel}
                 />
