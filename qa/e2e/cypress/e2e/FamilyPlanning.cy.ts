@@ -47,4 +47,17 @@ describe('Family Planning form', () => {
         familyPlanningForm.selectCounsellingDone('Yes');
         familyPlanningForm.verifyEmptyPurposeOfVisitBlocksSave();
     });
+
+    it('FP-03/FP-04: hides downstream fields and saves when counselling is not done', () => {
+        familyPlanningForm.selectClientType('New Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('No');
+        familyPlanningForm.verifyCounsellingNoHidesDownstreamFields();
+        familyPlanningForm.saveAndVerifyCounsellingNo('New Family Planning Client');
+
+        familyPlanningForm.reopenForm();
+        familyPlanningForm.selectClientType('Continuing Family Planning Client');
+        familyPlanningForm.selectCounsellingDone('No');
+        familyPlanningForm.verifyCounsellingNoHidesDownstreamFields();
+        familyPlanningForm.saveAndVerifyCounsellingNo('Continuing Family Planning Client');
+    });
 });

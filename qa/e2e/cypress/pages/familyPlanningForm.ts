@@ -78,6 +78,62 @@ class FamilyPlanningFormPage {
         cy.get('label[for^="purposeOfVisit-"]').should('be.visible');
         cy.contains('button', /^Save$/).should('be.visible');
     }
+
+    verifyCounsellingNoHidesDownstreamFields() {
+        cy.get('input[id="counsellingDone-No"]', { timeout: this.timeout }).should('be.checked');
+        this.downstreamQuestionIds.forEach((fieldId) => {
+            cy.get(`[data-testid="${fieldId}-label"]`).should('not.exist');
+        });
+        this.downstreamSections.forEach((section) => {
+            cy.contains(section).should('not.exist');
+        });
+    }
+
+    saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
+
+        cy.wait('@saveFamilyPlanning', { timeout: this.timeout }).then(({ request, response }) => {
+            expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
+            const observations = request.body.obs as Array<{ formFieldPath?: string; value?: unknown }>;
+            const valueFor = (fieldId: string) => {
+                const value = observations.find((observation) => observation.formFieldPath === `rfe-forms-${fieldId}`)?.value;
+                return typeof value === 'object' && value !== null ? (value as { uuid?: string }).uuid : value;
+            };
+
+            expect(
+                observations.map((observation) => observation.formFieldPath).sort(),
+                'submitted Family Planning observations'
+            ).to.deep.equal(['rfe-forms-counsellingDone', 'rfe-forms-familyPlanningClientType']);
+            expect(valueFor('familyPlanningClientType'), 'saved client type').to.equal(this.clientTypeAnswers[clientType]);
+            expect(valueFor('counsellingDone'), 'saved counselling done').to.equal(this.noAnswer);
+        });
+        cy.contains('button', /^Save$/, { timeout: this.timeout }).should('not.exist');
+    }
+
+    private readonly noAnswer = '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+    private readonly clientTypeAnswers = {
+        'New Family Planning Client': '5f3c9e14-0a27-4e5a-b243-e2c608a4d7f6',
+        'Continuing Family Planning Client': '7a5e0b36-2c49-4e7c-8465-04e82ac6f9b8',
+    };
+
+    private readonly downstreamQuestionIds = [
+        'purposeOfVisit',
+        'parity',
+        'chosenFamilyPlanningMethod',
+        'familyPlanningMethodDispensed',
+    ];
+
+    private readonly downstreamSections = [
+        'Obstetric Profile',
+        'Method Record',
+        'Pregnancy Assessment',
+        'LAM Assessment',
+        'Implant Eligibility Assessment',
+        'Implant Procedure',
+        'Method Removal',
+    ];
 }
 
 export default FamilyPlanningFormPage;
