@@ -75,6 +75,7 @@ public final class ModuleAccessGuard implements MethodInterceptor {
 	/** Read proxies kept until the REST filter finishes rendering the response. */
 	private static final ThreadLocal<List<String>> heldReads = new ThreadLocal<>();
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		if (inside.get() != null || !ModulePrivileges.matrixRole()) { return invocation.proceed(); }
 		inside.set(Boolean.TRUE);

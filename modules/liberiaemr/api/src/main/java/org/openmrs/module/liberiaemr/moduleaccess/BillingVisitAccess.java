@@ -44,6 +44,7 @@ public final class BillingVisitAccess implements MethodInterceptor {
 
 	public static boolean openNow() { return OPEN.get() != null; }
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		if (OPEN.get() == null || !ModuleAccess.BILLING.allows(ModulePrivileges.current(), Access.WRITE)) {
 			return invocation.proceed();

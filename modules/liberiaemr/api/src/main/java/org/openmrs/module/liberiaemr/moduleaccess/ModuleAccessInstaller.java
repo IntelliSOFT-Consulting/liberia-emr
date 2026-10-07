@@ -103,6 +103,7 @@ public final class ModuleAccessInstaller {
 	}
 
 	static final class RecurringAppointmentWrite implements MethodInterceptor {
+		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
 			requireAppointmentWrite();
 			return invocation.proceed();
@@ -307,6 +308,7 @@ public final class ModuleAccessInstaller {
 
 		FhirWriteAdvice(Class<?> recordType) { this.recordType = recordType; }
 
+		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
 			if (!ModulePrivileges.matrixRole()) { return invocation.proceed(); }
 			boolean delete = "delete".equals(invocation.getMethod().getName());
@@ -344,6 +346,7 @@ public final class ModuleAccessInstaller {
 
 		PharmacyFhirRead(String privilege) { this.privilege = privilege; }
 
+		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
 			if (!ModulePrivileges.matrixRole()
 			        || !ModuleAccess.PHARMACY.allows(ModulePrivileges.current(), Access.READ)) {
@@ -364,6 +367,7 @@ public final class ModuleAccessInstaller {
 	}
 
 	static final class DispenseAdvice implements MethodInterceptor {
+		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
 			if (!ModulePrivileges.matrixRole()) { return invocation.proceed(); }
 			boolean delete = "delete".equals(invocation.getMethod().getName());
