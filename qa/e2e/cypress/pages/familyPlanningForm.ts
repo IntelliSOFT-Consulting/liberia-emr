@@ -1,4 +1,4 @@
-import { DateParts, toDateParts } from '../support/faker';
+import { toDateParts } from '../support/faker';
 
 type Guidance = keyof typeof FamilyPlanningFormPage.guidanceText;
 
