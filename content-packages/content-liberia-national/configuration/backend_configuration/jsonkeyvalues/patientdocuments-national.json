@@ -1,0 +1,21 @@
+{
+    "report.patientIdSticker.stylesheet": "patientIdStickerFopStylesheet.xsl",
+    "report.patientIdSticker.logourl": "configuration/branding/moh-liberia-seal.png",
+    "report.patientIdSticker.header": "true",
+    "report.patientIdSticker.barcode": "true",
+    "report.patientIdSticker.pages": "1",
+    "report.patientIdSticker.size.width": "54mm",
+    "report.patientIdSticker.size.height": "86mm",
+    "report.patientIdSticker.fields.identifier": "true",
+    "report.patientIdSticker.fields.identifier.secondary": "true",
+    "report.patientIdSticker.fields.identifier.secondary.type": "${var.identifiertype.national-id.uuid}",
+    "report.patientIdSticker.fields.name": "true",
+    "report.patientIdSticker.fields.gender": "true",
+    "report.patientIdSticker.fields.dob": "true",
+    "report.patientIdSticker.fields.age": "false",
+    "report.patientIdSticker.fields.fulladdress": "true",
+    "report.patientIdSticker.fields.label.font.size": "5",
+    "report.patientIdSticker.fields.label.value.font.size": "7",
+    "report.patientIdSticker.fields.label.gap": "1mm",
+    "report.encounterPrinting.logopath": "configuration/branding/moh-liberia-seal.png"
+}

@@ -53,6 +53,27 @@ server {
         proxy_read_timeout 300s;
     }
 
+    # Printed PDFs (patient card / identifier sticker, encounter forms). The label-printing app
+    # loads the PDF into a hidden same-origin iframe and calls print() on it; under the
+    # server-wide DENY the browser refuses the frame and the click silently does nothing.
+    # SAMEORIGIN here only: other sites still cannot frame it, and DENY stays everywhere else.
+    #
+    # add_header in a location drops every add_header inherited from the server block, so the
+    # other security headers are repeated. Keep them in step with the ones above.
+    location /openmrs/ws/rest/v1/patientdocuments/ {
+        proxy_pass http://backend:8080/openmrs/ws/rest/v1/patientdocuments/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy no-referrer always;
+    }
+
     location = / {
         return 302 /openmrs/spa/;
     }

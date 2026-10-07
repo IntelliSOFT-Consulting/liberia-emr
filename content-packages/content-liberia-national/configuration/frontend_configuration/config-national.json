@@ -94,6 +94,14 @@
       "patient-flags"
     ]
   },
+  "@openmrs/esm-patient-label-printing-app": {
+    "_comment": [
+      "DAK 3.1 patient card. Registration opens the chart; the banner's Actions > Print identifier",
+      "sticker prints the card. Its layout and logo are in the backend",
+      "jsonkeyvalues/patientdocuments-national.json."
+    ],
+    "showPrintIdentifierStickerButton": true
+  },
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": [
       "${var.identifiertype.moh-health-record.uuid}",
@@ -272,7 +280,16 @@
     ]
   },
   "@openmrs/esm-billing-app": {
-    "defaultCurrency": "LRD"
+    "defaultCurrency": "LRD",
+    "_comment_logo": [
+      "Printed invoice header. With logo.src and logo.alt both empty the app draws the OpenMRS",
+      "logo, and country defaults to 'Kenya'. The seal SVG carries its own 72px print size."
+    ],
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/moh-liberia-seal.svg",
+      "alt": "Ministry of Health, Republic of Liberia"
+    },
+    "country": "Republic of Liberia"
   },
   "@openmrs/esm-patient-chart-app": {
     "showServiceQueueFields": true,

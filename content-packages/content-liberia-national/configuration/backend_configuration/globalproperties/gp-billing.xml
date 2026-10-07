@@ -1,0 +1,17 @@
+<config>
+    <globalProperties>
+        <!-- Logo on the bill receipt PDF the billing module renders (ReceiptGenerator). Relative
+             to the application data directory; blank or missing falls back to the OpenMRS logo.
+             The same seal as the patient card: see branding/README.md. -->
+        <globalProperty>
+            <property>billing.receipt.logoPath</property>
+            <value>configuration/branding/moh-liberia-seal.png</value>
+        </globalProperty>
+        <!-- Currency on the receipt. Unset, it is the default locale's, which for "en" (no
+             country) is the generic sign. Matches defaultCurrency in config-national.json. -->
+        <globalProperty>
+            <property>billing.currencySymbol</property>
+            <value>LRD</value>
+        </globalProperty>
+    </globalProperties>
+</config>
