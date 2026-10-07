@@ -1,7 +1,7 @@
 type ChildPriority = 'Non-urgent Priority' | 'Urgent Priority' | 'Emergency Priority';
 
 class TriageFormPage {
-    constructor(private readonly timeout = 20000) {}
+    constructor(protected readonly timeout = 20000) {}
 
     private readonly categoryNames: Record<ChildPriority, string> = {
         'Non-urgent Priority': 'Green',
@@ -26,15 +26,21 @@ class TriageFormPage {
         cy.contains('[role="option"], .cds--list-box__menu-item', category, { timeout: this.timeout }).click();
     }
 
-    private enterVitals(vitals = this.normalVitals) {
+    protected enterVitals(vitals = this.normalVitals) {
         vitals.forEach(({ id, value }) => {
             cy.get(`#${id}`, { timeout: this.timeout }).scrollIntoView().type(`{selectall}${value}`).blur();
         });
     }
 
-    private submitAssessment() {
+    protected submitAssessment() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveTriage');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
+    }
+
+    protected assertWarningsVisible(warnings: string[]) {
+        warnings.forEach((warning) => {
+            cy.contains(warning, { timeout: this.timeout }).scrollIntoView().should('be.visible');
+        });
     }
 
     private assertCodedAnswer(value: string | number | undefined, expectedName: string) {
@@ -123,14 +129,18 @@ class TriageFormPage {
     }
 
     verifyNumericLimits() {
-        [
+        this.verifyNumericFieldLimits([
             { id: 'temp', min: '20', max: '45', below: '19.9', above: '45.1' },
             { id: 'hr', min: '0', max: '300', below: '-1', above: '301' },
             { id: 'rr', min: '0', max: '80', below: '-1', above: '81' },
             { id: 'spo2', min: '0', max: '100', below: '-1', above: '101' },
             { id: 'weight', min: '0', max: '250', below: '-0.1', above: '250.1' },
             { id: 'height', min: '10', max: '272', below: '9.9', above: '272.1' }
-        ].forEach(({ id, min, max, below, above }) => {
+        ]);
+    }
+
+    protected verifyNumericFieldLimits(fields: Array<{ id: string; min: string; max: string; below: string; above: string }>) {
+        fields.forEach(({ id, min, max, below, above }) => {
             cy.get(`#${id}`, { timeout: this.timeout })
                 .scrollIntoView()
                 .should('have.attr', 'min', min)
@@ -207,14 +217,12 @@ class TriageFormPage {
             { id: 'muac', value: '15.5' }
         ]);
 
-        [
+        this.assertWarningsVisible([
             'Temperature is outside the normal range (36–38 °C). Please verify the reading.',
             'Heart Rate is outside the normal range (60–100 bpm). Please verify the reading.',
             'Respiratory Rate is outside the normal range (12–26 breaths/min). Please verify the reading.',
             'SpO₂ below 95% — please verify the reading and consider clinical review.'
-        ].forEach((warning) => {
-            cy.contains(warning, { timeout: this.timeout }).scrollIntoView().should('be.visible');
-        });
+        ]);
 
         this.submitAssessment();
         cy.wait('@saveTriage', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);

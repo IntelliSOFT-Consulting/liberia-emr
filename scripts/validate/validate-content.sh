@@ -684,6 +684,41 @@ sys.exit(1 if problems else 0)
 PY
 ok "location tags resolve and are declared once"
 
+# Initializer loads a CSV row by row, keyed by its Uuid column, and re-applies every row on each
+# start: a second row with the same UUID silently overwrites the first, so a merge that keeps
+# both sides of a conflict (an old and a new role row, say) reverts the newer one in production.
+# content-demo is lifted unchanged from upstream (lift-demo-content.sh --check), so it is skipped.
+section "duplicate UUID rows"
+if ! python3 - "$PKG_DIR" <<'PY'
+import csv, glob, os, sys
+root = sys.argv[1]
+problems = []
+for path in sorted(glob.glob(os.path.join(root, "*", "configuration", "**", "*.csv"), recursive=True)):
+    rel = os.path.relpath(path, root)
+    if "/target/" in path or rel.startswith("content-demo" + os.sep):
+        continue
+    with open(path, encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    if not rows or not rows[0] or rows[0][0].strip().lower() != "uuid":
+        continue
+    first = {}
+    for number, row in enumerate(rows[1:], start=2):
+        key = row[0].strip() if row else ""
+        if not key:
+            continue
+        if key in first:
+            problems.append(f"{rel}: {key} on line {number} repeats line {first[key]}")
+        else:
+            first[key] = number
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+then
+  err "an Initializer CSV has two rows with the same UUID; the later one silently wins on every start"
+fi
+ok "no Initializer CSV repeats a UUID"
+
 section "CSV row column counts"
 # Initializer's CsvLine.get(header) accesses line[columnIndex] directly.
 # If a row has fewer columns than the non-metadata headers, it throws ArrayIndexOutOfBoundsException.
@@ -896,6 +931,85 @@ sys.exit(1 if problems else 0)
 PYGRP
 ok "every obsGroup in a form has its own group concept"
 
+
+section "account lockout configuration (not runtime authentication)"
+# MOH ICT SOP A6: lock on the fifth consecutive failure. OpenMRS 2.8.8 locks when failures
+# EXCEED security.allowedFailedLoginsBeforeLockout, so the value is 4; 5 would lock on the
+# sixth. security.unlockAccountWaitingTime is the recovery interval in minutes. A retry while
+# locked resets lockoutTimestamp; this check cannot see that runtime behavior.
+#
+# security.validTime is read by core. It is password-reset activation-key validity in
+# milliseconds, not lockout duration. 300000 (5 minutes) is shipped explicitly so a clean
+# install does not fall back to core's 600000 ms default while an upgraded database keeps
+# another value. security.loginAttemptsBeforeLockout is not read by the 2.8.8 lockout
+# mechanism; shipping it looks compliant and enforces nothing.
+#
+# Each of the three properties is defined once, in national gp-security.xml. A second
+# definition anywhere else competes, and whichever Initializer applies last is enforced.
+# Every declaration of the threshold variable must be 4, because a site layer may override
+# a shared key and would otherwise silently loosen the control.
+#
+# This checks shipped configuration only. What has been verified at runtime is recorded in
+# docs/security/account-lockout-verification.md.
+python3 - "$PKG_DIR" <<'PY' || err "account lockout configuration (see above)"
+import glob, os, sys
+import xml.etree.ElementTree as ET
+
+pkg_dir = sys.argv[1]
+rel = lambda p: os.path.relpath(p, os.path.dirname(pkg_dir))
+VARIABLE = "var.security.login.allowed-failures-before-lockout"
+EXPECTED = {"security.allowedFailedLoginsBeforeLockout": "${" + VARIABLE + "}",
+            "security.unlockAccountWaitingTime": "5",
+            "security.validTime": "300000"}
+RETIRED_GPS = ("security.loginAttemptsBeforeLockout",)
+RETIRED_VAR = "var.security.login.max-attempts"
+NATIONAL = "content-packages/content-liberia-national/configuration"
+AUTHORITY = f"{NATIONAL}/backend_configuration/globalproperties/gp-security.xml"
+problems = []
+
+defined = {name: [] for name in EXPECTED}
+for f in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/globalproperties/*")):
+    if not f.endswith((".xml", ".csv")):
+        continue
+    text = open(f, encoding="utf-8").read()
+    problems += [f"{rel(f)}: retired property {r} is not read by OpenMRS core"
+                 for r in RETIRED_GPS if r in text]
+    if f.endswith(".csv"):
+        problems += [f"{rel(f)}: defines {name} outside {AUTHORITY}" for name in EXPECTED if name in text]
+        continue
+    for gp in ET.parse(f).findall("./globalProperties/globalProperty"):
+        name = (gp.findtext("property") or "").strip()
+        if name in defined:
+            defined[name].append((rel(f), (gp.findtext("value") or "").strip()))
+
+for name, defs in defined.items():
+    if [f for f, _ in defs] != [AUTHORITY]:
+        problems.append(f"{name} must be defined exactly once, in {AUTHORITY}; "
+                        f"found in: {', '.join(f for f, _ in defs) or 'nowhere'}")
+    problems += [f"{f}: {name}={v}, expected {EXPECTED[name]}" for f, v in defs if v != EXPECTED[name]]
+
+declared_in = []
+for vf in sorted(glob.glob(f"{pkg_dir}/*/configuration/variables.properties")):
+    for n, line in enumerate(open(vf, encoding="utf-8"), start=1):
+        k, sep, v = line.strip().partition("=")
+        if not sep or k.startswith("#"):
+            continue
+        k, v = k.strip(), v.strip()
+        if k == RETIRED_VAR:
+            problems.append(f"{rel(vf)}:{n}: retired variable {RETIRED_VAR}")
+        if k == VARIABLE:
+            declared_in.append(rel(vf))
+            if v != "4":
+                problems.append(f"{rel(vf)}:{n}: {VARIABLE}={v}, expected 4 (locks on the fifth failure)")
+if f"{NATIONAL}/variables.properties" not in declared_in:
+    problems.append(f"{VARIABLE} is not declared in {NATIONAL}/variables.properties")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "lockout on the fifth failure, 5-minute recovery, activation-key validity 300000 ms; obsolete lockout name absent"
+
 section "session inactivity timeout"
 # MOH ICT SOP A7. The contractual maximum is 10 minutes of human inactivity.
 # The login app clamps at runtime. The backend image sets Tomcat's default
@@ -1006,6 +1120,18 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
 ok "10-minute human-idle config and Tomcat session timeout"
+
+# ADR 0013 / LE-384: the facility's cache of other facilities' history must never reach central.
+# eip.watchedTables is an allow-list of what dbsync sends, so a remote history table in it is a
+# leak of another facility's records back to central under their UUIDs.
+section "remote history tables stay out of sync"
+for f in "$ROOT"/distribution/sync/*.template "$ROOT"/distribution/sync/*.properties; do
+  [[ -f "$f" ]] || continue
+  if grep -iE '^[[:space:]]*eip\.watchedTables[[:space:]]*=' "$f" | grep -iqE 'liberiaemr_remote_history'; then
+    err "${f#$ROOT/}: eip.watchedTables names a liberiaemr_remote_history table; the remote history cache must never sync"
+  fi
+done
+ok "no liberiaemr_remote_history table in eip.watchedTables"
 
 echo
 if [[ $fail -ne 0 ]]; then

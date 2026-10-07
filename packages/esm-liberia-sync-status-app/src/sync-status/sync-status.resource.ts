@@ -42,9 +42,10 @@ const refreshInterval = 60_000;
 /** What openmrsFetch throws: an Error carrying the response, so the page can read its status. */
 type SyncStatusError = Error & { response?: { status?: number } };
 
-export function useSyncStatus() {
+/** Not asked at all when `enabled` is false: a user without View Sync Status would only get a 403. */
+export function useSyncStatus(enabled = true) {
   const { data, error, isLoading } = useSWR<{ data: SyncStatus }, SyncStatusError>(
-    `${restBaseUrl}/liberiaemr/syncstatus`,
+    enabled ? `${restBaseUrl}/liberiaemr/syncstatus` : null,
     openmrsFetch,
     { refreshInterval },
   );

@@ -140,12 +140,29 @@ public class ModuleEntitlementsTest {
 		clinicianBefore.addAll(Arrays.asList("Get Orders", "Add Orders", "Edit Orders", "Get Order Types", "Get Care Settings",
 		        "Get Patient Programs", "Add Patient Programs", "Edit Patient Programs", "Get Diagnoses", "Edit Diagnoses"));
 		assertEquals("", rows.get("Clinician")[5]);
-		assertEquals(clinicianBefore, grants("Clinician", rows, new HashSet<String>()));
+		Set<String> clinician = grants("Clinician", rows, new HashSet<String>());
+		assertTrue(clinician.containsAll(clinicianBefore));
+		// Main grants these through Nurse inheritance (queue, visit, bed, and remote history).
+		// Inheritance stays removed so Clinician does not gain Nurse's module-matrix privileges.
+		for (String privilege : Arrays.asList("Get People", "Edit Visits", "Get Visit Types", "Get Visit Attribute Types",
+		        "Get Beds", "Get Admission Locations", "Get Locations", "Get Queues", "Get Queue Entries",
+		        "Manage Queue Entries", "View Remote History")) {
+			assertTrue("Clinician " + privilege, clinician.contains(privilege));
+		}
+		for (String privilege : Arrays.asList("Write TB Screening", "Read TB Screening", "Manage General Consultation",
+		        "Manage ANC", "Manage Laboratory", "Manage PNC", "Manage Pharmacy", "Read Labor and Delivery",
+		        "Write Labor and Delivery", "Read Immunization", "Write Immunization", "Manage Family Planning",
+		        "View Appointments", "View Appointment Services", "Manage Appointments")) {
+			assertFalse("Clinician must not gain " + privilege, clinician.contains(privilege));
+		}
 		assertTrue(grants("Nurse", rows, new HashSet<String>()).containsAll(nurseBefore));
-		// Every user already has Get Locations through the core Authenticated role; only Records Officer granted it before.
-		for (String role : new String[] { "Registrar", "Nurse", "Physician Assistant", "Lab Technician", "Pharmacist", "Midwife",
-		        "Finance", "Systems Administrator", "Facility in-charge", "Clinician" }) {
+		// Authenticated already holds Get Locations. Main still grants it on the queue roles.
+		for (String role : new String[] { "Registrar", "Physician Assistant", "Finance", "Systems Administrator",
+		        "Facility in-charge" }) {
 			assertFalse(role, grants(role, rows, new HashSet<String>()).contains("Get Locations"));
+		}
+		for (String role : new String[] { "Nurse", "Midwife", "Pharmacist", "Lab Technician", "Clinician" }) {
+			assertTrue(role, grants(role, rows, new HashSet<String>()).contains("Get Locations"));
 		}
 		assertEquals("", rows.get("Midwife")[5]);
 		Set<String> midwife = grants("Midwife", rows, new HashSet<String>());
@@ -173,29 +190,45 @@ public class ModuleEntitlementsTest {
 				assertFalse(role + " must not gain " + privilege, privileges.contains(privilege));
 			}
 		}
-		for (String role : new String[] { "Finance", "Registrar", "Lab Technician", "Pharmacist" }) {
+		for (String role : new String[] { "Finance", "Registrar" }) {
 			assertFalse(role, grants(role, rows, new HashSet<String>()).contains("Get Visits"));
+		}
+		// Main gives the pharmacy and laboratory queues Get Visits. They do not check patients in.
+		for (String role : new String[] { "Lab Technician", "Pharmacist" }) {
+			Set<String> privileges = grants(role, rows, new HashSet<String>());
+			assertTrue(role, privileges.contains("Get Visits"));
+			assertFalse(role, privileges.contains("Add Visits"));
+			assertFalse(role, privileges.contains("Get Visit Attribute Types"));
 		}
 	}
 
-	@Test public void queueReadIsLimitedToTheFiveClinicalRoles() throws Exception {
+	@Test public void queueWriteFollowsMainCheckInRolesAndPhysicianAssistantStaysReadOnly() throws Exception {
 		Map<String, String[]> rows = roles();
-		for (String role : new String[] { "Nurse", "Midwife", "Physician Assistant", "Lab Technician", "Pharmacist" }) {
+		for (String role : new String[] { "Nurse", "Midwife", "Lab Technician", "Pharmacist" }) {
 			Set<String> privileges = grants(role, rows, new HashSet<String>());
 			assertTrue(role, privileges.contains("Get Queues"));
 			assertTrue(role, privileges.contains("Get Queue Entries"));
-			for (String write : Arrays.asList("Manage Queues", "Manage Queue Entries", "Purge Queues", "Purge Queue Entries",
-			        "Get Queue Rooms", "Manage Queue Rooms")) {
-				assertFalse(role + " " + write, privileges.contains(write));
+			assertTrue(role, privileges.contains("Manage Queue Entries"));
+			for (String extra : Arrays.asList("Manage Queues", "Purge Queues", "Purge Queue Entries", "Get Queue Rooms",
+			        "Manage Queue Rooms")) {
+				assertFalse(role + " " + extra, privileges.contains(extra));
 			}
 		}
-		for (String role : new String[] { "Registrar", "Finance", "Systems Administrator", "Facility in-charge", "Clinician" }) {
+		Set<String> assistant = grants("Physician Assistant", rows, new HashSet<String>());
+		assertTrue(assistant.contains("Get Queues"));
+		assertTrue(assistant.contains("Get Queue Entries"));
+		assertFalse(assistant.contains("Manage Queue Entries"));
+		for (String role : new String[] { "Registrar", "Finance", "Systems Administrator", "Facility in-charge" }) {
 			Set<String> privileges = grants(role, rows, new HashSet<String>());
 			for (String privilege : Arrays.asList("Get Queues", "Get Queue Entries", "Manage Queues", "Manage Queue Entries",
 			        "Get Queue Rooms", "Manage Queue Rooms", "Purge Queues", "Purge Queue Entries")) {
 				assertFalse(role + " " + privilege, privileges.contains(privilege));
 			}
 		}
+		Set<String> clinician = grants("Clinician", rows, new HashSet<String>());
+		assertTrue(clinician.contains("Get Queues"));
+		assertTrue(clinician.contains("Get Queue Entries"));
+		assertTrue(clinician.contains("Manage Queue Entries"));
 		Set<String> nurse = grants("Nurse", rows, new HashSet<String>());
 		assertTrue(nurse.contains("Write Labor and Delivery"));
 		assertFalse(nurse.contains("Get Users"));

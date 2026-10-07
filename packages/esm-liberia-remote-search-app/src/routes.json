@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "extensions": [
+    {
+      "name": "liberia-remote-search-toggle",
+      "component": "remoteSearchToggle",
+      "slot": "patient-search-remote-toggle-slot"
+    },
+    {
+      "name": "liberia-remote-search-results",
+      "component": "remoteSearchResults",
+      "slot": "patient-search-remote-results-slot"
+    },
+    {
+      "name": "liberia-remote-search-summary",
+      "component": "remoteSearchSummary",
+      "slot": "patient-search-remote-summary-slot"
+    }
+  ]
+}

@@ -30,8 +30,9 @@ public final class ContentUuids {
 	/** The {@code Health Facility} location tag (content-liberia-national locationtags-national.csv). */
 	public static final String LOCATION_TAG_HEALTH_FACILITY = "var.locationtag.health-facility.uuid";
 
+	/** A dashed UUID, or a CIEL concept UUID: the CIEL id padded with A to 36 characters. */
 	private static final Pattern UUID = Pattern
-	        .compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+	        .compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|(?=[0-9A]{36}$)[0-9]+A+");
 
 	private static final AtomicReference<Properties> LOADED = new AtomicReference<Properties>();
 
@@ -51,11 +52,16 @@ public final class ContentUuids {
 			        variable + " is not in " + RESOURCE + "; add it there and to the national variables.properties");
 		}
 		value = value.trim();
-		if (!UUID.matcher(value).matches()) {
+		if (!isUuid(value)) {
 			throw new IllegalStateException(
 			        variable + " resolved to '" + value + "', which is not a UUID; the build did not filter " + RESOURCE);
 		}
 		return value;
+	}
+
+	/** @return whether the value is a dashed UUID or a CIEL concept UUID */
+	static boolean isUuid(String value) {
+		return value != null && UUID.matcher(value).matches();
 	}
 
 	private static Properties properties() {

@@ -23,7 +23,7 @@ and the `*-gaps.md` files beside it. The deployment model and location attributi
 | `expected-values.csv` | CSV, 14 columns | 336 rows: 21 indicators × 2 periods × 8 instance and scope pairs |
 | `load-fixtures.py` | Python 3, standard library only | Lints the fixtures, prints the SQL, or loads it into a stack's database. `load-late-row` adds the one row the incremental-run check needs |
 | `compare-reports.py` | Python 3, standard library only | Runs the five reports on a stack through reportingrest and compares them with `expected-values.csv`; `--dump` writes every data set it read |
-| `compare-instances.py` | Python 3, standard library only | From two `--dump` files, checks that a facility's reports equal central's reports scoped to it, every column, EMR-OPS-007 and 015 excepted |
+| `compare-instances.py` | Python 3, standard library only | From two `--dump` files, checks that a facility's reports equal central's reports scoped to it, every column, EMR-OPS-007, EMR-OPS-015 and MAL-001 excepted by default |
 | `run-stack-check.sh` | bash | The ETL's definition of done on a fresh stack: loads the fixtures, runs the ETL in full and then incrementally, compares the reports, and checks the ETL user, its error log and the binlog |
 
 The `purpose` column explains each row that exists for a particular indicator or edge case.
@@ -220,10 +220,16 @@ alternatives give the same number wherever possible.
    counted once. A 200 000 IU order does not count.
 3. **NUT-009 (LE-356).** Implemented as named, per the CSV: moderate wasting, with WHZ in
    [−3, −2).
-   - WHZ is computed from same-encounter weight and height, with the WHO 2006 weight-for-height
-     LMS tables (24–59 months).
+   - WHZ is computed from same-encounter weight and height, with the WHO 2006 LMS tables:
+     weight-for-length under 731 days of age, weight-for-height from then on. The WHZ fixture
+     children (`C-WHZ*`, `B-WHZ*`) are all 24–59 months old, so they exercise only the
+     weight-for-height table.
    - The triage W/Z score is weight-for-age and is ignored.
-   - Each child has one measurement, so "latest" and "any" give the same count.
+   - The report counts a child if **any** measurement in the period is in the band. Each
+     fixture child has one measurement, so "latest" and "any" give the same count.
+
+   The MOH's options for all three rows, and NUT-007's, are in
+   [`docs/reporting/moh-decisions-le-356.md`](../../docs/reporting/moh-decisions-le-356.md).
    - NUT-007 is *Needs new data capture*, so it is not in this set.
 4. **Numerator-only rows.** These are RMNCAH-017, 019, 020 and 028, NUT-005, MAL-004, NCD-002
    and NCD-005. NUT-009 is a count. They have no denominator or value; the population is not
@@ -255,7 +261,10 @@ alternatives give the same number wherever possible.
    - The order is used, not a dispense. There are no `medication_dispense` rows, so the
      facility and central values are equal.
    - No row in this set has a dispense-based time window. The central order-time rule (LE-358)
-     matters from MAL-001 on.
+     matters from MAL-001 on: `medication_dispense` is not synced, so central times treatment by
+     the order and a facility by the dispense (`docs/runbooks/reporting-etl.md` section 7).
+     `compare-instances.py` skips MAL-001 by default for that reason. A fixture that adds a
+     dispense must add an expected row for each instance, and they may differ.
 8. **Numerators that are not subsets of their denominators.** For MAL-002 and NCD-015 the CSV
    defines the numerator independently of the denominator. Careysburg Q2 for MAL-002 is
    therefore 2/1 (200.0%), and this is deliberate. The CSV says to report both parts and let

@@ -87,14 +87,21 @@ Each gap is written so it can become a content ticket.
   opioids*, *glucose-lowering drugs* and *antibiotics for pneumonia*, so that the ETL does not
   hard-code drug UUIDs.
 - **MOH definition: MAL-003.** The numerator text says "three or more doses" (copied from
-  MAL-002), but the name says "two doses in the third trimester". Get a ruling.
+  MAL-002), but the name says "two doses in the third trimester". Get a ruling. Asked in
+  [`../moh-decisions-le-356.md`](../moh-decisions-le-356.md) (LE-356), decision 4, together
+  with whether to report the facility-attendee proxies for NCD-008 and NCD-010 (decisions 5
+  and 6).
 
 ## 2. Derived data the ETL needs
 
 Every instance runs its own ETL. Facility and central both hold these tables, except
 `medication_dispense`: it is **not** in `eip.watchedTables`
 (`distribution/sync/application.properties.template`), so **central has no dispensing data**.
-Central time windows must use the drug order's `date_activated`. Attribution uses
+dbsync 4.0.0 cannot sync the table, and the decision of 6 October 2026 (LE-358) is to leave it
+out ([sync-entity-coverage.md](../../architecture/sync-entity-coverage.md) §4.1). Central time
+windows use the drug order's `date_activated`, and facility and central figures for a
+dispense-time window can legitimately differ
+([reporting-etl.md](../../runbooks/reporting-etl.md) section 7). Attribution uses
 `encounter.location_id`, falling back to `visit.location_id`.
 
 ### Diagnosis fact (`fact_diagnosis`)
