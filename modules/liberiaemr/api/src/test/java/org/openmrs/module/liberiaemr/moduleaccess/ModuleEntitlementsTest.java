@@ -33,9 +33,11 @@ public class ModuleEntitlementsTest {
 
 	static Map<String, String[]> roles() throws Exception {
 		Map<String, String[]> rows = new HashMap<>();
-		try (InputStream in = ModuleEntitlementsTest.class.getResourceAsStream("/module-access-content/roles/roles-common.csv")) {
-			assertNotNull("Real role CSV must be on test classpath", in);
-			BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+		InputStream in = ModuleEntitlementsTest.class.getResourceAsStream("/module-access-content/roles/roles-common.csv");
+		assertNotNull("Real role CSV must be on test classpath", in);
+		try (InputStream stream = in;
+		        InputStreamReader chars = new InputStreamReader(stream, StandardCharsets.UTF_8);
+		        BufferedReader reader = new BufferedReader(chars)) {
 			reader.readLine();
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -246,9 +248,11 @@ public class ModuleEntitlementsTest {
 		        "Manage ANC", "Manage Laboratory", "Manage PNC", "Manage Pharmacy", "Read Labor and Delivery",
 		        "Write Labor and Delivery", "Read Immunization", "Write Immunization", "Manage Family Planning"));
 		Set<String> actual = new HashSet<>();
-		try (InputStream in = getClass().getResourceAsStream("/module-access-content/privileges/privileges-module-access-common.csv")) {
-			assertNotNull(in);
-			BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+		InputStream in = getClass().getResourceAsStream("/module-access-content/privileges/privileges-module-access-common.csv");
+		assertNotNull(in);
+		try (InputStream stream = in;
+		        InputStreamReader chars = new InputStreamReader(stream, StandardCharsets.UTF_8);
+		        BufferedReader reader = new BufferedReader(chars)) {
 			reader.readLine();
 			String line;
 			while ((line = reader.readLine()) != null) { assertTrue(actual.add(line.split(",", -1)[2])); }

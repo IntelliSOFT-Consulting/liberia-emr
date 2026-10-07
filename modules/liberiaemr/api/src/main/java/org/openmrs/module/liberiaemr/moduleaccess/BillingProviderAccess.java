@@ -25,6 +25,7 @@ import org.openmrs.util.PrivilegeConstants;
  */
 public final class BillingProviderAccess implements MethodInterceptor {
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		if (!BillingVisitAccess.openNow() || !ModuleAccess.BILLING.allows(ModulePrivileges.current(), Access.WRITE)) {
 			return invocation.proceed();

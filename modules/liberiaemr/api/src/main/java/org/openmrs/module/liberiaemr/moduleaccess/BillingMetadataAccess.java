@@ -25,6 +25,7 @@ public final class BillingMetadataAccess implements MethodInterceptor {
 
 	static final String MANAGE_CASHIER_METADATA = "Manage Cashier Metadata";
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		String name = invocation.getMethod().getName();
 		if (name == null || !name.startsWith("get") || !ModuleAccess.BILLING.allows(ModulePrivileges.current(), Access.READ)) {
