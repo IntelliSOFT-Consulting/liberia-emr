@@ -49,6 +49,10 @@ At import the facility creates `person`, `patient`, `person_name`, `person_addre
 - **Every row keeps central's UUID**, plus central's audit fields and preferred flags exactly.
   Preferred flags are never re-derived (`first || preferred` in #215 can produce two preferred
   names).
+- An identifier keeps central's location, brought over as a retired placeholder when the
+  facility lacks it, and is left out if that fails. Audit users are copied when they exist at the
+  facility. When they don't, `creator` and `changed_by` are the one accepted difference (ADR
+  0013 §3, LE-401).
 - Death data comes across with its cause and date, or not at all: OpenMRS 2.8's person
   validator rejects `dead=true` without a cause.
 - Nothing else is written to the OpenMRS tables.
