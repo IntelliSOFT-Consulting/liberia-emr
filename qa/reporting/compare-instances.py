@@ -10,10 +10,19 @@ to that facility (compare-reports.py --instance central runs every scope in expe
 the facility's included). Every column of the `indicators` data set is compared, not only the
 NUM, DEN and PCT columns expected-values.csv holds: disaggregations too.
 
-EMR-OPS-007 and EMR-OPS-015 are excluded by default: the matrix gives central its own
-definition of both (CPI-based duplicates and identifier consistency), so they are expected to
-differ. None of the 21 Feasible-now indicators depends on when the report runs, so no other
-exclusion is needed; pass --exclude for one that does.
+Excluded by default, because the two instances are expected to differ on them:
+
+  EMR-OPS-007, EMR-OPS-015  the matrix gives central its own definition of both (CPI-based
+                            duplicates and identifier consistency).
+  MAL-001                   its 24-hour treatment window uses the dispense time at a facility,
+                            but medication_dispense is not synced, so central uses the drug
+                            order's date_activated (LE-358; docs/runbooks/reporting-etl.md
+                            section 7). Not built yet; listed so that it is skipped from the
+                            start. With dispense-free fixtures the two agree, so
+                            --exclude EMR-OPS-007 --exclude EMR-OPS-015 compares it.
+
+None of the 21 Feasible-now indicators depends on when the report runs, so no other exclusion is
+needed; pass --exclude for one that does.
 
 The comparison is meaningful only when both instances hold the same rows: central loaded from
 the same fixtures (or fully synced), and both ETLs run since.
@@ -25,7 +34,8 @@ import argparse
 import json
 import sys
 
-DEFAULT_EXCLUDE = ["EMR-OPS-007", "EMR-OPS-015"]
+# Why each is here: the module docstring.
+DEFAULT_EXCLUDE = ["EMR-OPS-007", "EMR-OPS-015", "MAL-001"]
 
 
 def load(path):
