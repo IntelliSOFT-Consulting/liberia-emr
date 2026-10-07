@@ -106,9 +106,6 @@
 					<argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.text=ALL-UNNAMED</argLine>
 					<classpathDependencyExcludes>
 						<classpathDependencyExclude>org.powermock:powermock-api-mockito</classpathDependencyExclude>
-						<!-- REST's web context expects RestService, which this filter test does not start. -->
-						<classpathDependencyExclude>org.openmrs.module:webservices.rest-omod</classpathDependencyExclude>
-						<classpathDependencyExclude>org.openmrs.module:webservices.rest-omod-common</classpathDependencyExclude>
 					</classpathDependencyExcludes>
 				</configuration>
 			</plugin>

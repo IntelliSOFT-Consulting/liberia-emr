@@ -13,31 +13,72 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.openmrs.Person;
-import org.openmrs.PersonName;
 import org.openmrs.Privilege;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.context.UserContext;
 import org.openmrs.module.liberiaemr.moduleaccess.BillingVisitAccess;
-import org.openmrs.test.BaseModuleContextSensitiveTest;
 
 /**
  * Manage Cashier Metadata is a call proxy for an authenticated billing writer. A caller without
  * billing write never receives it, and a privilege this filter did not add is left in place.
  */
-public class BillingVisitFilterTest extends BaseModuleContextSensitiveTest {
-	private static final String PASSWORD = "Module-access-password1";
+public class BillingVisitFilterTest {
 	private static final String META = BillingVisitFilter.MANAGE_CASHIER_METADATA;
 	private static final String[] BILLING = { "View Cashier Bills", "Manage Cashier Bills", "View Cashier Metadata" };
+
+	private final Set<String> proxies = new HashSet<String>();
+
+	private User user;
+
+	@Before
+	public void setUp() {
+		proxies.clear();
+		user = null;
+		BillingVisitAccess.close();
+		UserContext userContext = mock(UserContext.class);
+		when(userContext.getAuthenticatedUser()).thenAnswer(invocation -> user);
+		when(userContext.hasPrivilege(anyString())).thenAnswer(invocation -> {
+			String privilege = invocation.getArgument(0);
+			return proxies.contains(privilege) || (user != null && user.hasPrivilege(privilege));
+		});
+		doAnswer(invocation -> {
+			proxies.add(invocation.getArgument(0));
+			return null;
+		}).when(userContext).addProxyPrivilege(anyString());
+		doAnswer(invocation -> {
+			proxies.remove(invocation.getArgument(0));
+			return null;
+		}).when(userContext).removeProxyPrivilege(anyString());
+		Context.setUserContext(userContext);
+	}
+
+	@After
+	public void tearDown() {
+		user = null;
+		proxies.clear();
+		BillingVisitAccess.close();
+		Context.clearUserContext();
+	}
 
 	@Test public void nurseBillPostDoesNotReceiveManageCashierMetadata() throws Exception {
 		as("Nurse", "Manage Pharmacy");
@@ -81,16 +122,11 @@ public class BillingVisitFilterTest extends BaseModuleContextSensitiveTest {
 	}
 
 	@Test public void unauthenticatedCallerReceivesNoTemporaryPrivilege() throws Exception {
-		Context.logout();
-		try {
-			assertFalse(Context.isAuthenticated());
-			Observation chain = post();
-			assertFalse("downstream chain", chain.saw);
-			assertFalse("after the call", Context.hasPrivilege(META));
-		}
-		finally {
-			Context.authenticate("admin", "test");
-		}
+		user = null;
+		assertFalse(Context.isAuthenticated());
+		Observation chain = post();
+		assertFalse("downstream chain", chain.saw);
+		assertFalse("after the call", Context.hasPrivilege(META));
 		assertFalse(BillingVisitAccess.openNow());
 	}
 
@@ -165,30 +201,16 @@ public class BillingVisitFilterTest extends BaseModuleContextSensitiveTest {
 		return all;
 	}
 
-	private void as(String roleName, String... privileges) throws Exception {
-		Context.authenticate("admin", "test");
-		Role role = Context.getUserService().getRole(roleName);
-		if (role == null) {
-			role = new Role(roleName);
-			role.setDescription(roleName);
-		}
+	private void as(String roleName, String... privileges) {
+		proxies.clear();
+		Role role = new Role(roleName);
+		role.setDescription(roleName);
 		for (String name : privileges) {
-			Privilege privilege = Context.getUserService().getPrivilege(name);
-			if (privilege == null) {
-				privilege = Context.getUserService().savePrivilege(new Privilege(name, name));
-			}
-			role.addPrivilege(privilege);
+			role.addPrivilege(new Privilege(name, name));
 		}
-		role = Context.getUserService().saveRole(role);
-		Person person = new Person();
-		person.addName(new PersonName(roleName, null, "User"));
-		person.setGender("F");
-		person = Context.getPersonService().savePerson(person);
-		User user = new User();
-		user.setUsername(roleName.toLowerCase().replace(' ', '-') + "-" + System.nanoTime());
-		user.setPerson(person);
-		user.addRole(role);
-		user = Context.getUserService().createUser(user, PASSWORD);
-		Context.authenticate(user.getUsername(), PASSWORD);
+		User signedIn = new User();
+		signedIn.setUsername(roleName.toLowerCase().replace(' ', '-'));
+		signedIn.addRole(role);
+		user = signedIn;
 	}
 }
