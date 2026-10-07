@@ -320,7 +320,6 @@ class FamilyPlanningFormPage {
         });
     }
 
-    // Read-only fields render their value as text, e.g. "29-Oct-2026", not as a date input.
     private repeatPregnancyTestDate() {
         return cy
             .contains('.cds--label', 'Repeat pregnancy test due', { timeout: this.timeout })
@@ -339,8 +338,6 @@ class FamilyPlanningFormPage {
             });
     }
 
-    // The hide rule should remove the field, but the engine leaves it on screen as "(Blank)" (app defect);
-    // either way the calculated date must be gone.
     private verifyRepeatPregnancyTestDateCleared() {
         cy.get('body').should(($body) => {
             const field = $body.find('.cds--label:contains("Repeat pregnancy test due")').closest('[class*="field-value-view__readonly"]');
