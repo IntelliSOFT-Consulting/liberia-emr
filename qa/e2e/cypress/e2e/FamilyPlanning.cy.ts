@@ -32,7 +32,9 @@ describe('Family Planning form', () => {
         familyPlanningForm.selectForm();
     });
 
-    it('validates the initial Family Planning form contract');
+    // Not yet written: should assert the initial form state (default-visible sections and
+    // questions, hidden conditional fields, required markers) before any answer is given.
+    it.skip('validates the initial Family Planning form contract', () => {});
 
     it('blocks saving for each independently missing required answer', () => {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveFamilyPlanning');
