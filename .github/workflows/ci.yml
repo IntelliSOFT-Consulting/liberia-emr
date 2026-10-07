@@ -881,7 +881,14 @@ jobs:
       # --demo: the priority journeys log in as admin/Admin123, which only content-demo
       # provisions (docs/runbooks/demo-stack.md). --no-frontend is deliberately absent —
       # Cypress drives the real SPA, unlike initializer-clean-db.
+      # OCL_API_TOKEN for the same reason as initializer-clean-db: the demo image loads the
+      # national and MCH forms, which record against the MOH's CIEL collection (LE-398).
+      # Scoped to this step, not the job — nothing after the build needs it, and the steps
+      # after it run npm packages and Cypress. Without it (a fork PR) the build warns and the
+      # dictionary check below says why the ANC specs fail.
       - name: Build the demo images under test
+        env:
+          OCL_API_TOKEN: ${{ secrets.OCL_API_TOKEN }}
         run: |
           ./scripts/build/build-distribution.sh \
             --version "$LIBERIAEMR_VERSION" --site careysburg --demo
@@ -977,6 +984,36 @@ jobs:
             exit 1
           fi
           echo "ok: no ETL database login failure in the backend log"
+
+      # LE-398: a demo image built without the MOH's CIEL collection still boots healthy, and
+      # the first sign was every ANC Initial Visit save answering 400 with a null obs concept.
+      # These are the obstetric history terms that form records, which only LIB/mch supplies,
+      # so check them here, where a missing one names itself.
+      - name: The demo stack carries the CIEL terms the ANC forms record
+        run: |
+          set -euo pipefail
+          if ! compgen -G "content-packages/content-common/configuration/backend_configuration/ocl/lib-*-ciel-*.zip" >/dev/null; then
+            echo "::warning::No MOH CIEL collection in this build (OCL_API_TOKEN unavailable): the ANC specs will fail to save."
+            exit 0
+          fi
+          vars=content-packages/content-liberia-national/configuration/variables.properties
+          missing=0
+          for key in gravida parity full-term-births preterm-births abortions living-children gestational-age; do
+            uuid="$(sed -n "s/^var\.concept\.ciel\.${key}\.uuid=//p" "$vars")"
+            status="$(docker compose \
+                        -f distribution/compose/facility/docker-compose.yml \
+                        -f distribution/compose/facility/docker-compose.demo.yml \
+                        -f qa/api/mfl-stub/docker-compose.mfl-stub.yml \
+                        --env-file "$RUNNER_TEMP/e2e.env" exec -T backend \
+                        curl -s -o /dev/null -w '%{http_code}' -u admin:Admin123 \
+                        "http://localhost:8080/openmrs/ws/rest/v1/concept/${uuid}")"
+            echo "  ${key} ${uuid}: HTTP ${status}"
+            [[ "$status" == "200" ]] || missing=$((missing + 1))
+          done
+          if (( missing > 0 )); then
+            echo "FAIL: ${missing} ANC concept(s) did not load — read initializer.log for the rejected OCL import" >&2
+            exit 1
+          fi
 
       - name: Start the frontend and the gateway
         run: |

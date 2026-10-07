@@ -29,25 +29,6 @@
       "privileges": ["View Appointments"]
     }
   },
-  "@openmrs/esm-home-app": {
-    "_comment_display": "homepage-dashboard-slot belongs to esm-home-app. Display conditions are set on that slot's configure entry, the same way add-patient-action is gated. patient-lists-dashboard-link is the Patient Lists card; it loads GET /cohortm/cohort, which cohort 3.7.3 authorizes with View Cohorts In Cohort Module. ward-dashboard-link is the Wards card; GET /admissionLocation/{uuid} is BedManagementService.getAdmissionLocationByLocation, authorized by Get Admission Locations or Get Beds (bedmanagement 7.2.0, requireAll false). The card requires Get Admission Locations. These are not module-level Display conditions on esm-patient-list-management-app or esm-ward-app, because a partial module config for those apps crashes the home shell. Direct URL access is unchanged. System Developer still sees both cards.",
-    "extensionSlots": {
-      "homepage-dashboard-slot": {
-        "configure": {
-          "patient-lists-dashboard-link": {
-            "Display conditions": {
-              "privileges": ["View Cohorts In Cohort Module"]
-            }
-          },
-          "ward-dashboard-link": {
-            "Display conditions": {
-              "privileges": ["Get Admission Locations"]
-            }
-          }
-        }
-      }
-    }
-  },
   "_comment_home_dashboards": [
     "LE-395. /home opens the dashboard defaultDashboardPerRole names for one of the user's roles,",
     "else 'service-queues', else the first dashboard left in homepage-dashboard-slot. Each",
@@ -62,6 +43,7 @@
     "Privilege names: docs/security/moh-ict-sop-mapping.md, 'The login roles'."
   ],
   "@openmrs/esm-home-app": {
+    "_comment_display": "homepage-dashboard-slot belongs to esm-home-app. Display conditions are set on that slot's configure entry, the same way add-patient-action is gated. patient-lists-dashboard-link is the Patient Lists card; it loads GET /cohortm/cohort, which cohort 3.7.3 authorizes with View Cohorts In Cohort Module. ward-dashboard-link is the Wards card; GET /admissionLocation/{uuid} is BedManagementService.getAdmissionLocationByLocation, authorized by Get Admission Locations or Get Beds (bedmanagement 7.2.0, requireAll false). The card requires Get Admission Locations. These are not module-level Display conditions on esm-patient-list-management-app or esm-ward-app, because a partial module config for those apps crashes the home shell. Direct URL access is unchanged. System Developer still sees both cards.",
     "defaultDashboardPerRole": {
       "National Reporting Officer": "indicator-reports",
       "Sync Administrator": "sync-status",
@@ -84,10 +66,10 @@
             "Display conditions": { "privileges": ["View Cashier Bills"] }
           },
           "ward-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Beds", "Get Admission Locations", "Assign Beds"] }
+            "Display conditions": { "privileges": ["Get Admission Locations"] }
           },
           "patient-lists-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Patient Cohorts"] }
+            "Display conditions": { "privileges": ["View Cohorts In Cohort Module"] }
           }
         }
       }
@@ -114,6 +96,15 @@
             "Display conditions": { "privileges": ["Get Medication Dispense"] }
           }
         }
+      },
+      "top-nav-actions-slot": {
+        "configure": {
+          "add-patient-action": {
+            "Display conditions": {
+              "privileges": ["Add Patients"]
+            }
+          }
+        }
       }
     }
   },
@@ -121,6 +112,14 @@
     "Enabled feature flags": [
       "patient-flags"
     ]
+  },
+  "@openmrs/esm-patient-label-printing-app": {
+    "_comment": [
+      "DAK 3.1 patient card. Registration opens the chart; the banner's Actions > Print identifier",
+      "sticker prints the card. Its layout and logo are in the backend",
+      "jsonkeyvalues/patientdocuments-national.json."
+    ],
+    "showPrintIdentifierStickerButton": true
   },
   "@openmrs/esm-patient-registration-app": {
     "defaultPatientIdentifierTypes": [
@@ -293,7 +292,16 @@
     "_comment_display": "Billing=W holds View Cashier Bills. Other matrix roles do not see the billing shell. Clinician has no Get People and keeps the previous shell. The server still enforces cashier privileges.",
     "Display conditions": {
       "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'View Cashier Bills') || !session.user.privileges.some(p => p.display == 'Get People'))"
-    }
+    },
+    "_comment_logo": [
+      "Printed invoice header. With logo.src and logo.alt both empty the app draws the OpenMRS",
+      "logo, and country defaults to 'Kenya'. The seal SVG carries its own 72px print size."
+    ],
+    "logo": {
+      "src": "${openmrsSpaBase}/branding/moh-liberia-seal.svg",
+      "alt": "Ministry of Health, Republic of Liberia"
+    },
+    "country": "Republic of Liberia"
   },
   "@openmrs/esm-laboratory-app": {
     "Display conditions": {
@@ -328,19 +336,6 @@
   "@liberiaemr/esm-liberia-epartograph-app": {
     "Display conditions": {
       "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Labor and Delivery' || p.display == 'Write Labor and Delivery') || !session.user.privileges.some(p => p.display == 'Get People'))"
-    }
-  },
-  "@openmrs/esm-primary-navigation-app": {
-    "extensionSlots": {
-      "top-nav-actions-slot": {
-        "configure": {
-          "add-patient-action": {
-            "Display conditions": {
-              "privileges": ["Add Patients"]
-            }
-          }
-        }
-      }
     }
   },
   "@openmrs/esm-patient-search-app": {

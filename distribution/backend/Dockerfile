@@ -82,10 +82,16 @@ RUN set -eu; \
       # "Unable to find concept". The two RefApp demo queues are built on that dictionary's
       # services, so they go too; a training stack uses the site's own queues.
       # scripts/build/build-distribution.sh leaves the same files out of its name check.
+      # The RefApp printing settings go as well (LE-120). They set the same patientdocuments
+      # keys as the national jsonkeyvalues/patientdocuments-national.json (a 50x70mm sticker,
+      # and an empty encounter-print logo path), and which file wins a shared key depends on
+      # Initializer's load order, so a training stack could print the OpenMRS logo.
       if [ "$pkg" = "${DEMO_PACKAGE}" ]; then \
         rm -rf /tmp/pkg/configuration/backend_configuration/addresshierarchy; \
         rm -f /tmp/pkg/configuration/backend_configuration/ocl/openmrs_DemoQueueConcepts_*.zip \
-              /tmp/pkg/configuration/backend_configuration/queues/queues-core_demo.csv; \
+              /tmp/pkg/configuration/backend_configuration/queues/queues-core_demo.csv \
+              /tmp/pkg/configuration/backend_configuration/jsonkeyvalues/patientIdPreportConfig.json \
+              /tmp/pkg/configuration/backend_configuration/jsonkeyvalues/encounterPrinting.json; \
       fi; \
       cp -R /tmp/pkg/configuration/backend_configuration/. /openmrs_config/; \
     done; \

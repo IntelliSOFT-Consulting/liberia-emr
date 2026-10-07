@@ -485,6 +485,31 @@ privilege because it says which other facilities hold the person; no role carrie
 MOH names the review queue's owner. `qa/sync/verify-identity.sh` exercises this section against
 two facility stacks.
 
+### Possible matches: the review queue
+
+Pairs the National ID rule cannot settle wait in the review queue: the same National ID where sex
+or date of birth disagree, and a National ID changed on a record already linked to others. The
+`Review` link on the Sync status page's possible-matches tile opens `Possible matches`
+(`/openmrs/spa/identity-review`). It lists the waiting pairs oldest first, with the facility of
+each record and why it needs a person; opening one shows both records side by side, with name,
+sex, date of birth and National ID marked where they differ.
+
+The reviewer answers one question, whether the two records are the same person, and gives a
+reason, without patient names or identifiers in it:
+
+- **Same person** links them: the record under review becomes an alias of the other's person.
+  On records already linked, nothing changes.
+- **Different people** on records already linked separates the record under review from that
+  person; any other records linked to the person stay linked. On records not linked, nothing
+  changes, and the National ID rule never links or queues that pair again.
+
+Nothing is merged, deleted or reused (sync-eip.md 2.5.2). Each change is a `cpi_event` naming the
+reviewer and the review, and a later review can undo it the same way. A review is decided once;
+a second reviewer acting on it at the same moment is refused. The page and its API
+(`/ws/rest/v1/liberiaemr/identity/reviews`) need the `Review Identity Matches` privilege, because a
+review shows two patients' details. Like `View Identity Links`, no role carries it until the MOH
+names the queue's owner (ADR 0005); grant it to that role then.
+
 ## 15. Records missing at central: `SyncRecordsMissing`
 
 Every night each facility's sender sends a digest of its records (table, uuid and creation day,

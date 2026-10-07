@@ -7,10 +7,15 @@ referenced from the runtime configuration as `${openmrsSpaBase}/branding/<file>`
 | --- | --- |
 | `moh-liberia-logo.svg` | `config-core.json` and each site's `config-site.json`, as the `@openmrs/esm-primary-navigation-app` logo |
 | `liberiaemr-logo.svg` | `config-core.json`, as the `@openmrs/esm-login-app` logo |
+| `moh-liberia-seal.svg` | `config-national.json`, as the `@openmrs/esm-billing-app` printed-invoice logo. The seal raster from `moh-liberia-logo.svg`, unchanged, in an SVG sized to 72px, because the invoice `<img>` has no width of its own and the navbar mark's white lettering disappears on paper |
 
 The login logo is configured under the core `@openmrs/esm-login-app`, which
 `distro.properties` no longer ships: `@liberiaemr/esm-liberia-login-app` replaces it and reads
 its own `logo` key under its own module name. No favicon is supplied in this directory.
+
+Printed documents (the patient card and encounter forms) are rendered as PDFs on the server and
+take their logo from the backend, not from here: see
+`content-packages/content-liberia-national/configuration/backend_configuration/branding/`.
 
 ## Why branding is runtime config, not source
 

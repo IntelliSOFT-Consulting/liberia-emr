@@ -104,6 +104,23 @@ facility goes offline before its sender pushes the shell. *(Corrected 3 October 
 paragraph first said a stale-data check prevented it; dbsync 4.0.0 has none.)*
 Records the importing facility creates afterwards sync normally against the same patient UUID.
 
+Two values in those rows need care, because the importing facility may not hold what they
+reference *(added 6 October 2026, LE-401)*:
+
+- **Identifier location.** A facility holds only its own site's locations (ADR 0012), so central's
+  identifier location is usually missing there. The shell never puts another location in its
+  place: under the identifier's UUID that would move the patient's facility attribution at
+  central. Central's location is created at the facility instead, retired, under central's UUID
+  and name. Location rows are not synced, so it stays there. If it cannot be created, the
+  identifier is left out of the shell.
+- **Creator and changer.** They are copied when that user exists at the importing facility. For
+  a patient registered elsewhere that user usually doesn't exist. OpenMRS then records the
+  importing user as creator and leaves the changer empty, and the row arrives at central with
+  `creator` and `changed_by` changed. **Accepted:** every other column stays central's (dates,
+  values, the identifier location), nothing reads either column for attribution, and avoiding the
+  drift would mean syncing users between facilities. LE-388's row-hash comparison
+  (`qa/sync/verify-remote-import.sh`) leaves those two columns out.
+
 This **departs from ADR 0005** for imported patients only: two facilities now write to one
 patient record instead of each holding its own. Two rules keep the identity layer intact:
 

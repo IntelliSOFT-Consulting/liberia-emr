@@ -465,4 +465,25 @@
 		</update>
 	</changeSet>
 
+	<!--
+		The identity review queue's decisions (ADR 0005 band 2): the reason the reviewer gave, kept
+		with the decision as its audit record. match_review already has decision, decided_by and
+		date_decided. Central only, like every identity changeset: skipped where the schema is
+		missing, which is every facility.
+	-->
+	<changeSet id="liberiaemr-2026-10-05-identity-review-reason" author="liberiaemr">
+		<preConditions onFail="CONTINUE">
+			<sqlCheck expectedResult="1">SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'openmrs_identity'</sqlCheck>
+			<tableExists schemaName="openmrs_identity" tableName="match_review"/>
+			<not><columnExists schemaName="openmrs_identity" tableName="match_review" columnName="decision_reason"/></not>
+		</preConditions>
+		<comment>Why the reviewer decided as they did; required with every decision.</comment>
+		<addColumn schemaName="openmrs_identity" tableName="match_review">
+			<column name="decision_reason" type="varchar(500)"/>
+		</addColumn>
+		<createIndex schemaName="openmrs_identity" indexName="match_review_status_idx" tableName="match_review">
+			<column name="status"/>
+		</createIndex>
+	</changeSet>
+
 </databaseChangeLog>

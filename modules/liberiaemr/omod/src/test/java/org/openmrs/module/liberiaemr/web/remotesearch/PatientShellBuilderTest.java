@@ -32,6 +32,7 @@ import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonName;
+import org.openmrs.User;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,6 +55,12 @@ public class PatientShellBuilderTest {
 
 	private static final String CAUSE = "dddddddd-0000-0000-0000-000000000004";
 
+	/** A user central and this facility share (the same UUID at both). */
+	private static final String SHARED_USER = "ffffffff-0000-0000-0000-000000000006";
+
+	/** A user who exists only at central (or at the patient's home facility). */
+	private static final String CENTRAL_ONLY_USER = "ffffffff-0000-0000-0000-000000000007";
+
 	private final Map<String, PatientIdentifierType> types = new HashMap<String, PatientIdentifierType>();
 
 	private final Map<String, Location> locations = new HashMap<String, Location>();
@@ -63,7 +70,13 @@ public class PatientShellBuilderTest {
 	/** "type uuid|value" pairs held by some other local patient */
 	private final Set<String> heldElsewhere = new HashSet<String>();
 
-	private Location fallback;
+	private final Map<String, User> users = new HashMap<String, User>();
+
+	/** Placeholder locations the builder asked for, by UUID */
+	private final Map<String, Location> placeholders = new HashMap<String, Location>();
+
+	/** Whether a placeholder location can be saved here */
+	private boolean placeholdersSave = true;
 
 	private PatientShellBuilder builder;
 
@@ -75,7 +88,9 @@ public class PatientShellBuilderTest {
 		Concept cause = new Concept();
 		cause.setUuid(CAUSE);
 		concepts.put(CAUSE, cause);
-		fallback = location("eeeeeeee-0000-0000-0000-000000000005");
+		User shared = new User();
+		shared.setUuid(SHARED_USER);
+		users.put(SHARED_USER, shared);
 
 		builder = new PatientShellBuilder(new PatientShellBuilder.Lookups() {
 
@@ -90,8 +105,13 @@ public class PatientShellBuilderTest {
 			}
 
 			@Override
-			public Location fallbackLocation() {
-				return fallback;
+			public Location placeholderLocation(String uuid, String name) {
+				return placeholder(uuid, name);
+			}
+
+			@Override
+			public User user(String uuid) {
+				return users.get(uuid);
 			}
 
 			@Override
@@ -104,6 +124,17 @@ public class PatientShellBuilderTest {
 				return heldElsewhere.contains(type.getUuid() + "|" + value);
 			}
 		});
+	}
+
+	private Location placeholder(String uuid, String name) {
+		if (!placeholdersSave) {
+			return null;
+		}
+		Location location = location(uuid);
+		location.setName(name);
+		location.setRetired(true);
+		placeholders.put(uuid, location);
+		return location;
 	}
 
 	private static PatientIdentifierType type(String uuid, String name) {
@@ -121,20 +152,26 @@ public class PatientShellBuilderTest {
 
 	/** Central's full patient representation, trimmed to what the shell reads. */
 	private static String centralPatient(String deathFields) {
-		return "{\"uuid\":\"" + PATIENT + "\",\"auditInfo\":{\"dateCreated\":\"2026-03-01T09:00:00.000+0000\"},"
+		return "{\"uuid\":\"" + PATIENT + "\",\"auditInfo\":{\"creator\":{\"uuid\":\"" + SHARED_USER + "\"},"
+		        + "\"dateCreated\":\"2026-03-01T09:00:00.000+0000\"},"
 		        + "\"identifiers\":["
 		        + "{\"uuid\":\"id-1\",\"identifier\":\"100000Y\",\"preferred\":false,"
 		        + "\"identifierType\":{\"uuid\":\"" + OPENMRS_ID + "\"},\"location\":{\"uuid\":\"" + CAREYSBURG + "\"}},"
 		        + "{\"uuid\":\"id-2\",\"identifier\":\"HRN-CBG-10001\",\"preferred\":true,"
-		        + "\"identifierType\":{\"uuid\":\"" + HRN + "\"},\"location\":{\"uuid\":\"unknown-here\"}},"
+		        + "\"identifierType\":{\"uuid\":\"" + HRN + "\"},"
+		        + "\"location\":{\"uuid\":\"unknown-here\",\"display\":\"Barnersville Clinic\"}},"
 		        + "{\"uuid\":\"id-3\",\"identifier\":\"OLD\",\"voided\":true,"
 		        + "\"identifierType\":{\"uuid\":\"" + HRN + "\"}}],"
-		        + "\"person\":{\"gender\":\"F\",\"birthdate\":\"1990-05-17T00:00:00.000+0000\",\"birthdateEstimated\":false"
+		        + "\"person\":{\"auditInfo\":{\"creator\":{\"uuid\":\"" + SHARED_USER + "\"},"
+		        + "\"dateCreated\":\"2026-02-28T08:00:00.000+0000\",\"changedBy\":{\"uuid\":\"" + SHARED_USER + "\"},"
+		        + "\"dateChanged\":\"2026-05-02T11:00:00.000+0000\"},"
+		        + "\"gender\":\"F\",\"birthdate\":\"1990-05-17T00:00:00.000+0000\",\"birthdateEstimated\":false"
 		        + deathFields + ","
 		        + "\"names\":["
 		        + "{\"uuid\":\"name-1\",\"givenName\":\"Kate\",\"familyName\":\"Red\",\"preferred\":false},"
 		        + "{\"uuid\":\"name-2\",\"givenName\":\"Katherine\",\"familyName\":\"Red\",\"preferred\":true,"
-		        + "\"auditInfo\":{\"dateCreated\":\"2026-04-01T10:00:00.000+0000\"}}],"
+		        + "\"auditInfo\":{\"creator\":{\"uuid\":\"" + CENTRAL_ONLY_USER + "\"},"
+		        + "\"dateCreated\":\"2026-04-01T10:00:00.000+0000\"}}],"
 		        + "\"addresses\":[{\"uuid\":\"addr-1\",\"cityVillage\":\"Careysburg\",\"country\":\"Liberia\","
 		        + "\"preferred\":true}]}}";
 	}
@@ -185,6 +222,47 @@ public class PatientShellBuilderTest {
 		}
 	}
 
+	@Test
+	public void centralsCreatorIsKeptWhenThatUserExistsHere() throws Exception {
+		Patient shell = builder.build(json(centralPatient("")));
+
+		assertSame(users.get(SHARED_USER), shell.getCreator());
+	}
+
+	@Test
+	public void theCreatorIsLeftForOpenmrsWhenCentralsUserIsNotHere() throws Exception {
+		// Left null, OpenMRS records the importing user on save: the drift ADR 0013 §3 accepts.
+		// Never another user named in its place.
+		Patient shell = builder.build(json(centralPatient("")));
+
+		for (PersonName name : shell.getNames()) {
+			if ("name-2".equals(name.getUuid())) {
+				assertNull(name.getCreator());
+				assertEquals("2026-04-01", new SimpleDateFormat("yyyy-MM-dd").format(name.getDateCreated()));
+			}
+		}
+	}
+
+	@Test
+	public void thePersonRowKeepsItsOwnAuditFields() throws Exception {
+		Patient shell = builder.build(json(centralPatient("")));
+		SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
+
+		assertSame(users.get(SHARED_USER), shell.getPersonCreator());
+		assertEquals("2026-02-28", day.format(shell.getPersonDateCreated()));
+		assertSame(users.get(SHARED_USER), shell.getPersonChangedBy());
+		assertEquals("2026-05-02", day.format(shell.getPersonDateChanged()));
+	}
+
+	@Test
+	public void aRowCentralNeverChangedHasNoChanger() throws Exception {
+		Patient shell = builder.build(json(centralPatient("")));
+
+		assertNull(shell.getChangedBy());
+		assertNull(shell.getDateChanged());
+		assertNull(shell.getAddresses().iterator().next().getCreator());
+	}
+
 	// --- preferred flags are central's, never re-derived ------------------------------------------
 
 	@Test
@@ -208,13 +286,49 @@ public class PatientShellBuilderTest {
 	// --- identifiers ------------------------------------------------------------------------------
 
 	@Test
-	public void anIdentifierAtALocationUnknownHereUsesTheFacilityLocation() throws Exception {
+	public void anIdentifierKeepsCentralsLocationWhenItIsHere() throws Exception {
 		Patient shell = builder.build(json(centralPatient("")));
 
+		assertSame(locations.get(CAREYSBURG), identifier(shell, "id-1").getLocation());
+	}
+
+	@Test
+	public void anIdentifierAtALocationUnknownHereKeepsCentralsLocationAsAPlaceholder() throws Exception {
+		Patient shell = builder.build(json(centralPatient("")));
+
+		Location location = identifier(shell, "id-2").getLocation();
+		assertEquals("unknown-here", location.getUuid());
+		assertEquals("Barnersville Clinic", location.getName());
+		assertTrue(location.getRetired());
+		assertEquals(1, placeholders.size());
+	}
+
+	@Test
+	public void anIdentifierWhoseLocationCannotBeBroughtHereIsLeftOutNotRelocated() throws Exception {
+		placeholdersSave = false;
+
+		Patient shell = builder.build(json(centralPatient("")));
+
+		assertEquals(1, shell.getIdentifiers().size());
+		assertEquals("id-1", shell.getIdentifiers().iterator().next().getUuid());
+	}
+
+	@Test
+	public void anIdentifierWithoutALocationAtCentralHasNoneHere() throws Exception {
+		Patient shell = builder.build(json(centralPatient("").replace(
+		    ",\"location\":{\"uuid\":\"unknown-here\",\"display\":\"Barnersville Clinic\"}", "")));
+
+		assertNull(identifier(shell, "id-2").getLocation());
+		assertTrue(placeholders.isEmpty());
+	}
+
+	private static PatientIdentifier identifier(Patient shell, String uuid) {
 		for (PatientIdentifier identifier : shell.getIdentifiers()) {
-			Location expected = "id-1".equals(identifier.getUuid()) ? locations.get(CAREYSBURG) : fallback;
-			assertSame(expected, identifier.getLocation());
+			if (uuid.equals(identifier.getUuid())) {
+				return identifier;
+			}
 		}
+		throw new AssertionError("no identifier " + uuid);
 	}
 
 	@Test
@@ -337,8 +451,13 @@ public class PatientShellBuilderTest {
 			}
 
 			@Override
-			public Location fallbackLocation() {
-				return fallback;
+			public Location placeholderLocation(String uuid, String name) {
+				return placeholder(uuid, name);
+			}
+
+			@Override
+			public User user(String uuid) {
+				return null;
 			}
 
 			@Override

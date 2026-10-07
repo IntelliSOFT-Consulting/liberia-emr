@@ -197,6 +197,9 @@ const SyncStatus: React.FC = () => {
             <Tile className={styles.tile}>
               <div className={styles.tileValue}>{identity.openReviews}</div>
               <div className={styles.tileLabel}>{t('openReviews', 'Possible matches awaiting review')}</div>
+              {identity.openReviews > 0 && (
+                <ConfigurableLink to="${openmrsSpaBase}/identity-review">{t('reviewMatches', 'Review')}</ConfigurableLink>
+              )}
             </Tile>
             <Tile className={styles.tile}>
               <div className={styles.tileValue}>{identity.unassigned}</div>

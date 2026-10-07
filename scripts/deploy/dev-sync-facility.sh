@@ -82,6 +82,12 @@ case "$STEP" in
     setting FACILITY_CODE "${FACILITY:?}"
     # Over HTTPS on 443 (LE-372, ADR 0014): the facility's sync-tunnel answers as artemis and
     # carries the session inside https://<central>/sync/broker/, so 61617 need not be open.
+    # setting keeps a value already there, so a facility set up before LE-372, still dialling
+    # central's 61617 directly, is moved onto the tunnel here. Any other value is left alone.
+    if [ "$(value ARTEMIS_URL)" = "ssl://${CENTRAL_HOST:?}:61617" ]; then
+      sed -i '/^ARTEMIS_URL=/d' "$ENV_FILE"
+      log "moving ARTEMIS_URL from central's 61617 onto the sync tunnel"
+    fi
     setting ARTEMIS_URL "ssl://artemis:61617"
     setting SYNC_CENTRAL_URL "https://${CENTRAL_HOST:?}"
     setting SYNC_CERTS_DIR /etc/liberiaemr/sync-certs

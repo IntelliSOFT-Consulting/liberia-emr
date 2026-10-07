@@ -22,6 +22,7 @@ import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonName;
+import org.openmrs.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +31,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * Builds the patient shell from central's full patient representation (design: remote import sync
  * isolation, Architecture §1). Only person, patient, names, addresses and identifiers are written,
- * and every row keeps central's UUID and preferred flag, so the shell reaches central through sync
- * as no-op upserts of rows central already has. Nothing clinical is copied.
+ * and every row keeps central's UUID, preferred flag, audit fields and identifier location, so the
+ * shell reaches central through sync as no-op upserts of rows central already has (ADR 0013 §3). A
+ * value this facility cannot reproduce is never replaced by a local one: the row is left out
+ * instead. Nothing clinical is copied.
  * <p>
  * Lookups go through {@link Lookups} so the rules can be unit-tested without an OpenMRS context.
  */
@@ -46,8 +49,14 @@ class PatientShellBuilder {
 
 		Location location(String uuid);
 
-		/** Used when an identifier's location is not defined here. May return null. */
-		Location fallbackLocation();
+		/**
+		 * Creates central's location here, retired, under central's UUID, so an identifier can keep
+		 * it. Location rows are not synced, so it never reaches central. May return null.
+		 */
+		Location placeholderLocation(String uuid, String name);
+
+		/** The local user with this UUID, or null. */
+		User user(String uuid);
 
 		Concept concept(String uuid);
 
@@ -69,6 +78,8 @@ class PatientShellBuilder {
 		}
 		Patient patient = new Patient();
 		patient.setUuid(remotePatient.path("uuid").asText());
+		// In this order: Person's setters also write the patient row's audit fields.
+		applyPersonAudit(patient, person);
 		applyAudit(patient, remotePatient);
 		patient.setGender(person.path("gender").asText());
 		String birthdate = person.path("birthdate").asText("");
@@ -158,16 +169,22 @@ class PatientShellBuilder {
 			return null;
 		}
 
-		// Identifier locations are central's; they usually exist here because the location tree is
-		// synced from the MFL. When one does not, the facility's own location keeps the identifier.
-		String locationUuid = node.path("location").path("uuid").asText("");
-		Location location = locationUuid.isEmpty() ? null : lookups.location(locationUuid);
-		if (location == null) {
-			location = lookups.fallbackLocation();
-		}
-		if (location == null) {
-			log.warn("Skipping central identifier of type {}: no matching or fallback location", type.getName());
-			return null;
+		// The identifier keeps central's location exactly: another one would reach central under the
+		// identifier's UUID and move the patient's facility attribution. A facility holds only its
+		// own site's locations (ADR 0012), so central's is usually brought over as a placeholder.
+		JsonNode centralLocation = node.path("location");
+		String locationUuid = centralLocation.path("uuid").asText("");
+		Location location = null;
+		if (!locationUuid.isEmpty()) {
+			location = lookups.location(locationUuid);
+			if (location == null) {
+				location = lookups.placeholderLocation(locationUuid, centralLocation.path("display").asText(""));
+			}
+			if (location == null) {
+				log.warn("Skipping central identifier of type {}: its location {} could not be brought here",
+				    type.getName(), locationUuid);
+				return null;
+			}
 		}
 
 		// OpenMRS ID is generated per facility and can repeat across them. A value another local
@@ -218,11 +235,40 @@ class PatientShellBuilder {
 		patient.setCauseOfDeathNonCoded(nonCoded);
 	}
 
-	private static void applyAudit(BaseOpenmrsData row, JsonNode node) {
-		Date created = parseDateOrNull(node.path("auditInfo").path("dateCreated"));
-		if (created != null) {
-			row.setDateCreated(created);
+	/**
+	 * Central's creator, date created, changer and date changed. A user who does not exist here is
+	 * left unset, so OpenMRS records the importing user as creator: the drift ADR 0013 §3 accepts.
+	 */
+	private void applyAudit(BaseOpenmrsData row, JsonNode node) {
+		JsonNode audit = node.path("auditInfo");
+		row.setCreator(user(audit.path("creator")));
+		row.setDateCreated(parseDateOrNull(audit.path("dateCreated")));
+		row.setChangedBy(user(audit.path("changedBy")));
+		row.setDateChanged(parseDateOrNull(audit.path("dateChanged")));
+	}
+
+	/**
+	 * The person row has audit fields of its own, apart from the patient row's. Their setters also
+	 * set the patient row's, so this goes before {@link #applyAudit}.
+	 */
+	private void applyPersonAudit(Patient patient, JsonNode person) {
+		JsonNode audit = person.path("auditInfo");
+		patient.setPersonCreator(user(audit.path("creator")));
+		patient.setPersonDateCreated(parseDateOrNull(audit.path("dateCreated")));
+		patient.setPersonChangedBy(user(audit.path("changedBy")));
+		patient.setPersonDateChanged(parseDateOrNull(audit.path("dateChanged")));
+	}
+
+	private User user(JsonNode ref) {
+		String uuid = ref.path("uuid").asText("");
+		if (uuid.isEmpty()) {
+			return null;
 		}
+		User user = lookups.user(uuid);
+		if (user == null) {
+			log.debug("Central user {} is not defined here; the importing user is recorded instead", uuid);
+		}
+		return user;
 	}
 
 	/** Voided rows, rows without a UUID and rows already present are not added. */

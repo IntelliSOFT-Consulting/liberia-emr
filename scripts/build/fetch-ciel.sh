@@ -45,6 +45,14 @@ readonly SMOKE_TEST_KEYS=(
   "var.concept.ciel.yes.uuid"
   "var.concept.ciel.lmp.uuid"
   "var.concept.ciel.gravida.uuid"
+  # The rest of the ANC obstetric history the ANC Initial Visit records (LE-398): a pin bump
+  # that drops one makes every save of that form answer 400 with a null obs concept.
+  "var.concept.ciel.parity.uuid"
+  "var.concept.ciel.full-term-births.uuid"
+  "var.concept.ciel.preterm-births.uuid"
+  "var.concept.ciel.abortions.uuid"
+  "var.concept.ciel.living-children.uuid"
+  "var.concept.ciel.gestational-age.uuid"
   "var.concept.ciel.birth-weight.uuid"
   "var.concept.ciel.immunization-history.uuid"
   "var.concept.ciel.immunizations.uuid"
