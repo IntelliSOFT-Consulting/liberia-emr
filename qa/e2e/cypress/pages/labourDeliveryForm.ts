@@ -62,6 +62,10 @@ class LabourDeliveryFormPage {
             .should('be.visible');
     }
 
+    verifyNumberValue(fieldId: string, value: string) {
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).should('have.value', value);
+    }
+
     answer(fieldId: 'td2' | 'iron_folic_acid' | 'repair', answer: 'Yes' | 'No') {
         const id = `${fieldId}-${answer}`;
         cy.get(`label[for="${id}"]`, { timeout: this.timeout }).scrollIntoView().click();

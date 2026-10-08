@@ -3,10 +3,12 @@ import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support
 import RegistrationPage from '../pages/Registration';
 import VisitPage from '../pages/visit';
 import LabourDeliveryFormPage from '../pages/labourDeliveryForm';
+import ANCInitialFormPage from '../pages/ancInitialForm';
 
 const registrationPage = new RegistrationPage();
 const visitPage = new VisitPage();
 const labourDeliveryForm = new LabourDeliveryFormPage();
+const ancInitialForm = new ANCInitialFormPage();
 
 // Every test is for a woman of childbearing age; age-specific behaviour is out of scope here.
 const registerMotherWithVisit = () => {
@@ -79,6 +81,44 @@ describe('First and Second Stage of Labor and Delivery form (one shared patient)
                 expect(labourDeliveryForm.observationValue(observations, 'delivery_method'), 'saved Delivery method')
                     .to.be.a('string').and.not.be.empty;
             });
+        });
+    });
+});
+
+describe('First and Second Stage of Labor and Delivery form ANC pre-fill', () => {
+    let patientChartUrl: string;
+
+    before(() => {
+        loginWithSession();
+        registerMotherWithVisit();
+
+        ancInitialForm.openClinicalForms();
+        ancInitialForm.selectForm();
+        ancInitialForm.saveInitialVisit();
+        cy.url().then((url) => {
+            patientChartUrl = url;
+        });
+    });
+
+    beforeEach(() => {
+        loginWithSession();
+        cy.visit(patientChartUrl);
+        openLabourDeliveryForm();
+    });
+
+    it.skip('pre-fills Gravida and Parity from the ANC Initial Visit', () => {
+        labourDeliveryForm.verifyNumberValue('gravida', '2');
+        labourDeliveryForm.verifyNumberValue('parity', '1');
+    });
+
+    it.skip('allows editing pre-filled Gravida and Parity and saves the edited values', () => {
+        labourDeliveryForm.verifyNumberValue('gravida', '2');
+        labourDeliveryForm.verifyNumberValue('parity', '1');
+        labourDeliveryForm.fillRequiredFields('3', '2');
+
+        labourDeliveryForm.saveAndGetObservations().then((observations) => {
+            expect(Number(labourDeliveryForm.observationValue(observations, 'gravida')), 'saved Gravida').to.equal(3);
+            expect(Number(labourDeliveryForm.observationValue(observations, 'parity')), 'saved Parity').to.equal(2);
         });
     });
 });

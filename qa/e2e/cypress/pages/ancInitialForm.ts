@@ -136,6 +136,13 @@ class ANCInitialFormPage {
         cy.contains('a.cds--link', 'ANC Initial Visit', { timeout: this.timeout }).click();
     }
 
+    saveInitialVisit() {
+        this.completeRequiredAssessmentFields();
+        cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
+        cy.contains('button', 'Save', { timeout: this.timeout }).click();
+        cy.wait('@saveAncInitial', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);
+    }
+
     verifySuccessfulAssessmentSaved() {
         this.completeRequiredAssessmentFields();
         cy.get('#pregnancyTrimester').should('contain.text', '2nd trimester');
