@@ -4,6 +4,8 @@ import useSWR from 'swr';
 export interface RemoteSearchedPatient {
   uuid: string;
   display?: string;
+  /** Already at this facility (imported earlier): offered as "Open", not imported again. */
+  alreadyLocal?: boolean;
   person?: {
     uuid?: string;
     display?: string;
@@ -73,11 +75,20 @@ export function useRemotePatientSearch(query: string, shouldSearch: boolean, min
   };
 }
 
-export async function importRemotePatient(remoteUuid: string): Promise<{ localUuid: string }> {
-  const response = await openmrsFetch(`${restUrl}/importpatient`, {
+export interface ImportOutcome {
+  localUuid: string;
+  /** False when the patient was already here and only missing rows were added. */
+  created?: boolean;
+  /** Whether the history from other facilities was copied, or will be retrieved later. */
+  history?: 'retrieved' | 'notRetrieved';
+}
+
+/** @param reason the reason for access, logged with the fetch (ADR 0007 condition 3) */
+export async function importRemotePatient(remoteUuid: string, reason: string): Promise<ImportOutcome> {
+  const response = await openmrsFetch<ImportOutcome>(`${restUrl}/importpatient`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: { remoteUuid },
+    body: { remoteUuid, reason },
   });
 
   return response.data;
