@@ -84,10 +84,10 @@ const userFor = (role: string): Auth => ({
   password,
 });
 
-type Named = { uuid: string; display: string };
+type Named = { uuid: string; display?: string; name?: string };
 
-const uuidNamed = (results: Array<Named>, label: string) => {
-  const match = results.find((row) => row.display === label);
+const uuidNamed = (results: Array<Named>, label: string, field: 'display' | 'name' = 'display') => {
+  const match = results.find((row) => row[field] === label);
   expect(match, label).to.exist;
   return match!.uuid;
 };
@@ -150,10 +150,11 @@ const filteredObservationProbe = () => {
     })
     .then(({ body }) => {
       found.identifierType = uuidNamed(body.results, 'OpenMRS ID');
-      return asAdmin('GET', `${REST}/idgen/identifiersource?v=custom:(uuid,display)&limit=20`);
+      // idgen 5.0.4 display is "{identifierType} - {name} - {class}". The CSV name is `name`.
+      return asAdmin('GET', `${REST}/idgen/identifiersource?v=custom:(uuid,name)&limit=20`);
     })
     .then(({ body }) => {
-      found.source = uuidNamed(body.results, 'Generator for OpenMRS ID');
+      found.source = uuidNamed(body.results, 'Generator for OpenMRS ID', 'name');
       return asAdmin('POST', `${REST}/idgen/identifiersource/${found.source}/identifier`, { comment: 'RoleSignIn' });
     })
     .then(({ body }) => {
