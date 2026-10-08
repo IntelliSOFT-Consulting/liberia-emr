@@ -46,11 +46,16 @@ patient-search app fails the image build instead of shipping without the feature
 | --- | --- | --- |
 | `GET /ws/rest/v1/liberiaemr/remotesearch/status` | Get Patients | whether central is configured |
 | `GET /ws/rest/v1/liberiaemr/remotesearch?q=` | Get Patients | search central; a patient already here is flagged `alreadyLocal: true` and offered as Open |
-| `POST /ws/rest/v1/liberiaemr/importpatient` `{ "remoteUuid", "reason" }` | Add Patients, Import Remote Patient | create the patient shell and fetch their history from other facilities; the reason for access is logged with the fetch |
+| `GET /ws/rest/v1/liberiaemr/remotesearch/ping` | Import Remote Patient | import step 1: central answers and accepts this facility's credentials |
+| `POST /ws/rest/v1/liberiaemr/importpatient` `{ "remoteUuid", "reason", "deferHistory": true }` | Add Patients, Import Remote Patient | import step 2: create the patient shell; the import is logged with its reason |
+| `POST /ws/rest/v1/liberiaemr/remotehistory/local/{uuid}/refresh` `{ "reason" }` | View Remote History or Import Remote Patient | import step 3: copy the history from other facilities into the local store; returns `history` and `facilityCount` |
 
 Import & Open shows only to a user with both privileges; anyone else sees "Ask a Records Officer
 to import this patient." Before anything is sent, a modal asks for the reason for access
 (ADR 0007 condition 3): Visiting patient, Referral in, Emergency, or Other with a description.
+A progress dialog then follows the three import calls above, and the chart opens with a success
+notification ("Records from N other facilities are in External records.") or, when the history
+could not be copied, a warning that it will be retrieved later.
 
 The central URL and service account are **backend** settings, not this app's: `LIBERIAEMR_REMOTE_URL`
 (https only), `LIBERIAEMR_REMOTE_USER` and `LIBERIAEMR_REMOTE_PASSWORD` (or

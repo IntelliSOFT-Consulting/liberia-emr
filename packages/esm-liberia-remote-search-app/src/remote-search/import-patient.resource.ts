@@ -75,16 +75,46 @@ export interface ImportOutcome {
   localUuid: string;
   /** False when the patient was already here and only missing rows were added. */
   created?: boolean;
-  /** Whether the history from other facilities was copied, or will be retrieved later. */
-  history?: 'retrieved' | 'notRetrieved';
+  /** "deferred": the history is fetched by its own call, {@link refreshRemoteHistory}. */
+  history?: 'retrieved' | 'notRetrieved' | 'deferred';
 }
 
-/** @param reason the reason for access, logged with the fetch (ADR 0007 condition 3) */
+/** Whether central answers and accepts this facility's credentials: the import's first step. */
+export async function pingCentral(): Promise<void> {
+  await openmrsFetch(`${restUrl}/remotesearch/ping`);
+}
+
+/**
+ * Creates the patient shell only; the history is fetched next by {@link refreshRemoteHistory}, so
+ * each stage can be shown as it happens. The server logs the import with its reason.
+ *
+ * @param reason the reason for access (ADR 0007 condition 3)
+ */
 export async function importRemotePatient(remoteUuid: string, reason: string): Promise<ImportOutcome> {
   const response = await openmrsFetch<ImportOutcome>(`${restUrl}/importpatient`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: { remoteUuid, reason },
+    body: { remoteUuid, reason, deferHistory: true },
+  });
+
+  return response.data;
+}
+
+export interface HistoryRefreshOutcome {
+  attempt: 'ok' | 'error' | 'unreachable' | 'none';
+  history: 'retrieved' | 'notRetrieved';
+  status: string;
+  /** How many other facilities the cached history now comes from. */
+  facilityCount: number;
+  fetchedAt: string | null;
+}
+
+/** Fetches the patient's history from other facilities into this facility's store, now. */
+export async function refreshRemoteHistory(patientUuid: string, reason: string): Promise<HistoryRefreshOutcome> {
+  const response = await openmrsFetch<HistoryRefreshOutcome>(`${restUrl}/remotehistory/local/${patientUuid}/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { reason },
   });
 
   return response.data;

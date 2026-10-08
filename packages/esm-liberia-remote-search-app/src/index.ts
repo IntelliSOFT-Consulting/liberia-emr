@@ -30,3 +30,5 @@ export const remoteSearchSummary = getAsyncLifecycle(
 );
 
 export const reasonForAccessModal = getAsyncLifecycle(() => import('./remote-search/reason-for-access.modal'), options);
+
+export const importProgressModal = getAsyncLifecycle(() => import('./remote-search/import-progress.modal'), options);
