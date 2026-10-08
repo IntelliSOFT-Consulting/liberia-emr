@@ -36,9 +36,9 @@ Both UIs publish on `PROM_BIND_ADDR`, `127.0.0.1` by default, at `PROM_PORT` (90
 `ALERTMANAGER_PORT` (9093). Reach them over an SSH tunnel; bind another address only
 deliberately.
 
-At central the backend reads this Prometheus for the sync status page, through
+The backend reads this Prometheus for the sync status page, through
 `LIBERIAEMR_SYNC_MONITORING_URL` (`http://prometheus:9090` by default; empty turns the page
-off). A facility does not set it.
+off): the national view at central, and the facility's own sender at a facility.
 
 ## Alerts
 
@@ -50,6 +50,7 @@ Facility (`rules-facility.yml`):
 | `SyncPushErrorsSustained` | the same, for 2 hours | critical |
 | `SyncSenderDown` | the sender cannot be scraped for 5 minutes | critical |
 | `SyncSenderDatasourceDown` | the sender cannot reach the facility database | critical |
+| `SyncCentralUnreachable` | the sender's own broker check has failed for 15 minutes, whether or not anything is waiting to be sent | warning |
 | `SyncCaptureStalled` | the sender is up, but rows have waited over 15 minutes while its binlog position stood still, for 2 minutes | critical |
 | `SyncCaptureCheckBlind` | the capture exporter is down, cannot read the database, has stopped refreshing, or has had no sender position for half an hour while records waited, for 15 minutes | warning |
 
@@ -113,7 +114,12 @@ every `REFRESH_SECONDS` (3600 by default). `--once` prints the metrics and exits
 ## Sync capture exporter
 
 `sync-capture/sync-capture.sh`, run in `liberia-emr-sync-capture` as uid and gid 999, the
-sender's own, because the sender keeps its saved position private. At a facility it mounts the
+sender's own, because the sender keeps its saved position private. It also asks the sender's
+health endpoint (`SENDER_HEALTH_URL`, `http://sync:8080/actuator/health`), which lists its
+parts by name (`show-components` in `distribution/sync/application.properties.template`), and
+reports Spring's own broker check, `jms`, as whether the facility can reach central. It waits
+up to `HEALTH_TIMEOUT_SECONDS` (40) for that answer, because a firewall that drops the broker
+port makes the sender's attempt hang rather than fail. At a facility it mounts the
 sender's `sync-queue` volume read-only at `/eip` and reads Debezium's position from
 `.debezium/offsets.txt` as text, and signs in to the database with the Debezium account to read
 the newest primary key in the watched tables clinical work writes to (person, identifiers,
@@ -135,6 +141,7 @@ and exits.
 | `sync_capture_last_event_seconds` | The time of the last binlog event the sender saved |
 | `sync_capture_offset_readable`, `sync_capture_db_readable` | 1 when the last run read the position, and the database |
 | `sync_capture_last_run_seconds` | When it last ran |
+| `sync_sender_broker_connected` | 1 when the sender's broker check passes, 0 when it fails; absent when the sender does not answer |
 
 A facility where nothing is being recorded is never stalled, however long the position stands
 still. A sender that is stopped leaves the alert to `SyncSenderDown`.
