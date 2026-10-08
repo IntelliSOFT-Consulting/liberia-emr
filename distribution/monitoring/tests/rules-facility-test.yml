@@ -106,3 +106,30 @@ tests:
             exp_annotations:
               summary: "The sync capture check cannot see the facility"
               description: "The capture exporter is down, cannot read the database with the Debezium account, has stopped refreshing, or has had no saved sender position to read for half an hour while records were being saved, so a stalled sender would go unnoticed."
+
+  - name: a sender that cannot reach central alerts after 15 minutes
+    interval: 1m
+    input_series:
+      - series: 'sync_sender_broker_connected{job="sync-capture",instance="sync-capture:9102"}'
+        values: '1x5 0x30'
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: SyncCentralUnreachable
+        exp_alerts: []
+      - eval_time: 22m
+        alertname: SyncCentralUnreachable
+        exp_alerts:
+          - exp_labels: {severity: warning, job: sync-capture, instance: "sync-capture:9102"}
+            exp_annotations:
+              summary: "The facility cannot reach the sync broker at central"
+              description: "The sender has been unable to connect to central for 15 minutes. Records wait at the facility and are sent when the link returns. Check the internet link, HTTPS to central and the facility's sync-tunnel, or the broker port for a facility still on 61617, then the facility's certificate and its clock (docs/runbooks/sync-operations.md section 20). NEVER a reason to stop clinical work."
+
+  - name: a sender that does not answer is SyncSenderDown, not a broken link
+    interval: 1m
+    input_series:
+      - series: 'sync_sender_broker_connected{job="sync-capture",instance="sync-capture:9102"}'
+        values: '1x5 _x30'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: SyncCentralUnreachable
+        exp_alerts: []

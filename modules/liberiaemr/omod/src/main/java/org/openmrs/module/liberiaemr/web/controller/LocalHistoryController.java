@@ -9,6 +9,7 @@
  */
 package org.openmrs.module.liberiaemr.web.controller;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.openmrs.api.context.Context;
@@ -20,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -30,7 +32,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /**
  * The facility's read of an imported patient's remote history (LE-384), for the External records
  * view. It answers from the local cache, refreshing it first when it is stale and central can be
- * reached; offline it serves the cache with its age.
+ * reached; offline it serves the cache with its age. It also refreshes on request, for an
+ * import's last step and the chart's Refresh (LE-387).
  */
 @Controller
 @RequestMapping(value = "/rest/v1/liberiaemr/remotehistory/local")
@@ -75,6 +78,43 @@ public class LocalHistoryController {
 			return error(HttpStatus.NOT_FOUND, "No patient " + uuid + " at this facility");
 		}
 		return json(HttpStatus.OK, facilityHistoryService.read(uuid));
+	}
+
+	/**
+	 * Fetches the patient's history from central now: the last step of an import (LE-387) and the
+	 * chart's Refresh. Answers with the outcome and the state of the cache, not the records, so a
+	 * Records Officer who may import but not view other facilities' records can run the import's
+	 * last step.
+	 *
+	 * @param payload optional {@code {reason}}, logged with the fetch; "routine refresh" when absent
+	 * @return 200 with {@code attempt}, {@code history}, {@code status}, {@code facilityCount} and
+	 *         {@code fetchedAt}, whether or not central answered; 400 for a bad UUID; 403 without View
+	 *         Remote History or Import Remote Patient, or without Get Patients; 404 for a patient who
+	 *         is not at this facility
+	 */
+	@RequestMapping(value = "/{patientUuid}/refresh", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<String> refresh(@PathVariable("patientUuid") String patientUuid,
+	        @RequestBody(required = false) Map<String, Object> payload) throws Exception {
+		if (!Context.isAuthenticated() || !(Context.hasPrivilege(PRIVILEGE_VIEW_REMOTE_HISTORY)
+		        || Context.hasPrivilege(RemoteSearchController.PRIVILEGE_IMPORT_REMOTE_PATIENT))) {
+			return error(HttpStatus.FORBIDDEN, PRIVILEGE_VIEW_REMOTE_HISTORY + " or "
+			        + RemoteSearchController.PRIVILEGE_IMPORT_REMOTE_PATIENT + " privilege is required");
+		}
+		if (!Context.hasPrivilege("Get Patients")) {
+			return error(HttpStatus.FORBIDDEN, "Get Patients privilege is required");
+		}
+		if (patientUuid == null || !UUID_PATTERN.matcher(patientUuid.trim()).matches()) {
+			return error(HttpStatus.BAD_REQUEST, "patientUuid must be a UUID");
+		}
+		String uuid = patientUuid.trim();
+		if (Context.getPatientService().getPatientByUuid(uuid) == null) {
+			return error(HttpStatus.NOT_FOUND, "No patient " + uuid + " at this facility");
+		}
+		Object given = payload == null ? null : payload.get("reason");
+		String reason = given instanceof String && !((String) given).trim().isEmpty() ? ((String) given).trim()
+		        : FacilityHistoryService.REASON_ROUTINE_REFRESH;
+		return json(HttpStatus.OK, facilityHistoryService.refreshNow(uuid, reason));
 	}
 
 	private static ResponseEntity<String> error(HttpStatus status, String message) throws Exception {

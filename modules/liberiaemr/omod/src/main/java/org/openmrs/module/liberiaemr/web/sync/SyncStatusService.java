@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,8 +36,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * authenticates every facility) and from the certificate exporter. Both are already scraped,
  * so this asks monitoring rather than adding a second way to collect the same numbers.
  *
- * Unset address means the feature is off, which is how the facility stacks behave: they run
- * the same image and have no national monitoring to ask.
+ * Unset address means the feature is off.
+ *
+ * A facility runs the same image and has no national view, but it has its own monitoring of
+ * its sender. There the answer carries a "facility" section instead, and "enabled", which means
+ * the national view, stays false: a sync status page from before the facility view keeps
+ * hiding itself rather than showing an empty national table.
  */
 @Component("liberiaemr.SyncStatusService")
 public class SyncStatusService {
@@ -46,6 +51,9 @@ public class SyncStatusService {
 	public static final String ENV_MONITORING_URL = "LIBERIAEMR_SYNC_MONITORING_URL";
 	
 	public static final String GP_MONITORING_URL = "liberiaemr.sync.monitoringUrl";
+	
+	/** Set by each compose file; the reports module reads the same variable. */
+	public static final String ENV_INSTANCE_ROLE = "LIBERIAEMR_INSTANCE_ROLE";
 	
 	/** A page that waits on monitoring is worse than a page that says it cannot reach it. */
 	private static final int TIMEOUT_MS = 4000;
@@ -76,6 +84,9 @@ public class SyncStatusService {
 	 * @return the summary the sync status page renders; never null, never throws
 	 */
 	public Map<String, Object> getStatus() {
+		if ("facility".equals(System.getenv(ENV_INSTANCE_ROLE))) {
+			return readFacilityStatus(monitoringUrl());
+		}
 		return readStatus(monitoringUrl());
 	}
 	
@@ -154,6 +165,55 @@ public class SyncStatusService {
 		return status;
 	}
 	
+	/**
+	 * What a facility's own monitoring says about its sender: whether it runs, whether it can
+	 * reach central, what is waiting to be sent, and which facility alerts are firing.
+	 *
+	 * A facility's monitoring runs only with the sync profile. Without it, the address does not
+	 * resolve, which means sync is not set up here, so the page is off rather than "unreachable".
+	 *
+	 * @param base the facility's monitoring address, empty when the feature is off
+	 */
+	Map<String, Object> readFacilityStatus(String base) {
+		Map<String, Object> status = new LinkedHashMap<String, Object>();
+		status.put("enabled", false);
+		if (base == null || base.trim().isEmpty()) {
+			return status;
+		}
+		
+		try {
+			Map<String, Object> facility = new LinkedHashMap<String, Object>();
+			Long senderUp = optional(base, "up{job=\"sync-sender\"}");
+			facility.put("senderRunning", senderUp == null ? null : Boolean.valueOf(senderUp == 1L));
+			Long database = optional(base, "openmrs_dbsync_watcher_datasource_status_openmrs");
+			facility.put("databaseReachable", database == null ? null : Boolean.valueOf(database == 1L));
+			// The sender's own check of its broker connection, through the capture exporter.
+			// Absent while the sender does not answer, so the page says "unknown", not "no".
+			Long connected = optional(base, "sync_sender_broker_connected");
+			facility.put("connectedToCentral", connected == null ? null : Boolean.valueOf(connected == 1L));
+			// Captured but not yet sent, and failed and waiting to retry. Absent while the
+			// sender is down, which is not the same as nothing waiting.
+			facility.put("recordsWaiting", optional(base, "openmrs_dbsync_watcher_db_events"));
+			facility.put("recordsRetrying", optional(base, "openmrs_dbsync_watcher_errors"));
+			Long snapshot = optional(base, "sync_capture_snapshot");
+			facility.put("initialLoad", Boolean.valueOf(snapshot != null && snapshot == 1L));
+			facility.put("lastCaptured", optional(base, "sync_capture_last_event_seconds"));
+			facility.put("captureStalledSeconds", optional(base, "sync_capture_stalled_seconds"));
+			status.put("facility", facility);
+			status.put("alerts", firingAlerts(base));
+			status.put("available", true);
+		}
+		catch (UnknownHostException e) {
+			return status;
+		}
+		catch (Exception e) {
+			log.warn("Could not read facility sync status from monitoring at {}: {}", base, e.toString());
+			status.put("facility", new LinkedHashMap<String, Object>());
+			status.put("available", false);
+		}
+		return status;
+	}
+	
 	/** Environment first, global property second, and otherwise off. */
 	private String monitoringUrl() {
 		String value = System.getenv(ENV_MONITORING_URL);
@@ -199,9 +259,21 @@ public class SyncStatusService {
 		return 0L;
 	}
 	
+	/** The first sample of the query, or null when the series is absent. */
+	private Long optional(String base, String query) throws Exception {
+		for (JsonNode result : query(base, query)) {
+			JsonNode value = result.path("value");
+			if (value.size() == 2) {
+				return Long.valueOf(Math.round(Double.parseDouble(value.get(1).asText("0"))));
+			}
+		}
+		return null;
+	}
+	
 	/**
-	 * What central's monitoring reports firing, by name. Every rule it loads today is a sync
-	 * rule (rules-central.yml), so the page shows them all rather than guessing at names.
+	 * What the monitoring reports firing, by name. Every rule either side loads today is a sync
+	 * rule (rules-central.yml, rules-facility.yml), so the page shows them all rather than
+	 * guessing at names.
 	 */
 	private List<String> firingAlerts(String base) throws Exception {
 		List<String> names = new ArrayList<String>();

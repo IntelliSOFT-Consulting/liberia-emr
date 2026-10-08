@@ -127,6 +127,7 @@ jobs:
           build liberia-emr-broker distribution/broker/Dockerfile distribution/broker
           build liberia-emr-cert-expiry distribution/monitoring/cert-expiry/Dockerfile distribution/monitoring/cert-expiry
           build liberia-emr-sync-capture distribution/monitoring/sync-capture/Dockerfile distribution/monitoring/sync-capture
+          build liberia-emr-sync-tunnel distribution/sync-tunnel/Dockerfile distribution/sync-tunnel
 
       - name: Issue and install the sync certificates
         run: |

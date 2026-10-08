@@ -443,15 +443,22 @@ restarted, reads as quiet rather than silent until then.
 
 The page needs the `View Sync Status` privilege, which `Sync Administrator` carries along with
 `Application: Administers System`, and so anyone with `Organizational: System Administrator`
-(section 6). A facility server has no national monitoring to read and reports the feature off:
-the menu entry is hidden, and opening `/openmrs/spa/sync-status` directly shows only a notice
-that sync status is not available on this server.
+(section 6).
+
+At a facility that runs sync, the same menu entry shows that facility's own sender instead:
+whether it can reach central, records waiting to be sent, records retrying, when it last picked
+up a change, whether its first load is still running, and any facility alert firing, each
+explained in plain words. It reads the facility's own monitoring, which runs with the `sync`
+profile. A facility without that profile has none, so the menu entry is hidden there, and
+opening `/openmrs/spa/sync-status` directly shows only a notice that sync status is not
+available on this server.
 
 Retries and conflicts are national totals, not per facility. dbsync records no sender on a
 queued or failed record, so central cannot say which facility one came from; use
 the Sync conflicts page (section 8) for the conflicts themselves. If the page says monitoring cannot
 be reached, sync itself may be perfectly healthy: check the central `prometheus` service first.
-`qa/sync/verify-sync-status.sh` exercises the endpoint the page reads.
+If the facility view says monitoring cannot be reached, check the facility's `prometheus`
+service. `qa/sync/verify-sync-status.sh` exercises the endpoint the page reads, at both ends.
 
 The page itself is the `packages/esm-liberia-sync-status-app` frontend module, pinned in
 `distribution/distro.properties`. The same frontend image runs at facilities, which is why the
@@ -734,3 +741,39 @@ what arrived since; send those facilities' records again (section 11).
 This order has not yet been rehearsed on a staging pair; do that before the first production
 upgrade.
 
+## 20. A facility cannot reach central: `SyncCentralUnreachable`
+
+The facility's sender has failed its own check of the broker connection for 15 minutes. It
+fires whether or not anything is waiting to be sent, so a link that broke overnight shows
+before the day's records queue behind it. The facility's Sync status page says the same
+("Not connected"). Records wait at the facility and go once the link returns; clinical work
+carries on as normal.
+
+Find the reason in the sender's log: `facility logs --since 30m sync | grep -m3 -i -E 'ssl|connect|refused|timed out'`.
+A facility on HTTPS (`ARTEMIS_URL=ssl://artemis:61617`) reaches central through its
+`sync-tunnel` service, so read that log too: `facility logs --since 30m sync-tunnel`.
+
+- **Timed out, or no route.** The internet link is down, or a firewall is in the way. On
+  HTTPS, check the facility host reaches central's EMR: `curl -sS -o /dev/null -w '%{http_code}\n' https://<central host>/`.
+  If it needs a forward proxy, set `SYNC_HTTP_PROXY`. A facility still on
+  `ssl://<central host>:61617` needs that port open (`nc -vz <central host> 61617`); where
+  the network allows only 443, move the facility onto HTTPS
+  ([broker README](../../distribution/broker/README.md#reaching-it-over-https)) rather than
+  asking for the port.
+- **Connection refused,** for a facility still on 61617: central's broker is down, and
+  `SyncBrokerDown` fires at central.
+- **Certificate errors in the tunnel's log.** The network inspects TLS and re-signs central's
+  web certificate. Give the tunnel that network's CA with `SYNC_TUNNEL_CA_FILE`; it is trusted
+  for the outer HTTPS only.
+- **Certificate errors in the sender's log** (`PKIX`, `certificate_unknown`, `bad_certificate`,
+  `expired`). Check the facility's certificate (section 4) and whether it was revoked
+  (section 2). A "not yet valid" or "expired" error on a certificate that is in date means a
+  clock is wrong: compare `date -u` on the facility host with central's, and set up time sync
+  on whichever is off.
+- **Unknown host.** `artemis` unknown in the sender's log means the facility's own
+  `sync-tunnel` is not running, since that name is its alias: start it with
+  `facility up -d sync-tunnel`. Central's host unknown, in the tunnel's log or for a facility
+  still on 61617, means it does not resolve from the facility.
+
+`SyncPushErrors` usually fires alongside it once records start failing. If the sender itself
+is stopped, `SyncSenderDown` fires instead and this alert stays quiet.
