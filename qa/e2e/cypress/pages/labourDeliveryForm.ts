@@ -16,6 +16,7 @@ class LabourDeliveryFormPage {
         fetalHeartRateLowerRange: 'Value must be 60 or higher',
         fetalHeartRateUpperRange: 'Value must be lower than 220',
         required: 'Field is mandatory',
+        partographDilationRequired: 'There are no Partograph to display for this patient until cervical dilatation is 4cm',
     };
 
     constructor(
@@ -34,6 +35,21 @@ class LabourDeliveryFormPage {
     selectForm() {
         cy.contains('a.cds--link', LabourDeliveryFormPage.formName, { timeout: this.chartLoadTimeout }).click();
         cy.get('#gravida', { timeout: this.chartLoadTimeout }).should('exist');
+    }
+
+    openPartograph() {
+        cy.contains('a', /^Partograph$/, { timeout: this.chartLoadTimeout }).click();
+    }
+
+    verifyLabourAdmissionPrompt() {
+        cy.contains('button', /^Record Labour Admission$/, { timeout: this.chartLoadTimeout })
+            .should('be.visible');
+    }
+
+    verifyPartographDilationRequired() {
+        cy.contains(LabourDeliveryFormPage.messages.partographDilationRequired, { timeout: this.chartLoadTimeout })
+            .should('be.visible');
+        cy.contains('button', /^Record Labour Admission$/).should('not.exist');
     }
 
     setNumber(fieldId: string, value: string) {

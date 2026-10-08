@@ -268,3 +268,23 @@ describe('First and Second Stage of Labor and Delivery form vital-sign ranges (o
         });
     });
 });
+
+describe('First and Second Stage of Labor and Delivery form Partograph prerequisites', () => {
+    it('shows the admission prompt before saving and the cervical-dilation requirement after saving', () => {
+        loginWithSession();
+        registerMotherWithVisit();
+        cy.url().then((patientChartUrl) => {
+            labourDeliveryForm.openPartograph();
+            labourDeliveryForm.verifyLabourAdmissionPrompt();
+
+            cy.visit(patientChartUrl);
+            openLabourDeliveryForm();
+            labourDeliveryForm.fillRequiredFields();
+            labourDeliveryForm.saveAndGetObservations();
+
+            cy.visit(patientChartUrl);
+            labourDeliveryForm.openPartograph();
+            labourDeliveryForm.verifyPartographDilationRequired();
+        });
+    });
+});

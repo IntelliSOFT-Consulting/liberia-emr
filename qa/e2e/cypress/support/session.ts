@@ -14,6 +14,11 @@ export const loginWithSession = () => {
                 authPage.visitPage();
                 authPage.verifyLoginPageLoaded();
                 authPage.login(username, password);
+            }, {
+                validate() {
+                    cy.request<{ authenticated: boolean }>('/openmrs/ws/rest/v1/session')
+                        .its('body.authenticated').should('eq', true);
+                }
             });
         }
     );
