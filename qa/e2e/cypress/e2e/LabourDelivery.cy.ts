@@ -82,6 +82,60 @@ describe('First and Second Stage of Labor and Delivery form (one shared patient)
                     .to.be.a('string').and.not.be.empty;
             });
         });
+
+        describe('Gravida and Parity validation', () => {
+            it('rejects Gravida 0 but accepts 1 despite the "greater than 1" message', () => {
+                labourDeliveryForm.fillRequiredFields('0', '0');
+                labourDeliveryForm.verifySaveBlocked();
+
+                labourDeliveryForm.setNumber('gravida', '1');
+                labourDeliveryForm.saveAndGetObservations().then((observations) => {
+                    expect(Number(labourDeliveryForm.observationValue(observations, 'gravida')), 'saved Gravida').to.equal(1);
+                });
+            });
+
+            it('accepts Parity equal to Gravida', () => {
+                labourDeliveryForm.fillRequiredFields('2', '2');
+                labourDeliveryForm.saveAndGetObservations().then((observations) => {
+                    expect(Number(labourDeliveryForm.observationValue(observations, 'gravida')), 'saved Gravida').to.equal(2);
+                    expect(Number(labourDeliveryForm.observationValue(observations, 'parity')), 'saved Parity').to.equal(2);
+                });
+            });
+
+            it('blocks saving when Parity is greater than Gravida', () => {
+                labourDeliveryForm.fillRequiredFields('1', '2');
+                labourDeliveryForm.verifyMessageShown(LabourDeliveryFormPage.messages.parityAboveGravida);
+                labourDeliveryForm.verifySaveBlocked();
+            });
+
+            it('shows the Parity error when Gravida is lowered below it and clears it when Gravida is raised', () => {
+                labourDeliveryForm.fillRequiredFields('2', '2');
+                labourDeliveryForm.setNumber('gravida', '1');
+                labourDeliveryForm.verifyMessageShown(LabourDeliveryFormPage.messages.parityAboveGravida);
+
+                labourDeliveryForm.setNumber('gravida', '3');
+                labourDeliveryForm.verifyMessageAbsent(LabourDeliveryFormPage.messages.parityAboveGravida);
+            });
+
+            it('rejects decimal and negative values for Gravida and Parity', () => {
+                labourDeliveryForm.fillRequiredFields('1', '0');
+
+                labourDeliveryForm.setNumber('gravida', '1.5');
+                labourDeliveryForm.verifySaveBlocked();
+                labourDeliveryForm.setNumber('gravida', '1');
+
+                labourDeliveryForm.setNumber('parity', '0.5');
+                labourDeliveryForm.verifySaveBlocked();
+                labourDeliveryForm.setNumber('parity', '0');
+
+                labourDeliveryForm.setNumber('gravida', '-1');
+                labourDeliveryForm.verifySaveBlocked();
+                labourDeliveryForm.setNumber('gravida', '1');
+
+                labourDeliveryForm.setNumber('parity', '-1');
+                labourDeliveryForm.verifySaveBlocked();
+            });
+        });
     });
 });
 
