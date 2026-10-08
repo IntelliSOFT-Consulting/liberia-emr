@@ -160,12 +160,12 @@ describe('First and Second Stage of Labor and Delivery form ANC pre-fill', () =>
         openLabourDeliveryForm();
     });
 
-    it.skip('pre-fills Gravida and Parity from the ANC Initial Visit', () => {
+    it('pre-fills Gravida and Parity from the ANC Initial Visit', () => {
         labourDeliveryForm.verifyNumberValue('gravida', '2');
         labourDeliveryForm.verifyNumberValue('parity', '1');
     });
 
-    it.skip('allows editing pre-filled Gravida and Parity and saves the edited values', () => {
+    it('allows editing pre-filled Gravida and Parity and saves the edited values', () => {
         labourDeliveryForm.verifyNumberValue('gravida', '2');
         labourDeliveryForm.verifyNumberValue('parity', '1');
         labourDeliveryForm.fillRequiredFields('3', '2');
@@ -173,6 +173,98 @@ describe('First and Second Stage of Labor and Delivery form ANC pre-fill', () =>
         labourDeliveryForm.saveAndGetObservations().then((observations) => {
             expect(Number(labourDeliveryForm.observationValue(observations, 'gravida')), 'saved Gravida').to.equal(3);
             expect(Number(labourDeliveryForm.observationValue(observations, 'parity')), 'saved Parity').to.equal(2);
+        });
+    });
+});
+
+describe('First and Second Stage of Labor and Delivery form vital-sign ranges (one shared patient)', () => {
+    let patientChartUrl: string;
+
+    before(() => {
+        loginWithSession();
+        registerMotherWithVisit();
+        cy.url().then((url) => {
+            patientChartUrl = url;
+        });
+    });
+
+    beforeEach(() => {
+        loginWithSession();
+        cy.visit(patientChartUrl);
+        openLabourDeliveryForm();
+    });
+
+    const expectNumericValueSaved = (fieldId: string, value: string) => {
+        labourDeliveryForm.fillRequiredFields();
+        labourDeliveryForm.setNumber(fieldId, value);
+        labourDeliveryForm.saveAndGetObservations().then((observations) => {
+            expect(Number(labourDeliveryForm.observationValue(observations, fieldId)), `saved ${fieldId}`)
+                .to.equal(Number(value));
+        });
+    };
+
+    const expectNumericValueRejected = (fieldId: string, value: string, message: string) => {
+        labourDeliveryForm.fillRequiredFields();
+        labourDeliveryForm.setNumber(fieldId, value);
+        labourDeliveryForm.verifyMessageShown(message);
+        labourDeliveryForm.verifySaveBlocked();
+    };
+
+    describe('SpO2 range', () => {
+        it('saves SpO2 at the lower bound of 0', () => {
+            expectNumericValueSaved('spo2', '0');
+        });
+
+        it('saves SpO2 at the upper bound of 100', () => {
+            expectNumericValueSaved('spo2', '100');
+        });
+
+        it('rejects SpO2 below the range at -1', () => {
+            expectNumericValueRejected('spo2', '-1', LabourDeliveryFormPage.messages.spo2Range);
+        });
+
+        it('rejects SpO2 above the range at 101', () => {
+            expectNumericValueRejected('spo2', '101', LabourDeliveryFormPage.messages.spo2Range);
+        });
+    });
+
+    describe('Blood pressure ranges', () => {
+        it('saves systolic blood pressure at the upper bound of 250', () => {
+            expectNumericValueSaved('bp_sys', '250');
+        });
+
+        it('rejects systolic blood pressure above the range at 251', () => {
+            expectNumericValueRejected('bp_sys', '251', LabourDeliveryFormPage.messages.systolicRange);
+        });
+
+        it('saves diastolic blood pressure at the upper bound of 150', () => {
+            expectNumericValueSaved('bp_dia', '150');
+        });
+
+        it('rejects diastolic blood pressure above the range at 151', () => {
+            expectNumericValueRejected('bp_dia', '151', LabourDeliveryFormPage.messages.diastolicRange);
+        });
+    });
+
+    describe('Fetal heart rate range', () => {
+        it('saves fetal heart rate at the lower bound of 60', () => {
+            expectNumericValueSaved('fhr', '60');
+        });
+
+        it('saves fetal heart rate at the upper bound of 219', () => {
+            expectNumericValueSaved('fhr', '219');
+        });
+
+        it('rejects fetal heart rate below the range at 59', () => {
+            expectNumericValueRejected('fhr', '59', LabourDeliveryFormPage.messages.fetalHeartRateLowerRange);
+        });
+
+        it('rejects fetal heart rate at 220 because the value must be lower than 220', () => {
+            expectNumericValueRejected('fhr', '220', LabourDeliveryFormPage.messages.fetalHeartRateUpperRange);
+        });
+
+        it('rejects fetal heart rate above the range at 221', () => {
+            expectNumericValueRejected('fhr', '221', LabourDeliveryFormPage.messages.fetalHeartRateUpperRange);
         });
     });
 });
