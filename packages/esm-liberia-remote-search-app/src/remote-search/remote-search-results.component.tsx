@@ -190,7 +190,11 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
   const hasSidebarToggle = isFullPage && !inTabletOrOverlay;
   const searchActive = isAvailable && !isOffline && isRemoteSearchEnabled;
 
-  const { results, isLoading, error, hasSearched } = useRemotePatientSearch(query, searchActive, minLength);
+  const { results, alreadyLocalCount, isLoading, error, hasSearched } = useRemotePatientSearch(
+    query,
+    searchActive,
+    minLength,
+  );
 
   // Each new search starts with Remote Search off (or the configured default): the user turns it
   // on when they need it. The slot mounts with the search and unmounts when it is closed.
@@ -352,12 +356,21 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
                     'Enter at least {{count}} characters to search the central server.',
                     { count: minLength },
                   )
-                : message(
-                    'noResultsMessage',
-                    'noRemoteResults',
-                    'No patients on the central server match "{{query}}".',
-                    { query: query.trim() },
-                  )}
+                : // A backend that predates the alreadyLocal flag leaves those matches out and only
+                  // counts them; say so rather than show nothing. A newer one lists them with Open.
+                  alreadyLocalCount > 0
+                  ? message(
+                      'alreadyLocalMessage',
+                      'alreadyAtFacility',
+                      '{{count}} matching patient(s) on the central server are already at this facility. See the local results.',
+                      { count: alreadyLocalCount, query: query.trim() },
+                    )
+                  : message(
+                      'noResultsMessage',
+                      'noRemoteResults',
+                      'No patients on the central server match "{{query}}".',
+                      { query: query.trim() },
+                    )}
             </div>
           )}
 

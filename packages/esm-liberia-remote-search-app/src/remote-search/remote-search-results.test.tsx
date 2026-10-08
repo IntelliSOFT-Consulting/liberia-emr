@@ -40,13 +40,19 @@ const patient = (uuid: string, alreadyLocal = false) => ({
   identifiers: [{ identifier: 'BC-2026-00417', preferred: true, identifierType: { name: 'MOH Health Record Number' } }],
 });
 
-const given = ({ canImport = true, results = [patient(NEW_UUID)] } = {}) => {
+const given = ({ canImport = true, results = [patient(NEW_UUID)], alreadyLocalCount = 0 } = {}) => {
   const config = { enabled: true, defaultToggleOn: true, resetToggleOnClose: false };
   mockUseConfig.mockReturnValue(config);
   // The toggle store reads its default once, asynchronously; on, so it agrees with turnOn below.
   mockGetConfig.mockResolvedValue(config);
   mockUseRemoteSearchStatus.mockReturnValue({ status: { enabled: true } });
-  mockUseRemotePatientSearch.mockReturnValue({ results, isLoading: false, error: undefined, hasSearched: true });
+  mockUseRemotePatientSearch.mockReturnValue({
+    results,
+    alreadyLocalCount,
+    isLoading: false,
+    error: undefined,
+    hasSearched: true,
+  });
   mockUseSession.mockReturnValue({ authenticated: true, user: { uuid: 'u', privileges: [], roles: [] } });
   mockUserHasAccess.mockImplementation(
     (required: string | Array<string>) =>
@@ -131,6 +137,27 @@ describe('remote search results', () => {
 
     expect(mockImportRemotePatient).toHaveBeenCalledWith(NEW_UUID, 'Visiting patient');
     expect(mockNavigate).toHaveBeenCalledWith({ to: `\${openmrsSpaBase}/patient/${NEW_UUID}/chart` });
+  });
+
+  it('still reports matches already here when the backend leaves them out and only counts them', async () => {
+    // A backend without the alreadyLocal flag: every match is local, so none are listed.
+    given({ results: [], alreadyLocalCount: 2 });
+    await turnOn();
+    render(<RemoteSearchResults query="Jane Doe" isFullPage />);
+
+    expect(
+      screen.getByText(
+        '2 matching patient(s) on the central server are already at this facility. See the local results.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('says no patients match when nothing at central matches', async () => {
+    given({ results: [], alreadyLocalCount: 0 });
+    await turnOn();
+    render(<RemoteSearchResults query="Jane Doe" isFullPage />);
+
+    expect(screen.getByText('No patients on the central server match "Jane Doe".')).toBeInTheDocument();
   });
 
   it('says why Remote Search is unavailable offline', async () => {

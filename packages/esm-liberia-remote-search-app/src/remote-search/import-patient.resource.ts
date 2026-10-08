@@ -58,13 +58,17 @@ export function useRemotePatientSearch(query: string, shouldSearch: boolean, min
   const key =
     shouldSearch && trimmed.length >= minLength ? `${restUrl}/remotesearch?q=${encodeURIComponent(trimmed)}` : null;
 
-  const { data, error, isLoading } = useSWR<{ results: Array<RemoteSearchedPatient> }>(key, fetcher, {
+  const { data, error, isLoading } = useSWR<{
+    results: Array<RemoteSearchedPatient>;
+    alreadyLocalCount?: number;
+  }>(key, fetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
 
   return {
     results: data?.results ?? [],
+    alreadyLocalCount: data?.alreadyLocalCount ?? 0,
     isLoading,
     error,
     hasSearched: Boolean(key) && !isLoading && !error,

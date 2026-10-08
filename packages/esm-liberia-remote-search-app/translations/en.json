@@ -1,4 +1,5 @@
 {
+  "alreadyAtFacility": "{{count}} matching patient(s) on the central server are already at this facility. See the local results.",
   "alreadyImported": "Already imported at this facility",
   "askRecordsOfficer": "Ask a Records Officer to import this patient.",
   "cancel": "Cancel",
