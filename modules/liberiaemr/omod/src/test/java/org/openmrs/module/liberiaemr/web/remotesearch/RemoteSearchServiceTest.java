@@ -224,6 +224,57 @@ public class RemoteSearchServiceTest {
 
 	// --- central is only ever read ----------------------------------------------------------------
 
+	// --- ping (import step 1, LE-387) -------------------------------------------------------------
+
+	@Test
+	public void pingReadsCentralsSessionWithTheServiceAccount() throws Exception {
+		body = "{\"authenticated\":true}";
+
+		service.pingCentral();
+
+		assertEquals("/ws/rest/v1/session", requests.get(0));
+		assertEquals("GET", methods.get(0));
+		assertTrue(authorization.startsWith("Basic "));
+	}
+
+	@Test
+	public void pingFailsWhenCentralRejectsTheCredentials() throws Exception {
+		body = "{\"authenticated\":false}";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertFalse(e.isNotConfigured());
+			assertTrue(e.getMessage().contains("credentials"));
+		}
+	}
+
+	@Test
+	public void pingFailsWhenCentralCannotBeReached() throws Exception {
+		remoteUrl = "http://127.0.0.1:1";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertFalse(e.isNotConfigured());
+		}
+	}
+
+	@Test
+	public void pingSaysNotConfiguredWhenThereIsNoCentralUrl() throws Exception {
+		remoteUrl = "";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertTrue(e.isNotConfigured());
+		}
+		assertTrue(requests.isEmpty());
+	}
+
 	@Test
 	public void everyCallToCentralIsAGet() throws Exception {
 		body = "{\"results\":[" + patient(NEW_UUID) + "]}";

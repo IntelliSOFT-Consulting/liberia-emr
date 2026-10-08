@@ -366,6 +366,74 @@ public class FacilityHistoryServiceTest {
 		assertEquals(RemoteHistoryStore.UNREACHABLE, store.fetches.get(2)[2]);
 	}
 
+	// --- import in steps (LE-387) -----------------------------------------------------------------
+
+	@Test
+	public void aShellImportIsAuditedWithItsReasonAndDoesNotCountAsFetched() {
+		service.logShellImport(PATIENT, "Referral in");
+
+		assertEquals(1, store.fetches.size());
+		assertEquals("Referral in", store.fetches.get(0)[1]);
+		assertEquals(RemoteHistoryStore.SHELL, store.lastOutcome());
+		assertEquals(null, store.lastSuccessfulFetch(PATIENT));
+		assertTrue(requests.isEmpty());
+	}
+
+	@Test
+	public void refreshNowSaysRetrievedAndCountsTheFacilities() {
+		body = "{\"patientUuid\":\"" + PATIENT + "\",\"sources\":[" + source("barnersville", 2) + ","
+		        + source("careysburg", 1) + "]}";
+
+		ObjectNode out = service.refreshNow(PATIENT, "Visiting patient");
+
+		assertEquals("ok", out.path("attempt").asText());
+		assertEquals("retrieved", out.path("history").asText());
+		assertEquals("fresh", out.path("status").asText());
+		assertEquals(2, out.path("facilityCount").asInt());
+		assertEquals(FacilityHistoryService.iso(now), out.path("fetchedAt").asText());
+		assertEquals("Visiting patient", store.fetches.get(0)[1]);
+		// Only the outcome, never the records: a Records Officer can run it without View Remote History.
+		assertTrue(out.path("sources").isMissingNode());
+	}
+
+	@Test
+	public void refreshNowWithNothingAtCentralIsRetrievedWithNoFacilities() {
+		body = "{\"patientUuid\":\"" + PATIENT + "\",\"sources\":[]}";
+
+		ObjectNode out = service.refreshNow(PATIENT, "Emergency");
+
+		assertEquals("retrieved", out.path("history").asText());
+		assertEquals(0, out.path("facilityCount").asInt());
+		assertEquals(RemoteHistoryStore.EMPTY, store.lastOutcome());
+	}
+
+	@Test
+	public void refreshNowOfflineKeepsTheCacheAndSaysNotRetrieved() {
+		cacheFetched(30 * HOUR);
+		centralDown();
+
+		ObjectNode out = service.refreshNow(PATIENT, "routine refresh");
+
+		assertEquals("unreachable", out.path("attempt").asText());
+		assertEquals("notRetrieved", out.path("history").asText());
+		assertEquals("offline", out.path("status").asText());
+		assertEquals(1, out.path("facilityCount").asInt());
+		assertEquals(FacilityHistoryService.iso(new Date(now.getTime() - 30 * HOUR)), out.path("fetchedAt").asText());
+	}
+
+	@Test
+	public void refreshNowWhenNeverRetrievedAndCentralErrsIsNotRetrieved() {
+		status = 500;
+
+		ObjectNode out = service.refreshNow(PATIENT, "Visiting patient");
+
+		assertEquals("error", out.path("attempt").asText());
+		assertEquals("notRetrieved", out.path("history").asText());
+		assertEquals("notRetrieved", out.path("status").asText());
+		assertEquals(0, out.path("facilityCount").asInt());
+		assertTrue(out.path("fetchedAt").isNull());
+	}
+
 	@Test
 	public void theContentHashIsSha256() throws Exception {
 		assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
