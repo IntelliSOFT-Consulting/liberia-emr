@@ -124,6 +124,31 @@ public class RemoteSearchService {
 		return Context.getPatientService().getPatientByUuid(uuid) != null;
 	}
 
+	/** How long the import's first step waits for central before saying it cannot be reached. */
+	static final int PING_TIMEOUT_MS = 5000;
+
+	/**
+	 * The import's first step, "Connecting to National Registry" (LE-387): central answers and
+	 * accepts this facility's service account. Reads central's session only; nothing is changed.
+	 *
+	 * @throws RemoteSearchException when the feature is off, central cannot be reached, or it
+	 *             rejects the credentials
+	 */
+	public void pingCentral() throws RemoteSearchException {
+		String baseUrl = requireRemoteUrl();
+		JsonNode session;
+		try {
+			session = central.executeGet(baseUrl + "/ws/rest/v1/session", PING_TIMEOUT_MS);
+		}
+		catch (Exception e) {
+			log.warn("Central unreachable on ping: {}", e.getMessage());
+			throw new RemoteSearchException("Failed to contact central server", false, e);
+		}
+		if (!session.path("authenticated").asBoolean(false)) {
+			throw new RemoteSearchException("Central server did not accept this facility's credentials", false, null);
+		}
+	}
+
 	public boolean isValidUuid(String value) {
 		return value != null && UUID_PATTERN.matcher(value.trim()).matches();
 	}

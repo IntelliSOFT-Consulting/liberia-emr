@@ -63,6 +63,25 @@ public class RemoteSearchController {
 				HttpStatus.OK);
 	}
 
+	/**
+	 * The import's first step (LE-387): whether central answers and accepts this facility's
+	 * credentials, so the progress dialog can show "Connecting to National Registry" as its own stage.
+	 */
+	@RequestMapping(value = "/remotesearch/ping", method = RequestMethod.GET)
+	@ResponseBody
+	public ResponseEntity<Map<String, Object>> ping() {
+		if (!Context.isAuthenticated() || !Context.hasPrivilege(PRIVILEGE_IMPORT_REMOTE_PATIENT)) {
+			return forbidden(PRIVILEGE_IMPORT_REMOTE_PATIENT);
+		}
+		try {
+			remoteSearchService.pingCentral();
+			return new ResponseEntity<>(Collections.<String, Object>singletonMap("reachable", true), HttpStatus.OK);
+		}
+		catch (RemoteSearchException e) {
+			return failure(e);
+		}
+	}
+
 	@RequestMapping(value = "/remotesearch", method = RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<Map<String, Object>> searchPatients(@RequestParam(value = "q", required = true) String query) {
@@ -85,7 +104,7 @@ public class RemoteSearchController {
 
 	@RequestMapping(value = "/importpatient", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> importPatient(@RequestBody Map<String, String> payload) {
+	public ResponseEntity<Map<String, Object>> importPatient(@RequestBody Map<String, Object> payload) {
 		if (!Context.isAuthenticated() || !Context.hasPrivilege(PRIVILEGE_ADD_PATIENTS)) {
 			return forbidden(PRIVILEGE_ADD_PATIENTS);
 		}
@@ -97,14 +116,14 @@ public class RemoteSearchController {
 			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "request body is required"),
 					HttpStatus.BAD_REQUEST);
 		}
-		String remoteUuid = payload.get("remoteUuid");
+		String remoteUuid = text(payload.get("remoteUuid"));
 		if (!remoteSearchService.isValidUuid(remoteUuid)) {
 			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "remoteUuid must be a patient UUID"),
 					HttpStatus.BAD_REQUEST);
 		}
 
 		// ADR 0007: every access to another facility's record states why. It is logged with the fetch.
-		String reason = payload.get("reason");
+		String reason = text(payload.get("reason"));
 		if (reason == null || reason.trim().isEmpty()) {
 			return new ResponseEntity<>(Collections.<String, Object>singletonMap("error", "reason (for access) is required"),
 					HttpStatus.BAD_REQUEST);
@@ -116,6 +135,15 @@ public class RemoteSearchController {
 			response.put("localUuid", outcome.getLocalUuid());
 			// false when the patient was already here (a repeat import only adds the rows it lacked)
 			response.put("created", outcome.isCreated());
+			if (Boolean.TRUE.equals(payload.get("deferHistory"))) {
+				// LE-387: the UI fetches the history as its own step (POST remotehistory/local/{uuid}/refresh),
+				// so the progress dialog shows each stage. The import is audited here, with its reason, in
+				// case that call never comes.
+				facilityHistoryService.logShellImport(outcome.getLocalUuid(), reason.trim());
+				response.put("history", "deferred");
+				response.put("status", "success");
+				return new ResponseEntity<>(response, HttpStatus.OK);
+			}
 			// The history is a separate step after the shell: a failure here keeps the patient, and the
 			// next import or chart open tries again.
 			Attempt history = facilityHistoryService.refresh(outcome.getLocalUuid(), reason.trim(),
@@ -127,6 +155,10 @@ public class RemoteSearchController {
 		catch (RemoteSearchException e) {
 			return failure(e);
 		}
+	}
+
+	private static String text(Object value) {
+		return value instanceof String ? (String) value : null;
 	}
 
 	private ResponseEntity<Map<String, Object>> forbidden(String privilege) {
