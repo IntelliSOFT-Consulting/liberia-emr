@@ -58,7 +58,6 @@ content-packages/*/configuration/backend_configuration/ocl/*.zip
 # Generated build inputs — regenerated from distro.properties.
 distribution/frontend/spa-assemble-config.json
 distribution/frontend/config/
-distribution/frontend/local-esm/
 distribution/backend/modules/
 
 # Upgrade-test fixtures are generated, and must never contain production data.

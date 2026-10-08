@@ -125,9 +125,13 @@ performs no clinical write.
 Display conditions are presentation. Matrix roles hold Get People, so a module
 privilege shows the entry and its absence hides it. An account without Get
 People (Clinician, Records Officer) keeps the previous shell. System Developer
-keeps it. The partograph, TB, and immunization Add actions check the write
-privilege. The dispensing app 1.11.1 has no config key for its worklist query
-or for the Dispense button privilege (`Task: dispensing.create.dispense`, and
+keeps it. The partograph, TB, and immunization Add actions do not yet check
+the write privilege. That check is in this branch's e-partograph and
+patient-chart extension source, and it becomes active after those packages
+are published and `distro.properties` pins the published versions. The pinned
+modules remain `1.0.0-pre.53` and `1.0.1-pre.53`. The dispensing app 1.11.1
+has no config key for its worklist query or for the Dispense button privilege
+(`Task: dispensing.create.dispense`, and
 `Encounter?_query=encountersWithMedicationRequests`). The distribution patch
 reads MedicationRequest and shows Dispense for Manage Pharmacy. Edit and delete
 still use their upstream task privileges.

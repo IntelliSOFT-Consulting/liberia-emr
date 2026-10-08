@@ -363,14 +363,6 @@
           }
         }
       },
-      "patient-chart-immunizations-dashboard-slot": {
-        "add": [],
-        "remove": [
-          "immunization-detailed-history-card",
-          "immunization-details-widget",
-          "immunization-overview-widget"
-        ]
-      },
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
@@ -409,8 +401,6 @@
       "${var.encountertype.tb-screening.uuid}"
     ],
     "formUuid": "${var.form.tb-screening.uuid}",
-    "readPrivilege": "Read TB Screening",
-    "writePrivilege": "Write TB Screening",
     "Display conditions": {
       "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read TB Screening' || p.display == 'Write TB Screening') || !session.user.privileges.some(p => p.display == 'Get People'))"
     },
@@ -438,42 +428,6 @@
       {
         "concept": "${var.concept.national.total-score.uuid}",
         "label": "Total Score"
-      }
-    ]
-  },
-  "liberia-immunization-history": {
-    "displayMode": "table",
-    "title": "Immunization",
-    "encounterTypes": [
-      "${var.encountertype.consultation.uuid}",
-      "${var.encountertypes.immunizations.uuid}"
-    ],
-    "formUuids": [
-      "${var.form.immunization.uuid}",
-      "${var.form.aefi.uuid}"
-    ],
-    "dedicatedTypeUuids": [
-      "${var.encountertypes.immunizations.uuid}"
-    ],
-    "formUuid": "${var.form.immunization.uuid}",
-    "readPrivilege": "Read Immunization",
-    "writePrivilege": "Write Immunization",
-    "Display conditions": {
-      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Immunization' || p.display == 'Write Immunization') || !session.user.privileges.some(p => p.display == 'Get People'))"
-    },
-    "summarizeObs": true,
-    "data": [
-      {
-        "concept": "${var.concept.national.vaccine-name.uuid}",
-        "label": "Vaccine"
-      },
-      {
-        "concept": "${var.concept.national.route.uuid}",
-        "label": "Route"
-      },
-      {
-        "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
-        "label": "Return date"
       }
     ]
   }
