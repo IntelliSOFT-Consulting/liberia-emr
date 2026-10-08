@@ -59,6 +59,36 @@ class FamilyPlanningFormPage {
 
     selectCounsellingDone(answer: 'Yes' | 'No') {
         this.checkOption(`counsellingDone-${answer}`);
+        if (answer === 'Yes') {
+            this.ensureCounselledSectionsRendered();
+        }
+    }
+
+    // The form engine occasionally re-evaluates the Purpose of Visit question but not the
+    // section-level hide on Obstetric Profile / Method Record. Only a change to Counselling
+    // Done re-runs that evaluation, so toggle it if the sections never render.
+    private ensureCounselledSectionsRendered(attempt = 1) {
+        const maxAttempts = 3;
+        const deadline = Date.now() + 10000;
+        const poll = (): void => {
+            cy.get('body').then(($body) => {
+                if ($body.find('#chosenFamilyPlanningMethod').length) {
+                    return;
+                }
+                if (Date.now() < deadline) {
+                    cy.wait(500).then(poll);
+                    return;
+                }
+                if (attempt >= maxAttempts) {
+                    throw new Error(`Method Record section did not render after ${maxAttempts} Counselling Done = Yes attempts`);
+                }
+                cy.log(`Method Record not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
+                this.checkOption('counsellingDone-No');
+                this.checkOption('counsellingDone-Yes');
+                cy.then(() => this.ensureCounselledSectionsRendered(attempt + 1));
+            });
+        };
+        poll();
     }
 
     selectPurposeForCommodities() {
