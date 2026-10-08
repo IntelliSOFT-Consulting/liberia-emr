@@ -140,7 +140,6 @@ describe('remote search results', () => {
   });
 
   it('still reports matches already here when the backend leaves them out and only counts them', async () => {
-    // A backend without the alreadyLocal flag: every match is local, so none are listed.
     given({ results: [], alreadyLocalCount: 2 });
     await turnOn();
     render(<RemoteSearchResults query="Jane Doe" isFullPage />);

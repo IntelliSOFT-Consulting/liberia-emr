@@ -356,8 +356,7 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
                     'Enter at least {{count}} characters to search the central server.',
                     { count: minLength },
                   )
-                : // A backend that predates the alreadyLocal flag leaves those matches out and only
-                  // counts them; say so rather than show nothing. A newer one lists them with Open.
+                : // Older backends drop already-local matches and only count them.
                   alreadyLocalCount > 0
                   ? message(
                       'alreadyLocalMessage',

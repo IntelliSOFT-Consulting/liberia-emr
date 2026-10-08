@@ -65,7 +65,7 @@ export const configSchema = {
     _type: Type.String,
     _default: '',
     _description:
-      'Shown when every central match is already registered at this facility and the server leaves them out of the results (a backend without the alreadyLocal flag). {{count}} is how many, {{query}} the search text. Built-in: "{{count}} matching patient(s) on the central server are already at this facility. See the local results.".',
+      'Shown when every central match is already at this facility and the server only counts them. {{count}} is how many, {{query}} the search text. Built-in: "{{count}} matching patient(s) on the central server are already at this facility. See the local results.".',
   },
   minCharactersMessage: {
     _type: Type.String,
