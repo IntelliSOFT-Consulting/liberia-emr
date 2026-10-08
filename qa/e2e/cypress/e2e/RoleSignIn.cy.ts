@@ -93,7 +93,9 @@ const uuidNamed = (results: Array<Named>, label: string, field: 'display' | 'nam
 };
 
 /**
- * One patient, two observations, found by getObservations(q) on that patient's identifier.
+ * One patient, two observations, found by getObservations(q) on that patient's OpenMRS ID.
+ * The facility also requires a MOH Health Record Number, generated from the site's idgen
+ * source and stored beside the OpenMRS ID, which stays the preferred identifier.
  * TB Screening is a module the Pharmacist may read. Lab Results is Laboratory, which the
  * matrix marks N. The test remembers the obs uuids it created; it does not classify them.
  */
@@ -105,8 +107,11 @@ const filteredObservationProbe = () => {
     lab?: string;
     concept?: string;
     identifierType?: string;
+    mohIdentifierType?: string;
     source?: string;
+    mohSource?: string;
     marker?: string;
+    mohIdentifier?: string;
     patient?: string;
     visit?: string;
     allowed?: string;
@@ -150,16 +155,23 @@ const filteredObservationProbe = () => {
     })
     .then(({ body }) => {
       found.identifierType = uuidNamed(body.results, 'OpenMRS ID');
+      found.mohIdentifierType = uuidNamed(body.results, 'MOH Health Record Number');
       // idgen 5.0.4 display is "{identifierType} - {name} - {class}". The CSV name is `name`.
       return asAdmin('GET', `${REST}/idgen/identifiersource?v=custom:(uuid,name)&limit=20`);
     })
     .then(({ body }) => {
       found.source = uuidNamed(body.results, 'Generator for OpenMRS ID', 'name');
+      found.mohSource = uuidNamed(body.results, 'MOH ID Gen', 'name');
       return asAdmin('POST', `${REST}/idgen/identifiersource/${found.source}/identifier`, { comment: 'RoleSignIn' });
     })
     .then(({ body }) => {
       expect(body.identifier, 'generated OpenMRS ID').to.be.a('string');
       found.marker = body.identifier;
+      return asAdmin('POST', `${REST}/idgen/identifiersource/${found.mohSource}/identifier`, { comment: 'RoleSignIn' });
+    })
+    .then(({ body }) => {
+      expect(body.identifier, 'generated MOH Health Record Number').to.be.a('string');
+      found.mohIdentifier = body.identifier;
       return asAdmin('POST', `${REST}/patient`, {
         person: {
           names: [{ givenName: 'Probe', familyName: `Filter${run}` }],
@@ -172,6 +184,12 @@ const filteredObservationProbe = () => {
             identifierType: found.identifierType,
             location: found.location,
             preferred: true,
+          },
+          {
+            identifier: found.mohIdentifier,
+            identifierType: found.mohIdentifierType,
+            location: found.location,
+            preferred: false,
           },
         ],
       });
