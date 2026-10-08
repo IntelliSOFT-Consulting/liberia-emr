@@ -27,7 +27,7 @@ import {
   useRemoteSearchAvailability,
   useRemoteSearchToggle,
 } from './remote-search.context';
-import { type ImportProgressModalProps } from './import-progress.modal';
+import { type ImportProgressProps } from './import-progress.component';
 import { importOutcomeSnackbar } from './import-outcome';
 import { importProgressStore, initialSteps, runImport } from './run-import';
 import { readSlotProps } from './slot-props';
@@ -161,7 +161,7 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
 function progressHeader(
   patient: RemoteSearchedPatient,
   t: (key: string, fallback: string, options?: Record<string, unknown>) => string,
-): ImportProgressModalProps {
+): ImportProgressProps {
   const person = patient.person ?? {};
   const identifier =
     (patient.identifiers ?? []).find((candidate) => candidate.preferred) ?? (patient.identifiers ?? [])[0];
@@ -172,7 +172,9 @@ function progressHeader(
         ? t('ageInYears', '{{count}} Years', { count: person.age, defaultValue_one: '{{count}} Year' })
         : undefined,
     birthdate: person.birthdate ? dayjs(person.birthdate.slice(0, 10)).format('DD-MMM-YYYY') : undefined,
-    identifier: identifier?.identifier,
+    identifier: identifier?.identifier
+      ? [identifier.identifierType?.name, identifier.identifier].filter(Boolean).join(': ')
+      : undefined,
   };
 }
 
@@ -264,11 +266,10 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
     }
   };
 
-  const startImport = async (patient: RemoteSearchedPatient, reason: string) => {
+  const startImport = async (patient: RemoteSearchedPatient, reason: string, closeProgress: () => void) => {
     const remoteUuid = patient.uuid;
     setImportingUuids((prev) => new Set(prev).add(remoteUuid));
     importProgressStore.setState({ steps: initialSteps });
-    const closeProgress = showModal('liberia-import-progress-modal', { size: 'sm', ...progressHeader(patient, t) });
     try {
       const result = await runImport(remoteUuid, reason, (steps) => importProgressStore.setState({ steps }));
       closeProgress();
@@ -302,7 +303,9 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
   // ADR 0007: the reason for access comes first. Cancelling the modal sends nothing.
   const handleImport = (patient: RemoteSearchedPatient) => {
     showModal('liberia-reason-for-access-modal', {
-      onConfirm: (reason: string) => startImport(patient, reason),
+      size: 'sm',
+      progress: progressHeader(patient, t),
+      onConfirm: (reason: string, close: () => void) => startImport(patient, reason, close),
     });
   };
 

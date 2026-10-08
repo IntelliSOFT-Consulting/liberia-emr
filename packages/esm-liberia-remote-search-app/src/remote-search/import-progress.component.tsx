@@ -6,12 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { importProgressStore, progressPercent, type StepState } from './run-import';
 import styles from './import-progress.scss';
 
-export interface ImportProgressModalProps {
+export interface ImportProgressProps {
   patientName: string;
   /** e.g. "29 Years"; left out when unknown. */
   age?: string;
   /** e.g. "11-Jan-1997"; left out when unknown. */
   birthdate?: string;
+  /** e.g. "OpenMRS ID: 1001396". */
   identifier?: string;
 }
 
@@ -31,18 +32,14 @@ const StepIcon: React.FC<{ state: StepState }> = ({ state }) => {
   return <span className={styles.stepPending} aria-hidden="true" />;
 };
 
-/**
- * "IMPORTING RECORD" (mockup 2c). Not dismissible: it has no close button, and Escape, which the
- * modal system would otherwise use to close it, is stopped while it is open. The caller closes it
- * when the import has finished or failed.
- */
-const ImportProgressModal: React.FC<ImportProgressModalProps> = ({ patientName, age, birthdate, identifier }) => {
+/** "IMPORTING RECORD" (mockup 2c). Not dismissible: no close button, and Escape is blocked while shown. */
+const ImportProgress: React.FC<ImportProgressProps> = ({ patientName, age, birthdate, identifier }) => {
   const { t } = useTranslation();
   const { steps: states } = useStore(importProgressStore);
   const percent = progressPercent(states);
 
   useEffect(() => {
-    // Capture on window runs before the modal system's own Escape listener (bubble, on window).
+    // Capture runs before the modal system's bubbling Escape listener on window.
     const blockEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
@@ -101,4 +98,4 @@ const ImportProgressModal: React.FC<ImportProgressModalProps> = ({ patientName, 
   );
 };
 
-export default ImportProgressModal;
+export default ImportProgress;

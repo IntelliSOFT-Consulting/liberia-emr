@@ -138,17 +138,14 @@ describe('remote search results', () => {
     expect(mockImportRemotePatient).not.toHaveBeenCalled();
   });
 
-  // Confirms the reason modal and waits for the import to finish.
+  // Confirms the reason and waits for the import; returns the modal's close.
   const importWithReason = async (reason = 'Visiting patient') => {
-    const closeProgress = jest.fn();
-    mockShowModal.mockImplementation((name: string) =>
-      name === 'liberia-import-progress-modal' ? closeProgress : jest.fn(),
-    );
+    const closeModal = jest.fn();
     render(<RemoteSearchResults query="Jane Doe" isFullPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Import & Open' }));
     const { onConfirm } = mockShowModal.mock.calls[0][1];
-    await act(async () => onConfirm(reason));
-    return closeProgress;
+    await act(async () => onConfirm(reason, closeModal));
+    return closeModal;
   };
 
   const givenImportSucceeds = () => {
@@ -164,12 +161,17 @@ describe('remote search results', () => {
 
     const closeProgress = await importWithReason();
 
-    expect(mockShowModal).toHaveBeenCalledWith('liberia-import-progress-modal', {
+    // One modal: the progress shows in the reason modal, so nothing opens a second one.
+    expect(mockShowModal).toHaveBeenCalledTimes(1);
+    expect(mockShowModal).toHaveBeenCalledWith('liberia-reason-for-access-modal', {
       size: 'sm',
-      patientName: expect.any(String),
-      age: '29 Years',
-      birthdate: '11-Jan-1997',
-      identifier: 'BC-2026-00417',
+      progress: {
+        patientName: expect.any(String),
+        age: '29 Years',
+        birthdate: '11-Jan-1997',
+        identifier: 'MOH Health Record Number: BC-2026-00417',
+      },
+      onConfirm: expect.any(Function),
     });
     expect(mockPingCentral).toHaveBeenCalled();
     expect(mockImportRemotePatient).toHaveBeenCalledWith(NEW_UUID, 'Visiting patient');

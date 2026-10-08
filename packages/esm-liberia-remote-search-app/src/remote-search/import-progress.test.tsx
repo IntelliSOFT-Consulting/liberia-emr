@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, render, screen } from '@testing-library/react';
-import ImportProgressModal from './import-progress.modal';
+import ImportProgress from './import-progress.component';
 import { importProgressStore, type ImportSteps } from './run-import';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
@@ -8,7 +8,7 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (_key: string, f
 const renderWith = (steps: ImportSteps) => {
   importProgressStore.setState({ steps });
   return render(
-    <ImportProgressModal patientName="Jane Doe" age="29 Years" birthdate="11-Jan-1997" identifier="BC-2026-00417" />,
+    <ImportProgress patientName="Jane Doe" age="29 Years" birthdate="11-Jan-1997" identifier="OpenMRS ID: 1001396" />,
   );
 };
 
@@ -20,7 +20,7 @@ describe('import progress dialog', () => {
     expect(screen.getByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
     expect(screen.getByText('29 Years')).toBeInTheDocument();
     expect(screen.getByText('11-Jan-1997')).toBeInTheDocument();
-    expect(screen.getByText('BC-2026-00417')).toBeInTheDocument();
+    expect(screen.getByText('OpenMRS ID: 1001396')).toBeInTheDocument();
   });
 
   it('lists the three steps and marks the running one', () => {

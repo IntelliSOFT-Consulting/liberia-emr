@@ -21,10 +21,6 @@
     {
       "name": "liberia-reason-for-access-modal",
       "component": "reasonForAccessModal"
-    },
-    {
-      "name": "liberia-import-progress-modal",
-      "component": "importProgressModal"
     }
   ]
 }
