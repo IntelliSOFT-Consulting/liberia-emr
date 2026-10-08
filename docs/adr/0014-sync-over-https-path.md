@@ -1,6 +1,6 @@
 # 0014: Facility to central sync over HTTPS on 443, through a path on the central gateway
 
-**Status:** Proposed (2 October 2026), until proven on the dev pair with 61617 closed
+**Status:** Accepted (7 October 2026), proven on the dev pair: with 61617 closed in central's firewall, a record registered at the facility reached central through `/sync/broker/` in 31 seconds (Enable sync on dev, run 37602331126)
 **Ticket:** LE-372 (amends the transport in [ADR 0008](0008-adopt-openmrs-dbsync.md); the
 broker, its mutual TLS and the per-facility permissions are unchanged)
 
