@@ -3,9 +3,6 @@
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
-// The navy of the LiberiaEMR top bar (mockup 2c).
-$navy: #002a86;
-
 .dialog {
   background-color: $ui-01;
 }
@@ -15,14 +12,15 @@ $navy: #002a86;
   flex-direction: column;
   gap: layout.$spacing-02;
   padding: layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
-  background-color: $navy;
+  @include brand-02(background-color);
   color: colors.$white;
 }
 
 .eyebrow {
   @include type.type-style('code-01');
   letter-spacing: 0.08em;
-  color: colors.$blue-20;
+  color: colors.$white;
+  opacity: 0.8;
 }
 
 .patientName {
@@ -90,6 +88,6 @@ $navy: #002a86;
 
 .progressBar {
   height: 100%;
-  background-color: $navy;
+  @include brand-01(background-color);
   transition: width 240ms ease-out;
 }
