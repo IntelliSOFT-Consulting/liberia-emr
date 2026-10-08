@@ -333,17 +333,27 @@ describe('Sign-in for every login role', () => {
     // this searches by text. Records Officer is outside the matrix and holds no Get Observations.
     api(userFor('Records Officer'), 'GET', `${REST}/obs?q=E2E`, undefined, false).its('status').should('eq', 403);
     // Pharmacist holds no Get Observations either. LE-39 still answers 200 and returns only the
-    // observation in a module that role may read.
+    // observation in a module that role may read. The same identifier search as admin must
+    // return both probe observations first, so a Pharmacist miss is the filter, not the search.
     filteredObservationProbe().then(({ marker, allowed, forbidden }) => {
-      api(userFor('Pharmacist'), 'GET', `${REST}/obs?q=${encodeURIComponent(marker)}`, undefined, false).then(
-        ({ status, body }) => {
+      const search = `${REST}/obs?q=${encodeURIComponent(marker)}`;
+      return asAdmin('GET', search)
+        .then(({ status, body }) => {
+          expect(status, 'admin observation search').to.eq(200);
+          const uuids = (body.results as Array<{ uuid: string }>).map((row) => row.uuid);
+          expect(
+            uuids,
+            'admin observation search by the same OpenMRS ID returns both the TB Screening and Lab Results observations',
+          ).to.include.members([allowed, forbidden]);
+          return api(userFor('Pharmacist'), 'GET', search, undefined, false);
+        })
+        .then(({ status, body }) => {
           expect(status, 'Pharmacist observation search').to.eq(200);
           const uuids = (body.results as Array<{ uuid: string }>).map((row) => row.uuid);
           expect(uuids, 'TB Screening observation').to.include(allowed);
           expect(uuids, 'Lab Results observation').to.not.include(forbidden);
           expect(uuids, 'filtered to the TB Screening observation').to.have.length(1);
-        },
-      );
+        });
     });
     // The Nurse, who records vitals, can.
     api(userFor('Nurse'), 'GET', `${REST}/obs?q=E2E`).its('status').should('eq', 200);
