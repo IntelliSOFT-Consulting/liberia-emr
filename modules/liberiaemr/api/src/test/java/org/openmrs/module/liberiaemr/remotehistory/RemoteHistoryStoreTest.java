@@ -10,6 +10,7 @@
 package org.openmrs.module.liberiaemr.remotehistory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -111,6 +112,18 @@ public class RemoteHistoryStoreTest extends BaseModuleContextSensitiveTest {
 
 		// Seconds are enough: the database may drop the milliseconds.
 		assertEquals(newer.getTime() / 1000, store.lastSuccessfulFetch(PATIENT).getTime() / 1000);
+	}
+
+	@Test
+	public void aPatientIsImportedByAShellOrAUserReasonButNotByRoutineRefreshes() {
+		store.logFetch(1, PATIENT, RemoteHistoryStore.ROUTINE_REFRESH, RemoteHistoryStore.OK, 2, new Date());
+		assertFalse(store.wasImported(PATIENT));
+
+		store.logFetch(1, PATIENT, "Visiting patient", RemoteHistoryStore.SHELL, 0, new Date());
+		assertTrue(store.wasImported(PATIENT));
+
+		store.logFetch(1, OTHER, "Referral in", RemoteHistoryStore.OK, 3, new Date());
+		assertTrue(store.wasImported(OTHER));
 	}
 
 	@Test

@@ -75,6 +75,22 @@ public class FacilityHistoryServiceTest {
 
 		final Map<String, Date> lastOk = new HashMap<String, Date>();
 
+		/** Imported before the test began; anyone else only through rows logged during it. */
+		final java.util.Set<String> importedEarlier = new java.util.HashSet<String>();
+
+		@Override
+		public boolean wasImported(String patientUuid) {
+			if (importedEarlier.contains(patientUuid)) {
+				return true;
+			}
+			for (String[] fetch : fetches) {
+				if (fetch[0].equals(patientUuid) && (SHELL.equals(fetch[2]) || !ROUTINE_REFRESH.equals(fetch[1]))) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		@Override
 		public void replaceForPatient(String patientUuid, List<CachedSource> sources) {
 			rows.put(patientUuid, new ArrayList<CachedSource>(sources));
@@ -137,6 +153,7 @@ public class FacilityHistoryServiceTest {
 		remoteUrl = base;
 		now = new Date();
 		store = new FakeStore();
+		store.importedEarlier.add(PATIENT);
 
 		CentralClient client = new CentralClient() {
 
@@ -432,6 +449,43 @@ public class FacilityHistoryServiceTest {
 		assertEquals("notRetrieved", out.path("status").asText());
 		assertEquals(0, out.path("facilityCount").asInt());
 		assertTrue(out.path("fetchedAt").isNull());
+	}
+
+	// --- imported or not (LE-386) ------------------------------------------------------------------
+
+	private static final String LOCAL = "33333333-3333-3333-3333-333333333333";
+
+	@Test
+	public void aPatientNeverImportedIsReadWithoutAskingCentralOrAuditing() {
+		ObjectNode out = service.read(LOCAL);
+
+		assertFalse(out.path("imported").asBoolean(true));
+		assertTrue(out.path("status").isMissingNode());
+		assertTrue(requests.isEmpty());
+		assertTrue(store.fetches.isEmpty());
+	}
+
+	@Test
+	public void anImportedPatientIsReadAsImported() {
+		cacheFetched(HOUR);
+
+		assertTrue(service.read(PATIENT).path("imported").asBoolean());
+	}
+
+	@Test
+	public void aShellImportMakesThePatientImported() {
+		assertFalse(service.isImported(LOCAL));
+
+		service.logShellImport(LOCAL, "Visiting patient");
+
+		assertTrue(service.isImported(LOCAL));
+	}
+
+	@Test
+	public void routineRefreshesAloneDoNotMakeAPatientImported() {
+		store.logFetch(1, LOCAL, FacilityHistoryService.REASON_ROUTINE_REFRESH, RemoteHistoryStore.OK, 2, now);
+
+		assertFalse(service.isImported(LOCAL));
 	}
 
 	@Test
