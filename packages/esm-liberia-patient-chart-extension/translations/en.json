@@ -1,1 +1,8 @@
-{}
+{
+  "ageJustNow": "just now",
+  "couldNotRefresh": "Could not refresh from central",
+  "externalRecordsRefreshed": "External records refreshed",
+  "historyRetrievedLater": "History from other facilities will be retrieved later.",
+  "showingRecordsAsOf": "Showing records as of {{asOf}}.",
+  "stillShowingRecordsAsOf": "Still showing records as of {{asOf}}."
+}
