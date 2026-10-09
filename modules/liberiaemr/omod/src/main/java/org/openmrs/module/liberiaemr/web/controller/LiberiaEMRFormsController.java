@@ -17,8 +17,12 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Form;
 import org.openmrs.Patient;
-import org.openmrs.Visit;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessPolicy;
+import org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessPolicy.Verdict;
+import org.openmrs.module.liberiaemr.moduleaccess.ModulePrivileges;
+import org.openmrs.module.liberiaemr.moduleaccess.ModuleRecordClassifier;
+import org.openmrs.module.liberiaemr.moduleaccess.ModuleRecordClassifier.Ownership;
 import org.openmrs.module.liberiaemr.web.controller.rules.FormVisibilityRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,6 +36,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping("/rest/v1/liberiaemr")
 public class LiberiaEMRFormsController {
+    /** Form listing is a launcher. It hides protected forms the caller cannot write; it is not the security check. */
+    private static final ModuleRecordClassifier FORMS = new ModuleRecordClassifier();
 
     @RequestMapping(value = "/forms", method = RequestMethod.GET)
     @ResponseBody
@@ -72,7 +78,7 @@ public class LiberiaEMRFormsController {
                     }
                 }
 
-                if (shouldShow) {
+                if (shouldShow && canLaunch(form)) {
                     results.add(mapFormToJson(form));
                 }
             }
@@ -113,5 +119,13 @@ public class LiberiaEMRFormsController {
         }
         
         return map;
+    }
+
+    private static boolean canLaunch(Form form) {
+        if (!ModulePrivileges.matrixRole()) { return true; }
+        String type = form.getEncounterType() == null ? null : form.getEncounterType().getUuid();
+        Ownership ownership = FORMS.assessEncounterIdentity(form.getUuid(), type, type);
+        if (ownership.isUnrelated() || ownership.excluded) { return true; }
+        return ModuleAccessPolicy.create(ownership, ModulePrivileges.current()) == Verdict.ALLOW;
     }
 }

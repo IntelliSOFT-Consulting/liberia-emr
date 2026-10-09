@@ -54,12 +54,61 @@
 			<version>${webservicesRestVersion}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>4.0.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<!--
+			The bill-POST filter test starts the OpenMRS context. That context component-scans this
+			module, so the same libraries the API tests already use have to be on this test classpath.
+			They are not packaged into the omod.
+		-->
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4.7</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs</groupId>
+			<artifactId>event-api</artifactId>
+			<version>4.0.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.bahmni.module</groupId>
+			<artifactId>appointments-api</artifactId>
+			<version>2.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+			Already on the OpenMRS runtime classpath. Provided so visit and FHIR JSON can be
+			filtered. Not packaged into the omod.
+		-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.13.4.2</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
 
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.text=ALL-UNNAMED</argLine>
+					<classpathDependencyExcludes>
+						<classpathDependencyExclude>org.powermock:powermock-api-mockito</classpathDependencyExclude>
+					</classpathDependencyExcludes>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.openmrs.maven.plugins</groupId>
 				<artifactId>maven-openmrs-plugin</artifactId>

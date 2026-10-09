@@ -18,6 +18,15 @@
       "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
       "defaultPriorityConceptUuid": "${var.concept.national.queue-routine.uuid}",
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
+    },
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Get Queues') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-appointments-app": {
+    "_comment_display": "Appointments is a module-access entitlement. Read is View Appointments and View Appointment Services. Write adds Manage Appointments (appointments-api 2.1.0). getAllAppointments, search, and get-by-uuid accept View Appointments. getAllAppointmentServices, used by GET /appointment/appointmentSummary and GET /appointmentService/all/default, accepts View Appointment Services. The home link is the extension clinical-appointments-dashboard-link; this module display condition applies to that extension. The framework privilege check still shows the extension to System Developer. Direct URL access is unchanged.",
+    "Display conditions": {
+      "privileges": ["View Appointments"]
     }
   },
   "_comment_home_dashboards": [
@@ -34,6 +43,7 @@
     "Privilege names: docs/security/moh-ict-sop-mapping.md, 'The login roles'."
   ],
   "@openmrs/esm-home-app": {
+    "_comment_display": "homepage-dashboard-slot belongs to esm-home-app. Display conditions are set on that slot's configure entry, the same way add-patient-action is gated. patient-lists-dashboard-link is the Patient Lists card; it loads GET /cohortm/cohort, which cohort 3.7.3 authorizes with View Cohorts In Cohort Module. ward-dashboard-link is the Wards card; GET /admissionLocation/{uuid} is BedManagementService.getAdmissionLocationByLocation, authorized by Get Admission Locations or Get Beds (bedmanagement 7.2.0, requireAll false). The card requires Get Admission Locations. These are not module-level Display conditions on esm-patient-list-management-app or esm-ward-app, because a partial module config for those apps crashes the home shell. Direct URL access is unchanged. System Developer still sees both cards.",
     "defaultDashboardPerRole": {
       "National Reporting Officer": "indicator-reports",
       "Sync Administrator": "sync-status",
@@ -56,10 +66,10 @@
             "Display conditions": { "privileges": ["View Cashier Bills"] }
           },
           "ward-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Beds", "Get Admission Locations", "Assign Beds"] }
+            "Display conditions": { "privileges": ["Get Admission Locations"] }
           },
           "patient-lists-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Patient Cohorts"] }
+            "Display conditions": { "privileges": ["View Cohorts In Cohort Module"] }
           }
         }
       }
@@ -84,6 +94,15 @@
           },
           "dispensing-link": {
             "Display conditions": { "privileges": ["Get Medication Dispense"] }
+          }
+        }
+      },
+      "top-nav-actions-slot": {
+        "configure": {
+          "add-patient-action": {
+            "Display conditions": {
+              "privileges": ["Add Patients"]
+            }
           }
         }
       }
@@ -122,7 +141,6 @@
           "referredFrom",
           "referredBy",
           "referralRefNumber",
-          "dateOfReferral",
           "reasonForReferral"
         ]
       },
@@ -163,16 +181,6 @@
         "uuid": "${var.personattribute.referral-ref-number.uuid}",
         "label": "Referral reference number",
         "placeholder": "1234567"
-      },
-      {
-        "id": "dateOfReferral",
-        "type": "obs",
-        "uuid": "${var.concept.date-of-referral.uuid}",
-        "label": "Date of Referral",
-        "placeholder": "Select Date",
-        "validation": {
-          "required": false
-        }
       },
       {
         "id": "reasonForReferral",
@@ -281,6 +289,10 @@
   },
   "@openmrs/esm-billing-app": {
     "defaultCurrency": "LRD",
+    "_comment_display": "Billing=W holds View Cashier Bills. Other matrix roles do not see the billing shell. Clinician has no Get People and keeps the previous shell. The server still enforces cashier privileges.",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'View Cashier Bills') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
     "_comment_logo": [
       "Printed invoice header. With logo.src and logo.alt both empty the app draws the OpenMRS",
       "logo, and country defaults to 'Kenya'. The seal SVG carries its own 72px print size."
@@ -291,9 +303,66 @@
     },
     "country": "Republic of Liberia"
   },
+  "@openmrs/esm-laboratory-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-dispensing-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-orders-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory' || p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-medications-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-tests-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-immunizations-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Immunization' || p.display == 'Write Immunization') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@liberiaemr/esm-liberia-epartograph-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Labor and Delivery' || p.display == 'Write Labor and Delivery') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-search-app": {
+    "extensionSlots": {
+      "patient-search-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      }
+    }
+  },
   "@openmrs/esm-patient-chart-app": {
     "showServiceQueueFields": true,
     "extensionSlots": {
+      "patient-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      },
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
@@ -332,6 +401,9 @@
       "${var.encountertype.tb-screening.uuid}"
     ],
     "formUuid": "${var.form.tb-screening.uuid}",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read TB Screening' || p.display == 'Write TB Screening') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
     "data": [
       {
         "concept": "${var.concept.national.coughing-2-weeks-or-more.uuid}",
