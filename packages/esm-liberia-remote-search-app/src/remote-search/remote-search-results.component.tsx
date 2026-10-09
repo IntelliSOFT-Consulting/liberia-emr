@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
 import { Button, InlineNotification, SkeletonPlaceholder, SkeletonText, Toggle } from '@carbon/react';
 import {
   formatPartialDate,
@@ -15,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import {
   fetchFhirPatient,
   type FhirPatient,
-  importRemotePatient,
   minimumQueryLength,
   useRemotePatientSearch,
   type RemoteSearchedPatient,
@@ -27,6 +27,9 @@ import {
   useRemoteSearchAvailability,
   useRemoteSearchToggle,
 } from './remote-search.context';
+import { type ImportProgressProps } from './import-progress.component';
+import { importOutcomeSnackbar } from './import-outcome';
+import { importProgressStore, initialSteps, runImport } from './run-import';
 import { readSlotProps } from './slot-props';
 import { toFhirPatient } from './to-fhir-patient';
 import { useRemoteSearchMessages } from './use-messages';
@@ -55,7 +58,7 @@ type RemoteSearchResultsProps = SlotState & { state?: SlotState };
 interface RemotePatientCardProps {
   patient: RemoteSearchedPatient;
   canImport: boolean;
-  onImport: (uuid: string) => void;
+  onImport: (patient: RemoteSearchedPatient) => void;
   onOpen: (uuid: string) => void;
   isImporting: boolean;
   buttonLabel?: string;
@@ -90,7 +93,7 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
     );
   } else if (canImport) {
     action = (
-      <Button kind="primary" size="md" onClick={() => onImport(patient.uuid)} disabled={isImporting}>
+      <Button kind="primary" size="md" onClick={() => onImport(patient)} disabled={isImporting}>
         {isImporting ? t('importing', 'Importing...') : (buttonLabel ?? t('importAndOpen', 'Import & Open'))}
       </Button>
     );
@@ -153,6 +156,27 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
     </div>
   );
 };
+
+/** The patient line of the progress dialog: name, then age · date of birth · identifier (mockup 2c). */
+function progressHeader(
+  patient: RemoteSearchedPatient,
+  t: (key: string, fallback: string, options?: Record<string, unknown>) => string,
+): ImportProgressProps {
+  const person = patient.person ?? {};
+  const identifier =
+    (patient.identifiers ?? []).find((candidate) => candidate.preferred) ?? (patient.identifiers ?? [])[0];
+  return {
+    patientName: getPatientName(toFhirPatient(patient) as never) || person.display || '',
+    age:
+      typeof person.age === 'number'
+        ? t('ageInYears', '{{count}} Years', { count: person.age, defaultValue_one: '{{count}} Year' })
+        : undefined,
+    birthdate: person.birthdate ? dayjs(person.birthdate.slice(0, 10)).format('DD-MMM-YYYY') : undefined,
+    identifier: identifier?.identifier
+      ? [identifier.identifierType?.name, identifier.identifier].filter(Boolean).join(': ')
+      : undefined,
+  };
+}
 
 const ResultsSkeleton: React.FC<{ label: string }> = ({ label }) => (
   <div className={styles.skeletonList} role="progressbar" aria-busy="true" aria-label={label}>
@@ -246,19 +270,24 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
     }
   };
 
-  const runImport = async (remoteUuid: string, reason: string) => {
+  const startImport = async (patient: RemoteSearchedPatient, reason: string, closeProgress: () => void) => {
+    const remoteUuid = patient.uuid;
     setImportingUuids((prev) => new Set(prev).add(remoteUuid));
+    importProgressStore.setState({ steps: initialSteps });
     try {
-      const { localUuid } = await importRemotePatient(remoteUuid, reason);
-
+      const result = await runImport(remoteUuid, reason, (steps) => importProgressStore.setState({ steps }));
+      closeProgress();
+      await openPatient(result.localUuid);
       showSnackbar({
         isLowContrast: true,
-        title: message('importSuccessMessage', 'importSuccess', 'Patient imported successfully'),
-        kind: 'success',
+        ...importOutcomeSnackbar(
+          result,
+          message('importSuccessMessage', 'importSuccess', 'Patient imported successfully'),
+          t,
+        ),
       });
-
-      await openPatient(localUuid);
     } catch (err: any) {
+      closeProgress();
       showSnackbar({
         isLowContrast: true,
         title: t('importError', 'Failed to import patient'),
@@ -276,9 +305,11 @@ const RemoteSearchResults: React.FC<RemoteSearchResultsProps> = (props) => {
   };
 
   // ADR 0007: the reason for access comes first. Cancelling the modal sends nothing.
-  const handleImport = (remoteUuid: string) => {
+  const handleImport = (patient: RemoteSearchedPatient) => {
     showModal('liberia-reason-for-access-modal', {
-      onConfirm: (reason: string) => runImport(remoteUuid, reason),
+      size: 'sm',
+      progress: progressHeader(patient, t),
+      onConfirm: (reason: string, close: () => void) => startImport(patient, reason, close),
     });
   };
 

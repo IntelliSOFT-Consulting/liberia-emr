@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, ModalBody, ModalFooter, ModalHeader, RadioButton, RadioButtonGroup, TextInput } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
+import ImportProgress, { type ImportProgressProps } from './import-progress.component';
 import {
   formatReason,
   isValidReason,
@@ -12,23 +13,35 @@ import styles from './reason-for-access.scss';
 
 export interface ReasonForAccessModalProps {
   close: () => void;
-  /** Called with the reason to log once the user confirms. Cancel never calls it. */
-  onConfirm: (reason: string) => void;
+  /** Called with the reason once confirmed; never on Cancel. With `progress`, the caller closes the modal. */
+  onConfirm: (reason: string, close: () => void) => void;
+  /** Show the import progress in this modal after confirming, instead of closing. */
+  progress?: ImportProgressProps;
 }
 
 /** "Why are you opening this record?", asked by Import & Open before anything is sent (mockups 2a, 2b). */
-const ReasonForAccessModal: React.FC<ReasonForAccessModalProps> = ({ close, onConfirm }) => {
+const ReasonForAccessModal: React.FC<ReasonForAccessModalProps> = ({ close, onConfirm, progress }) => {
   const { t } = useTranslation();
   const [choice, setChoice] = useState<ReasonChoice | null>(null);
   const [details, setDetails] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
   const canConfirm = isValidReason(choice, details);
 
   const confirm = () => {
     if (!canConfirm) return;
     const reason = formatReason(choice, details);
-    close();
-    onConfirm(reason);
+    // One modal throughout: opening a second one while this closes renders it twice (O3 modal race).
+    if (progress) {
+      setConfirmed(true);
+    } else {
+      close();
+    }
+    onConfirm(reason, close);
   };
+
+  if (confirmed && progress) {
+    return <ImportProgress {...progress} />;
+  }
 
   return (
     <>
