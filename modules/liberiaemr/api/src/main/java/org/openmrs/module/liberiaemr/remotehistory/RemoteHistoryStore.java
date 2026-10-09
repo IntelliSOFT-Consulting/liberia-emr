@@ -45,6 +45,13 @@ public class RemoteHistoryStore {
 
 	public static final String ERROR = "ERROR";
 
+	/**
+	 * A patient shell was imported and its history is fetched in a separate call (LE-387). Logged
+	 * so the import is audited with its reason even if that call never comes. Not an answer from
+	 * central's history endpoint, so it never counts towards the age of the cache.
+	 */
+	public static final String SHELL = "SHELL";
+
 	/** One cached source facility's bundle. */
 	public static class CachedSource {
 

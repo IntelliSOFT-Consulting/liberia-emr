@@ -39,6 +39,18 @@ groups:
         annotations:
           summary: "Sync sender cannot reach the facility database"
 
+      # From the capture exporter, which asks the sender's own broker check. Unlike
+      # SyncPushErrors it fires while there is nothing to send, so a link that broke overnight
+      # is known before the morning's records queue behind it.
+      - alert: SyncCentralUnreachable
+        expr: sync_sender_broker_connected == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The facility cannot reach the sync broker at central"
+          description: "The sender has been unable to connect to central for 15 minutes. Records wait at the facility and are sent when the link returns. Check the internet link, HTTPS to central and the facility's sync-tunnel, or the broker port for a facility still on 61617, then the facility's certificate and its clock (docs/runbooks/sync-operations.md section 20). NEVER a reason to stop clinical work."
+
   # From the capture exporter (monitoring/sync-capture/): the one failure the sender's own
   # metrics cannot show, a sender that is up but no longer reading the binlog.
   - name: sync-capture

@@ -120,6 +120,19 @@
   display: flex;
 }
 
+// "Already imported at this facility" beside Open (mockup 3c), and the hint shown in place of
+// Import & Open for a user who cannot import (1b).
+.actionWithHint {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+}
+
+.actionHint {
+  @extend .bodyShort01;
+  color: $text-02;
+}
+
 // "Show more": same shape as OpenMRS's contact-details panel (full width, divider on top,
 // heading-compact-01 labels over body-compact-01 values).
 .moreDetails {

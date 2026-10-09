@@ -106,7 +106,7 @@ services:
       LIBERIAEMR_MFL_PASSWORD: ${LIBERIAEMR_MFL_PASSWORD:-}
       LIBERIAEMR_MFL_PASSWORD_FILE: ${LIBERIAEMR_MFL_PASSWORD_FILE:-}
       LIBERIAEMR_MFL_ALLOWED_HOSTS: ${LIBERIAEMR_MFL_ALLOWED_HOSTS:-dhis2.moh.gov.lr}
-      # Empty turns the sync status page off, which is what a facility gets.
+      # Empty turns the sync status page off. A facility points it at its own monitoring.
       LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
       # Read by the Sync conflicts page; empty turns it off. The window is for display only.
       LIBERIAEMR_SYNC_MGMT_DB_NAME: ${SYNC_MGMT_DB_NAME:-openmrs_mgmt}
