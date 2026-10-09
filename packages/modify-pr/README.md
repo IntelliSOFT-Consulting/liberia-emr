@@ -46,11 +46,12 @@ The sidecar records:
 | `openmrs-module-bedmanagement` (`source.bedmanagement.commit=c346b7b`, tag 7.2.0) | `distribution/backend/patches/bedmanagement/0001-end-visit-without-bed-write-privileges.patch` | [`0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md`](.patches/0005-openmrs-module-bedmanagement-end-visit-without-bed-write.md) | [openmrs/openmrs-module-bedmanagement#119](https://github.com/openmrs/openmrs-module-bedmanagement/pull/119) |
 | `openmrs-module-bedmanagement` (`source.bedmanagement.commit=c346b7b`, tag 7.2.0) | `distribution/backend/patches/bedmanagement/0002-backport-bed-39-prevent-premature-flush.patch` | [`0006-openmrs-module-bedmanagement-backport-bed-39.md`](.patches/0006-openmrs-module-bedmanagement-backport-bed-39.md) | [openmrs/openmrs-module-bedmanagement#116](https://github.com/openmrs/openmrs-module-bedmanagement/pull/116) (merged; backport) |
 | `esm-service-queues-app` (`11.1.0`) | `distribution/frontend/patch-service-queues-location.cjs` | [`0001-esm-service-queues-app-default-queue-location.md`](.patches/0001-esm-service-queues-app-default-queue-location.md) | **none yet** (sidecar says TODO) |
+| `esm-form-engine-app` (`12.3.4`) | `distribution/frontend/patch-form-engine-checkbox.cjs` | [`0007-esm-form-engine-app-checkbox-required.md`](.patches/0007-esm-form-engine-app-checkbox-required.md) | [openmrs/openmrs-esm-form-engine-lib#840](https://github.com/openmrs/openmrs-esm-form-engine-lib/pull/840) |
 | `esm-patient-registration-app` (`11.1.0`) | `distribution/frontend/patch-patient-registration.cjs` | **none** | **none recorded** |
 | `esm-patient-orders-app` (`12.3.4`) | `distribution/frontend/patch-patient-orders.cjs` | **none** | **none recorded** |
 
-The last three break [the rule](#the-rule) as things stand: no upstream PR link, and two have no
-sidecar at all.
+The service-queues patch and the last two rows break
+[the rule](#the-rule) as things stand: no upstream PR link, and two have no sidecar at all.
 
 ## Before adding a patch
 

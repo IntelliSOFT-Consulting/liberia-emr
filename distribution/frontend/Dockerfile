@@ -82,6 +82,13 @@ RUN node /app/patch-service-queues-location.cjs
 COPY patch-patient-search-remote.cjs /app/patch-patient-search-remote.cjs
 RUN node /app/patch-patient-search-remote.cjs
 
+# Form engine app 12.3.4 computes "Field is mandatory" for an empty required
+# checkbox group, then drops those errors on the non-searchable CheckboxGroup.
+# The patch forwards invalid/invalidText and warn/warnText. The anchor is unique
+# in that bundle; a drifted minify fails the build.
+COPY patch-form-engine-checkbox.cjs /app/patch-form-engine-checkbox.cjs
+RUN node /app/patch-form-engine-checkbox.cjs
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime configuration + branding
 # ---------------------------------------------------------------------------
