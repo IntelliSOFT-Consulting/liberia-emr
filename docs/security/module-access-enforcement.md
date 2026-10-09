@@ -79,9 +79,14 @@ advice does not run: a visit representation (`VisitResource` returns
 `visit.getEncounters()`), observations and orders embedded in an encounter
 representation, and FHIR Encounter, Observation, ServiceRequest,
 MedicationRequest, Immunization, and MedicationDispense payloads. A nested
-record without a uuid cannot be decided and is dropped. Direct obs and order
-resources are not filtered again. Appointments are not filtered; the appointments
-module authorizes them.
+record without a uuid cannot be decided and is dropped. The direct obs resource
+(`/obs` and `/obs/{uuid}`, not subresources such as `/obs/{uuid}/value`) is
+also held: REST checks Get Observations again while it renders each result, after
+the service call has released its proxy, and drops the result silently when that
+check fails. The read proxy is therefore held until rendering finishes, and the
+group members in the response are decided here. The service advice still decides
+the results themselves. The direct order resource is not filtered again.
+Appointments are not filtered; the appointments module authorizes them.
 
 Call-scoped privileges, added only after the module decision allows the call
 and removed before it returns:

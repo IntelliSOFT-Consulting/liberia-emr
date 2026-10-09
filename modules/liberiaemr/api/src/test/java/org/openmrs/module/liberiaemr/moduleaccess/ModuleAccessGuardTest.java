@@ -195,6 +195,38 @@ public class ModuleAccessGuardTest extends BaseModuleContextSensitiveTest {
 		assertDeniedSave(saved);
 	}
 
+	/**
+	 * REST checks Get Observations again while it renders each result, after the service call
+	 * returns. A held read keeps the proxy for that rendering only, and the list is still filtered.
+	 */
+	@Test public void pharmacistObservationListKeepsTbScreeningThroughRenderingAndNotLaboratory() throws Exception {
+		Encounter tb = labor();
+		tb.setForm(null);
+		tb.setEncounterType(ensureType("TB Screening", ContentUuids.get("var.encountertype.tb-screening.uuid")));
+		tb.addObs(observation(tb));
+		tb = Context.getEncounterService().saveEncounter(tb);
+		Encounter lab = labor();
+		lab.setForm(null);
+		lab.setEncounterType(ensureType("Lab Results", ContentUuids.get("var.encountertypes.lab-results.uuid")));
+		lab.addObs(observation(lab));
+		lab = Context.getEncounterService().saveEncounter(lab);
+		String allowed = tb.getAllObs().iterator().next().getUuid();
+		String forbidden = lab.getAllObs().iterator().next().getUuid();
+		as("Pharmacist", "Read TB Screening", "Manage Pharmacy", PrivilegeConstants.GET_PATIENTS);
+		ModuleAccessGuard.holdReads();
+		try {
+			List<String> found = new ArrayList<>();
+			for (org.openmrs.Obs obs : Context.getObsService().getObservationsByPerson(tb.getPatient())) { found.add(obs.getUuid()); }
+			assertTrue(found.toString(), found.contains(allowed));
+			assertFalse(found.toString(), found.contains(forbidden));
+			assertTrue("held for rendering", Context.hasPrivilege(PrivilegeConstants.GET_OBS));
+		}
+		finally {
+			ModuleAccessGuard.releaseHeld();
+		}
+		assertFalse("released after rendering", Context.hasPrivilege(PrivilegeConstants.GET_OBS));
+	}
+
 	@Test public void nurseCanWriteTbScreeningAndMidwifeCannot() throws Exception {
 		EncounterType screening = ensureType("TB Screening", ContentUuids.get("var.encountertype.tb-screening.uuid"));
 		Encounter encounter = labor();

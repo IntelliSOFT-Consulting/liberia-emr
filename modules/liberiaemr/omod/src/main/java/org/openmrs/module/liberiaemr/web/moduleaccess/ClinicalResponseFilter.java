@@ -50,6 +50,12 @@ public class ClinicalResponseFilter implements Filter {
 	private static final Log log = LogFactory.getLog(ClinicalResponseFilter.class);
 	/** The encounter resource and its subresources, not encountertype or encounterrole. */
 	private static final Pattern ENCOUNTER = Pattern.compile("/ws/rest/v1/encounter(/|$)");
+	/**
+	 * The obs list and one obs, not subresources such as {@code /obs/{uuid}/value}. REST drops a
+	 * result whose resource privilege (Get Observations) is missing while it renders, after the
+	 * service call has released its proxy, so the read is held until rendering finishes.
+	 */
+	private static final Pattern OBSERVATION = Pattern.compile("/ws/rest/v1/obs(/[^/]+)?/?$");
 	private final ModuleAccessGuard guard = new ModuleAccessGuard();
 
 	@Override
@@ -87,11 +93,13 @@ public class ClinicalResponseFilter implements Filter {
 
 	/**
 	 * Visit embeds encounters directly. An encounter embeds observations and orders that the service
-	 * guard does not decide one by one. FHIR DAOs query Hibernate and skip the service guard.
+	 * guard does not decide one by one. FHIR DAOs query Hibernate and skip the service guard. An obs
+	 * read needs its proxy through rendering, and its group members are decided here.
 	 */
 	static boolean interesting(String uri) {
 		if (uri == null) { return false; }
-		return uri.contains("/ws/fhir2/") || uri.contains("/ws/rest/v1/visit") || ENCOUNTER.matcher(uri).find();
+		return uri.contains("/ws/fhir2/") || uri.contains("/ws/rest/v1/visit") || ENCOUNTER.matcher(uri).find()
+		        || OBSERVATION.matcher(uri).find();
 	}
 
 	private byte[] authorize(byte[] plain) {

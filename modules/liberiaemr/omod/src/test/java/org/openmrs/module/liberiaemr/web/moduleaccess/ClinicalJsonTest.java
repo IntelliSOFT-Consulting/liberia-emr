@@ -136,7 +136,7 @@ public class ClinicalJsonTest {
 		    java.nio.charset.StandardCharsets.UTF_8));
 	}
 
-	@Test public void filterCoversDirectEncounterButNotObsOrdersMetadataOrAppointments() {
+	@Test public void filterCoversDirectEncounterAndObsButNotOrdersMetadataOrAppointments() {
 		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/visit/uuid"));
 		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/fhir2/R4/ServiceRequest"));
 		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/fhir2/R4/MedicationRequest"));
@@ -145,7 +145,12 @@ public class ClinicalJsonTest {
 		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/encounter/uuid"));
 		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/encountertype/uuid"));
 		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/encounterrole"));
-		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/obs/uuid"));
+		// REST checks Get Observations while rendering, after the service call (LE-39).
+		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/obs"));
+		assertTrue(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/obs/uuid"));
+		// Complex obs bytes are not JSON and must not be buffered and emptied.
+		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/obs/uuid/value"));
+		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/obstree"));
 		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/order/uuid"));
 		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/appointments/appointment"));
 		assertFalse(ClinicalResponseFilter.interesting("/openmrs/ws/rest/v1/patient/uuid"));
