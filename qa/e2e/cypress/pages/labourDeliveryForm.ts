@@ -12,9 +12,8 @@ class LabourDeliveryFormPage {
         parityAboveGravida: 'Parity cannot be greater than Gravida.',
         spo2Range: 'Value must be between 0 and 100',
         systolicRange: 'Value must be between 0 and 250',
-        diastolicRange: 'Value must be between 0 and 150',
-        fetalHeartRateLowerRange: 'Value must be 60 or higher',
-        fetalHeartRateUpperRange: 'Value must be lower than 220',
+        diastolicRange: 'Value must be between 0 and 150.',
+        fetalHeartRateRange: 'Value must be between 60 and 220',
         required: 'Field is mandatory',
         partographDilationRequired: 'There are no Partograph to display for this patient until cervical dilatation is 4cm',
     };

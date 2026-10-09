@@ -16,6 +16,14 @@ export const loginWithSession = () => {
                 authPage.login(username, password);
             }, {
                 validate() {
+                    // Restored activity older than the MOH idle limit triggers logout when the chart loads.
+                    cy.getAllLocalStorage().then((storage) => {
+                        const origin = new URL(baseUrl ?? '').origin;
+                        const activityAt = Number(storage[origin]?.['liberiaemr.lastHumanActivityAt']);
+                        expect(activityAt, 'cached session human activity timestamp')
+                            .to.be.greaterThan(Date.now() - 10 * 60 * 1000);
+                        expect(activityAt, 'cached session human activity timestamp').to.be.at.most(Date.now() + 5000);
+                    });
                     cy.request<{ authenticated: boolean }>('/openmrs/ws/rest/v1/session')
                         .its('body.authenticated').should('eq', true);
                 }

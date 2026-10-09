@@ -241,8 +241,7 @@ describe('First and Second Stage of Labor and Delivery form vital-sign ranges (o
             expectNumericValueSaved('bp_dia', '150');
         });
 
-        // Pending deployment of the agreed Diastolic BP validation.
-        it.skip('rejects diastolic blood pressure above the range at 151', () => {
+        it('rejects diastolic blood pressure above the range at 151', () => {
             expectNumericValueRejected('bp_dia', '151', LabourDeliveryFormPage.messages.diastolicRange);
         });
     });
@@ -252,21 +251,16 @@ describe('First and Second Stage of Labor and Delivery form vital-sign ranges (o
             expectNumericValueSaved('fhr', '60');
         });
 
-        it('saves fetal heart rate at the upper bound of 219', () => {
-            expectNumericValueSaved('fhr', '219');
+        it('saves fetal heart rate at the upper bound of 220', () => {
+            expectNumericValueSaved('fhr', '220');
         });
 
-        // Pending developer confirmation and deployment of the FHR rules and messages.
-        it.skip('rejects fetal heart rate below the range at 59', () => {
-            expectNumericValueRejected('fhr', '59', LabourDeliveryFormPage.messages.fetalHeartRateLowerRange);
+        it('rejects fetal heart rate below the range at 59', () => {
+            expectNumericValueRejected('fhr', '59', LabourDeliveryFormPage.messages.fetalHeartRateRange);
         });
 
-        it.skip('rejects fetal heart rate at 220 because the value must be lower than 220', () => {
-            expectNumericValueRejected('fhr', '220', LabourDeliveryFormPage.messages.fetalHeartRateUpperRange);
-        });
-
-        it.skip('rejects fetal heart rate above the range at 221', () => {
-            expectNumericValueRejected('fhr', '221', LabourDeliveryFormPage.messages.fetalHeartRateUpperRange);
+        it('rejects fetal heart rate above the range at 221', () => {
+            expectNumericValueRejected('fhr', '221', LabourDeliveryFormPage.messages.fetalHeartRateRange);
         });
     });
 });
