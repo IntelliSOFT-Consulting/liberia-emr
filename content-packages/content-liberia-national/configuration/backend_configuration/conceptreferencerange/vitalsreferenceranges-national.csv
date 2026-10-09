@@ -1,17 +1,17 @@
 Uuid,Concept Numeric uuid,Label,Absolute low,Critical low,Normal low,Normal high,Critical high,Absolute high,Criteria
-${var.conceptreferencerange.vitals.pulse-newborn-0-3-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Newborn 0 - <3 mo,0,107,120,160,181,230,$patient.getAgeInMonths() < 3
-${var.conceptreferencerange.vitals.pulse-infant-3-6-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 3 - <6 mo,0,104,120,160,175,230,$patient.getAgeInMonths() >= 3 && $patient.getAgeInMonths() < 6
-${var.conceptreferencerange.vitals.pulse-infant-6-9-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 6 - <9 mo,0,98,114,152,168,230,$patient.getAgeInMonths() >= 6 && $patient.getAgeInMonths() < 9
-${var.conceptreferencerange.vitals.pulse-infant-9-12-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 9 - <12 mo,0,93,109,145,161,230,$patient.getAgeInMonths() >= 9 && $patient.getAgeInMonths() < 12
-${var.conceptreferencerange.vitals.pulse-toddler-12-18-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 12 - <18 mo,0,88,103,140,156,230,$patient.getAgeInMonths() >= 12 && $patient.getAgeInMonths() < 18
-${var.conceptreferencerange.vitals.pulse-toddler-18mo-2yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 18mo - 2yrs,0,82,98,135,149,230,$patient.getAgeInMonths() >= 18 && $patient.getAge() < 2
-${var.conceptreferencerange.vitals.pulse-toddler-2-3yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 2 - <3yrs,0,76,92,128,142,230,$patient.getAge() >= 2 && $patient.getAge() < 3
-${var.conceptreferencerange.vitals.pulse-preschool-3-4yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Preschool 3 - <4yrs,0,70,86,123,136,230,$patient.getAge() >= 3 && $patient.getAge() < 4
-${var.conceptreferencerange.vitals.pulse-preschool-4-6-yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Preschool 4 - <6 yrs,0,65,81,117,131,230,$patient.getAge() >= 4 && $patient.getAge() < 6
-${var.conceptreferencerange.vitals.pulse-school-age-6-8.uuid},${var.concept.ciel.pulse.uuid},Pulse School-age 6 - <8,0,59,74,111,123,230,$patient.getAge() >= 6 && $patient.getAge() < 8
-${var.conceptreferencerange.vitals.pulse-school-age-8-12.uuid},${var.concept.ciel.pulse.uuid},Pulse School-age 8 - <12,0,52,67,103,115,230,$patient.getAge() >= 8 && $patient.getAge() < 12
-${var.conceptreferencerange.vitals.pulse-adolescent-12-18.uuid},${var.concept.ciel.pulse.uuid},Pulse Adolescent 12 - <18,0,47,62,96,108,230,$patient.getAge() >= 12 && $patient.getAge() < 18
-${var.conceptreferencerange.vitals.pulse-adult.uuid},${var.concept.ciel.pulse.uuid},Pulse Adult,0,45,60,100,110,230,$patient.getAge() >= 18
+${var.conceptreferencerange.vitals.pulse-newborn-0-3-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Newborn 0 - <3 mo,0,107,120,160,181,250,$patient.getAgeInMonths() < 3
+${var.conceptreferencerange.vitals.pulse-infant-3-6-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 3 - <6 mo,0,104,120,160,175,250,$patient.getAgeInMonths() >= 3 && $patient.getAgeInMonths() < 6
+${var.conceptreferencerange.vitals.pulse-infant-6-9-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 6 - <9 mo,0,98,114,152,168,250,$patient.getAgeInMonths() >= 6 && $patient.getAgeInMonths() < 9
+${var.conceptreferencerange.vitals.pulse-infant-9-12-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Infant 9 - <12 mo,0,93,109,145,161,250,$patient.getAgeInMonths() >= 9 && $patient.getAgeInMonths() < 12
+${var.conceptreferencerange.vitals.pulse-toddler-12-18-mo.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 12 - <18 mo,0,88,103,140,156,250,$patient.getAgeInMonths() >= 12 && $patient.getAgeInMonths() < 18
+${var.conceptreferencerange.vitals.pulse-toddler-18mo-2yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 18mo - 2yrs,0,82,98,135,149,250,$patient.getAgeInMonths() >= 18 && $patient.getAge() < 2
+${var.conceptreferencerange.vitals.pulse-toddler-2-3yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Toddler 2 - <3yrs,0,76,92,128,142,250,$patient.getAge() >= 2 && $patient.getAge() < 3
+${var.conceptreferencerange.vitals.pulse-preschool-3-4yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Preschool 3 - <4yrs,0,70,86,123,136,250,$patient.getAge() >= 3 && $patient.getAge() < 4
+${var.conceptreferencerange.vitals.pulse-preschool-4-6-yrs.uuid},${var.concept.ciel.pulse.uuid},Pulse Preschool 4 - <6 yrs,0,65,81,117,131,250,$patient.getAge() >= 4 && $patient.getAge() < 6
+${var.conceptreferencerange.vitals.pulse-school-age-6-8.uuid},${var.concept.ciel.pulse.uuid},Pulse School-age 6 - <8,0,59,74,111,123,250,$patient.getAge() >= 6 && $patient.getAge() < 8
+${var.conceptreferencerange.vitals.pulse-school-age-8-12.uuid},${var.concept.ciel.pulse.uuid},Pulse School-age 8 - <12,0,52,67,103,115,250,$patient.getAge() >= 8 && $patient.getAge() < 12
+${var.conceptreferencerange.vitals.pulse-adolescent-12-18.uuid},${var.concept.ciel.pulse.uuid},Pulse Adolescent 12 - <18,0,47,62,96,108,250,$patient.getAge() >= 12 && $patient.getAge() < 18
+${var.conceptreferencerange.vitals.pulse-adult.uuid},${var.concept.ciel.pulse.uuid},Pulse Adult,0,45,60,100,110,250,$patient.getAge() >= 18
 ${var.conceptreferencerange.vitals.resp-rate-newborn-0-3mo.uuid},${var.concept.ciel.respiratory-rate.uuid},Resp Rate Newborn 0-<3mo,0,25,30,57,66,99,$patient.getAgeInMonths() < 3
 ${var.conceptreferencerange.vitals.resp-rate-infant-3-6mo.uuid},${var.concept.ciel.respiratory-rate.uuid},Resp Rate Infant 3-<6mo,0,24,33,55,64,99,$patient.getAgeInMonths() >= 3 && $patient.getAgeInMonths() < 6
 ${var.conceptreferencerange.vitals.resp-rate-infant-6-9mo.uuid},${var.concept.ciel.respiratory-rate.uuid},Resp Rate Infant 6-<9mo,0,23,31,52,61,99,$patient.getAgeInMonths() >= 6 && $patient.getAgeInMonths() < 9

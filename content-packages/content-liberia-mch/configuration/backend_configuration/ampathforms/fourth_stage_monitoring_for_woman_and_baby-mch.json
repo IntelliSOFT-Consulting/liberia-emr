@@ -203,16 +203,16 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.pulse.uuid}",
                 "rendering": "number",
-                "min": 0,
-                "max": 230,
+                "min": 20,
+                "max": 250,
                 "step": 1,
                 "disallowDecimals": true
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 230)",
-                  "message": "Pulse/Heart Rate must be between 0 and 230 beats/min."
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 20 || myValue > 250)",
+                  "message": "Pulse/Heart Rate must be between 20 and 250 beats/min."
                 }
               ]
             },
