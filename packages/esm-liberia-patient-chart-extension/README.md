@@ -52,6 +52,20 @@ facilities. It reads only this facility's copy, never central directly.
 - `refresh()` posts to `…/local/{uuid}/refresh`, re-reads, and shows the outcome snackbar.
 - `formatAsOf()`: `02-Oct-2026, 08:14 (2 days ago)`, from the framework's `formatDatetime` and `duration`, so it follows the user's locale.
 
+In the chart (all gated by `View Remote History`, `offline: true`):
+
+| Extension | Slot |
+| --- | --- |
+| `liberia-external-records-summary` (card) | `patient-chart-summary-dashboard-slot`, first via `config-national.json` |
+| `liberia-external-records-banner-tag` | `patient-banner-tags-slot`, hidden in search results and when no facility has records |
+| `liberia-external-records-dashboard-link` | `patient-chart-dashboard-slot`, `order: 5.5` (directly below Visits, 5) |
+
+Reusable pieces: `external-records-sections.ts` defines each section's columns once;
+`ExternalRecordsTable` renders any section (EXTERNAL / READ ONLY tags, Facility column,
+paging); `ExternalRecordsStatusView` is the status bar or empty state. Config:
+`externalRecords.summarySections` (at most two, default `["allergies", "conditions"]`) and
+`externalRecords.pageSize` (default 5).
+
 ## Development
 
 ```bash

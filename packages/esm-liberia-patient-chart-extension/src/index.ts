@@ -15,6 +15,7 @@
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { currentPregnancyAncConfigSchema } from './forms/current-pregnancy-anc-config-schema';
+import { externalRecordsConfigSchema } from './external-records/external-records-config';
 import { getCurrentPregnancyAncNumeric } from './forms/current-pregnancy-anc-obstetric-history';
 import { registerFormEngineExpressionHelper } from './forms/register-form-engine-helpers';
 import { calcLiberiaWhz, isMuacRequired } from './forms/who-whz';
@@ -30,7 +31,7 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
-  defineConfigSchema(moduleName, currentPregnancyAncConfigSchema);
+  defineConfigSchema(moduleName, { ...currentPregnancyAncConfigSchema, externalRecords: externalRecordsConfigSchema });
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
@@ -50,4 +51,20 @@ export const liberiaObsWidget = getAsyncLifecycle(
     featureName: 'liberia-obs-widget',
     moduleName: 'liberia-obs-widget',
   },
+);
+
+// External records (LE-386): another facility's history for an imported patient, read-only.
+export const externalRecordsSummary = getAsyncLifecycle(
+  () => import('./external-records/external-records-summary.extension'),
+  options,
+);
+
+export const externalRecordsBannerTag = getAsyncLifecycle(
+  () => import('./external-records/external-records-banner-tag.extension'),
+  options,
+);
+
+export const externalRecordsDashboardLink = getAsyncLifecycle(
+  () => import('./external-records/external-records-dashboard-link.extension'),
+  options,
 );
