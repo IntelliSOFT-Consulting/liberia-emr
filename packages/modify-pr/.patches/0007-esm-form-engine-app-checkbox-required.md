@@ -3,11 +3,11 @@
 | Field | Value |
 | --- | --- |
 | Upstream repo | `openmrs/openmrs-esm-form-engine-lib` (bundled into `@openmrs/esm-form-engine-app`) |
-| Upstream PR | **TODO — open this week and replace this line with the link** |
+| Upstream PR | https://github.com/openmrs/openmrs-esm-form-engine-lib/pull/840 |
 | Component version patched | `@openmrs/esm-form-engine-app` `12.3.4` (pinned in `distribution/distro.properties`). The bug is in the lib copy baked into that app. Lib `4.2.1` (current when 12.3.4 was published), lib `4.3.0`, and `main` as of 2026-10-08 all omit the props. |
 | Why not configuration | Purpose of Visit is already `rendering: "checkbox"` and `required: true`. The engine blocks Save and computes `Field is mandatory`. The non-searchable checkbox renderer drops `errors` / `warnings` instead of passing them to Carbon `CheckboxGroup`. A schema validator, a `required` expression, or `checkbox-searchable` does not fix the checklist control. Custom controls cannot replace the inbuilt `checkbox` registration. |
 | Removal condition | Bump `@openmrs/esm-form-engine-app` to a release whose bundle passes `invalid`, `invalidText`, `warn` and `warnText` on the non-searchable `CheckboxGroup`. A form-engine-lib release is not enough until the app is rebuilt against it. Then delete this file, `distribution/frontend/patch-form-engine-checkbox.cjs`, its test, and the `COPY` + `RUN` lines in `distribution/frontend/Dockerfile`. |
-| Owner | **TODO — name the person chasing the upstream PR** |
+| Owner | `@Samstar10` |
 
 ## What the patch does
 
