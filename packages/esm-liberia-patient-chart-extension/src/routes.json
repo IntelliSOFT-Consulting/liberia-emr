@@ -13,6 +13,47 @@
       "meta": {
         "fullWidth": true
       }
+    },
+    {
+      "name": "liberia-external-records-summary",
+      "component": "externalRecordsSummary",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "privileges": [
+        "View Remote History"
+      ],
+      "online": true,
+      "offline": true,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "liberia-external-records-banner-tag",
+      "component": "externalRecordsBannerTag",
+      "slot": "patient-banner-tags-slot",
+      "privileges": [
+        "View Remote History"
+      ],
+      "online": true,
+      "offline": true
+    },
+    {
+      "name": "liberia-external-records-dashboard-link",
+      "component": "externalRecordsDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "privileges": [
+        "View Remote History"
+      ],
+      "order": 5.5,
+      "online": true,
+      "offline": true,
+      "meta": {
+        "slot": "patient-chart-external-records-dashboard-slot",
+        "path": "external-records",
+        "title": "External records",
+        "columns": 1,
+        "columnSpan": 1
+      }
     }
   ]
 }

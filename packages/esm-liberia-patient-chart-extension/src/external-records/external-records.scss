@@ -1,0 +1,135 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+
+.card {
+  background-color: var(--cds-layer-01, #ffffff);
+  border: 1px solid var(--cds-border-subtle);
+  margin-bottom: layout.$spacing-05;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  padding: 0 layout.$spacing-05 layout.$spacing-05;
+}
+
+.description {
+  @include type.type-style('body-01');
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+// Side by side on desktop, stacked on tablet (4b).
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(27.5rem, 1fr));
+  gap: layout.$spacing-05;
+}
+
+.widgetsStacked {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+.widget {
+  border: 1px solid var(--cds-border-subtle);
+  background-color: var(--cds-layer-01, #ffffff);
+}
+
+.tags {
+  display: inline-flex;
+  gap: layout.$spacing-02;
+  margin-right: auto;
+  margin-left: layout.$spacing-03;
+}
+
+.facility {
+  color: var(--cds-text-secondary);
+}
+
+.noRows {
+  @include type.type-style('body-compact-01');
+  color: var(--cds-text-secondary);
+  margin: 0;
+  padding: layout.$spacing-05;
+}
+
+// One line: icon, text, then the action at the end (6a–6c). Wraps only when there's no room.
+.statusBar {
+  max-width: none;
+  width: 100%;
+
+  :global(.cds--actionable-notification__focus-wrapper) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+  }
+
+  :global(.cds--actionable-notification__details) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  :global(.cds--actionable-notification__button-wrapper) {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 0 layout.$spacing-03;
+  }
+
+  // Carbon makes inline actions ghost buttons; the design outlines them (tertiary).
+  :global(.cds--actionable-notification__action-button) {
+    border: 1px solid var(--cds-button-tertiary, #0f62fe);
+    color: var(--cds-button-tertiary, #0f62fe);
+    background-color: var(--cds-layer-01, #ffffff);
+  }
+
+  // Text stays blue: Carbon's ghost hover background would otherwise sit under white text.
+  :global(.cds--actionable-notification__action-button:hover),
+  :global(.cds--actionable-notification__action-button:focus) {
+    background-color: var(--cds-background-hover, #e8e8e8);
+    color: var(--cds-button-tertiary, #0f62fe);
+  }
+
+  @media (max-width: 42rem) {
+    :global(.cds--actionable-notification__focus-wrapper) {
+      flex-wrap: wrap;
+    }
+  }
+}
+
+// Boxed like the widgets it replaces (6d–6f).
+.emptyState {
+  border: 1px solid var(--cds-border-subtle);
+  background-color: var(--cds-layer-01, #ffffff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: layout.$spacing-03;
+  text-align: center;
+  padding: layout.$spacing-06 layout.$spacing-05;
+}
+
+.emptyTitle {
+  @include type.type-style('heading-compact-01');
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.emptyBody {
+  @include type.type-style('body-01');
+  color: var(--cds-text-secondary);
+  margin: 0 0 layout.$spacing-03;
+}
+
+// Carbon reserves icon space on the right; with no icon, centre the label.
+.centredButton {
+  justify-content: center;
+  padding-inline: layout.$spacing-05;
+}
+
+.bannerTagLink {
+  text-decoration: none;
+}
