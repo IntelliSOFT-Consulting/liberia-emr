@@ -169,7 +169,7 @@ ${var.concept.national.place-of-delivery.uuid},,Place of Delivery,Place of Deliv
 ${var.concept.national.chlorhexidine-administration.uuid},,Chlorhexidine administration,Chlorhexidine administration,Chlorhexidine administration,Question,Coded,${var.concept.national.before-24hrs.uuid};${var.concept.national.after-24hrs.uuid},,,
 ${var.concept.national.purpose-of-visit.uuid},,Purpose of visit,Purpose of visit,Purpose of visit,Question,Coded,${var.concept.national.for-commodities.uuid},,,
 ${var.concept.national.family-planning-method-dispensed.uuid},,Family Planning method dispensed,Family Planning method dispensed,Family Planning method dispensed,Question,Coded,${var.concept.national.iuds.uuid},,,
-${var.concept.national.vaccine-name.uuid},,Vaccine Name,Vaccine Name,Vaccine Name,Question,Coded,${var.concept.national.opv1.uuid},,,
+${var.concept.national.vaccine-name.uuid},,Vaccine Name,Vaccine Name,Vaccine Name,Question,Coded,${var.concept.national.opv1.uuid};${var.concept.national.bcg.uuid},,,
 ${var.concept.national.route.uuid},,Route,Route,Route,Question,Coded,${var.concept.ciel.oral.uuid},,,
 ${var.concept.national.supplementary-immunization-activities.uuid},,Supplementary immunization activities,Supplementary immunization activities,Supplementary immunization activities,Question,Coded,${var.concept.national.vit-a-blue-100-000iu.uuid},,,
 ${var.concept.national.episiotomy-answer.uuid},,Episiotomy Answer,Episiotomy Answer,Episiotomy,Misc,N/A,,,,

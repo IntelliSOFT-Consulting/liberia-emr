@@ -70,6 +70,13 @@
                 "rendering": "select",
                 "answers": [
                   {
+                    "concept": "${var.concept.national.bcg.uuid}",
+                    "label": "BCG",
+                    "hide": {
+                      "hideWhenExpression": "age >= 1"
+                    }
+                  },
+                  {
                     "concept": "${var.concept.national.opv1.uuid}",
                     "label": "OPV1"
                   }
