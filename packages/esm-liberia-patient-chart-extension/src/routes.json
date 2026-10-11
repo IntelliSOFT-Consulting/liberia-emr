@@ -52,7 +52,21 @@
         "path": "external-records",
         "title": "External records",
         "columns": 1,
-        "columnSpan": 1
+        "columnSpan": 1,
+        "hideDashboardTitle": true
+      }
+    },
+    {
+      "name": "liberia-external-records-dashboard",
+      "component": "externalRecordsDashboard",
+      "slot": "patient-chart-external-records-dashboard-slot",
+      "privileges": [
+        "View Remote History"
+      ],
+      "online": true,
+      "offline": true,
+      "meta": {
+        "fullWidth": true
       }
     }
   ]
