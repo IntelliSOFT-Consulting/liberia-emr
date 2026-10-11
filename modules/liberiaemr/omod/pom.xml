@@ -12,6 +12,12 @@
 	<description>Omod submodule for LiberiaEMR</description>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>patientflags-api</artifactId>
+			<version>${patientflagsVersion}</version>
+			<scope>provided</scope>
+		</dependency>
         <dependency>
             <groupId>org.openmrs.module</groupId>
             <artifactId>liberiaemr-api</artifactId>
