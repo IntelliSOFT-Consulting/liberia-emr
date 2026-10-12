@@ -228,6 +228,22 @@ describe('First and Second Stage of Labor and Delivery form vital-sign ranges (o
     });
 
     describe('Blood pressure ranges', () => {
+        it('saves systolic blood pressure at the lower bound of 0', () => {
+            expectNumericValueSaved('bp_sys', '0');
+        });
+
+        it('rejects systolic blood pressure below the range at -1', () => {
+            expectNumericValueRejected('bp_sys', '-1', LabourDeliveryFormPage.messages.systolicRange);
+        });
+
+        it('saves diastolic blood pressure at the lower bound of 0', () => {
+            expectNumericValueSaved('bp_dia', '0');
+        });
+
+        it('rejects diastolic blood pressure below the range at -1', () => {
+            expectNumericValueRejected('bp_dia', '-1', LabourDeliveryFormPage.messages.diastolicRange);
+        });
+
         it('saves systolic blood pressure at the upper bound of 250', () => {
             expectNumericValueSaved('bp_sys', '250');
         });
