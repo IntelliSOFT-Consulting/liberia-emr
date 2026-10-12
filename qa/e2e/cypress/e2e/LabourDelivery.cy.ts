@@ -10,7 +10,6 @@ const visitPage = new VisitPage();
 const labourDeliveryForm = new LabourDeliveryFormPage();
 const ancInitialForm = new ANCInitialFormPage();
 
-// Every test is for a woman of childbearing age; age-specific behaviour is out of scope here.
 const registerMotherWithVisit = () => {
     registrationPage.visitPage();
     registrationPage.fillRequiredFields({
