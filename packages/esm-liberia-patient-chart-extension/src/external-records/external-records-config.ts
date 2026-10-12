@@ -1,5 +1,7 @@
 import { Type, validator } from '@openmrs/esm-framework';
-import { sectionIds } from './external-records-sections';
+import { ancContactSectionId, sectionIds } from './external-records-sections';
+
+const dashboardIds = [...sectionIds, ancContactSectionId];
 
 /** `externalRecords` in this module's config. */
 export const externalRecordsConfigSchema = {
@@ -12,6 +14,18 @@ export const externalRecordsConfigSchema = {
       validator(
         (ids: Array<string>) => ids.length <= 2 && ids.every((id) => sectionIds.includes(id)),
         `summarySections takes at most two of: ${sectionIds.join(', ')}`,
+      ),
+    ],
+  },
+  dashboardSections: {
+    _type: Type.Array,
+    _elements: { _type: Type.String },
+    _default: ['allergies', 'conditions', 'medications', 'immunisations', 'programmes', 'ancContact', 'encounters'],
+    _description: `Sections on the External records dashboard, in order. Any of: ${dashboardIds.join(', ')}.`,
+    _validators: [
+      validator(
+        (ids: Array<string>) => ids.every((id) => dashboardIds.includes(id)),
+        `dashboardSections takes any of: ${dashboardIds.join(', ')}`,
       ),
     ],
   },
@@ -29,6 +43,7 @@ export const externalRecordsConfigSchema = {
 
 export interface ExternalRecordsConfig {
   summarySections: Array<string>;
+  dashboardSections: Array<string>;
   dashboardIcon: string;
   pageSize: number;
 }

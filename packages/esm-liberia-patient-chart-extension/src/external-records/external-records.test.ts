@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  ancRiskFlagTag,
   ancSummaryTag,
   countRows,
+  filterByFacility,
   programmeStateExtension,
   refreshSnackbar,
   toFacilities,
@@ -44,6 +46,7 @@ const sources: LocalHistoryResponse['sources'] = [
         id: 'i1',
         vaccineCode: { text: 'Tetanus toxoid' },
         occurrenceDateTime: '2026-02-01T00:00:00Z',
+        protocolApplied: [{ doseNumberPositiveInt: 2 }],
       },
       {
         resourceType: 'EpisodeOfCare',
@@ -72,6 +75,14 @@ const sources: LocalHistoryResponse['sources'] = [
         encounter: { reference: 'Encounter/e1' },
         effectiveDateTime: '2026-02-01T09:00:00Z',
         valueDateTime: '2026-03-01T00:00:00Z',
+      },
+      {
+        resourceType: 'Observation',
+        id: 'o3',
+        meta: { tag: [{ code: ancSummaryTag }, { code: ancRiskFlagTag }] },
+        encounter: { reference: 'Encounter/e1' },
+        effectiveDateTime: '2026-02-01T09:00:00Z',
+        valueString: 'High Systolic Blood Pressure (ANC)',
       },
       { resourceType: 'Observation', id: 'untagged', valueQuantity: { value: 99 } },
     ),
@@ -113,7 +124,24 @@ describe('toSections', () => {
       contactDate: '2026-02-01T09:00:00Z',
       gestationalAgeWeeks: 20,
       nextContactDate: '2026-03-01T00:00:00Z',
+      riskFlags: ['High Systolic Blood Pressure (ANC)'],
     });
+  });
+
+  it('reads the immunisation dose number', () => {
+    assert.equal(sections.immunisations[0].dose, 2);
+  });
+
+  it('keeps only one facility’s rows when filtered', () => {
+    const atBarnersville = filterByFacility(sections, 'f-barnersville');
+    assert.deepEqual(
+      atBarnersville.encounters.map((encounter) => encounter.id),
+      ['e2'],
+    );
+    assert.equal(atBarnersville.allergies.length, 0);
+    assert.equal(atBarnersville.lastAncContact, null);
+    assert.equal(filterByFacility(sections, null), sections);
+    assert.equal(filterByFacility(sections, 'f-careysburg').lastAncContact?.gestationalAgeWeeks, 20);
   });
 
   it('lists encounters newest first across facilities', () => {

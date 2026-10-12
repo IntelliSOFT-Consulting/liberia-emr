@@ -13,12 +13,20 @@ interface ExternalRecordsStatusProps {
   asOf: string | null;
   isRefreshing: boolean;
   onRefresh: () => void;
+  /** The dashboard's longer empty-state text. */
+  detailed?: boolean;
 }
 
 /** The As of / Refresh bar over the data, or the empty state in its place (6a–6f). Card and dashboard share it. */
-const ExternalRecordsStatusView: React.FC<ExternalRecordsStatusProps> = ({ status, asOf, isRefreshing, onRefresh }) => {
+const ExternalRecordsStatusView: React.FC<ExternalRecordsStatusProps> = ({
+  status,
+  asOf,
+  isRefreshing,
+  onRefresh,
+  detailed = false,
+}) => {
   const { t } = useTranslation();
-  const display = statusDisplay(status, asOf ? formatAsOf(asOf, new Date(), dateHelpers(), t) : '', t);
+  const display = statusDisplay(status, asOf ? formatAsOf(asOf, new Date(), dateHelpers(), t) : '', t, detailed);
   const busyLabel = display.type === 'bar' ? t('refreshing', 'Refreshing…') : t('retrying', 'Retrying…');
   const action = isRefreshing ? busyLabel : display.action;
 

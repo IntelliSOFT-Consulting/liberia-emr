@@ -68,3 +68,8 @@ export const externalRecordsDashboardLink = getAsyncLifecycle(
   () => import('./external-records/external-records-dashboard-link.extension'),
   options,
 );
+
+export const externalRecordsDashboard = getAsyncLifecycle(
+  () => import('./external-records/external-records-dashboard.extension'),
+  options,
+);

@@ -1,9 +1,10 @@
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .card {
-  background-color: var(--cds-layer-01, #ffffff);
-  border: 1px solid var(--cds-border-subtle);
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
   margin-bottom: layout.$spacing-05;
 }
 
@@ -16,7 +17,7 @@
 
 .description {
   @include type.type-style('body-01');
-  color: var(--cds-text-secondary);
+  color: $text-02;
   margin: 0;
 }
 
@@ -34,8 +35,8 @@
 }
 
 .widget {
-  border: 1px solid var(--cds-border-subtle);
-  background-color: var(--cds-layer-01, #ffffff);
+  border: 1px solid $ui-03;
+  background-color: $ui-02;
 }
 
 .tags {
@@ -46,14 +47,22 @@
 }
 
 .facility {
-  color: var(--cds-text-secondary);
+  color: $text-02;
 }
 
-.noRows {
-  @include type.type-style('body-compact-01');
-  color: var(--cds-text-secondary);
-  margin: 0;
-  padding: layout.$spacing-05;
+// Same as O3's empty cards (esm-patient-common-lib empty-state): pictogram, then centred text.
+.emptyRows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: layout.$spacing-05 layout.$spacing-05 layout.$spacing-06;
+}
+
+.emptyRowsText {
+  @include type.type-style('heading-compact-01');
+  color: $text-02;
+  margin: layout.$spacing-05 0 0;
 }
 
 // One line: icon, text, then the action at the end (6a–6c). Wraps only when there's no room.
@@ -81,16 +90,16 @@
 
   // Carbon makes inline actions ghost buttons; the design outlines them (tertiary).
   :global(.cds--actionable-notification__action-button) {
-    border: 1px solid var(--cds-button-tertiary, #0f62fe);
-    color: var(--cds-button-tertiary, #0f62fe);
-    background-color: var(--cds-layer-01, #ffffff);
+    border: 1px solid $interactive-01;
+    color: $interactive-01;
+    background-color: $ui-02;
   }
 
   // Text stays blue: Carbon's ghost hover background would otherwise sit under white text.
   :global(.cds--actionable-notification__action-button:hover),
   :global(.cds--actionable-notification__action-button:focus) {
-    background-color: var(--cds-background-hover, #e8e8e8);
-    color: var(--cds-button-tertiary, #0f62fe);
+    background-color: $ui-01;
+    color: $interactive-01;
   }
 
   @media (max-width: 42rem) {
@@ -102,8 +111,8 @@
 
 // Boxed like the widgets it replaces (6d–6f).
 .emptyState {
-  border: 1px solid var(--cds-border-subtle);
-  background-color: var(--cds-layer-01, #ffffff);
+  border: 1px solid $ui-03;
+  background-color: $ui-02;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -114,13 +123,13 @@
 
 .emptyTitle {
   @include type.type-style('heading-compact-01');
-  color: var(--cds-text-secondary);
+  color: $text-02;
   margin: 0;
 }
 
 .emptyBody {
   @include type.type-style('body-01');
-  color: var(--cds-text-secondary);
+  color: $text-02;
   margin: 0 0 layout.$spacing-03;
 }
 
@@ -132,4 +141,84 @@
 
 .bannerTagLink {
   text-decoration: none;
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+}
+
+.dashboardTitle {
+  @include type.type-style('heading-04');
+  margin: 0;
+}
+
+// Title and description on the left, the facility filter on the right (5a); stacked when narrow.
+.dashboardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  flex-wrap: wrap;
+}
+
+.dashboardIntro {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  flex: 1 1 30rem;
+  max-width: 45rem;
+}
+
+.filter {
+  flex: 0 0 16rem;
+}
+
+// The encounter index spans the grid (5a).
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+// Under the header, aligned with the table (the title's underline leaves no shared baseline).
+.note {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: 0;
+  padding: 0 layout.$spacing-05 layout.$spacing-03;
+}
+
+.rowNote {
+  color: $text-02;
+  white-space: nowrap;
+}
+
+.keyValues {
+  margin: 0;
+  padding: 0 layout.$spacing-05 layout.$spacing-05;
+}
+
+.keyValue {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+  border-bottom: 1px solid $ui-03;
+
+  dt {
+    @include type.type-style('body-compact-01');
+    color: $text-02;
+  }
+
+  dd {
+    @include type.type-style('body-compact-01');
+    margin: 0;
+  }
 }
