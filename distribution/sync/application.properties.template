@@ -40,6 +40,9 @@ management.endpoints.enabled-by-default=false
 management.endpoint.prometheus.enabled=true
 management.endpoint.health.enabled=true
 management.endpoints.web.exposure.include=health,prometheus
+# Names each part of the health answer with its status, no details, so the capture exporter can
+# tell a broken link to central ("jms") from a broken database. Port 8080 is never published.
+management.endpoint.health.show-components=always
 
 # REST access to the local OpenMRS instance. Used at start-up to read the platform
 # version, and by the complex-obs route to fetch file payloads.

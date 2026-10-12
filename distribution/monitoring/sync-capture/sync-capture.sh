@@ -7,6 +7,9 @@
 # binlog position it last saved, and the newest rows in tables it watches. Rows arriving while
 # the saved position stands still mean capture has stopped.
 #
+# It also asks the sender whether it can reach the broker at central, so a facility can see a
+# broken link to central while it has nothing to send (SyncCentralUnreachable).
+#
 #   sync-capture.sh          serve :9102/metrics, refreshed every REFRESH_SECONDS
 #   sync-capture.sh --once   print the metrics once and exit
 set -eu
@@ -15,6 +18,10 @@ OFFSETS="${OFFSETS_FILE:-/eip/.debezium/offsets.txt}"
 OUT_DIR=/tmp/www
 STATE="${STATE_FILE:-/tmp/state}"
 REFRESH_SECONDS="${REFRESH_SECONDS:-60}"
+SENDER_HEALTH_URL="${SENDER_HEALTH_URL:-http://sync:8080/actuator/health}"
+# Long enough for the sender's own attempt to reach central to give up. A firewall that drops
+# the broker port makes that attempt hang rather than fail.
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-40}"
 
 # The newest primary key in each watched table that clinical work writes to. A new row in any
 # of them is a change the sender must capture; primary keys are indexed, so this stays cheap
@@ -41,6 +48,14 @@ saved_offset() {
   LC_ALL=C tr '\000-\037\177-\377' '\n' < "$OFFSETS" | grep -o '{"[^{}]*"pos":[0-9]*[^{}]*}' | tail -1 || true
 }
 
+# The sender's health answer lists its parts (show-components in sync/application.properties.
+# template). "jms" is Spring's own check of the broker connection, so it is down whenever the
+# sender cannot reach central. The answer is 503 while any part is down, and is read anyway.
+broker_status() {
+  curl -s -m "$HEALTH_TIMEOUT_SECONDS" "$SENDER_HEALTH_URL" 2>/dev/null \
+    | grep -o '"jms":{"status":"[A-Z_]*"' | sed 's/.*"status":"\([A-Z_]*\)"/\1/' || true
+}
+
 state_get() { [ ! -f "$STATE" ] || sed -n "s/^$1=//p" "$STATE"; }
 
 render() {
@@ -53,6 +68,8 @@ render() {
   db_readable=1
   ids="$(newest_ids)" || true
   [ -n "$ids" ] || db_readable=0
+
+  broker="$(broker_status)"
 
   last_offset="$(state_get offset)"
   offset_since="$(state_get offset_since)"
@@ -111,6 +128,12 @@ render() {
   echo "sync_capture_offset_readable $offset_readable"
   echo "# TYPE sync_capture_db_readable gauge"
   echo "sync_capture_db_readable $db_readable"
+  # Absent, rather than 0, when the sender did not answer: a stopped sender is SyncSenderDown,
+  # not a broken link to central.
+  case "$broker" in
+    UP) echo "# TYPE sync_sender_broker_connected gauge"; echo "sync_sender_broker_connected 1" ;;
+    DOWN | OUT_OF_SERVICE) echo "# TYPE sync_sender_broker_connected gauge"; echo "sync_sender_broker_connected 0" ;;
+  esac
   echo "# TYPE sync_capture_last_run_seconds gauge"
   echo "sync_capture_last_run_seconds $now"
 }

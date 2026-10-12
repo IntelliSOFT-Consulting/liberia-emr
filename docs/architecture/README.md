@@ -69,8 +69,10 @@ Facility locations come from the MOH Master Facility List: [ADR 0009](../adr/000
 | Broker | [`distribution/broker/`](../../distribution/broker/README.md) | ActiveMQ Artemis at central: mutual TLS only, one address per facility, dead letters kept and alerted |
 | Monitoring | [`distribution/monitoring/`](../../distribution/monitoring/README.md) | Prometheus and Alertmanager on both sides. The facility watches its sender; central watches the receiver, the broker and certificate expiry (`cert-expiry`). Alerts go by email or webhook |
 
-The sync status page reads central's Prometheus (`LIBERIAEMR_SYNC_MONITORING_URL`). A
-facility has no national monitoring to read and reports the feature off.
+The sync status page reads the Prometheus of the stack it runs on
+(`LIBERIAEMR_SYNC_MONITORING_URL`). At central it shows the national view; at a facility that
+runs sync it shows that facility's own sender: whether it can reach central, and what is
+waiting to be sent.
 
 ## Artefacts
 

@@ -1,0 +1,20 @@
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
+// Under the radios, lined up with their labels (mockup 2b).
+.otherDetails {
+  padding-left: layout.$spacing-06;
+}
+
+.recordedNotice {
+  @include type.type-style('body-compact-01');
+  color: $text-02;
+  margin: layout.$spacing-03 0 0;
+}
