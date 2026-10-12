@@ -16,5 +16,11 @@
       "component": "remoteSearchSummary",
       "slot": "patient-search-remote-summary-slot"
     }
+  ],
+  "modals": [
+    {
+      "name": "liberia-reason-for-access-modal",
+      "component": "reasonForAccessModal"
+    }
   ]
 }

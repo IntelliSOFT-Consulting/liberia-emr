@@ -26,14 +26,35 @@ export interface CentralStatus {
   brokerUp: boolean;
 }
 
+/**
+ * A facility's own sender, from its own monitoring. A value is null when the sender is not
+ * reporting it, which is not the same as zero.
+ */
+export interface FacilitySenderStatus {
+  senderRunning?: boolean | null;
+  databaseReachable?: boolean | null;
+  /** The sender's own check of its connection to the broker at central. */
+  connectedToCentral?: boolean | null;
+  /** Changes picked up but not yet sent. */
+  recordsWaiting?: number | null;
+  recordsRetrying?: number | null;
+  /** True while the first load sends every record the facility already holds. */
+  initialLoad?: boolean;
+  /** When the last change the sender picked up was saved (epoch seconds). */
+  lastCaptured?: number | null;
+  captureStalledSeconds?: number | null;
+}
+
 export interface SyncStatus {
-  /** False on a facility server, which has no national view to show. */
+  /** The national view: false on a facility server, which shows its own sender instead. */
   enabled: boolean;
   /** False when central's monitoring cannot be reached; sync itself may be fine. */
   available?: boolean;
   facilities?: Array<FacilityStatus>;
   central?: CentralStatus;
   alerts?: Array<string>;
+  /** Present on a facility server that runs sync: its own sender. */
+  facility?: FacilitySenderStatus;
 }
 
 /** Refreshed on an interval because this is a wall board as much as a page. */

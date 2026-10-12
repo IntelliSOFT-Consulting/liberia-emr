@@ -17,6 +17,14 @@ cat > "$WORK/bin/mariadb" <<EOF
 EOF
 chmod +x "$WORK/bin/mariadb"
 
+# The fake sender answers its health check with whatever the test last wrote to health, or not
+# at all when it is absent, as a stopped sender would.
+cat > "$WORK/bin/curl" <<EOF
+#!/bin/sh
+[ -f "$WORK/health" ] && cat "$WORK/health" || exit 7
+EOF
+chmod +x "$WORK/bin/curl"
+
 offset() { # file pos ts
   printf '\254\355\000\005sr\000\021java.util.HashMapxp{"transaction_id":null,"ts_sec":%s,"file":"%s","pos":%s,"server_id":1001}x' \
     "$3" "$1" "$2" > "$WORK/offsets.txt"
@@ -72,5 +80,14 @@ run > /dev/null
 age_waiting 5000
 check "a first load in progress is reported" 1 "$(metric sync_capture_snapshot)"
 check "and never counts as a stall, however long it holds one position" 0 "$(metric sync_capture_stalled_seconds)"
+
+echo '{"status":"UP","components":{"db":{"status":"UP"},"jms":{"status":"UP"},"ping":{"status":"UP"}}}' > "$WORK/health"
+check "a sender that reaches central is reported connected" 1 "$(metric sync_sender_broker_connected)"
+echo '{"status":"DOWN","components":{"db":{"status":"UP"},"jms":{"status":"DOWN"},"ping":{"status":"UP"}}}' > "$WORK/health"
+check "one that cannot is reported not connected" 0 "$(metric sync_sender_broker_connected)"
+rm "$WORK/health"
+check "a sender that does not answer leaves the connection unreported" "" "$(metric sync_sender_broker_connected)"
+echo '{"status":"UP"}' > "$WORK/health"
+check "so does one that does not list its parts" "" "$(metric sync_sender_broker_connected)"
 
 echo "PASS: sync-capture exporter"

@@ -51,7 +51,7 @@ public class FacilityHistoryService {
 	/** A chart-open refresh waits this long for central before serving the cache. */
 	static final int READ_REFRESH_TIMEOUT_MS = 5000;
 
-	public static final String REASON_ROUTINE_REFRESH = "routine refresh";
+	public static final String REASON_ROUTINE_REFRESH = RemoteHistoryStore.ROUTINE_REFRESH;
 
 	private static final Logger log = LoggerFactory.getLogger(FacilityHistoryService.class);
 
@@ -122,12 +122,60 @@ public class FacilityHistoryService {
 	}
 
 	/**
+	 * Audits a shell import whose history is fetched in a separate call, so the access is logged
+	 * with its reason even if that call never comes (LE-387).
+	 */
+	public void logShellImport(String patientUuid, String reason) {
+		store.logFetch(currentUserId(), patientUuid, reason, RemoteHistoryStore.SHELL, 0, now());
+	}
+
+	/**
+	 * Refreshes now, at the user's request: the import's last step and the chart's Refresh. Answers
+	 * with what happened and the state of the cache, never the cached records themselves, so it
+	 * can be offered to a Records Officer who may import but not view.
+	 *
+	 * @return {@code {patientUuid, attempt, history, status, facilityCount, fetchedAt}}
+	 */
+	public ObjectNode refreshNow(String patientUuid, String reason) {
+		Attempt attempt = refresh(patientUuid, reason, CentralClient.DEFAULT_TIMEOUT_MS);
+		Date lastFetched = store.lastSuccessfulFetch(patientUuid);
+		List<CachedSource> cached = store.findByPatient(patientUuid);
+		return refreshResponse(patientUuid, attempt,
+		    HistoryStatus.of(lastFetched, now(), maxAgeMs(), attempt), lastFetched, cached.size());
+	}
+
+	/** Builds the refresh response; separate so its shape is tested on its own. */
+	static ObjectNode refreshResponse(String patientUuid, Attempt attempt, HistoryStatus status, Date fetchedAt,
+	        int facilityCount) {
+		ObjectNode out = MAPPER.createObjectNode();
+		out.put("patientUuid", patientUuid);
+		out.put("attempt", attempt.name().toLowerCase());
+		out.put("history", attempt == Attempt.OK ? "retrieved" : "notRetrieved");
+		out.put("status", status.code());
+		out.put("facilityCount", facilityCount);
+		if (fetchedAt == null) {
+			out.putNull("fetchedAt");
+		} else {
+			out.put("fetchedAt", iso(fetchedAt));
+		}
+		return out;
+	}
+
+	/**
 	 * The chart's read: refreshes first when the cache is older than the configured age (or was
 	 * never filled) and central is configured, then always answers from the cache.
 	 *
-	 * @return {@code {patientUuid, status, centralReachable, fetchedAt, ageSeconds, sources}}
+	 * @return {@code {patientUuid, imported, status, centralReachable, fetchedAt, ageSeconds, sources}};
+	 *         for a patient never imported only {@code {patientUuid, imported: false}}, and central is
+	 *         not asked (nothing to show, so nothing is accessed or audited)
 	 */
 	public ObjectNode read(String patientUuid) {
+		if (!isImported(patientUuid)) {
+			ObjectNode out = MAPPER.createObjectNode();
+			out.put("patientUuid", patientUuid);
+			out.put("imported", false);
+			return out;
+		}
 		Date lastFetched = store.lastSuccessfulFetch(patientUuid);
 		Attempt attempt = Attempt.NONE;
 		if (!HistoryStatus.isFresh(lastFetched, now(), maxAgeMs()) && central().isEnabled()) {
@@ -147,11 +195,17 @@ public class FacilityHistoryService {
 		    HistoryStatus.centralReachable(attempt), lastFetched, now, cached);
 	}
 
+	/** Whether the patient came here through Remote Search; only they have other facilities' history. */
+	public boolean isImported(String patientUuid) {
+		return store.wasImported(patientUuid);
+	}
+
 	/** Builds the read response; separate so its shape is tested on its own. */
 	static ObjectNode response(String patientUuid, HistoryStatus status, Boolean centralReachable, Date fetchedAt,
 	        Date now, List<CachedSource> cached) {
 		ObjectNode out = MAPPER.createObjectNode();
 		out.put("patientUuid", patientUuid);
+		out.put("imported", true);
 		out.put("status", status.code());
 		if (centralReachable == null) {
 			out.putNull("centralReachable");
