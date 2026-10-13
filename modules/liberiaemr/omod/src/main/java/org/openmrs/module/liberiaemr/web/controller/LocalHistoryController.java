@@ -55,10 +55,10 @@ public class LocalHistoryController {
 	private FacilityHistoryService facilityHistoryService;
 
 	/**
-	 * @return 200 with {@code status}, {@code centralReachable}, {@code fetchedAt}, {@code ageSeconds}
-	 *         and the cached {@code sources}; 400 for a bad UUID; 403 without View Remote History or
-	 *         Get Patients; 404 for a
-	 *         patient who is not at this facility
+	 * @return 200 with {@code imported}, {@code status}, {@code centralReachable}, {@code fetchedAt},
+	 *         {@code ageSeconds} and the cached {@code sources} ({@code imported: false} alone for a
+	 *         patient never imported); 400 for a bad UUID; 403 without View Remote History or Get
+	 *         Patients; 404 for a patient who is not at this facility
 	 */
 	@RequestMapping(value = "/{patientUuid}", method = RequestMethod.GET)
 	@ResponseBody
@@ -90,7 +90,7 @@ public class LocalHistoryController {
 	 * @return 200 with {@code attempt}, {@code history}, {@code status}, {@code facilityCount} and
 	 *         {@code fetchedAt}, whether or not central answered; 400 for a bad UUID; 403 without View
 	 *         Remote History or Import Remote Patient, or without Get Patients; 404 for a patient who
-	 *         is not at this facility
+	 *         is not at this facility or was never imported
 	 */
 	@RequestMapping(value = "/{patientUuid}/refresh", method = RequestMethod.POST)
 	@ResponseBody
@@ -110,6 +110,10 @@ public class LocalHistoryController {
 		String uuid = patientUuid.trim();
 		if (Context.getPatientService().getPatientByUuid(uuid) == null) {
 			return error(HttpStatus.NOT_FOUND, "No patient " + uuid + " at this facility");
+		}
+		// Only imported patients: refreshing anyone else would pull history nobody asked for.
+		if (!facilityHistoryService.isImported(uuid)) {
+			return error(HttpStatus.NOT_FOUND, "Patient " + uuid + " was not imported through Remote Search");
 		}
 		Object given = payload == null ? null : payload.get("reason");
 		String reason = given instanceof String && !((String) given).trim().isEmpty() ? ((String) given).trim()

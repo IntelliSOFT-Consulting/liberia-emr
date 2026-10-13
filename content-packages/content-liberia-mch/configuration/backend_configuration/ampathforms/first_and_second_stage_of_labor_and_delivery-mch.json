@@ -79,14 +79,14 @@
                 "concept": "${var.concept.ciel.diastolic-bp.uuid}",
                 "rendering": "number",
                 "min": 0,
-                "max": 200,
+                "max": 150,
                 "step": 1
               },
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 200)",
-                  "message": "Value must be between 0 and 200"
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150)",
+                  "message": "Value must be between 0 and 150."
                 }
               ]
             }

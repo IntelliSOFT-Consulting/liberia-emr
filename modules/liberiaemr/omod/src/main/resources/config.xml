@@ -70,11 +70,15 @@
 		labonfhir: aware of, never required. Starting it first means its liquibase has created
 		its scheduled tasks before LabOnFhirTasks turns them off (the LIS integration is out of
 		scope, LE-380).
+
+		patientflags: aware of, never required. Central evaluates the ANC danger-sign flags for the
+		last ANC contact it shares (LE-386); without the module the contact is sent without them.
 	-->
 	<aware_of_modules>
 		<aware_of_module>org.openmrs.module.legacyui</aware_of_module>
 		<aware_of_module>org.openmrs.module.auditlog</aware_of_module>
 		<aware_of_module>org.openmrs.module.labonfhir</aware_of_module>
+		<aware_of_module>org.openmrs.module.patientflags</aware_of_module>
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->
