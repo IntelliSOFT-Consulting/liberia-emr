@@ -28,9 +28,9 @@ describe('import progress dialog', () => {
 
     const steps = screen.getAllByRole('listitem');
     expect(steps.map((step) => step.textContent)).toEqual([
-      'Connecting to National Registry...',
-      'Fetching Patient Record...',
-      'Importing to local system',
+      'Connecting to National Registry... (done)',
+      'Fetching Patient Record... (done)',
+      'Importing to local system (in progress)',
     ]);
     expect(steps[2]).toHaveAttribute('aria-current', 'step');
     expect(steps[0]).not.toHaveAttribute('aria-current');
@@ -39,8 +39,17 @@ describe('import progress dialog', () => {
   it('reports progress to assistive technology', () => {
     const { container } = renderWith(['done', 'done', 'active']);
 
-    expect(screen.getByRole('progressbar', { name: 'Import progress' })).toHaveAttribute('aria-valuenow', '83');
+    const progressbar = screen.getByRole('progressbar', { name: 'Import progress' });
+    expect(progressbar).toHaveAttribute('aria-valuenow', '83');
+    expect(progressbar).toHaveAttribute('aria-valuetext', '83% · Importing to local system');
     expect(container.firstChild).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('announces the running step and takes focus from the gone Import & Open button', () => {
+    const { container } = renderWith(['done', 'active', 'pending']);
+
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('Fetching Patient Record...');
+    expect(container.firstChild).toHaveFocus();
   });
 
   it('has no close button and stops Escape from reaching the modal system', () => {
