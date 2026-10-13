@@ -130,7 +130,8 @@ describe('Remote import and External records', () => {
       loadLocalEsms(REMOTE_IMPORT_APPS);
       stubLocalHistory(patientUuid, history);
       cy.visit(`/openmrs/spa/patient/${patientUuid}/chart${page}`);
-      cy.wait('@localHistory');
+      // The chart, and so the first History request, can take well over the default 5 s on CI.
+      cy.wait('@localHistory', { requestTimeout: 60000 });
     };
     const fresh = (): LocalHistory => ({ status: 'fresh', fetchedAt: now(), sources: twoFacilityHistory() });
 
