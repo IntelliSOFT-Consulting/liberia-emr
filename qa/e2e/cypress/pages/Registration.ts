@@ -71,10 +71,10 @@ class RegistrationPage {
        
 
     enterFirstName(firstName: string) {
-        cy.wait(1000); 
-        cy.get('#givenName', { timeout: 10000 })
-        .should('be.visible')
-        .clear().type(firstName);
+        cy.get('#givenName', { timeout: 30000 })
+            .should('be.visible')
+            .clear()
+            .type(firstName);
     }
 
     enterFamilyName(familyName: string) {

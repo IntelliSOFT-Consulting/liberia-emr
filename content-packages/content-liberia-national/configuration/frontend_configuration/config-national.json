@@ -297,6 +297,7 @@
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
+          "liberia-external-records-summary",
           "patient-flags-list",
           "liberia-obs-widget",
           "vitals-overview-widget",

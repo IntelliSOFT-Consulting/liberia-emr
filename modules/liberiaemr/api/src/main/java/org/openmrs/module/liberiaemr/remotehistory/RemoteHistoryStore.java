@@ -45,6 +45,16 @@ public class RemoteHistoryStore {
 
 	public static final String ERROR = "ERROR";
 
+	/**
+	 * A patient shell was imported and its history is fetched in a separate call (LE-387). Logged
+	 * so the import is audited with its reason even if that call never comes. Not an answer from
+	 * central's history endpoint, so it never counts towards the age of the cache.
+	 */
+	public static final String SHELL = "SHELL";
+
+	/** The reason logged for fetches no user asked for (chart open, Refresh). */
+	public static final String ROUTINE_REFRESH = "routine refresh";
+
 	/** One cached source facility's bundle. */
 	public static class CachedSource {
 
@@ -127,6 +137,30 @@ public class RemoteHistoryStore {
 					insert.executeBatch();
 				}
 				return null;
+			}
+		});
+	}
+
+	/**
+	 * @return whether the patient came here through Remote Search: an import logs its shell, or a
+	 *         fetch with the user's reason; routine refreshes alone don't count
+	 */
+	@Transactional(readOnly = true)
+	public boolean wasImported(final String patientUuid) {
+		return work(new ReturningWork<Boolean>() {
+
+			@Override
+			public Boolean execute(Connection connection) throws SQLException {
+				try (PreparedStatement select = connection.prepareStatement("SELECT 1 FROM liberiaemr_remote_history_fetch "
+				        + "WHERE patient_uuid = ? AND (outcome = ? OR reason <> ?)")) {
+					select.setString(1, patientUuid);
+					select.setString(2, SHELL);
+					select.setString(3, ROUTINE_REFRESH);
+					select.setMaxRows(1);
+					try (ResultSet rs = select.executeQuery()) {
+						return rs.next();
+					}
+				}
 			}
 		});
 	}

@@ -65,7 +65,7 @@ export const configSchema = {
     _type: Type.String,
     _default: '',
     _description:
-      'Shown when every central match is already registered at this facility. {{count}} is how many, {{query}} the search text. Built-in: "{{count}} matching patient(s) on the central server are already at this facility. See the local results.".',
+      'Shown when every central match is already at this facility and the server only counts them. {{count}} is how many, {{query}} the search text. Built-in: "{{count}} matching patient(s) on the central server are already at this facility. See the local results.".',
   },
   minCharactersMessage: {
     _type: Type.String,
@@ -88,7 +88,7 @@ export const configSchema = {
     _type: Type.String,
     _default: '',
     _description:
-      'Shown instead of the toggle when the browser is offline. Built-in: "Remote Search is unavailable while offline".',
+      'Shown instead of the toggle when the browser is offline. Built-in: "Remote Search is unavailable offline. This facility cannot reach central.".',
   },
   importSuccessMessage: {
     _type: Type.String,

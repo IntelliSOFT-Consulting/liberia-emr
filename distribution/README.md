@@ -123,8 +123,10 @@ Besides the database, release and sync settings, the facility and central templa
   a facility leaves it empty, and the sync is then unavailable there. Prefer
   `LIBERIAEMR_MFL_PASSWORD_FILE` to the plain variable. `LIBERIAEMR_MFL_ALLOWED_HOSTS`
   defaults to `dhis2.moh.gov.lr`.
-- `LIBERIAEMR_SYNC_MONITORING_URL` (central only): the Prometheus the sync status endpoint
-  reads, `http://prometheus:9090` by default. Empty turns the page off.
+- `LIBERIAEMR_SYNC_MONITORING_URL`: the Prometheus the sync status endpoint reads,
+  `http://prometheus:9090` by default in both compose files. Central shows the national view
+  from it; a facility shows its own sender, and only while it runs the `sync` profile. Empty
+  turns the page off.
 - `SYNC_CENTRAL_URL`, `SYNC_HTTP_PROXY`, `SYNC_TUNNEL_CA_FILE` (facility, `sync` profile):
   carry sync to central over HTTPS on 443 through the `sync-tunnel` service (ADR 0014). Empty
   `SYNC_CENTRAL_URL` leaves it idle.

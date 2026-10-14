@@ -144,13 +144,16 @@ public class RemoteSearchServiceTest {
 	// --- search -----------------------------------------------------------------------------------
 
 	@Test
-	public void searchLeavesOutPatientsAlreadyHereAndCountsThem() throws Exception {
+	public void searchKeepsPatientsAlreadyHereFlaggedAndCountsThem() throws Exception {
 		body = "{\"results\":[" + patient(LOCAL_UUID) + "," + patient(NEW_UUID) + "]}";
 
 		SearchOutcome outcome = service.searchPatients("kate");
 
-		assertEquals(1, outcome.getResults().size());
-		assertEquals(NEW_UUID, outcome.getResults().get(0).path("uuid").asText());
+		assertEquals(2, outcome.getResults().size());
+		assertEquals(LOCAL_UUID, outcome.getResults().get(0).path("uuid").asText());
+		assertTrue(outcome.getResults().get(0).path("alreadyLocal").asBoolean());
+		assertEquals(NEW_UUID, outcome.getResults().get(1).path("uuid").asText());
+		assertFalse(outcome.getResults().get(1).path("alreadyLocal").asBoolean());
 		assertEquals(1, outcome.getAlreadyLocalCount());
 	}
 
@@ -161,16 +164,18 @@ public class RemoteSearchServiceTest {
 		SearchOutcome outcome = service.searchPatients("kate");
 
 		assertEquals(1, outcome.getResults().size());
+		assertFalse(outcome.getResults().get(0).path("alreadyLocal").asBoolean());
 		assertEquals(0, outcome.getAlreadyLocalCount());
 	}
 
 	@Test
-	public void searchWhereEveryMatchIsLocalIsEmptyButCounted() throws Exception {
+	public void searchWhereEveryMatchIsLocalListsThemAll() throws Exception {
 		body = "{\"results\":[" + patient(LOCAL_UUID) + "]}";
 
 		SearchOutcome outcome = service.searchPatients("kate");
 
-		assertTrue(outcome.getResults().isEmpty());
+		assertEquals(1, outcome.getResults().size());
+		assertTrue(outcome.getResults().get(0).path("alreadyLocal").asBoolean());
 		assertEquals(1, outcome.getAlreadyLocalCount());
 	}
 
@@ -218,6 +223,57 @@ public class RemoteSearchServiceTest {
 	}
 
 	// --- central is only ever read ----------------------------------------------------------------
+
+	// --- ping (import step 1, LE-387) -------------------------------------------------------------
+
+	@Test
+	public void pingReadsCentralsSessionWithTheServiceAccount() throws Exception {
+		body = "{\"authenticated\":true}";
+
+		service.pingCentral();
+
+		assertEquals("/ws/rest/v1/session", requests.get(0));
+		assertEquals("GET", methods.get(0));
+		assertTrue(authorization.startsWith("Basic "));
+	}
+
+	@Test
+	public void pingFailsWhenCentralRejectsTheCredentials() throws Exception {
+		body = "{\"authenticated\":false}";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertFalse(e.isNotConfigured());
+			assertTrue(e.getMessage().contains("credentials"));
+		}
+	}
+
+	@Test
+	public void pingFailsWhenCentralCannotBeReached() throws Exception {
+		remoteUrl = "http://127.0.0.1:1";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertFalse(e.isNotConfigured());
+		}
+	}
+
+	@Test
+	public void pingSaysNotConfiguredWhenThereIsNoCentralUrl() throws Exception {
+		remoteUrl = "";
+		try {
+			service.pingCentral();
+			fail("expected RemoteSearchException");
+		}
+		catch (RemoteSearchException e) {
+			assertTrue(e.isNotConfigured());
+		}
+		assertTrue(requests.isEmpty());
+	}
 
 	@Test
 	public void everyCallToCentralIsAGet() throws Exception {

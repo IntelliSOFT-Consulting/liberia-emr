@@ -137,6 +137,10 @@ services:
       LIBERIAEMR_REMOTE_PASSWORD: ${LIBERIAEMR_REMOTE_PASSWORD:-}
       LIBERIAEMR_REMOTE_PASSWORD_FILE: ${LIBERIAEMR_REMOTE_PASSWORD_FILE:-}
       LIBERIAEMR_REMOTE_ALLOWED_HOSTS: ${LIBERIAEMR_REMOTE_ALLOWED_HOSTS:-}
+      # This facility's own sync monitoring, read by the sync status page's facility view. It
+      # runs with the sync profile only; without it the name does not resolve and the page
+      # stays off. Empty turns the page off here as well.
+      LIBERIAEMR_SYNC_MONITORING_URL: ${LIBERIAEMR_SYNC_MONITORING_URL:-http://prometheus:9090}
       # Reporting ETL (mamba-etl-liberiaemr, ADR 0010 decision 4). startup-init.sh maps
       # OMRS_EXTRA_A_B__C to runtime property a.b_c and re-applies it on every start. The
       # schema name is fixed: binlog-ignore-db above and the initdb grants name it too. The

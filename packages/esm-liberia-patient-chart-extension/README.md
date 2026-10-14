@@ -40,6 +40,34 @@ name, not under the package name.
 Only one instance is configured today: the schema has a single key, so a second programme
 cannot yet be added without a code change.
 
+## External records (LE-386)
+
+`src/external-records/` is the data layer for an imported patient's history from other
+facilities. It reads only this facility's copy, never central directly.
+
+- `useExternalRecords(patientUuid)` → `{ isImported, status, asOf, facilities, sections, refresh() }`,
+  from `GET /ws/rest/v1/liberiaemr/remotehistory/local/{uuid}`. Nothing is fetched without
+  `View Remote History`; `isImported` is false for a patient who never came through Remote Search.
+- `status`: `fresh | offline | stale | notRetrieved | unavailableOffline | empty`.
+- `refresh()` posts to `…/local/{uuid}/refresh`, re-reads, and shows the outcome snackbar.
+- `formatAsOf()`: `02-Oct-2026, 08:14 (2 days ago)`, from the framework's `formatDatetime` and `duration`, so it follows the user's locale.
+
+In the chart (all gated by `View Remote History`, `offline: true`):
+
+| Extension | Slot |
+| --- | --- |
+| `liberia-external-records-summary` (card) | `patient-chart-summary-dashboard-slot`, first via `config-national.json` |
+| `liberia-external-records-banner-tag` | `patient-banner-tags-slot`, hidden in search results and when no facility has records |
+| `liberia-external-records-dashboard-link` | `patient-chart-dashboard-slot`, `order: 5.5` (directly below Visits, 5) |
+| `liberia-external-records-dashboard` (page) | `patient-chart-external-records-dashboard-slot`: every section, facility filter, Last ANC contact, encounter index |
+
+Reusable pieces: `external-records-sections.ts` defines each section's columns once;
+`ExternalRecordsTable` renders any section (EXTERNAL / READ ONLY tags, Facility column,
+paging); `ExternalRecordsStatusView` is the status bar or empty state. Config:
+`externalRecords.summarySections` (at most two, default `["allergies", "conditions"]`),
+`externalRecords.dashboardSections` (order of the dashboard, default all), `dashboardIcon` and
+`pageSize` (default 5).
+
 ## Development
 
 ```bash
@@ -53,8 +81,9 @@ yarn build
 `../../distribution/frontend/config/config-national.json`, which does not exist; the file is
 `content-packages/content-liberia-national/configuration/frontend_configuration/config-national.json`.
 
-There are no tests: `yarn test` only echoes. `yarn lint` and `yarn verify` call `eslint` and
-`turbo`, neither of which is a dependency of this package.
+`yarn test` runs the pure-logic tests with Node's test runner (`node --test`, TypeScript
+stripped), so they need no install. `yarn lint` and `yarn verify` call `eslint` and `turbo`,
+neither of which is a dependency of this package.
 
 ## Build and publish
 

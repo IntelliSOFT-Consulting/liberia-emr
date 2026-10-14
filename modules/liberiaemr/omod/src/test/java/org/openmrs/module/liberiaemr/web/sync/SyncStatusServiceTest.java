@@ -136,6 +136,58 @@ public class SyncStatusServiceTest {
 		assertTrue(status.size() == 1);
 	}
 	
+	@Test
+	public void readsAFacilitysOwnSender() {
+		Map<String, Object> status = service.readFacilityStatus(base);
+		
+		// The national view stays off, so a page from before the facility view hides itself.
+		assertEquals(Boolean.FALSE, status.get("enabled"));
+		assertEquals(Boolean.TRUE, status.get("available"));
+		
+		@SuppressWarnings("unchecked")
+		Map<String, Object> facility = (Map<String, Object>) status.get("facility");
+		assertEquals(Boolean.TRUE, facility.get("senderRunning"));
+		assertEquals(Boolean.TRUE, facility.get("databaseReachable"));
+		assertEquals(Boolean.FALSE, facility.get("connectedToCentral"));
+		assertEquals(Long.valueOf(40L), facility.get("recordsWaiting"));
+		assertEquals(Long.valueOf(6L), facility.get("recordsRetrying"));
+		assertEquals(Boolean.FALSE, facility.get("initialLoad"));
+		assertEquals(Long.valueOf(1790700000L), facility.get("lastCaptured"));
+		assertEquals(Long.valueOf(0L), facility.get("captureStalledSeconds"));
+		
+		@SuppressWarnings("unchecked")
+		List<String> alerts = (List<String>) status.get("alerts");
+		assertEquals("SyncFacilitySilent", alerts.get(0));
+	}
+	
+	@Test
+	public void saysSoWhenAFacilitysMonitoringCannotBeReached() {
+		Map<String, Object> status = service.readFacilityStatus("http://127.0.0.1:1");
+		
+		assertEquals(Boolean.FALSE, status.get("enabled"));
+		assertEquals(Boolean.FALSE, status.get("available"));
+		assertTrue(status.containsKey("facility"));
+	}
+	
+	@Test
+	public void isOffAtAFacilityThatDoesNotRunSync() {
+		// Without the sync profile the facility's monitoring is not there, so its name does not
+		// resolve. .invalid never resolves (RFC 6761).
+		Map<String, Object> status = service.readFacilityStatus("http://prometheus.invalid:9090");
+		
+		assertEquals(Boolean.FALSE, status.get("enabled"));
+		assertFalse(status.containsKey("facility"));
+		assertFalse(status.containsKey("available"));
+	}
+	
+	@Test
+	public void isOffAtAFacilityWithoutAMonitoringAddress() {
+		Map<String, Object> status = service.readFacilityStatus("");
+		
+		assertEquals(Boolean.FALSE, status.get("enabled"));
+		assertFalse(status.containsKey("facility"));
+	}
+	
 	private static String answerFor(String query) {
 		if (query.contains("max_over_time(")) {
 			// When each facility last sent: careysburg recently, barnersville days ago; bong,
@@ -167,6 +219,26 @@ public class SyncStatusServiceTest {
 		}
 		if (query.contains("sync_recon_digest_taken_seconds")) {
 			return samples("facility", "careysburg", "1790300000", "barnersville", "1790290000");
+		}
+		// A facility's own sender, through its monitoring: running and reading its database,
+		// but cannot reach central, with records queued behind that.
+		if (query.contains("sync-sender") || query.contains("datasource_status_openmrs")) {
+			return scalar("1");
+		}
+		if (query.contains("sync_sender_broker_connected")) {
+			return scalar("0");
+		}
+		if (query.contains("openmrs_dbsync_watcher_db_events")) {
+			return scalar("40");
+		}
+		if (query.contains("openmrs_dbsync_watcher_errors")) {
+			return scalar("6");
+		}
+		if (query.contains("sync_capture_snapshot") || query.contains("sync_capture_stalled_seconds")) {
+			return scalar("0");
+		}
+		if (query.contains("sync_capture_last_event_seconds")) {
+			return scalar("1790700000");
 		}
 		if (query.contains("DB-SYNC-REC")) {
 			return scalar("3");
