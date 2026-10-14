@@ -11,7 +11,7 @@ is recorded against the existing concepts, using the variables — never a bare 
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
 | ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`, v1.2) |
-| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`) |
+| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`, v1.1) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Mother PNC | `${var.form.pnc-visit.uuid}` | Postnatal Visit | released (`pnc-visit.json`, v1.0) |
 | Newborn PNC | `${var.form.newborn-pnc.uuid}` | Postnatal Visit | released (`newborn-pnc.json`, v1.0) |
