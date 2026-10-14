@@ -57,6 +57,9 @@ class RemoteHistoryAssembler {
 	/** Tags the two ANC contact summary observations, the only Observations the response carries. */
 	static final String ANC_SUMMARY_TAG = "anc-contact-summary";
 
+	/** Marks an ANC danger-sign flag that applied at the last ANC contact (LE-386). */
+	static final String ANC_RISK_FLAG_TAG = "anc-risk-flag";
+
 	static final String STATE_EXTENSION = "https://liberiaemr.moh.gov.lr/fhir/StructureDefinition/programme-current-state";
 
 	/** One patient record and what central holds against it. */
@@ -77,6 +80,9 @@ class RemoteHistoryAssembler {
 
 		final List<Encounter> encounters = new ArrayList<Encounter>();
 
+		/** Names of the ANC danger-sign flags that apply to this patient. */
+		final List<String> ancRiskFlags = new ArrayList<String>();
+
 		Record(Patient patient) {
 			this.patient = patient;
 		}
@@ -96,6 +102,9 @@ class RemoteHistoryAssembler {
 		String vaccineConceptUuid;
 
 		String vaccinationDateConceptUuid;
+
+		/** Immunisation sequence number (CIEL 1418): the dose. */
+		String immunizationSequenceConceptUuid;
 
 		/** Concepts the MOH names as sensitive: a record coded with one is never returned. */
 		Set<String> excludedConceptUuids = Collections.emptySet();
@@ -174,6 +183,9 @@ class RemoteHistoryAssembler {
 				Location at = facilityOf(lastAnc, home);
 				for (ObjectNode summary : ancContactSummary(lastAnc)) {
 					add(sources, requesting, at, summary);
+				}
+				for (int i = 0; i < record.ancRiskFlags.size(); i++) {
+					add(sources, requesting, at, ancRiskFlag(lastAnc, i, record.ancRiskFlags.get(i)));
 				}
 			}
 		}
@@ -306,6 +318,10 @@ class RemoteHistoryAssembler {
 		Obs date = member(group, scope.vaccinationDateConceptUuid);
 		putDate(r, "occurrenceDateTime", date != null && date.getValueDatetime() != null ? date.getValueDatetime()
 		        : group.getObsDatetime());
+		Obs sequence = member(group, scope.immunizationSequenceConceptUuid);
+		if (sequence != null && sequence.getValueNumeric() != null && sequence.getValueNumeric() >= 1) {
+			r.putArray("protocolApplied").addObject().put("doseNumberPositiveInt", sequence.getValueNumeric().intValue());
+		}
 		return r;
 	}
 
@@ -371,6 +387,21 @@ class RemoteHistoryAssembler {
 			out.add(r);
 		}
 		return out;
+	}
+
+	/** One ANC danger-sign flag, attached to the last ANC contact it is shown with. */
+	private static ObjectNode ancRiskFlag(Encounter encounter, int index, String name) {
+		ObjectNode r = resource("Observation", encounter.getUuid() + "-risk-" + index, null);
+		ArrayNode tags = r.putObject("meta").putArray("tag");
+		tags.addObject().put("code", ANC_SUMMARY_TAG);
+		tags.addObject().put("code", ANC_RISK_FLAG_TAG);
+		r.putObject("subject").put("reference", "Patient/" + encounter.getPatient().getUuid());
+		r.put("status", "final");
+		r.putObject("code").put("text", "ANC risk flag");
+		r.putObject("encounter").put("reference", "Encounter/" + encounter.getUuid());
+		putDate(r, "effectiveDateTime", encounter.getEncounterDatetime());
+		r.put("valueString", name);
+		return r;
 	}
 
 	// --- helpers ----------------------------------------------------------------------------------

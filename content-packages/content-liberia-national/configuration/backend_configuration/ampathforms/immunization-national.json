@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -102,7 +102,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
                 "rendering": "date"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && !isDateAfterSimple(myValue, today())",
+                  "message": "Return date must be a future date."
+                }
+              ]
             }
           ]
         }
