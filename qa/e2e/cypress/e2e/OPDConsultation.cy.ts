@@ -17,6 +17,15 @@ describe('OPD Consultation form', () => {
 
     it('opens with the expected contract', () => {
         opdConsultationForm.verifyFormContract();
+        opdConsultationForm.verifyPatientCategory('First Visit');
+    });
+
+    it('allows the automatically selected patient category to be overridden', () => {
+        opdConsultationForm.verifyPatientCategoryOverride();
+    });
+
+    it('allows clinician selection only for a backdated encounter while keeping location read-only', () => {
+        opdConsultationForm.verifyBackdatedClinicianSelection();
     });
 
     it('validates the vitals input contract', () => {
@@ -47,7 +56,12 @@ describe('OPD Consultation form', () => {
         opdConsultationForm.verifyOutcomeDispositionReferralFields();
     });
 
-    it('saves a complete valid consultation form', () => {
+    it('saves with automatic encounter context and defaults the next consultation to follow-up', () => {
         opdConsultationForm.fillCompleteValidFormAndSave();
+        cy.reload();
+        opdConsultationForm.openClinicalForms();
+        opdConsultationForm.selectForm();
+        opdConsultationForm.verifyPatientCategory('Follow-up Visit');
+        opdConsultationForm.verifyAutomaticEncounterContext();
     });
 });
