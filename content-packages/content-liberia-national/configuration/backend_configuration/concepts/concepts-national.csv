@@ -143,7 +143,7 @@ ${var.concept.national.date-of-onset-of-the-adverse-events.uuid},,Date of onset 
 ${var.concept.national.complaint-experienced.uuid},,Complaint experienced,Complaint experienced,Complaint experienced,Question,Text,,,,
 ${var.concept.national.registration-fee.uuid},,Registration Fee,Registration Fee,Reg Fee,Misc,N/A,,,,
 ${var.concept.national.tb-screening-service.uuid},,TB Screening Service,TB Screening Service,Service for TB Screening queue,Misc,N/A,,,,
-${var.concept.national.anc-service.uuid},true,ANC Service,ANC Service,Service for ANC queue,Misc,N/A,,,,
+${var.concept.national.anc-service.uuid},,ANC Service,ANC Service,Service for ANC queue,Misc,N/A,,,,
 ${var.concept.national.general-consultation-service.uuid},,General Consultation Service,General Consultation Service,Service for General Consultation queue,Misc,N/A,,,,
 ${var.concept.national.anc-enrolment-service.uuid},,ANC Enrolment Service,ANC Enrolment Service,Service for ANC Enrolment queue,Misc,N/A,,,,
 ${var.concept.national.anc-followup-service.uuid},,ANC Follow-up Service,ANC Follow-up Service,Service for ANC Follow-up queue,Misc,N/A,,,,
