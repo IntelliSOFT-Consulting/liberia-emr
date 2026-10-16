@@ -355,7 +355,10 @@ describe('runtime UUID configuration', () => {
     ];
     assert.deepEqual(raw.nationalFormUuids, formVariables.map((name) => `\${${name}}`));
     assert.deepEqual(configured.nationalFormUuids, formVariables.map((name) => properties.get(name)));
-    assert.equal(properties.get('var.form.immunization.v1-3.uuid'), currentFormUuid);
+    for (const historical of formVariables.slice(0, -1)) {
+      assert.notEqual(properties.get(historical), currentFormUuid, historical);
+    }
+    assert.equal(configured.nationalFormUuids.at(-1), currentFormUuid);
     assert.equal(raw.vaccineQuestionUuid, '${var.concept.national.vaccine-name.uuid}');
     assert.equal(configured.vaccineQuestionUuid, properties.get('var.concept.national.vaccine-name.uuid'));
     assert.equal(uuidLiteral.test(JSON.stringify(raw)), false);
@@ -391,8 +394,8 @@ describe('runtime UUID configuration', () => {
     assert.equal(row.dose.prerequisite!.dose.vaccineConceptUuid, siteOpv1);
     assert.equal(row.status, 'DUE');
   });
-  it('recognizes Immunization v1.1, v1.2 and v1.3 and ignores an unrelated form', () => {
-    for (const variable of ['var.form.immunization.v1-0.uuid', 'var.form.immunization.v1-1.uuid', 'var.form.immunization.v1-2.uuid', 'var.form.immunization.v1-3.uuid']) {
+  it('recognizes Immunization v1.0 through v1.3 and the current form and ignores an unrelated form', () => {
+    for (const variable of ['var.form.immunization.v1-0.uuid', 'var.form.immunization.v1-1.uuid', 'var.form.immunization.v1-2.uuid', 'var.form.immunization.v1-3.uuid', 'var.form.immunization.uuid']) {
       const history = normalized([], [national('OPV1', day(42), configured.vaccineConceptUuids.OPV1, properties.get(variable))]);
       assert.equal(history.issues.length, 0, variable);
       assert.equal(history.doses[0].canonicalDoseId, 'OPV1');

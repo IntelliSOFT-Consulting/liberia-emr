@@ -110,6 +110,15 @@ public class DeployScriptTest {
 	}
 
 	@Test
+	public void vitaminAFactCountsEveryImmunizationFormVersion() {
+		String fact = lastDefinition("sp_mamba_fact_nutrition_vitamin_a()");
+		assertTrue(fact.contains("f.name = 'Immunization'"));
+		assertTrue(fact.contains("f.version IN ('1.1', '1.2', '1.3', '1.4')"));
+		assertTrue(fact.contains("36f41158-2060-399d-959b-f99718b154be"));
+		assertFalse(fact.contains("ef.form_uuid = "));
+	}
+
+	@Test
 	public void stillSchedulesTheEtl() {
 		assertTrue(script.contains("CREATE EVENT IF NOT EXISTS _mamba_etl_scheduler_event"));
 		assertTrue(script.contains("CALL sp_mamba_etl_setup(?, ?, ?, ?, ?, ?, ?)"));

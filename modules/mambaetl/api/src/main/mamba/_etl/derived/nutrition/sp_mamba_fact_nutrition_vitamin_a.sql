@@ -3,7 +3,11 @@
 --
 --   source 'immunization_form'  a live `Supplementary immunization activities` = Vit.-A.Blue
 --                               100,000iu obs on the Immunization form. The form saves under the
---                               shared Consultation type, so it is keyed on the form variable.
+--                               shared Consultation type, so it is keyed on the form, not the
+--                               encounter type. A new form version is a new form uuid. Every
+--                               shipped version counts: v1.1, v1.2, v1.3 and v1.4, matched on
+--                               form name and version the way `3. Family Planning` v1.0 is,
+--                               plus ${var.form.immunization.uuid} for the current form.
 --   source 'drug_order'         a live, non-DISCONTINUE drug order for a Vitamin A capsule drug
 --                               (100 000 IU or 200 000 IU, by drug variable). Its event time is
 --                               date_activated, and its location is the order's encounter's.
@@ -70,6 +74,7 @@ FROM mamba_source_db.obs o
          INNER JOIN mamba_source_db.concept a ON a.concept_id = o.value_coded
          INNER JOIN mamba_source_db.encounter e ON e.encounter_id = o.encounter_id
          INNER JOIN mamba_dim_encounter_form ef ON ef.encounter_id = e.encounter_id
+         INNER JOIN mamba_source_db.form f ON f.form_id = ef.form_id
          INNER JOIN mamba_dim_encounter_location el ON el.encounter_id = e.encounter_id
          INNER JOIN mamba_dim_person_cpi pc ON pc.person_id = e.patient_id
          INNER JOIN mamba_source_db.person p ON p.person_id = e.patient_id
@@ -78,7 +83,9 @@ WHERE o.voided = 0
   AND e.voided = 0
   AND q.uuid = '${var.concept.national.supplementary-immunization-activities.uuid}'
   AND a.uuid = '${var.concept.national.vit-a-blue-100-000iu.uuid}'
-  AND ef.form_uuid = '${var.form.immunization.uuid}';
+  AND f.name = 'Immunization'
+  AND (f.version IN ('1.1', '1.2', '1.3', '1.4')
+    OR f.uuid = '${var.form.immunization.uuid}');
 
 INSERT INTO mamba_fact_nutrition_vitamin_a (source, event_id, encounter_id, visit_id, client_id,
                                             person_key, birthdate, gender, event_datetime,
