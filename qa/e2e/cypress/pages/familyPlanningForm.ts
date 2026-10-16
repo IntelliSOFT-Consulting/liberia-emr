@@ -27,12 +27,37 @@ class FamilyPlanningFormPage {
     ) {}
 
     private checkOption(id: string) {
-        cy.get(`input[id="${id}"]`, { timeout: this.timeout }).should('not.be.disabled');
-        cy.get(`label[for="${id}"]`, { timeout: this.timeout })
-            .scrollIntoView()
-            .should('be.visible')
-            .click();
-        cy.get(`input[id="${id}"]`).should('be.checked');
+        // Carbon hides the input and the form engine keeps `checked` in React state.
+        // A label click can focus the question without the change event that state
+        // listens to, and the engine can clear that first selection on re-render.
+        // Re-query after each attempt and check again only while it is still unchecked.
+        this.ensureOptionChecked(`input[id="${id}"]`, 1);
+    }
+
+    private ensureOptionChecked(selector: string, attempt: number) {
+        const maxAttempts = 3;
+
+        cy.get(selector, { timeout: this.timeout }).should('not.be.disabled');
+        cy.get(selector).then(($input) => {
+            if (Cypress.dom.isAttached($input) && $input.is(':checked')) {
+                cy.get(selector).should('be.checked');
+                return;
+            }
+
+            cy.get(selector).check({ force: true });
+            cy.get(selector).then(($after) => {
+                if (Cypress.dom.isAttached($after) && $after.is(':checked')) {
+                    cy.get(selector).should('be.checked');
+                    return;
+                }
+                if (attempt >= maxAttempts) {
+                    cy.get(selector).should('be.checked');
+                    return;
+                }
+                cy.log(`${selector} was unchecked after attempt ${attempt}; checking again`);
+                cy.then(() => this.ensureOptionChecked(selector, attempt + 1));
+            });
+        });
     }
 
     openClinicalForms() {
@@ -216,17 +241,18 @@ class FamilyPlanningFormPage {
     }
 
     verifyLamIsNotADispensedOption() {
+        // Opening the list re-renders the combobox, so the option assertion and the
+        // close click must re-query instead of continuing inside within().
         cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout })
             .scrollIntoView()
-            .within(() => {
-                cy.get('button[role="combobox"]').click();
-                cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
-                    const labels = [...$options].map((option) => option.textContent?.trim());
-                    expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
-                    expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
-                });
-                cy.get('button[role="combobox"]').click();
-            });
+            .find('button[role="combobox"]')
+            .click();
+        cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
+            const labels = [...$options].map((option) => option.textContent?.trim());
+            expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
+            expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
+        });
+        cy.get('#familyPlanningMethodDispensed').find('button[role="combobox"]').click();
     }
 
     saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
@@ -255,6 +281,27 @@ class FamilyPlanningFormPage {
         this.selectClientType('New Family Planning Client');
         this.selectCounsellingDone('Yes');
         this.selectPurposeForCommodities();
+        // Choosing a purpose re-renders the form and can leave Method Record unmounted
+        // even though Counselling Done stays Yes. Restore it before the test continues.
+        this.ensureMethodRecordAfterPurpose();
+        cy.get('#chosenFamilyPlanningMethod', { timeout: this.timeout }).should('exist');
+    }
+
+    private ensureMethodRecordAfterPurpose(attempt = 1): void {
+        const maxAttempts = 3;
+        cy.get('body').then(($body) => {
+            if ($body.find('#chosenFamilyPlanningMethod').length) {
+                return;
+            }
+            if (attempt >= maxAttempts) {
+                throw new Error(`Method Record section did not render after ${maxAttempts} Counselling Done = Yes attempts`);
+            }
+            cy.log(`Method Record not rendered after purpose; re-selecting Counselling Done (attempt ${attempt + 1})`);
+            this.checkOption('counsellingDone-No');
+            this.checkOption('counsellingDone-Yes');
+            this.selectPurposeForCommodities();
+            this.ensureMethodRecordAfterPurpose(attempt + 1);
+        });
     }
 
     completeAndSubmitImplantVisit() {

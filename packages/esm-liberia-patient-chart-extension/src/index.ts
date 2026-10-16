@@ -14,6 +14,7 @@
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
+import { routineConfigSchema } from './immunizations/routine-config';
 import { configSchema } from './config-schema';
 import { currentPregnancyAncConfigSchema } from './forms/current-pregnancy-anc-config-schema';
 import { externalRecordsConfigSchema } from './external-records/external-records-config';
@@ -43,7 +44,11 @@ const options = {
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
   defineConfigSchema('liberia-immunization-history', configSchema);
-  defineConfigSchema(moduleName, { ...currentPregnancyAncConfigSchema, externalRecords: externalRecordsConfigSchema });
+  defineConfigSchema(moduleName, {
+    ...currentPregnancyAncConfigSchema,
+    routineImmunizations: routineConfigSchema,
+    externalRecords: externalRecordsConfigSchema,
+  });
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
@@ -100,5 +105,10 @@ export const externalRecordsDashboardLink = getAsyncLifecycle(
 
 export const externalRecordsDashboard = getAsyncLifecycle(
   () => import('./external-records/external-records-dashboard.extension'),
+  options,
+);
+
+export const routineImmunizationSchedule = getAsyncLifecycle(
+  () => import('./immunizations/routine-schedule.extension'),
   options,
 );

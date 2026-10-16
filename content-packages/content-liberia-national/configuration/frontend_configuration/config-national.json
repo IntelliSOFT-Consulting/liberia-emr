@@ -431,5 +431,48 @@
         "label": "Total Score"
       }
     ]
+  },
+  "_comment_routine_immunizations": [
+    "LE-559 schedule policy stays in the ESM. UUID metadata is runtime config.",
+    "vaccineConceptUuids is an object: a site can replace one dose key and the other national values remain.",
+    "nationalFormUuids is an array. Frontend config replaces arrays wholesale, so a site that sets",
+    "this key must list every Immunization form version it still wants counted.",
+    "var.form.immunization.uuid stays the current form. The v1-* variables are frozen historical identities.",
+    "The current variable is also in the list so the next version bump stays visible until it is frozen."
+  ],
+  "@liberiaemr/esm-liberia-patient-chart-extension": {
+    "routineImmunizations": {
+      "nationalFormUuids": [
+        "${var.form.immunization.v1-0.uuid}",
+        "${var.form.immunization.v1-1.uuid}",
+        "${var.form.immunization.v1-2.uuid}",
+        "${var.form.immunization.v1-3.uuid}",
+        "${var.form.immunization.uuid}"
+      ],
+      "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
+      "vaccineConceptUuids": {
+        "BCG": "${var.concept.national.bcg.uuid}",
+        "OPV0": "${var.concept.national.opv0-1-dose.uuid}",
+        "OPV1": "${var.concept.national.opv1.uuid}",
+        "Penta1": "${var.concept.national.penta-1.uuid}",
+        "Pneumo1": "${var.concept.national.pneumo-1.uuid}",
+        "Rota1": "${var.concept.national.rota-1.uuid}",
+        "OPV2": "${var.concept.national.opv2.uuid}",
+        "Penta2": "${var.concept.national.penta-2.uuid}",
+        "Pneumo2": "${var.concept.national.pneumo-2.uuid}",
+        "Rota2": "${var.concept.national.rota-2.uuid}",
+        "OPV3": "${var.concept.national.opv3.uuid}",
+        "Penta3": "${var.concept.national.penta-3.uuid}",
+        "Pneumo3": "${var.concept.national.pneumo-3.uuid}",
+        "Malaria1": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
+        "Malaria2": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
+        "Malaria3": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
+        "MCV1": "${var.concept.national.mcv1.uuid}",
+        "TCV": "${var.concept.national.tcv.uuid}",
+        "YellowFever": "${var.concept.national.yellow-fever.uuid}",
+        "MCV2": "${var.concept.national.mcv2.uuid}",
+        "Malaria4": "${var.concept.national.malaria-vaccine-dose-4.uuid}"
+      }
+    }
   }
 }
