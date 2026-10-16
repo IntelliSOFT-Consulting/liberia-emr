@@ -8,8 +8,8 @@
  *
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
- * ANC numeric lookup for L&D Gravida/Parity prefill, the transient WHO
- * weight-for-length/height display, and the MUAC completed-month check).
+ * ANC numeric lookup for L&D Gravida/Parity prefill, Td pregnancy eligibility,
+ * the transient WHO weight-for-length/height display, and the MUAC completed-month check).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
@@ -19,6 +19,8 @@ import { externalRecordsConfigSchema } from './external-records/external-records
 import { getCurrentPregnancyAncNumeric } from './forms/current-pregnancy-anc-obstetric-history';
 import { registerFormEngineExpressionHelper } from './forms/register-form-engine-helpers';
 import { calcLiberiaWhz, isMuacRequired } from './forms/who-whz';
+import { tdAdministrationGate } from './immunizations/td-administration-gate';
+import { isTdVaccine } from './immunizations/td-pregnancy';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -36,6 +38,8 @@ export function startupApp() {
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
+  registerFormEngineExpressionHelper('tdAdministrationGate', tdAdministrationGate);
+  registerFormEngineExpressionHelper('isTdVaccine', isTdVaccine);
 }
 
 /**
