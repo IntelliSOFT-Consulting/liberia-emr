@@ -7,7 +7,7 @@ import type { EPartographConfig } from '../../config-schema';
 interface PartographAlertsDisplayProps {
   alerts: PartographAlertResult;
   config: EPartographConfig;
-  onLaunchForm: () => void;
+  onLaunchForm?: () => void;
 }
 
 /**
@@ -88,8 +88,8 @@ const PartographAlertsDisplay: React.FC<PartographAlertsDisplayProps> = ({ alert
       kind={kind}
       title={title}
       subtitle={subtitle}
-      actionButtonLabel={actionLabel}
-      onActionButtonClick={handleUpdatePartograph}
+      actionButtonLabel={onLaunchForm ? actionLabel : ''}
+      onActionButtonClick={onLaunchForm ? handleUpdatePartograph : undefined}
       notificationKey={alerts.status}
     />
   );

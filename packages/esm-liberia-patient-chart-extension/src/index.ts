@@ -32,7 +32,12 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
-  defineConfigSchema(moduleName, { ...currentPregnancyAncConfigSchema, routineImmunizations: routineConfigSchema, externalRecords: externalRecordsConfigSchema });
+  defineConfigSchema('liberia-immunization-history', configSchema);
+  defineConfigSchema(moduleName, {
+    ...currentPregnancyAncConfigSchema,
+    routineImmunizations: routineConfigSchema,
+    externalRecords: externalRecordsConfigSchema,
+  });
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
@@ -51,6 +56,15 @@ export const liberiaObsWidget = getAsyncLifecycle(
   {
     featureName: 'liberia-obs-widget',
     moduleName: 'liberia-obs-widget',
+  },
+);
+
+/** Immunization history through REST encounters, so module read can authorize it without Get Encounters. */
+export const liberiaImmunizationHistory = getAsyncLifecycle(
+  () => import('./liberia-obs-widget/liberia-obs-widget.component'),
+  {
+    featureName: 'liberia-immunization-history',
+    moduleName: 'liberia-immunization-history',
   },
 );
 

@@ -30,6 +30,8 @@ import {
   showSnackbar,
   useConfig,
   usePatient,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -38,6 +40,7 @@ import {
   useStartVisitIfNeeded,
   type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
+import { moduleEntryVisible } from './module-entry';
 import { PartographEmptyState } from './partograph-empty-state.component';
 import { usePartographEncounters, findObs, getObsDisplayValue } from './use-partograph-encounters';
 import { usePartographAlerts } from './cds/use-partograph-alerts';
@@ -84,6 +87,15 @@ const PAGE_SIZE = 10;
 const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<EPartographConfig>();
+  const session = useSession();
+  const canRecord = Boolean(session?.user && userHasAccess('Write Labor and Delivery', session.user));
+  const canView =
+    !session?.user ||
+    moduleEntryVisible(
+      (name) => userHasAccess(name, session.user),
+      'Read Labor and Delivery',
+      'Write Labor and Delivery',
+    );
   const { patient, isLoading: isLoadingPatient } = usePatient(patientUuid);
 
   const isFemale = useMemo(() => {
@@ -218,6 +230,10 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
 
   // ── Loading / Error / Empty states ──────────────────────────────────────────
 
+  if (session?.user && !canView) {
+    return null;
+  }
+
   if (isLoading || isLoadingPatient) {
     return <DataTableSkeleton columnCount={8} rowCount={5} />;
   }
@@ -248,7 +264,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           'partographAdmissionRequired',
           'The Partograph is only available after a "1. First and Second Stage of Labor and Delivery" encounter has been completed.',
         )}
-        launchForm={() => handleLaunchAdmissionForm()}
+        launchForm={canRecord ? () => handleLaunchAdmissionForm() : undefined}
         buttonText={t('recordLabourAdmission', 'Record Labour Admission')}
       />
     );
@@ -263,7 +279,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           'noPartographsUntil4cm',
           'There are no Partograph to display for this patient until cervical dilatation is 4cm',
         )}
-        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+        launchForm={canRecord && config.formUuid ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -276,7 +292,7 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           'noPartographToDisplay',
           'There are no Partograph to display for this patient',
         )}
-        launchForm={config.formUuid ? () => handleLaunchForm() : undefined}
+        launchForm={canRecord && config.formUuid ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -307,14 +323,16 @@ const PartographMain: React.FC<PartographMainProps> = ({ patientUuid }) => {
           </ContentSwitcher>
 
           {/* Add button */}
+          {canRecord && (
           <Button kind="ghost" renderIcon={Add} iconDescription={t('add', 'Add')} size="sm" onClick={() => handleLaunchForm()}>
             {t('add', 'Add')}
           </Button>
+          )}
         </div>
       </CardHeader>
 
       {/* ── CDS Alerts ── */}
-      <PartographAlertsDisplay alerts={alerts} config={config} onLaunchForm={handleLaunchForm} />
+      <PartographAlertsDisplay alerts={alerts} config={config} onLaunchForm={canRecord ? handleLaunchForm : undefined} />
 
       {/* ── Graph mode ── */}
       {showGraph && (

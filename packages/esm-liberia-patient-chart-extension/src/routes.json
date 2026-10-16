@@ -15,6 +15,16 @@
       }
     },
     {
+      "name": "liberia-immunization-history",
+      "component": "liberiaImmunizationHistory",
+      "slot": "patient-chart-immunizations-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "liberia-external-records-summary",
       "component": "externalRecordsSummary",
       "slot": "patient-chart-summary-dashboard-slot",

@@ -5,6 +5,11 @@
 
 .dialog {
   background-color: $ui-01;
+
+  // Focused only to keep focus in the modal; nothing to act on.
+  &:focus {
+    outline: none;
+  }
 }
 
 .header {

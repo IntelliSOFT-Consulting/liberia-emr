@@ -41,6 +41,10 @@ const ExternalRecordsStatusView: React.FC<ExternalRecordsStatusProps> = ({
         subtitle={display.subtitle}
         actionButtonLabel={action}
         onActionButtonClick={isRefreshing ? undefined : onRefresh}
+        // A status line, not an alert: alertdialog would take focus on load, trap Tab and hide on Escape.
+        role="status"
+        closeOnEscape={false}
+        aria-busy={isRefreshing}
         className={styles.statusBar}
       />
     );
@@ -48,8 +52,10 @@ const ExternalRecordsStatusView: React.FC<ExternalRecordsStatusProps> = ({
 
   return (
     <Layer>
-      <Tile className={styles.emptyState}>
-        <EmptyDataIllustration />
+      <Tile className={styles.emptyState} aria-busy={isRefreshing}>
+        <span aria-hidden="true">
+          <EmptyDataIllustration />
+        </span>
         <p className={styles.emptyTitle}>{display.title}</p>
         <p className={styles.emptyBody}>{display.body}</p>
         <Button kind="tertiary" size="sm" className={styles.centredButton} onClick={onRefresh} disabled={isRefreshing}>
