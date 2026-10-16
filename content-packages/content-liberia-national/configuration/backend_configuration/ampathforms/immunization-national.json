@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.4",
+  "version": "1.5",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -75,6 +75,10 @@
                     "hide": {
                       "hideWhenExpression": "age >= 1"
                     }
+                  },
+                  {
+                    "concept": "${var.concept.national.opv0-1-dose.uuid}",
+                    "label": "OPV0"
                   },
                   {
                     "concept": "${var.concept.national.opv1.uuid}",
