@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
+import { keepHistoryEncounter } from './keep-history-encounter';
 
 /** Shape of a single obs returned by the REST custom rep */
 export interface ObsRep {
@@ -16,6 +17,8 @@ export interface ObsRep {
 export interface EncounterRep {
   uuid: string;
   encounterDatetime: string;
+  form?: { uuid: string };
+  encounterType?: { uuid: string };
   obs: ObsRep[];
 }
 
@@ -46,7 +49,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
   const queryString = [
     `patient=${patientUuid}`,
     encounterTypeParams,
-    'v=custom:(uuid,encounterDatetime,obs:(uuid,concept:(uuid,display),value,display))',
+    'v=custom:(uuid,encounterDatetime,form:(uuid),encounterType:(uuid),obs:(uuid,concept:(uuid,display),value,display))',
     'limit=100',
   ]
     .filter(Boolean)
@@ -72,7 +75,11 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
   const encounters = useMemo(() => {
     const raw = data?.data?.results ?? [];
     return [...raw]
+      .filter((enc) => keepHistoryEncounter(enc, config.formUuids, config.dedicatedTypeUuids))
       .filter((enc) => {
+        if (config.summarizeObs) {
+          return true;
+        }
         // If target concepts are defined, only show encounters that actually contain at least one matching obs
         if (targetConceptUuids.size > 0) {
           return enc.obs?.some((o) => targetConceptUuids.has(o.concept?.uuid));
@@ -83,7 +90,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
         const diff = new Date(b.encounterDatetime).getTime() - new Date(a.encounterDatetime).getTime();
         return config.oldestFirst ? -diff : diff;
       });
-  }, [data, config.oldestFirst, targetConceptUuids]);
+  }, [data, config.oldestFirst, config.formUuids, config.dedicatedTypeUuids, config.summarizeObs, targetConceptUuids]);
 
   return { encounters, isLoading, error, mutate };
 }

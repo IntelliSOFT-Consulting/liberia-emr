@@ -64,6 +64,12 @@ RUN node /app/patch-patient-registration.cjs
 COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
 RUN node /app/patch-patient-orders.cjs
 
+# Dispensing 1.11.1 lists prescriptions through a generic encounter query and gates the
+# Dispense button on a task privilege outside the module access matrix. The patch reads
+# MedicationRequest and shows Dispense for Manage Pharmacy.
+COPY patch-dispensing-pharmacy.cjs /app/patch-dispensing-pharmacy.cjs
+RUN node /app/patch-dispensing-pharmacy.cjs
+
 # Service queues app 11.1.0: the QueueFields component sets `queueLocation` default as
 # `sessionLocation?.uuid ?? ''` in react-hook-form's `defaultValues`, but because
 # `useSession()` resolves asynchronously the value is always undefined at first render
