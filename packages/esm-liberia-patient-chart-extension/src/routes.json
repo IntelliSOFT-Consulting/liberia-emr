@@ -68,6 +68,17 @@
       "meta": {
         "fullWidth": true
       }
+    },
+    {
+      "name": "liberia-routine-immunization-schedule",
+      "component": "routineImmunizationSchedule",
+      "slot": "patient-chart-immunizations-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
     }
   ]
 }

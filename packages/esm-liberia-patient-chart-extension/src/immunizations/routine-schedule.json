@@ -1,0 +1,299 @@
+[
+  {
+    "id": "BCG",
+    "label": "BCG",
+    "vaccineConceptUuid": "fed0b18d-c769-4c9f-9edc-ed7190a1f460",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 0,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "upperAge": {
+      "age": {
+        "value": 11,
+        "unit": "months"
+      },
+      "inclusive": false
+    }
+  },
+  {
+    "id": "OPV0",
+    "label": "OPV0",
+    "vaccineConceptUuid": "59caf13a-5256-451b-adb4-014c9e0edda9",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 0,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "upperAge": {
+      "age": {
+        "value": 7,
+        "unit": "days"
+      },
+      "inclusive": true
+    }
+  },
+  {
+    "id": "OPV1",
+    "label": "OPV1",
+    "vaccineConceptUuid": "da5d743f-dd31-4641-9e5e-26800c2920c5",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Penta1",
+    "label": "Penta1",
+    "vaccineConceptUuid": "df0870b9-cd81-46ad-942f-768afbce7138",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Pneumo1",
+    "label": "Pneumo1",
+    "vaccineConceptUuid": "77d7cd54-557f-4403-a38f-a6fa96c0c535",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Rota1",
+    "label": "Rota1",
+    "vaccineConceptUuid": "5f5a5d3f-7d52-43f6-8889-898147abe978",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "OPV2",
+    "label": "OPV2",
+    "vaccineConceptUuid": "41251020-c59f-495f-ad0b-12af05459286",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "da5d743f-dd31-4641-9e5e-26800c2920c5",
+        "sequenceNumber": 1
+      },
+      "minimumInterval": {
+        "value": 28,
+        "unit": "days"
+      }
+    }
+  },
+  {
+    "id": "Penta2",
+    "label": "Penta2",
+    "vaccineConceptUuid": "233fcc73-a392-4fcc-b896-76d3e21fe284",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "df0870b9-cd81-46ad-942f-768afbce7138",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Pneumo2",
+    "label": "Pneumo2",
+    "vaccineConceptUuid": "4aa98c7f-07e3-4027-bf09-93abdb4b4aba",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "77d7cd54-557f-4403-a38f-a6fa96c0c535",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Rota2",
+    "label": "Rota2",
+    "vaccineConceptUuid": "2474cbde-2747-47ce-b63b-351dec329baf",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "5f5a5d3f-7d52-43f6-8889-898147abe978",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "OPV3",
+    "label": "OPV3",
+    "vaccineConceptUuid": "3283dc78-d768-47ee-a322-f018e69308fd",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "41251020-c59f-495f-ad0b-12af05459286",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Penta3",
+    "label": "Penta3",
+    "vaccineConceptUuid": "2a847b11-084f-4e13-acea-f1ebd862cd1b",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "233fcc73-a392-4fcc-b896-76d3e21fe284",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Pneumo3",
+    "label": "Pneumo3",
+    "vaccineConceptUuid": "92075d94-07e8-44e0-a324-1b4ad98dc6c8",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "4aa98c7f-07e3-4027-bf09-93abdb4b4aba",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Malaria1",
+    "label": "Malaria Dose 1",
+    "vaccineConceptUuid": "7ecd4664-3633-45e8-84a1-324281570ecb",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 5,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Malaria2",
+    "label": "Malaria Dose 2",
+    "vaccineConceptUuid": "7c1b27ce-dba6-4fda-9f90-2f0095d02f15",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 6,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Malaria3",
+    "label": "Malaria Dose 3",
+    "vaccineConceptUuid": "31a8b4c8-b1b4-46b8-a3ce-278abd56fa21",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 7,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "MCV1",
+    "label": "Measles-containing vaccine 1",
+    "vaccineConceptUuid": "9e6d911e-2c2a-48da-9002-638ac331a0e8",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "TCV",
+    "label": "TCV",
+    "vaccineConceptUuid": "64a66900-f10d-47fb-8b74-f8c96cf546e5",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "YellowFever",
+    "label": "Yellow Fever",
+    "vaccineConceptUuid": "ea6e1ba3-ae05-4093-ae10-c75e5d2b28d3",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "MCV2",
+    "label": "Measles-containing vaccine 2",
+    "vaccineConceptUuid": "51be3ea7-5481-43bf-89fe-d45a25224838",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 15,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "dose": {
+        "vaccineConceptUuid": "9e6d911e-2c2a-48da-9002-638ac331a0e8",
+        "sequenceNumber": 1
+      }
+    }
+  },
+  {
+    "id": "Malaria4",
+    "label": "Malaria Dose 4",
+    "vaccineConceptUuid": "6671b307-7f7d-49e8-b87f-cedc5b0ec56b",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 18,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  }
+]
