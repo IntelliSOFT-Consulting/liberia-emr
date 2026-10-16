@@ -2,8 +2,6 @@ import type { AdministeredDose } from './eligibility';
 import { clinicalDate } from './clinical-date.ts';
 import { routineSchedule } from './routine-schedule.ts';
 
-export const nationalFormUuid = 'af9b642f-15d7-3687-812d-9ea2c890cfbd';
-export const vaccineQuestionUuid = 'ec2c08f4-1275-4dc4-ae37-b32740cdd0f8';
 export interface FhirDoseMapping {
   code: string;
   system: string;
@@ -43,14 +41,26 @@ export interface NormalizedHistory {
   issues: Array<{ recordId: string; message: string }>;
 }
 
+function dosesForConcept(code: string | undefined, vaccineConceptUuids: Readonly<Record<string, string>>) {
+  const trimmed = code?.trim();
+  if (!trimmed) return [];
+  return routineSchedule.filter((dose) => vaccineConceptUuids[dose.id]?.trim() === trimmed);
+}
+
 /** Both successfully loaded, complete collections are required. No historical writes. */
 export function normalizeHistory(input: {
   patientUuid: string;
   fhir: readonly FhirImmunization[];
   encounters: readonly NationalEncounter[];
   mappings?: readonly FhirDoseMapping[];
+  nationalFormUuids: readonly string[];
+  vaccineQuestionUuid: string;
+  vaccineConceptUuids: Readonly<Record<string, string>>;
   editingRecordId?: string;
 }): NormalizedHistory {
+  const nationalFormUuids = (input.nationalFormUuids ?? []).map((uuid) => uuid.trim()).filter(Boolean);
+  const vaccineQuestionUuid = input.vaccineQuestionUuid?.trim() ?? '';
+  const vaccineConceptUuids = input.vaccineConceptUuids ?? {};
   const result: NormalizedHistory = { doses: [], issues: [] };
   const issue = (recordId: string, message: string) => result.issues.push({ recordId, message });
   const seen = new Map<string, string>();
@@ -58,6 +68,8 @@ export function normalizeHistory(input: {
     if (recordId === input.editingRecordId) return;
     const dose = routineSchedule.find((d) => d.id === canonicalDoseId);
     if (!dose) throw new Error('Unknown canonical dose');
+    const vaccineConceptUuid = vaccineConceptUuids[dose.id]?.trim() ?? '';
+    if (!vaccineConceptUuid) throw new Error('Missing vaccine identity');
     const administeredDate = clinicalDate(date);
     const key = `${canonicalDoseId}:${administeredDate}`;
     if (seen.has(recordId)) {
@@ -69,7 +81,7 @@ export function normalizeHistory(input: {
     const existing = result.doses.find((d) => d.canonicalDoseId === canonicalDoseId && d.administeredDate === administeredDate);
     if (existing) existing.records.push({ recordId, source });
     else result.doses.push({ id: recordId, canonicalDoseId, administeredDate,
-      vaccineConceptUuid: dose.vaccineConceptUuid, sequenceNumber: dose.sequenceNumber,
+      vaccineConceptUuid, sequenceNumber: dose.sequenceNumber,
       records: [{ recordId, source }] });
   };
 
@@ -94,7 +106,9 @@ export function normalizeHistory(input: {
       for (const coding of record.vaccineCode?.coding ?? []) {
         // O3/FHIR2's local concept UUID coding has no system. Never match on display text.
         if (!coding.system) {
-          const specific = routineSchedule.find((d) => d.vaccineConceptUuid === coding.code);
+          const specificDoses = dosesForConcept(coding.code, vaccineConceptUuids);
+          if (specificDoses.length > 1) throw new Error('Vaccine/dose cannot be mapped unambiguously');
+          const specific = specificDoses[0];
           if (specific) {
             // A dose-specific concept is sufficient on its own; conflicting sequence is unresolved.
             const clinicalSequence = Number(specific.id.match(/\d+$/)?.[0] ?? 1);
@@ -117,21 +131,21 @@ export function normalizeHistory(input: {
     const encounterId = `national-form:${encounter?.uuid ?? 'unknown'}`;
     try {
       if (!encounter?.uuid || encounter.patient?.uuid !== input.patientUuid) throw new Error('Invalid patient-scoped encounter');
-      if (encounter.voided || encounter.form?.uuid !== nationalFormUuid) continue;
+      if (encounter.voided || !encounter.form?.uuid || !nationalFormUuids.includes(encounter.form.uuid)) continue;
       if (!Array.isArray(encounter.obs)) throw new Error('Missing encounter observations');
       const visit = (obs: NationalObs[]) => {
         for (const observation of obs) {
           if (observation.voided) continue;
           if (!observation.concept?.uuid) throw new Error('Missing observation concept');
-          if (observation.concept.uuid === vaccineQuestionUuid) {
+          if (vaccineQuestionUuid && observation.concept.uuid === vaccineQuestionUuid) {
             const recordId = `national-form:${observation.uuid}`;
             try {
               if (!observation.uuid) throw new Error('Missing observation ID');
               const value = observation.value as { uuid?: string } | undefined;
-              const dose = routineSchedule.find((d) => d.vaccineConceptUuid === value?.uuid);
-              if (!dose) throw new Error('National vaccine answer cannot be reconciled');
+              const matches = dosesForConcept(value?.uuid, vaccineConceptUuids);
+              if (matches.length !== 1) throw new Error('National vaccine answer cannot be reconciled');
               // Current national form has no administration-date Obs. Return date is NOT administration date.
-              add(recordId, 'national-form', dose.id, encounter.encounterDatetime);
+              add(recordId, 'national-form', matches[0].id, encounter.encounterDatetime);
             } catch (error) { issue(recordId, (error as Error).message); }
           }
           if (observation.groupMembers) visit(observation.groupMembers);

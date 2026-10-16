@@ -9,10 +9,14 @@ explicit decisions in that request.
 ## Rules
 
 `src/immunizations/routine-schedule.json` in the patient-chart extension is the
-version-controlled national policy. UUIDs are existing dose-specific national
-concepts in `content-liberia-national/configuration/variables.properties`.
-`evaluateEligibility` and `addDateOffset` from LE-560 are reused unchanged.
-No second evaluator or new persistence path is introduced.
+version-controlled national policy: canonical dose id, label, due age, upper age,
+prerequisite by canonical dose id, minimum interval, and sequence. It does not
+contain concept UUIDs. Those UUIDs are runtime config under
+`routineImmunizations.vaccineConceptUuids`, supplied by national frontend
+configuration as `${var.*}` from `variables.properties`. A site package overrides
+one key without rebuilding the ESM. `evaluateEligibility` and `addDateOffset`
+from LE-560 are reused unchanged. No second evaluator or new persistence path
+is introduced.
 
 | Doses | DOB offset | Required predecessor | Minimum interval | Upper limit |
 | --- | --- | --- | --- | --- |
@@ -53,11 +57,19 @@ Both complete, paginated collections are required:
 
 - FHIR2 `/Immunization?patient=...`: completed Immunizations, actual
   `occurrenceDateTime`, vaccine coding and protocol dose number.
-- REST `/encounter?patient=...`: national Immunization form
-  `af9b642f-15d7-3687-812d-9ea2c890cfbd`, vaccine-name answer Obs
-  `ec2c08f4-1275-4dc4-ae37-b32740cdd0f8`. Current form has no explicit
-  administration-date observation, so its encounter datetime is used.
-  Return-date Obs and AEFI vaccine mentions are never administration evidence.
+- REST `/encounter?patient=...`: encounters whose form UUID is one of
+  `routineImmunizations.nationalFormUuids`, and whose vaccine-name answer uses
+  `routineImmunizations.vaccineQuestionUuid`. National frontend configuration
+  lists the frozen Immunization identities v1.0 through v1.3 and
+  `${var.form.immunization.uuid}`, the current form. The vaccine-name question
+  is `${var.concept.national.vaccine-name.uuid}` on every one of these versions.
+  Current form identity alone is not enough: an upgrade that only recognized
+  the new form UUID would drop administrations recorded on an older version.
+  A site that sets `nationalFormUuids` replaces the whole list. Frontend config
+  arrays are not merged element by element, so the site lists every version it
+  still wants counted. Current form has no explicit administration-date
+  observation, so its encounter datetime is used. Return-date Obs and AEFI
+  vaccine mentions are never administration evidence.
 
 The existing national form currently offers OPV1 only. This change reads all
 recognized historical national dose answers but does not expand or redesign that
@@ -71,7 +83,8 @@ for one dose require reconciliation before sequencing. Entered-in-error,
 not-done and voided records do not count. Invalid dates, absent identity, unknown
 coding/sequence, patient mismatch and incomplete loads never imply absence.
 
-Dose-specific national codes can map directly. Where a sequence is also supplied,
+Dose-specific national codes map through the configured canonical-dose UUID
+table, not through literals in the schedule. Where a sequence is also supplied,
 only 1 (single dose-specific concept) or the matching clinical dose number is
 accepted. Generic FHIR vaccine codes require an explicit verified mapping under
 `@liberiaemr/esm-liberia-patient-chart-extension.routineImmunizations.fhirDoseMappings`:

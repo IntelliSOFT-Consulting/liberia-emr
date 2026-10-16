@@ -36,10 +36,17 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
       new URL(encounterUrl, window.location.origin).href, async (url) => (await openmrsFetch(url)).data),
     { refreshInterval: 30_000 },
   );
-  const normalized = useMemo(() => data && normalizeHistory({ patientUuid, ...data, mappings: config.fhirDoseMappings }),
-    [data, patientUuid, config.fhirDoseMappings]);
+  const normalized = useMemo(() => data && normalizeHistory({
+    patientUuid,
+    ...data,
+    mappings: config.fhirDoseMappings,
+    nationalFormUuids: config.nationalFormUuids,
+    vaccineQuestionUuid: config.vaccineQuestionUuid,
+    vaccineConceptUuids: config.vaccineConceptUuids,
+  }), [data, patientUuid, config]);
   const rows = useMemo(() => normalized && patient?.birthDate
-    ? evaluateRoutineSchedule(patient.birthDate, today, normalized) : undefined, [normalized, patient?.birthDate, today]);
+    ? evaluateRoutineSchedule(patient.birthDate, today, normalized, config.vaccineConceptUuids) : undefined,
+    [normalized, patient?.birthDate, today, config.vaccineConceptUuids]);
 
   return <section className={styles.schedule} aria-label={t('routineImmunizationSchedule', 'Routine childhood immunization schedule')}>
     <h2>{t('routineImmunizationSchedule', 'Routine childhood immunization schedule')}</h2>

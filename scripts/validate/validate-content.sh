@@ -804,6 +804,9 @@ section "AMPATH form UUID consistency"
 #      This catches a variable that holds a form JSON's ignored literal (how the OPD and Triage
 #      variables were first written), and one left behind by a version bump. A variable
 #      declared ahead of its form goes in PENDING_FORMS below; remove it once the form exists.
+#   A frozen historical alias is also valid: var.form.<name-slug>.v<major>-<minor>.uuid must
+#   equal the derivation of a current form of that name at that older version. The current
+#   var.form.<name>.uuid still tracks the form file. History can keep the old identity.
 python3 - "$PKG_DIR" <<'PY' || err "form UUID variable mismatch (see above)"
 import collections, glob, hashlib, json, os, re, sys, uuid
 
@@ -836,6 +839,7 @@ for vf in sorted(glob.glob(f"{pkg_dir}/*/configuration/variables.properties")):
 
 problems = []
 derived = {}                                      # derived uuid -> form label
+form_names = set()
 for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/ampathforms/*.json")):
     try:
         d = json.load(open(jf, encoding="utf-8"))
@@ -847,6 +851,7 @@ for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/amp
     name, version, uuid_ref = d.get("name"), d.get("version"), d.get("uuid")
     if not name or version is None:
         continue
+    form_names.add(name)
     # Jackson hands the loader a String, Integer or Double; each prints as Python's str() does.
     computed = java_uuid(f"{AMPATH_FORMS_UUID}_{name}_{version}")
     label = f"{rel(jf)} ('{name}' v{version})"
@@ -861,13 +866,27 @@ for jf in sorted(glob.glob(f"{pkg_dir}/*/configuration/backend_configuration/amp
         if value != computed:
             problems.append(f"{where}: {var_name}={value}, but {label} derives {computed}")
 
+def historical_form_uuid(var_name):
+    """var.form.<slug>.v<major>-<minor>.uuid -> derivation of that form name at that version."""
+    match = re.fullmatch(r"var\.form\.(.+)\.v(\d+)-(\d+)\.uuid", var_name)
+    if not match:
+        return None
+    slug, version = match.group(1), f"{match.group(2)}.{match.group(3)}"
+    for name in form_names:
+        folded = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        if folded == slug:
+            return java_uuid(f"{AMPATH_FORMS_UUID}_{name}_{version}")
+    return None
+
 for var_name, decls in sorted(declared.items()):
     if not re.fullmatch(r"var\.form\..+\.uuid", var_name) or var_name in PENDING_FORMS:
         continue
+    historical = historical_form_uuid(var_name)
     for value, where in decls:
-        if value not in derived:
-            problems.append(f"{where}: {var_name}={value} is not the derived UUID of any form "
-                            f"(the runtime UUID comes from name + version, not the JSON uuid literal)")
+        if value in derived or (historical is not None and value == historical):
+            continue
+        problems.append(f"{where}: {var_name}={value} is not the derived UUID of any form "
+                        f"(the runtime UUID comes from name + version, not the JSON uuid literal)")
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)
