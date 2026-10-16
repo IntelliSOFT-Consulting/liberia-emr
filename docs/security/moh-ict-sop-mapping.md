@@ -235,8 +235,9 @@ Why each role:
 - **Nurse, Clinician, Midwife** see who is waiting for them, call the next patient, move them to
   the next service and end their entry. Nurses also start visits (they already held
   `Add Visits`), which needs the same visit-form and bed reads as the Records Officer.
-- **Pharmacist and Lab Technician**: each facility has TB Screening, ANC and General Consultation
-  queues at its Pharmacy and Laboratory (the site `queues/` CSV), so patients are sent to them
+- **Pharmacist and Lab Technician**: each facility has a queue for every service (TB Screening,
+  General Consultation, ANC Enrolment, ANC Follow-up, PNC Enrolment, Labour and Delivery,
+  Immunization, Family Planning) at its Pharmacy and Laboratory (the site `queues/` CSV), so patients are sent to them
   through the queue. They see their queue, serve the patient and end or move the entry. They do
   not check patients in, so they get no visit-type, visit-attribute or bed privilege.
 - **National Reporting Officer, Sync Administrator, Sync Conflict Reviewer, ICT Auditor** get no
