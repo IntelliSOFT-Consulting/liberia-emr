@@ -1,3 +1,8 @@
+interface EncounterContext {
+    currentProvider: { uuid: string; display: string };
+    sessionLocation: { uuid: string; display: string };
+}
+
 class OpdConsultationFormPage {
     constructor(private readonly timeout = 20000) {}
 
@@ -33,6 +38,19 @@ class OpdConsultationFormPage {
 
     private assertFieldHidden(fieldId: string) {
         cy.get(`#${fieldId}`, { timeout: this.timeout }).should('not.exist');
+    }
+
+    private readOnlyField(label: string) {
+        return cy.contains('.cds--label', label, { timeout: this.timeout })
+            .closest('[class*="field-value-view__readonly"]');
+    }
+
+    private encounterContext() {
+        return cy.request<EncounterContext>('/openmrs/ws/rest/v1/session').its('body').then((context) => {
+            expect(context.currentProvider?.uuid, 'logged-in provider UUID').to.be.a('string').and.not.be.empty;
+            expect(context.sessionLocation?.uuid, 'session location UUID').to.be.a('string').and.not.be.empty;
+            return context;
+        });
     }
 
     private selectDropdownOption(fieldId: string, option: string) {
@@ -78,7 +96,10 @@ class OpdConsultationFormPage {
     }
 
     selectForm() {
-        cy.contains('a.cds--link', 'OPD Consultation Form', { timeout: this.timeout }).click();
+        cy.contains('a.cds--link', 'OPD Consultation Form', { timeout: this.timeout }).scrollIntoView();
+        cy.contains('a.cds--link', 'OPD Consultation Form', { timeout: this.timeout })
+            .should('be.visible')
+            .click();
     }
 
     verifyFormContract() {
@@ -96,8 +117,6 @@ class OpdConsultationFormPage {
 
         [
             'patientCategory',
-            'encounterProvider',
-            'encounterLocation',
             'encounterDate',
             'presentingComplaint'
         ].forEach((fieldId) => {
@@ -108,14 +127,69 @@ class OpdConsultationFormPage {
 
         [
             'patientCategory',
-            'encounterProvider',
-            'encounterLocation',
             'encounterDate',
             'presentingComplaint'
         ].forEach((fieldId) => {
             cy.get(`[data-testid="${fieldId}-label"] [title="Required"]`, { timeout: this.timeout })
                 .should('exist');
         });
+
+        this.verifyAutomaticEncounterContext();
+    }
+
+    verifyPatientCategory(category: string) {
+        cy.get('#patientCategory', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('contain.text', category);
+    }
+
+    verifyAutomaticEncounterContext() {
+        this.encounterContext().then(({ currentProvider, sessionLocation }) => {
+            [
+                { label: 'Attending Clinician', value: currentProvider.display },
+                { label: 'Encounter Location', value: sessionLocation.display }
+            ].forEach(({ label, value }) => {
+                this.readOnlyField(label).scrollIntoView();
+                this.readOnlyField(label).should(($field) => {
+                    expect($field, label).to.be.visible;
+                    expect($field.find('[class*="value__value"]').text(), `${label} value`).to.contain(value);
+                    expect($field.find('input, button[role="combobox"], [contenteditable="true"]'),
+                        `${label} editing controls`).to.have.length(0);
+                });
+            });
+        });
+        cy.contains('The attending clinician or encounter location could not be set automatically.')
+            .should('not.exist');
+    }
+
+    verifyPatientCategoryOverride() {
+        this.verifyPatientCategory('First Visit');
+        this.selectDropdownOption('patientCategory', 'Referral');
+        cy.get('#presentingComplaint', { timeout: this.timeout })
+            .scrollIntoView()
+            .type('Automated referral consultation');
+        this.verifyPatientCategory('Referral');
+        this.selectDropdownOption('patientCategory', 'Follow-up Visit');
+        this.verifyPatientCategory('Follow-up Visit');
+    }
+
+    verifyBackdatedClinicianSelection() {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        this.verifyAutomaticEncounterContext();
+        this.enterDate('encounterDate', yesterday);
+        cy.get('#encounterDate [data-type="year"]').blur();
+        cy.get('input#encounterProvider, #encounterProvider input[role="combobox"]', { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible')
+            .and('be.enabled');
+        this.readOnlyField('Encounter Location').should('be.visible');
+
+        this.enterDate('encounterDate', today);
+        cy.get('#encounterDate [data-type="year"]').blur();
+        this.verifyAutomaticEncounterContext();
     }
 
     verifyVitalsInputContract() {
@@ -338,7 +412,9 @@ class OpdConsultationFormPage {
     fillCompleteValidFormAndSave() {
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveOpdConsultation');
 
-        this.selectDropdownOption('patientCategory', 'First Visit');
+        this.verifyPatientCategory('First Visit');
+        this.verifyAutomaticEncounterContext();
+        this.encounterContext().as('opdEncounterContext');
 
         cy.get('#presentingComplaint', { timeout: this.timeout })
             .scrollIntoView()
@@ -394,8 +470,24 @@ class OpdConsultationFormPage {
             .scrollIntoView()
             .click();
 
-        cy.wait('@saveOpdConsultation', { timeout: this.timeout }).then(({ response }) => {
+        cy.wait('@saveOpdConsultation', { timeout: this.timeout }).then(({ request, response }) => {
             expect(response?.statusCode).to.be.oneOf([200, 201]);
+            cy.get<EncounterContext>('@opdEncounterContext').then(({ currentProvider, sessionLocation }) => {
+                expect(request.body.location, 'saved session location').to.eq(sessionLocation.uuid);
+                expect(request.body.encounterProviders, 'saved attending clinician').to.have.length(1);
+                expect(request.body.encounterProviders[0].provider).to.eq(currentProvider.uuid);
+                expect(response?.body.uuid, 'saved encounter UUID').to.be.a('string').and.not.be.empty;
+                cy.request<{
+                    location: { uuid: string };
+                    encounterProviders: Array<{ provider: { uuid: string } }>;
+                }>(`/openmrs/ws/rest/v1/encounter/${response?.body.uuid}?v=full`).its('body').then((encounter) => {
+                    expect(encounter.location.uuid, 'persisted encounter location').to.eq(sessionLocation.uuid);
+                    expect(encounter.encounterProviders.map(({ provider }) => provider.uuid),
+                        'persisted attending clinician').to.deep.eq([currentProvider.uuid]);
+                });
+            });
+            cy.contains('Form submitted successfully', { timeout: this.timeout }).should('be.visible');
+            cy.get('#presentingComplaint', { timeout: this.timeout }).should('not.exist');
         });
     }
 }
