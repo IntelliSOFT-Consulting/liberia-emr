@@ -84,7 +84,7 @@ overdue, once the previous dose and interval are met.
 
 ## What the form does
 
-Immunization form 1.4 adds TD–TD5 to Vaccine Name. Childhood answers stay as
+Immunization form 1.5 adds TD–TD5 to Vaccine Name. Childhood answers stay as
 they were: BCG is hidden from age 1, and OPV1 stays limited to age 18 and
 below (`age > 18`). The explanatory notice uses that same cutoff: it is hidden
 only when `age < 18`, so it is shown at age 18 and above. The Td answers are
@@ -107,15 +107,12 @@ dictionary intervals above.
 
 ## Technical integration
 
-This branch is isolated from the other immunization work that is not on main.
+LE-564 merged first. Its Immunization v1.4 remains the historical Vitamin A
+form, UUID `36f41158-2060-399d-959b-f99718b154be`. LE-565 integrated that form
+with Td pregnancy eligibility and published the combined Immunization form as
+v1.5. v1.4 is not republished under a second body.
 
 LE-561 contains overlapping TT/Td canonical-history and interval logic. LE-565
 implements that sequence independently because LE-561 is not on main. Reconcile
 the two to one source of truth when both land. LE-561 has broader FHIR and
 national-form history coverage than this Td-only gate.
-
-LE-564 and LE-565 both derive Immunization v1.4 from the same v1.3 base, so
-they have the same derived form UUID despite different form bodies. That is
-valid only while the branches are isolated. Whichever merges second must
-integrate the already-merged form and bump the combined form to v1.5. Never
-publish two different Immunization v1.4 definitions under the same UUID.

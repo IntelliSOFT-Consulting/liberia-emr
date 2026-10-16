@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.4",
+  "version": "1.5",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -34,7 +34,7 @@
           "isExpanded": true,
           "questions": [
             {
-              "id": "encounterDate",
+              "id": "tdEncounterDate",
               "label": "Encounter Date",
               "type": "encounterDatetime",
               "questionOptions": {
@@ -86,7 +86,7 @@
                 "rendering": "text",
                 "isTransient": true,
                 "calculate": {
-                  "calculateExpression": "tdAdministrationGate(patient.id, patient.birthDate, encounterDate, vaccine_name, (typeof encounter !== 'undefined' && encounter && encounter.uuid) ? encounter.uuid : '', '${var.concept.ciel.pregnancy-status.uuid}', '${var.concept.national.1st-trimester.uuid}', '${var.concept.national.2nd-trimester.uuid}', '${var.concept.national.3rd-trimester.uuid}', '${var.concept.national.vaccine-name.uuid}', '${var.concept.national.td.uuid}', '${var.concept.national.date-of-tt1.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.date-of-tt2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.date-of-tt3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.date-of-tt4.uuid}', '${var.concept.national.td5.uuid}', '${var.concept.national.date-of-tt5.uuid}').then(code => code)"
+                  "calculateExpression": "tdAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, (typeof encounter !== 'undefined' && encounter && encounter.uuid) ? encounter.uuid : '', '${var.concept.ciel.pregnancy-status.uuid}', '${var.concept.national.1st-trimester.uuid}', '${var.concept.national.2nd-trimester.uuid}', '${var.concept.national.3rd-trimester.uuid}', '${var.concept.national.vaccine-name.uuid}', '${var.concept.national.td.uuid}', '${var.concept.national.date-of-tt1.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.date-of-tt2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.date-of-tt3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.date-of-tt4.uuid}', '${var.concept.national.td5.uuid}', '${var.concept.national.date-of-tt5.uuid}').then(code => code)"
                 }
               }
             },
@@ -174,8 +174,18 @@
                     "concept": "${var.concept.ciel.oral.uuid}",
                     "label": "Oral"
                   }
-                ]
-              }
+                ],
+                "calculate": {
+                  "calculateExpression": "vitaminARouteValue(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')"
+                }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminARouteRejected(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')",
+                  "message": "Vitamin A is given orally."
+                }
+              ]
             },
             {
               "label": "Return date for the next vaccination",
@@ -183,7 +193,10 @@
               "id": "return_date",
               "questionOptions": {
                 "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
-                "rendering": "date"
+                "rendering": "date",
+                "calculate": {
+                  "calculateExpression": "vitaminASharedReturnValue(vaccine_name, patient.birthDate, vitamin_a_date_received, supp_activities, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', today(), myValue)"
+                }
               },
               "validators": [
                 {
@@ -208,6 +221,32 @@
           },
           "questions": [
             {
+              "id": "encounterDate",
+              "label": "Encounter Date",
+              "type": "encounterDatetime",
+              "questionOptions": {
+                "rendering": "date"
+              },
+              "hide": {
+                "hideWhenExpression": "true"
+              }
+            },
+            {
+              "label": "Vitamin A administration history",
+              "type": "obs",
+              "id": "vitamin_a_history",
+              "hide": {
+                "hideWhenExpression": "true"
+              },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "loadVitaminAAdministrations(patient.id, '${var.concept.national.supplementary-immunization-activities.uuid}', '${var.concept.national.date-received.uuid}', '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}').then(v => v)"
+                }
+              }
+            },
+            {
               "label": "Supplementary immunization activities",
               "type": "obs",
               "id": "supp_activities",
@@ -217,10 +256,72 @@
                 "answers": [
                   {
                     "concept": "${var.concept.national.vit-a-blue-100-000iu.uuid}",
-                    "label": "Vit.-A.Blue 100,000iu"
+                    "label": "Vit.-A.Blue 100,000iu",
+                    "hide": {
+                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, encounterDate) !== 'blue'"
+                    }
+                  },
+                  {
+                    "concept": "${var.concept.national.vit-a-red-200-000iu.uuid}",
+                    "label": "Vit.-A.Red 200,000iu",
+                    "hide": {
+                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, encounterDate) !== 'red'"
+                    }
                   }
                 ]
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'age'",
+                  "message": "Vitamin A strength does not match this child's age. Blue 100,000 IU is for 6-11 months and Red 200,000 IU is for 12-59 months. A missed colour is not given after the child leaves that age band."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'blue-repeat'",
+                  "message": "Vitamin A Blue can be given only once from the 6-month birthday until the 12-month birthday."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'minimum-interval'",
+                  "message": "Vitamin A cannot be given until 30 days after the previous dose."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'history'",
+                  "message": "Vitamin A history could not be confirmed, so this dose cannot be saved."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'strength'",
+                  "message": "Select the Vitamin A strength."
+                }
+              ]
+            },
+            {
+              "label": "Date received",
+              "type": "obs",
+              "id": "vitamin_a_date_received",
+              "questionOptions": {
+                "concept": "${var.concept.national.date-received.uuid}",
+                "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "date",
+                  "allowFutureDates": "false"
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(supp_activities) && isEmpty(myValue)",
+                  "message": "Date received is required for Vitamin A."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(supp_activities) && !isEmpty(myValue) && vitaminABlock(patient.birthDate, encounterDate, myValue, supp_activities, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) !== ''",
+                  "message": "This Vitamin A dose cannot be recorded on this date."
+                }
+              ]
             }
           ]
         }

@@ -7,6 +7,6 @@ fp-v2.2,${var.form.family-planning.uuid},${var.encountertype.mch-family-planning
 fp-national-v1.0,form:3. Family Planning@1.0,${var.encountertype.consultation.uuid},fail,older version of 3. Family Planning (national); saves under the shared Consultation encounter type
 ld-first-second-v1.2,${var.form.first-and-second-stage-of-labor-and-delivery.uuid},${var.encountertype.labor-delivery.uuid},fail,1. First and Second Stage of Labor and Delivery
 pnc-mother-v1.0,${var.form.pnc-visit.uuid},${var.encountertype.mch-pnc.uuid},fail,Mother PNC
-immunization-v1.1,${var.form.immunization.uuid},${var.encountertype.consultation.uuid},fail,Immunization; saves under the shared Consultation encounter type
+immunization-v1.1,form:Immunization@1.1,${var.encountertype.consultation.uuid},create-retired,Immunization v1.1; historical form. Vitamin A reporting must still count it after the current form moves to v1.5
 triage-v2.0,form:Triage Form@2.0,${var.encountertype.triage.uuid},create-retired,old version of the same form; exists on upgraded databases only so the loader creates it retired (old/new form version edge case)
 opd-v2.0,${var.form.opd-consultation.uuid},${var.encountertype.consultation.uuid},fail,OPD Consultation Form; shared Consultation encounter type

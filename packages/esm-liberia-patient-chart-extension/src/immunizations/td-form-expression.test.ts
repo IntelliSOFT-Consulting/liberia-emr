@@ -62,9 +62,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.4');
+    assert.equal(form.version, '1.5');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.4';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.5';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -86,7 +86,11 @@ describe('Immunization form Td entry point', () => {
     assert.equal(question('caregiver_phone_number').hide?.hideWhenExpression, 'age > 18');
     const supplementary = form.pages[1].sections[0];
     assert.equal(supplementary.hide.hideWhenExpression, 'age > 18');
-    assert.equal(supplementary.questions[0].questionOptions.answers[0].label, 'Vit.-A.Blue 100,000iu');
+    const activity = supplementary.questions.find((item: { id?: string }) => item.id === 'supp_activities');
+    assert.deepEqual(
+      activity?.questionOptions?.answers?.map((answer: { label: string }) => answer.label),
+      ['Vit.-A.Blue 100,000iu', 'Vit.-A.Red 200,000iu'],
+    );
     assert.equal(question('return_date').validators?.[0].message, 'Return date must be a future date.');
     const notice = form.pages[0].sections.find((section: { label: string }) => section.label === 'Notice');
     assert.equal(notice.hide.hideWhenExpression, 'age < 18');
@@ -106,6 +110,30 @@ describe('Immunization form Td entry point', () => {
     }
   });
 
+  it('gives every question its own id', () => {
+    const ids: string[] = [];
+    const visit = (node: unknown) => {
+      if (Array.isArray(node)) {
+        node.forEach(visit);
+        return;
+      }
+      if (!node || typeof node !== 'object') {
+        return;
+      }
+      const record = node as Record<string, unknown>;
+      if (typeof record.id === 'string' && typeof record.type === 'string') {
+        ids.push(record.id);
+      }
+      Object.values(record).forEach(visit);
+    };
+    visit(form);
+    const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+    assert.deepEqual(duplicates, []);
+    assert.equal(ids.filter((id) => id === 'tdEncounterDate').length, 1);
+    assert.equal(ids.filter((id) => id === 'encounterDate').length, 1);
+    assert.match(gate.questionOptions?.calculate?.calculateExpression ?? '', /tdAdministrationGate\(patient\.id, patient\.birthDate, tdEncounterDate,/);
+  });
+
   it('registers the helper the form calls', () => {
     assert.match(indexSource, /registerFormEngineExpressionHelper\('tdAdministrationGate', tdAdministrationGate\)/);
     assert.match(indexSource, /registerFormEngineExpressionHelper\('isTdVaccine', isTdVaccine\)/);
@@ -120,7 +148,7 @@ describe('Immunization form Td entry point', () => {
     };
     const evaluate = new Function(
       'patient',
-      'encounterDate',
+      'tdEncounterDate',
       'vaccine_name',
       'encounter',
       'tdAdministrationGate',
@@ -159,7 +187,7 @@ describe('Immunization form Td entry point', () => {
 
     const withoutEncounter = new Function(
       'patient',
-      'encounterDate',
+      'tdEncounterDate',
       'vaccine_name',
       'tdAdministrationGate',
       `return (${expression});`,
