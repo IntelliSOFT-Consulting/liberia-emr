@@ -1,0 +1,2 @@
+Uuid,Void/Retire,Name,Description,HL7 Code
+${var.conceptsource.hl7-medicationdispensestatus.uuid},,HL7-MedicationDispenseStatus,Medication dispense status for FHIR,

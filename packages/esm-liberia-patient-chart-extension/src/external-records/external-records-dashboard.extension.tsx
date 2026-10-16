@@ -36,7 +36,7 @@ const ExternalRecordsDashboard: React.FC<ExternalRecordsDashboardProps> = ({ pat
       },
       ...records.facilities.map((facility) => ({
         key: facilityKey(facility),
-        label: facility.name ?? t('unknownFacility', 'Unknown facility'),
+        label: facility.name ?? String(t('unknownFacility', 'Unknown facility')),
       })),
     ],
     [records.facilities, t],
@@ -62,6 +62,9 @@ const ExternalRecordsDashboard: React.FC<ExternalRecordsDashboardProps> = ({ pat
             <h2 className={styles.dashboardTitle}>{t('externalRecords', 'External records')}</h2>
             <Tag type="purple" size="sm">
               {t('externalReadOnly', 'External · Read-only')}
+              <span className="cds--visually-hidden">
+                : {t('externalTagHint', 'Recorded at another facility')}. {t('readOnlyTagHint', 'Cannot be changed here')}
+              </span>
             </Tag>
           </div>
           <p className={styles.description}>

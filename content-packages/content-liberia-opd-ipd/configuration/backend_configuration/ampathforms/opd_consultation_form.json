@@ -1,7 +1,7 @@
 {
     "name": "OPD Consultation Form",
     "uuid": "${var.form.opd-consultation.uuid}",
-    "version": "2.0",
+    "version": "2.1",
     "published": true,
     "retired": false,
     "encounter": "Consultation",
@@ -38,7 +38,10 @@
                                         "concept": "${var.concept.visit-type-opd-referral.uuid}",
                                         "label": "Referral"
                                     }
-                                ]
+                                ],
+                                "calculate": {
+                                    "calculateExpression": "mode === 'enter' && isEmpty(myValue) ? api.getLatestObs(patient.id, '${var.concept.visit-type-opd.uuid}').then(obs => obs ? '${var.concept.visit-type-opd-followup.uuid}' : '${var.concept.visit-type-opd-new.uuid}') : myValue"
+                                }
                             }
                         },
                         {
@@ -46,8 +49,10 @@
                             "label": "Attending Clinician",
                             "type": "encounterProvider",
                             "required": true,
+                            "readonly": "!isEmpty(myValue) && !isDateBefore(encounterDate, dayjs().startOf('day').toDate())",
                             "questionOptions": {
-                                "rendering": "ui-select-extended"
+                                "rendering": "ui-select-extended",
+                                "isSearchable": true
                             }
                         },
                         {
@@ -55,8 +60,23 @@
                             "label": "Encounter Location",
                             "type": "encounterLocation",
                             "required": true,
+                            "readonly": "!isEmpty(myValue)",
                             "questionOptions": {
-                                "rendering": "ui-select-extended"
+                                "rendering": "ui-select-extended",
+                                "isSearchable": true
+                            }
+                        },
+                        {
+                            "id": "encounterContextMissing",
+                            "type": "markdown",
+                            "questionOptions": {
+                                "rendering": "markdown"
+                            },
+                            "value": [
+                                "**The attending clinician or encounter location could not be set automatically.** Your user account must be linked to a provider, and you must be logged in at a location. Ask your system administrator to link a provider to your account, or log out and choose a location, before saving this form."
+                            ],
+                            "hide": {
+                                "hideWhenExpression": "!isEmpty(encounterProvider) && !isEmpty(encounterLocation)"
                             }
                         },
                         {

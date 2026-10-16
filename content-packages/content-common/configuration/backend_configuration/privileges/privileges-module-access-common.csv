@@ -1,0 +1,13 @@
+Uuid,Void/Retire,Privilege name,Description
+${var.privilege.read-tb-screening.uuid},,Read TB Screening,Module access entitlement; operation-specific checks still apply
+${var.privilege.write-tb-screening.uuid},,Write TB Screening,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-general-consultation.uuid},,Manage General Consultation,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-anc.uuid},,Manage ANC,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-laboratory.uuid},,Manage Laboratory,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-pnc.uuid},,Manage PNC,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-pharmacy.uuid},,Manage Pharmacy,Module access entitlement; operation-specific checks still apply
+${var.privilege.read-labor-and-delivery.uuid},,Read Labor and Delivery,Module access entitlement; operation-specific checks still apply
+${var.privilege.write-labor-and-delivery.uuid},,Write Labor and Delivery,Module access entitlement; operation-specific checks still apply
+${var.privilege.read-immunization.uuid},,Read Immunization,Module access entitlement; operation-specific checks still apply
+${var.privilege.write-immunization.uuid},,Write Immunization,Module access entitlement; operation-specific checks still apply
+${var.privilege.manage-family-planning.uuid},,Manage Family Planning,Module access entitlement; operation-specific checks still apply

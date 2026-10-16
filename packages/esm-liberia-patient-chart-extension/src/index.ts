@@ -9,7 +9,8 @@
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
  * ANC numeric lookup for L&D Gravida/Parity prefill, the transient WHO
- * weight-for-length/height display, and the MUAC completed-month check).
+ * weight-for-length/height display, the MUAC completed-month check, and
+ * Vitamin A supplementation age, history and return-date checks).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
@@ -19,6 +20,16 @@ import { externalRecordsConfigSchema } from './external-records/external-records
 import { getCurrentPregnancyAncNumeric } from './forms/current-pregnancy-anc-obstetric-history';
 import { registerFormEngineExpressionHelper } from './forms/register-form-engine-helpers';
 import { calcLiberiaWhz, isMuacRequired } from './forms/who-whz';
+import { loadVitaminAAdministrations } from './forms/vitamin-a-history';
+import { vitaminAEditingEncounterUuid } from './forms/vitamin-a-session';
+import {
+  vitaminABlock,
+  vitaminACurrentStrength,
+  vitaminAReturnDateValue,
+  vitaminARouteRejected,
+  vitaminARouteValue,
+  vitaminASharedReturnValue,
+} from './forms/vitamin-a-supplementation';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -31,10 +42,19 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
+  defineConfigSchema('liberia-immunization-history', configSchema);
   defineConfigSchema(moduleName, { ...currentPregnancyAncConfigSchema, externalRecords: externalRecordsConfigSchema });
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
+  registerFormEngineExpressionHelper('vitaminACurrentStrength', vitaminACurrentStrength);
+  registerFormEngineExpressionHelper('vitaminABlock', vitaminABlock);
+  registerFormEngineExpressionHelper('vitaminAReturnDateValue', vitaminAReturnDateValue);
+  registerFormEngineExpressionHelper('vitaminASharedReturnValue', vitaminASharedReturnValue);
+  registerFormEngineExpressionHelper('vitaminARouteValue', vitaminARouteValue);
+  registerFormEngineExpressionHelper('vitaminARouteRejected', vitaminARouteRejected);
+  registerFormEngineExpressionHelper('vitaminAEditingEncounterUuid', vitaminAEditingEncounterUuid);
+  registerFormEngineExpressionHelper('loadVitaminAAdministrations', loadVitaminAAdministrations);
 }
 
 /**
@@ -50,6 +70,15 @@ export const liberiaObsWidget = getAsyncLifecycle(
   {
     featureName: 'liberia-obs-widget',
     moduleName: 'liberia-obs-widget',
+  },
+);
+
+/** Immunization history through REST encounters, so module read can authorize it without Get Encounters. */
+export const liberiaImmunizationHistory = getAsyncLifecycle(
+  () => import('./liberia-obs-widget/liberia-obs-widget.component'),
+  {
+    featureName: 'liberia-immunization-history',
+    moduleName: 'liberia-immunization-history',
   },
 );
 

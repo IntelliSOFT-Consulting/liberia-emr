@@ -15,7 +15,7 @@ and the `*-gaps.md` files beside it. The deployment model and location attributi
 | File | Format | What it is |
 | --- | --- | --- |
 | `fixtures/patients.csv` | CSV, one row per patient record | 113 synthetic patient records: 81 at Careysburg and 32 at Barnersville |
-| `fixtures/forms.csv` | CSV | The 11 forms that encounters reference, by `${var.*}` or `form:<name>@<version>`. One of them, ANC Initial Visit v1.1, is created retired if it is missing |
+| `fixtures/forms.csv` | CSV | The 11 forms that encounters reference, by `${var.*}` or `form:<name>@<version>`. ANC Initial Visit v1.1 and Immunization v1.1 are created retired if they are missing |
 | `fixtures/encounters.csv` | CSV | 147 encounters: time, type, form, location, back-dated entry time, voided flags |
 | `fixtures/obs.csv` | CSV | 182 observations: numeric, coded (`${var.*}` or `CIEL:<id>`) or `date:YYYY-MM-DD`, with a result time and an order for lab results |
 | `fixtures/diagnoses.csv` | CSV | 30 `encounter_diagnosis` rows, as written by the O3 Visit Note |
@@ -95,8 +95,8 @@ Two resolutions to know about:
   the encounter type of the v2.2 form. `var.encountertype.family-planning.uuid` is the national
   layer's separate *Family Planning* type, which no form uses. Until LE-343 the MCH type shared
   that key with a second value (rmncah-nutrition gap 10), and the chain resolved it to MCH's.
-- **Forms with no variable** are referenced by `form:`: `3. Family Planning` v1.0, and the
-  retired `ANC Initial Visit` v1.1. Every `var.form.*` holds the runtime uuid Initializer
+- **Forms with no variable** are referenced by `form:`: `3. Family Planning` v1.0, the
+  retired `ANC Initial Visit` v1.1, and the retired `Immunization` v1.1. Every `var.form.*` holds the runtime uuid Initializer
   derives from the form's name and version (gap 11, fixed by LE-344), and `validate-content.sh`
   checks it, so a form that has a variable is referenced by it.
 
@@ -149,8 +149,8 @@ qa/reporting/load-fixtures.py prepare-central --db-container <central db contain
   package's `locations` CSV, with the same UUIDs, parents and tags. Central is built with one
   site package, and the receiver rejects records at an unknown location (ADR 0010,
   Consequences).
-- **The old form version.** It creates the retired ANC Initial Visit v1.1 form row. Forms are
-  metadata, and metadata is not synced.
+- **The old form versions.** It creates the retired ANC Initial Visit v1.1 and Immunization
+  v1.1 form rows. Forms are metadata, and metadata is not synced.
 - **County and District parents, with `--admin-hierarchy`.** It creates *Montserrado*,
   *Careysburg District* and *Greater Monrovia District* from the site variables, and parents
   each facility root under its district. Use this only until the MFL sync (ADR 0009, LE-317)
