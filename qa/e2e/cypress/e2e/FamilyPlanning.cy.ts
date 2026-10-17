@@ -84,7 +84,8 @@ describe('Family Planning form', () => {
         familyPlanningForm.verifyDispensedImplantOpensImplantSections();
     });
 
-    it('reveals implant sections when implants are dispensed only, and Pregnancy only once chosen', () => {
+    // Temporarily quarantined: dropdown detaches during click in CI run 39038512933 (LE-568).
+    it.skip('reveals implant sections when implants are dispensed only, and Pregnancy only once chosen', () => {
         familyPlanningForm.selectClientType('New Family Planning Client');
         familyPlanningForm.selectCounsellingDone('Yes');
         familyPlanningForm.verifyImplantGatesWithoutChosenMethod();

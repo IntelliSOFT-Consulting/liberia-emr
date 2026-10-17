@@ -7,6 +7,12 @@ Browser tests against a fully launched distribution.
 In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 `cypress/support/faker.ts`.
 
+Family Planning quarantine (LE-568): `reveals implant sections when implants are
+dispensed only, and Pregnancy only once chosen` is temporarily `it.skip` after a
+dropdown detached during click in [CI run 39038512933](https://github.com/IntelliSOFT-Consulting/liberia-emr/actions/runs/39038512933).
+The no-chosen-method transition described below is therefore not currently exercised.
+Re-enable this scenario after investigating and verifying the dropdown interaction.
+
 | Spec | Covers |
 | --- | --- |
 | `Registration.cy.ts` | Login page and home page; registration required-field errors, name-known and date-of-birth-known toggles, future birthdate, request payload, 400/409/500 error dialogs, double submit (POST stubbed with `cy.intercept`); one registration against the live backend |
