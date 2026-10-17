@@ -220,17 +220,19 @@ class FamilyPlanningFormPage {
     }
 
     verifyLamIsNotADispensedOption() {
-        cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout })
-            .scrollIntoView()
-            .within(() => {
-                cy.get('button[role="combobox"]').click();
-                cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
-                    const labels = [...$options].map((option) => option.textContent?.trim());
-                    expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
-                    expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
-                });
-                cy.get('button[role="combobox"]').click();
-            });
+        const combobox = '#familyPlanningMethodDispensed button[role="combobox"]';
+        cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout }).scrollIntoView();
+        cy.get(combobox, { timeout: this.timeout })
+            .should('be.visible')
+            .and('be.enabled')
+            .click();
+        cy.get('#familyPlanningMethodDispensed [role="option"]', { timeout: this.timeout }).should(($options) => {
+            const labels = [...$options].map((option) => option.textContent?.trim());
+            expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
+            expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
+        });
+        cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'true').click();
+        cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'false');
     }
 
     saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
