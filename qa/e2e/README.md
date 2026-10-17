@@ -25,6 +25,12 @@ In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 
 `Visit`, `OPDConsultation` and `TBScreening` register a new patient in every `beforeEach`.
 
+Family Planning clinical-decision-support setup verifies the counselled sections after
+selecting For Commodities. Its existing bounded counselling-toggle workaround restores
+that purpose if a re-render hides Method Record, before any clinical answers are entered.
+Recovery is logged; it is not a substitute for testing the application's initial
+conditional-section rendering.
+
 The two `Mfl*` specs need the stack started with the MFL stub overlay and its material
 ([qa/api/README.md](../api/README.md#mfl-sync-mfl-mfl-stub)); they sync the stub's fixture in
 `before()`. `CYPRESS_MFL_STUB_URL` (default `https://localhost:18443`) is where they switch stub

@@ -64,10 +64,7 @@ class FamilyPlanningFormPage {
         }
     }
 
-    // The form engine occasionally re-evaluates the Purpose of Visit question but not the
-    // section-level hide on Obstetric Profile / Method Record. Only a change to Counselling
-    // Done re-runs that evaluation, so toggle it if the sections never render.
-    private ensureCounselledSectionsRendered(attempt = 1) {
+    private ensureCounselledSectionsRendered(attempt = 1, restorePurpose = false) {
         const maxAttempts = 3;
         const deadline = Date.now() + 10000;
         const poll = (): void => {
@@ -85,7 +82,10 @@ class FamilyPlanningFormPage {
                 cy.log(`Method Record not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
                 this.checkOption('counsellingDone-No');
                 this.checkOption('counsellingDone-Yes');
-                cy.then(() => this.ensureCounselledSectionsRendered(attempt + 1));
+                if (restorePurpose) {
+                    this.selectPurposeForCommodities();
+                }
+                cy.then(() => this.ensureCounselledSectionsRendered(attempt + 1, restorePurpose));
             });
         };
         poll();
@@ -99,7 +99,12 @@ class FamilyPlanningFormPage {
                 if (!id) {
                     throw new Error('For Commodities label is missing its checkbox identifier');
                 }
-                this.checkOption(id);
+                cy.get(`input[id="${id}"]`).then(($input) => {
+                    if (!$input.is(':checked')) {
+                        this.checkOption(id);
+                    }
+                });
+                cy.get(`input[id="${id}"]`).should('be.checked');
             });
     }
 
@@ -124,7 +129,6 @@ class FamilyPlanningFormPage {
         cy.get('input[id^="purposeOfVisit-"]', { timeout: this.timeout }).should('not.be.checked');
         cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
 
-        // Nothing appears on screen to wait for, so give a save request time to be sent.
         cy.wait(3000);
         cy.get('@saveFamilyPlanning.all').should('have.length', 0);
         cy.get('label[for^="purposeOfVisit-"]').should('be.visible');
@@ -155,11 +159,11 @@ class FamilyPlanningFormPage {
     }
 
     private selectDropdownOption(fieldId: string, option: string) {
-        cy.get(`#${fieldId}`, { timeout: this.timeout })
-            .scrollIntoView()
-            .within(() => {
-                cy.get('button[role="combobox"]').click();
-            });
+        cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView();
+        cy.get(`#${fieldId} button[role="combobox"]`, { timeout: this.timeout })
+            .should('be.visible')
+            .and('be.enabled')
+            .click();
         cy.contains('[role="option"], .cds--list-box__menu-item', new RegExp(`^${this.escapeRegExp(option)}$`), {
             timeout: this.timeout,
         }).click();
@@ -255,6 +259,18 @@ class FamilyPlanningFormPage {
         this.selectClientType('New Family Planning Client');
         this.selectCounsellingDone('Yes');
         this.selectPurposeForCommodities();
+        this.ensureCounselledSectionsRendered(1, true);
+        cy.get('input[id="counsellingDone-Yes"]').should('be.checked');
+        cy.contains('label', /^For Commodities$/).invoke('attr', 'for').then((id) => {
+            cy.get(`input[id="${id}"]`).should('be.checked');
+        });
+        ['Obstetric Profile', 'Method Record'].forEach((section) => {
+            this.verifySectionVisibility(section, true);
+        });
+        cy.get('#chosenFamilyPlanningMethod', { timeout: this.timeout }).scrollIntoView();
+        cy.get('#chosenFamilyPlanningMethod button[role="combobox"]', { timeout: this.timeout })
+            .should('be.visible')
+            .and('be.enabled');
     }
 
     completeAndSubmitImplantVisit() {
@@ -334,7 +350,6 @@ class FamilyPlanningFormPage {
     }
 
     private setNumber(fieldId: string, value: string) {
-        // An emptied number input reverts to 0, so overwrite the selected text instead of clearing it.
         cy.get(`#${fieldId}`, { timeout: this.timeout })
             .scrollIntoView()
             .type(`{selectall}${value}`)
