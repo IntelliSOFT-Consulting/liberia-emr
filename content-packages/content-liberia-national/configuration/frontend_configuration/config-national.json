@@ -130,9 +130,18 @@
       "demographics",
       "contact",
       "referralDetails",
-      "relationships"
+      "relationships",
+      "goodSamaritan"
     ],
     "sectionDefinitions": [
+      {
+        "id": "goodSamaritan",
+        "name": "Good Samaritan (declined next of kin)",
+        "fields": [
+          "goodSamaritanName",
+          "goodSamaritanPhone"
+        ]
+      },
       {
         "id": "referralDetails",
         "name": "Referral Details",
@@ -197,6 +206,18 @@
         "validation": {
           "required": true
         }
+      },
+      {
+        "id": "goodSamaritanName",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-name.uuid}",
+        "label": "Good Samaritan name"
+      },
+      {
+        "id": "goodSamaritanPhone",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-phone.uuid}",
+        "label": "Good Samaritan phone number"
       }
     ],
     "fieldConfigurations": {
@@ -227,6 +248,17 @@
         }
       ]
     }
+  },
+  "_comment_patient_banner": [
+    "Contact Details in the patient banner lists these attributes. Text formats only: the banner",
+    "renders the raw value, and a coded attribute's value is an object. Telephone is the app default."
+  ],
+  "@openmrs/esm-patient-banner-app": {
+    "contactAttributeTypes": [
+      "${var.personattributetypes.telephone-number.uuid}",
+      "${var.personattributetypes.good-samaritan-name.uuid}",
+      "${var.personattributetypes.good-samaritan-phone.uuid}"
+    ]
   },
   "@liberiaemr/esm-liberia-login-app": {
     "_comment_idle_timeout": [
