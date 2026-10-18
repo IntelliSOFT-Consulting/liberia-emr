@@ -60,7 +60,7 @@ Both complete, paginated collections are required:
 - REST `/encounter?patient=...`: encounters whose form UUID is one of
   `routineImmunizations.nationalFormUuids`, and whose vaccine-name answer uses
   `routineImmunizations.vaccineQuestionUuid`. National frontend configuration
-  lists the frozen Immunization identities v1.0 through v1.3 and
+  lists the frozen Immunization identities v1.0 through v1.4 and
   `${var.form.immunization.uuid}`, the current form. The vaccine-name question
   is `${var.concept.national.vaccine-name.uuid}` on every one of these versions.
   Current form identity alone is not enough: an upgrade that only recognized
@@ -71,9 +71,9 @@ Both complete, paginated collections are required:
   observation, so its encounter datetime is used. Return-date Obs and AEFI
   vaccine mentions are never administration evidence.
 
-The existing national form currently offers OPV1 only. This change reads all
+The current national form is Immunization v1.5. This change reads all
 recognized historical national dose answers but does not expand or redesign that
-form, implement BCG/OPV0 forms, or change its existing age/return-date behavior.
+form or change its existing age/return-date behavior.
 
 Each normalized dose retains canonical ID, date, internal LE-560 identity,
 and source-qualified record IDs. Internal sequence 1 is paired with the unique

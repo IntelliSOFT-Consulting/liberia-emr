@@ -94,8 +94,8 @@ six-month routine date.
 No lot, batch, provider, remarks, or dose number is collected. The dictionary does not
 require them for these elements. DE55 batch number belongs to AEFI, not to Vitamin A.
 
-The Immunization form is version 1.4. Initializer derives
-`36f41158-2060-399d-959b-f99718b154be`, which is `var.form.immunization.uuid`. The earlier
+The Immunization form is version 1.5. Initializer derives
+`ed2202f0-c074-34ab-bde0-a08468ab3900`, which is `var.form.immunization.uuid`. The earlier
 forms stay in the database:
 
 | Version | UUID |
@@ -104,13 +104,14 @@ forms stay in the database:
 | 1.2 | `af9b642f-15d7-3687-812d-9ea2c890cfbd` |
 | 1.3 | `c1b0a028-d35d-3f54-a240-c027d51ac1df` |
 | 1.4 | `36f41158-2060-399d-959b-f99718b154be` |
+| 1.5 | `ed2202f0-c074-34ab-bde0-a08468ab3900` |
 
 `mamba_fact_nutrition_vitamin_a` counts a Blue observation on any of those versions. It
 matches the form name and version, and also the current form variable, because the
 Immunization form shares the Consultation encounter type. Reporting does not key the
 historical versions through `var.form.immunization.uuid`. Frozen
-`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.3;
-v1.4 remains the current key only.
+`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.4;
+v1.5 remains the current key only.
 
 ## Route
 
