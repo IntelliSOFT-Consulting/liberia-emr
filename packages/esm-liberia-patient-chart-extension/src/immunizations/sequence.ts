@@ -1,6 +1,6 @@
 import { addDateOffset, evaluateEligibility, type AdministeredDose, type EligibilityStatus } from './eligibility.ts';
 import { consolidateHistory, type FhirImmunization, type NationalEncounter } from './history.ts';
-import { ruleById, toEligibilityRule, type SequenceRule } from './sequence-rules.ts';
+import { ruleById, toEligibilityRule, type SequenceIdentityConfig, type SequenceRule } from './sequence-rules.ts';
 
 export type SequenceStatus = EligibilityStatus | 'UNRESOLVED';
 
@@ -27,6 +27,7 @@ export function evaluateSequence(input: {
   evaluationDate: string;
   fhir: readonly FhirImmunization[] | null | undefined;
   encounters: readonly NationalEncounter[] | null | undefined;
+  config: SequenceIdentityConfig;
   editingRecordId?: string;
 }): SequenceResult {
   const rule = ruleById(input.doseId);
@@ -41,6 +42,7 @@ export function evaluateSequence(input: {
     evaluationDate: input.evaluationDate,
     rule,
     history: history.doses,
+    vaccineConceptUuids: input.config.vaccineConceptUuids,
   });
 }
 
@@ -49,10 +51,11 @@ export function evaluateDoseRule(input: {
   evaluationDate: string;
   rule: SequenceRule;
   history: readonly AdministeredDose[];
+  vaccineConceptUuids: Readonly<Record<string, string>>;
 }): SequenceResult {
   try {
-    const eligibilityRule = toEligibilityRule(input.rule);
-    const intervalDate = intervalFromHistory(input.rule, input.evaluationDate, input.history);
+    const eligibilityRule = toEligibilityRule(input.rule, input.vaccineConceptUuids);
+    const intervalDate = intervalFromHistory(input.rule, input.evaluationDate, input.history, input.vaccineConceptUuids);
     const result = evaluateEligibility({
       birthDate: input.birthDate,
       evaluationDate: input.evaluationDate,
@@ -73,9 +76,14 @@ export function evaluateDoseRule(input: {
   }
 }
 
-function intervalFromHistory(rule: SequenceRule, evaluationDate: string, history: readonly AdministeredDose[]): string | undefined {
+function intervalFromHistory(
+  rule: SequenceRule,
+  evaluationDate: string,
+  history: readonly AdministeredDose[],
+  vaccineConceptUuids: Readonly<Record<string, string>>,
+): string | undefined {
   if (!rule.prerequisiteId) return undefined;
-  const eligibilityRule = toEligibilityRule(rule);
+  const eligibilityRule = toEligibilityRule(rule, vaccineConceptUuids);
   const predecessor = eligibilityRule.prerequisite?.dose;
   if (!predecessor) return undefined;
   const prior = history.filter((record) =>

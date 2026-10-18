@@ -38,30 +38,36 @@ Historical doses from either source count.
   code, a dose-number string, more than one protocol, or a sequence other than
   the clinical sequence or `1` is unresolved. Sequence `1` is accepted on a
   dose-specific concept because that concept is already the dose.
-- National immunization form `var.form.immunization.uuid`, vaccine-name answer
-  `var.concept.national.vaccine-name.uuid`. The form has no administration-date
-  observation, so the encounter datetime is the clinical date. The return-date
-  observation is not an administration.
-- ANC form `var.form.anc-national.uuid`, Date of TT1–TT5. The observation value
-  is the administration date. The encounter datetime is not.
+- National Immunization encounters whose form UUID is in runtime
+  `routineImmunizations.nationalFormUuids`. National config lists the current
+  Immunization form. The vaccine-name question is `vaccineQuestionUuid`. The
+  form has no administration-date observation, so the encounter datetime is
+  the clinical date. Other observations, including the return date, are not
+  administrations, so sequencing does not carry the return-date concept UUID.
+- ANC encounters whose form UUID is in `ancFormUuids`. Date of TT1–TT5 concepts
+  are `ancTtConceptUuids`, keyed by the canonical TD dose. The observation
+  value is the administration date. The encounter datetime is not.
 
 Timestamps are converted to the `Africa/Monrovia` calendar date. The same
 canonical dose on the same date, from both sources or from TT and TD, counts
 once. Two dates for one dose are unresolved for that series. A missing or invalid
 administration date on a record already mapped to a dose blocks only that series.
-An unknown code is unresolved for every series, because it might be the predecessor. Known vaccines
-outside these rules, including BCG and MCV, do not block unrelated series.
-AEFI vaccine answers are not administration evidence.
+An unknown code is unresolved for every series, because it might be the predecessor. Concept UUIDs
+configured in `vaccineConceptUuids` without a sequence rule, including BCG and MCV, do not block
+unrelated series. AEFI vaccine answers are not administration evidence.
 
-Origin/main has no shared FHIR-plus-national-form normalizer. The helper in
-`src/immunizations/history.ts` is the LE-561 history used for sequencing. It does
-not page a live server and it does not write history.
+`src/immunizations/history.ts` is the LE-561 history used for sequencing. It receives the runtime
+form, question, and concept maps. It does not page a live server and it does not write history.
+Those maps are the same `routineImmunizations` object a routine schedule would read
+(`nationalFormUuids`, `vaccineQuestionUuid`, `vaccineConceptUuids`, `fhirDoseMappings`). Sequencing
+matches concept UUIDs. It does not infer a dose from `fhirDoseMappings`. ANC TT uses
+`ancFormUuids` and `ancTtConceptUuids` on that same object.
 
 ## Sequence and intervals
 
-Identity is the dose-specific concept UUID from
-`content-liberia-national/configuration/variables.properties`, plus the clinical
-sequence number. Rules live in `src/immunizations/sequence-rules.ts`.
+Identity is the canonical dose ID in `src/immunizations/sequence-rules.ts`, plus the clinical
+sequence number. The OpenMRS concept UUID for that ID comes from runtime `vaccineConceptUuids`.
+National values are `${var.*}` entries in `config-national.json`, not literals in the module.
 
 | Dose | Predecessor | Minimum interval | Age |
 | --- | --- | --- | --- |
@@ -103,7 +109,8 @@ ANC TT history and TD immunizations are one tetanus-containing sequence.
 | TT5 ↔ TD5 | `var.concept.national.date-of-tt5.uuid` | `var.concept.national.td5.uuid` |
 
 Dose 1 uses the concept named TD. There is no `td1` variable, and none is created.
-The TD concept is the canonical dose. Date of TT1 is the ANC equivalent.
+`vaccineConceptUuids.TD1` is that concept. `ancTtConceptUuids.TD1` is Date of TT1.
+The same pairing applies through TD5. A site can point either key at an existing concept.
 
 ## Duplicates
 

@@ -130,9 +130,18 @@
       "demographics",
       "contact",
       "referralDetails",
-      "relationships"
+      "relationships",
+      "goodSamaritan"
     ],
     "sectionDefinitions": [
+      {
+        "id": "goodSamaritan",
+        "name": "Good Samaritan (declined next of kin)",
+        "fields": [
+          "goodSamaritanName",
+          "goodSamaritanPhone"
+        ]
+      },
       {
         "id": "referralDetails",
         "name": "Referral Details",
@@ -197,6 +206,18 @@
         "validation": {
           "required": true
         }
+      },
+      {
+        "id": "goodSamaritanName",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-name.uuid}",
+        "label": "Good Samaritan name"
+      },
+      {
+        "id": "goodSamaritanPhone",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-phone.uuid}",
+        "label": "Good Samaritan phone number"
       }
     ],
     "fieldConfigurations": {
@@ -227,6 +248,17 @@
         }
       ]
     }
+  },
+  "_comment_patient_banner": [
+    "Contact Details in the patient banner lists these attributes. Text formats only: the banner",
+    "renders the raw value, and a coded attribute's value is an object. Telephone is the app default."
+  ],
+  "@openmrs/esm-patient-banner-app": {
+    "contactAttributeTypes": [
+      "${var.personattributetypes.telephone-number.uuid}",
+      "${var.personattributetypes.good-samaritan-name.uuid}",
+      "${var.personattributetypes.good-samaritan-phone.uuid}"
+    ]
   },
   "@liberiaemr/esm-liberia-login-app": {
     "_comment_idle_timeout": [
@@ -431,5 +463,68 @@
         "label": "Total Score"
       }
     ]
+  },
+  "_comment_routine_immunizations": [
+    "UUID metadata for immunization sequencing. Dose order, intervals, and ages stay in the ESM.",
+    "vaccineConceptUuids is an object: a site can replace one dose key and the other national values remain.",
+    "nationalFormUuids and ancFormUuids are arrays. Frontend config replaces an array wholesale,",
+    "so a site that sets either key must list every form version it still wants counted.",
+    "var.form.immunization.uuid is the current Immunization form.",
+    "Configured doses with no sequence rule are recognized and do not block other series.",
+    "ancTtConceptUuids maps canonical TD dose IDs to ANC Date-of-TT concepts. TD1 uses the unsuffixed TD concept."
+  ],
+  "@liberiaemr/esm-liberia-patient-chart-extension": {
+    "routineImmunizations": {
+      "nationalFormUuids": [
+        "${var.form.immunization.uuid}"
+      ],
+      "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
+      "vaccineConceptUuids": {
+        "BCG": "${var.concept.national.bcg.uuid}",
+        "OPV0": "${var.concept.national.opv0-1-dose.uuid}",
+        "OPV1": "${var.concept.national.opv1.uuid}",
+        "Penta1": "${var.concept.national.penta-1.uuid}",
+        "Pneumo1": "${var.concept.national.pneumo-1.uuid}",
+        "Rota1": "${var.concept.national.rota-1.uuid}",
+        "OPV2": "${var.concept.national.opv2.uuid}",
+        "Penta2": "${var.concept.national.penta-2.uuid}",
+        "Pneumo2": "${var.concept.national.pneumo-2.uuid}",
+        "Rota2": "${var.concept.national.rota-2.uuid}",
+        "OPV3": "${var.concept.national.opv3.uuid}",
+        "Penta3": "${var.concept.national.penta-3.uuid}",
+        "Pneumo3": "${var.concept.national.pneumo-3.uuid}",
+        "IPV": "${var.concept.national.ipv.uuid}",
+        "Malaria1": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
+        "Malaria2": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
+        "Malaria3": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
+        "MCV1": "${var.concept.national.mcv1.uuid}",
+        "TCV": "${var.concept.national.tcv.uuid}",
+        "YellowFever": "${var.concept.national.yellow-fever.uuid}",
+        "MCV2": "${var.concept.national.mcv2.uuid}",
+        "Malaria4": "${var.concept.national.malaria-vaccine-dose-4.uuid}",
+        "HPV1": "${var.concept.national.hpv1.uuid}",
+        "HPV2": "${var.concept.national.hpv2.uuid}",
+        "PediatricPfizer1": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+        "PediatricPfizer2": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+        "TD1": "${var.concept.national.td.uuid}",
+        "TD2": "${var.concept.national.td2.uuid}",
+        "TD3": "${var.concept.national.td3.uuid}",
+        "TD4": "${var.concept.national.td4.uuid}",
+        "TD5": "${var.concept.national.td5.uuid}",
+        "Pfizer": "${var.concept.national.pfizer.uuid}",
+        "JJ": "${var.concept.national.j-j.uuid}",
+        "CovidBooster": "${var.concept.national.covid-19-booster.uuid}"
+      },
+      "ancFormUuids": [
+        "${var.form.anc-national.uuid}"
+      ],
+      "ancTtConceptUuids": {
+        "TD1": "${var.concept.national.date-of-tt1.uuid}",
+        "TD2": "${var.concept.national.date-of-tt2.uuid}",
+        "TD3": "${var.concept.national.date-of-tt3.uuid}",
+        "TD4": "${var.concept.national.date-of-tt4.uuid}",
+        "TD5": "${var.concept.national.date-of-tt5.uuid}"
+      }
+    }
   }
 }

@@ -470,8 +470,8 @@ describe('form and concept metadata', () => {
   const questions = form.pages.flatMap((page) => page.sections.flatMap((section) => section.questions));
   const byId = (id: string) => questions.find((question) => question.id === id);
 
-  it('is Immunization version 1.4', () => {
-    assert.equal(form.version, '1.4');
+  it('is Immunization version 1.5', () => {
+    assert.equal(form.version, '1.5');
   });
 
   it('blocks an age-inappropriate strength, requires Date received, defaults Oral, and calculates the return date', () => {
@@ -521,10 +521,11 @@ describe('form and concept metadata', () => {
       resolve(root, 'content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv'),
       'utf8',
     );
-    assert.match(variables, /^var\.form\.immunization\.uuid=36f41158-2060-399d-959b-f99718b154be$/m);
+    assert.match(variables, /^var\.form\.immunization\.uuid=ed2202f0-c074-34ab-bde0-a08468ab3900$/m);
     assert.match(variables, /v1\.1 5ec3f3ef-f63d-3d4a-a828-8a0be01c1fb8/);
     assert.match(variables, /v1\.2 af9b642f-15d7-3687-812d-9ea2c890cfbd/);
     assert.match(variables, /v1\.3 c1b0a028-d35d-3f54-a240-c027d51ac1df/);
+    assert.match(variables, /v1\.4 36f41158-2060-399d-959b-f99718b154be/);
     assert.match(variables, /^var\.concept\.national\.vit-a-blue-100-000iu\.uuid=eb2f71a4-6689-464b-9d2c-76e84ef0cc76$/m);
     assert.match(variables, /^var\.concept\.national\.vit-a-red-200-000iu\.uuid=e74aef5c-305c-45c5-9669-3338c30072fa$/m);
     assert.equal(conceptsCsv.split('vit-a-red-200-000iu').length - 1, 2);
@@ -539,7 +540,7 @@ describe('form and concept metadata', () => {
       'utf8',
     );
     assert.match(sql, /f\.name = 'Immunization'/);
-    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4'\)/);
+    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5'\)/);
     assert.match(sql, /f\.uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     assert.doesNotMatch(sql, /ef\.form_uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     const forms = readFileSync(resolve(root, 'qa/reporting/fixtures/forms.csv'), 'utf8');
