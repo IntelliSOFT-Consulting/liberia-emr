@@ -62,9 +62,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.5');
+    assert.equal(form.version, '1.6');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.5';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.6';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -76,10 +76,11 @@ describe('Immunization form Td entry point', () => {
   it('keeps childhood vaccines available and gates only Td', () => {
     assert.equal(vaccinationSection.hide, undefined);
     const answers = vaccine.questionOptions?.answers ?? [];
-    assert.deepEqual(answers.map((answer) => answer.label), ['BCG', 'OPV1', 'TD', 'TD2', 'TD3', 'TD4', 'TD5']);
+    assert.deepEqual(answers.map((answer) => answer.label), ['BCG', 'OPV0', 'OPV1', 'TD', 'TD2', 'TD3', 'TD4', 'TD5']);
     assert.equal(answers[0].hide?.hideWhenExpression, 'age >= 1');
     assert.equal(answers[1].hide?.hideWhenExpression, 'age > 18');
-    for (const answer of answers.slice(2)) {
+    assert.equal(answers[2].hide?.hideWhenExpression, 'age > 18');
+    for (const answer of answers.slice(3)) {
       assert.equal(answer.hide, undefined);
     }
     assert.equal(question('parent_caregiver').hide?.hideWhenExpression, 'age > 18');
@@ -105,7 +106,7 @@ describe('Immunization form Td entry point', () => {
   it('offers Td answers on the vaccine-name concept', () => {
     const row = concepts.split('\n').find((line) => line.startsWith('${var.concept.national.vaccine-name.uuid},'));
     assert.ok(row);
-    for (const variable of ['var.concept.national.opv1.uuid', 'var.concept.national.bcg.uuid', ...tdVariables]) {
+    for (const variable of ['var.concept.national.opv0-1-dose.uuid', 'var.concept.national.opv1.uuid', 'var.concept.national.bcg.uuid', ...tdVariables]) {
       assert.ok(row?.includes(`\${${variable}}`));
     }
   });

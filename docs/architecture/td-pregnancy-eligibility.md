@@ -84,11 +84,13 @@ overdue, once the previous dose and interval are met.
 
 ## What the form does
 
-Immunization form 1.5 adds TD–TD5 to Vaccine Name. Childhood answers stay as
-they were: BCG is hidden from age 1, and OPV1 stays limited to age 18 and
-below (`age > 18`). The explanatory notice uses that same cutoff: it is hidden
-only when `age < 18`, so it is shown at age 18 and above. The Td answers are
-not hidden. Saving one is rejected unless the helper returns `allowed`.
+Immunization form 1.6 adds TD–TD5 to Vaccine Name. Childhood answers stay as
+they were: BCG is hidden from age 1, and OPV0 and OPV1 stay limited to age 18
+and below (`age > 18`). OPV0 keeps that limit on the answer because the
+vaccination section is no longer hidden at `age > 18`, so Td can be recorded
+at any age. The explanatory notice uses that same cutoff: it is hidden only
+when `age < 18`, so it is shown at age 18 and above. The Td answers are not
+hidden. Saving one is rejected unless the helper returns `allowed`.
 
 The helper fails closed when the patient id is missing, the birth or encounter
 date is unusable, or pregnancy or tetanus history cannot be loaded. Encounter
@@ -107,10 +109,12 @@ dictionary intervals above.
 
 ## Technical integration
 
-LE-564 merged first. Its Immunization v1.4 remains the historical Vitamin A
-form, UUID `36f41158-2060-399d-959b-f99718b154be`. LE-565 integrated that form
-with Td pregnancy eligibility and published the combined Immunization form as
-v1.5. v1.4 is not republished under a second body.
+LE-564's Immunization v1.4 remains a historical Vitamin A form, UUID
+`36f41158-2060-399d-959b-f99718b154be`. Current main already published
+Immunization v1.5 (`ed2202f0-c074-34ab-bde0-a08468ab3900`) with OPV0 and the
+Vitamin A behavior, so LE-565 does not reuse that version. The combined form
+is v1.6, UUID `337600b2-9ea3-310a-bbc5-cb2dfa221318`. v1.4 and v1.5 are not
+republished under a second body.
 
 LE-561 contains overlapping TT/Td canonical-history and interval logic. LE-565
 implements that sequence independently because LE-561 is not on main. Reconcile

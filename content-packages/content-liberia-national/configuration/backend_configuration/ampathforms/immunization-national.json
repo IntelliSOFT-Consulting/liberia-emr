@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.5",
+  "version": "1.6",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -103,6 +103,13 @@
                     "label": "BCG",
                     "hide": {
                       "hideWhenExpression": "age >= 1"
+                    }
+                  },
+                  {
+                    "concept": "${var.concept.national.opv0-1-dose.uuid}",
+                    "label": "OPV0",
+                    "hide": {
+                      "hideWhenExpression": "age > 18"
                     }
                   },
                   {
