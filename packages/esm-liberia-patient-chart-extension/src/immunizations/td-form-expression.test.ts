@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { evaluateAsync } from '@openmrs/esm-expression-evaluator';
 import { isTdVaccine } from './td-pregnancy.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -62,9 +63,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.6');
+    assert.equal(form.version, '1.7');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.6';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.7';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -76,7 +77,10 @@ describe('Immunization form Td entry point', () => {
   it('keeps childhood vaccines available and gates only Td', () => {
     assert.equal(vaccinationSection.hide, undefined);
     const answers = vaccine.questionOptions?.answers ?? [];
-    assert.deepEqual(answers.map((answer) => answer.label), ['BCG', 'OPV0', 'OPV1', 'TD', 'TD2', 'TD3', 'TD4', 'TD5']);
+    assert.deepEqual(answers.map((answer) => answer.label), [
+      'BCG', 'OPV0', 'OPV1', 'Pediatric Pfizer COVID-19 dose 1', 'Pediatric Pfizer COVID-19 dose 2',
+      'TD', 'TD2', 'TD3', 'TD4', 'TD5',
+    ]);
     assert.equal(answers[0].hide?.hideWhenExpression, 'age >= 1');
     assert.equal(answers[1].hide?.hideWhenExpression, 'age > 18');
     assert.equal(answers[2].hide?.hideWhenExpression, 'age > 18');
@@ -142,26 +146,21 @@ describe('Immunization form Td entry point', () => {
 
   it('evaluates the shipped calculate expression', async () => {
     const expression = substitute(gate.questionOptions?.calculate?.calculateExpression ?? '');
+    assert.match(expression, /vitaminAEditingEncounterUuid\(\)/);
+    assert.doesNotMatch(expression, /typeof|\bencounter\b/);
     const calls: unknown[][] = [];
     const tdAdministrationGate = (...args: unknown[]) => {
       calls.push(args);
       return Promise.resolve('allowed');
     };
-    const evaluate = new Function(
-      'patient',
-      'tdEncounterDate',
-      'vaccine_name',
-      'encounter',
-      'tdAdministrationGate',
-      `return (${expression});`,
-    );
-    const code = await evaluate(
-      { id: 'patient-1', birthDate: '1990-01-01' },
-      '2024-06-01',
-      'national.td',
-      { uuid: 'encounter-1' },
+    const evaluate = (vaccineName: string, editingEncounterUuid: string) => evaluateAsync(expression, {
+      patient: { id: 'patient-1', birthDate: '1990-01-01' },
+      tdEncounterDate: '2024-06-01',
+      vaccine_name: vaccineName,
+      vitaminAEditingEncounterUuid: () => editingEncounterUuid,
       tdAdministrationGate,
-    );
+    });
+    const code = await evaluate('national.td', 'encounter-1');
     assert.equal(code, 'allowed');
     assert.deepEqual(calls[0], [
       'patient-1',
@@ -186,24 +185,12 @@ describe('Immunization form Td entry point', () => {
       'national.date-of-tt5',
     ]);
 
-    const withoutEncounter = new Function(
-      'patient',
-      'tdEncounterDate',
-      'vaccine_name',
-      'tdAdministrationGate',
-      `return (${expression});`,
-    );
-    await withoutEncounter(
-      { id: 'patient-1', birthDate: '1990-01-01' },
-      '2024-06-01',
-      'national.opv1',
-      tdAdministrationGate,
-    );
+    await evaluate('national.opv1', '');
     assert.equal(calls[1][4], '');
   });
 
   it('applies the shipped validators to Td and leaves other vaccines alone', () => {
-    const validators = vaccine.validators ?? [];
+    const validators = (vaccine.validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isTdVaccine'));
     assert.deepEqual(validators.map((validator) => validator.message), [
       'Td cannot be given because pregnancy status or tetanus history could not be checked.',
       'Confirm the current pregnancy before giving Td. Pregnancy status is not recorded.',

@@ -183,6 +183,7 @@ describe('runtime identifiers', () => {
       'var.form.immunization.v1-3.uuid',
       'var.form.immunization.v1-4.uuid',
       'var.form.immunization.v1-5.uuid',
+      'var.form.immunization.v1-6.uuid',
       'var.form.immunization.uuid',
     ];
     assert.deepEqual(raw.nationalFormUuids, formVariables.map((name) => `\${${name}}`));
@@ -331,25 +332,42 @@ describe('HPV', () => {
 });
 
 describe('Pediatric Pfizer', () => {
-  const birth = '2019-06-15';
-  it('applies the inclusive 5 through 11 age window', () => {
-    blocked(decide('PediatricPfizer1', birth, '2023-06-15'), 'NOT_YET_DUE');
-    allowed(decide('PediatricPfizer1', birth, '2024-06-15'));
-    allowed(decide('PediatricPfizer1', birth, '2030-06-15'));
-    blocked(decide('PediatricPfizer1', birth, '2031-06-15'), 'NOT_ELIGIBLE');
-    assert.deepEqual(dose('PediatricPfizer2').upperAge, { age: { value: 12, unit: 'years' }, inclusive: false });
+  const birth = '2014-01-01';
+  it('allows dose 1 from the 5th birthday through the day before the 12th', () => {
+    blocked(decide('PediatricPfizer1', birth, '2018-12-31'), 'NOT_YET_DUE');
+    const fifth = decide('PediatricPfizer1', birth, '2019-01-01');
+    allowed(fifth);
+    assert.equal(fifth.status, 'DUE');
+    allowed(decide('PediatricPfizer1', birth, '2025-12-31'));
+    blocked(decide('PediatricPfizer1', birth, '2026-01-01'), 'NOT_ELIGIBLE');
+    assert.deepEqual(dose('PediatricPfizer1').dueAge, { value: 5, unit: 'years' });
+    assert.deepEqual(dose('PediatricPfizer1').upperAge, { age: { value: 12, unit: 'years' }, inclusive: false });
+    assert.equal(dose('PediatricPfizer2').upperAge, undefined);
+    assert.deepEqual(dose('PediatricPfizer2').dueAge, { value: 0, unit: 'days' });
+    assert.equal(dose('PediatricPfizer2').markOverdueAfterEligibleDate, true);
+    assert.equal(dose('OPV2').markOverdueAfterEligibleDate, undefined);
   });
-  it('requires dose 1 and the 28 day boundary', () => {
-    const first = fhir(concept('PediatricPfizer1'), '2024-01-31', 'pfizer1');
-    blocked(decide('PediatricPfizer2', '2014-01-01', '2024-02-28'), 'WAITING_FOR_PREREQUISITE');
-    blocked(decide('PediatricPfizer2', '2014-01-01', '2024-02-27', [first]), 'WAITING_FOR_INTERVAL');
-    const valid = decide('PediatricPfizer2', '2014-01-01', '2024-02-28', [first]);
-    allowed(valid);
-    assert.equal(valid.eligibleDate, '2024-02-28');
-    const early = fhir(concept('PediatricPfizer1'), '2019-01-01', 'early');
-    const tooYoung = decide('PediatricPfizer2', '2019-01-01', '2019-01-29', [early]);
-    blocked(tooYoung, 'NOT_YET_DUE');
-    assert.equal(tooYoung.eligibleDate, '2024-01-01');
+  it('requires dose 1, allows day 28, and marks a later day overdue', () => {
+    const first = fhir(concept('PediatricPfizer1'), '2025-12-20', 'pfizer1');
+    blocked(decide('PediatricPfizer2', birth, '2026-01-17'), 'WAITING_FOR_PREREQUISITE');
+    blocked(decide('PediatricPfizer2', birth, '2026-01-16', [first]), 'WAITING_FOR_INTERVAL');
+    const due = decide('PediatricPfizer2', birth, '2026-01-17', [first]);
+    allowed(due);
+    assert.equal(due.status, 'DUE');
+    assert.equal(due.eligibleDate, '2026-01-17');
+    const overdue = decide('PediatricPfizer2', birth, '2026-01-18', [first]);
+    allowed(overdue);
+    assert.equal(overdue.status, 'OVERDUE');
+    const stillDue = decide('OPV2', '2024-01-01', '2024-06-01', [fhir(concept('OPV1'), '2024-02-01', 'opv1')]);
+    assert.equal(stillDue.status, 'DUE');
+  });
+  it('allows dose 2 after the 12th birthday when dose 1 was given at age 11', () => {
+    const first = fhir(concept('PediatricPfizer1'), '2025-12-20', 'pfizer1');
+    const result = decide('PediatricPfizer2', birth, '2026-01-17', [first]);
+    allowed(result);
+    assert.equal(result.status, 'DUE');
+    assert.equal(addDateOffset('2014-01-01', { value: 12, unit: 'years' }), '2026-01-01');
+    assert.equal(addDateOffset('2025-12-20', { value: 28, unit: 'days' }), '2026-01-17');
   });
 });
 

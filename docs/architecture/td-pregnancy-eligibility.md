@@ -112,8 +112,8 @@ dictionary intervals above.
 LE-564's Immunization v1.4 remains a historical Vitamin A form, UUID
 `36f41158-2060-399d-959b-f99718b154be`. Current main already published
 Immunization v1.5 (`ed2202f0-c074-34ab-bde0-a08468ab3900`) with OPV0 and the
-Vitamin A behavior, so LE-565 does not reuse that version. The combined form
-is v1.6, UUID `337600b2-9ea3-310a-bbc5-cb2dfa221318`. v1.4 and v1.5 are not
+Vitamin A behavior, so LE-565 does not reuse that version. Immunization v1.6, UUID `337600b2-9ea3-310a-bbc5-cb2dfa221318`, is frozen as
+`var.form.immunization.v1-6.uuid`. The current form is v1.7. v1.4 and v1.5 are not
 republished under a second body.
 
 LE-561 contains overlapping TT/Td canonical-history and interval logic. LE-565

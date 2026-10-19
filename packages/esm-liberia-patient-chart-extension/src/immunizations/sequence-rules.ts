@@ -14,6 +14,11 @@ export interface SequenceRule {
   upperAge?: { age: Offset; inclusive: boolean };
   prerequisiteId?: string;
   minimumInterval?: Offset;
+  /**
+   * The first day `eligibleDate` is reached stays DUE. A later day with the dose
+   * still absent is OVERDUE. This does not add a maximum interval.
+   */
+  markOverdueAfterEligibleDate?: boolean;
 }
 
 export interface DoseLookup {
@@ -64,8 +69,9 @@ export const sequenceRules: readonly SequenceRule[] = [
   }),
   rule({
     id: 'PediatricPfizer2', series: 'pediatric-pfizer', sequenceNumber: 2,
-    dueAge: pfizerAge, upperAge: pfizerUpper, prerequisiteId: 'PediatricPfizer1',
+    prerequisiteId: 'PediatricPfizer1',
     minimumInterval: { value: 28, unit: 'days' },
+    markOverdueAfterEligibleDate: true,
   }),
   rule({ id: 'TD1', series: 'tetanus', sequenceNumber: 1 }),
   rule({

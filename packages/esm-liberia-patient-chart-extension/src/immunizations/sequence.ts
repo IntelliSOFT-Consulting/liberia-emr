@@ -66,15 +66,21 @@ export function evaluateDoseRule(input: {
     const eligibleDate = input.rule.prerequisiteId
       ? (intervalDate ? laterEligibleDate(result.scheduledDueDate, intervalDate) : undefined)
       : result.scheduledDueDate;
-    return {
+    return applyOverdueAfterEligibleDate(input.rule, input.evaluationDate, {
       ...result,
       ...(intervalDate ? { intervalDate } : {}),
       ...(eligibleDate ? { eligibleDate } : {}),
       issues: [],
-    };
+    });
   } catch (error) {
     return unresolved([error instanceof Error ? error.message : 'Unresolved history']);
   }
+}
+
+function applyOverdueAfterEligibleDate(rule: SequenceRule, evaluationDate: string, result: SequenceResult): SequenceResult {
+  if (!rule.markOverdueAfterEligibleDate || result.status !== 'DUE' || !result.eligibleDate) return result;
+  if (evaluationDate > result.eligibleDate) return { ...result, status: 'OVERDUE' };
+  return result;
 }
 
 function intervalFromHistory(
