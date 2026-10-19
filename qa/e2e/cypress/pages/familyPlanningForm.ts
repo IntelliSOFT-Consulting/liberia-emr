@@ -158,16 +158,98 @@ class FamilyPlanningFormPage {
         });
     }
 
-    private selectDropdownOption(fieldId: string, option: string) {
-        cy.get(`#${fieldId}`, { timeout: this.timeout }).scrollIntoView();
-        cy.get(`#${fieldId} button[role="combobox"]`, { timeout: this.timeout })
+    private selectDropdownOption(fieldId: string, option: string, attempt = 1): void {
+        // Opening the list re-renders the combobox, and the workspace can scroll back
+        // to the top so the menu is clipped. Carbon mounts options only while open.
+        const maxAttempts = 3;
+        const openBudgetMs = 2000;
+        const combobox = `#${fieldId} button[role="combobox"]`;
+        const optionLabel = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+        const optionPattern = new RegExp(`^${this.escapeRegExp(option)}$`);
+        const selectedLabel = ($combo: JQuery<HTMLElement>) => {
+            const label = $combo.find('.cds--list-box__label').get(0) ?? $combo.get(0);
+            return label ? optionLabel(label) : '';
+        };
+
+        const openMenuOption = (doc: Document) => {
+            const combo = doc.querySelector(combobox);
+            const listboxId = combo?.getAttribute('aria-controls');
+            if (!combo || combo.getAttribute('aria-expanded') !== 'true' || !listboxId) {
+                return undefined;
+            }
+            return [...doc.querySelectorAll(
+                `#${CSS.escape(listboxId)} [role="option"], #${CSS.escape(listboxId)} .cds--list-box__menu-item`,
+            )].find((el) => optionLabel(el) === option && el instanceof HTMLElement && Cypress.dom.isVisible(el));
+        };
+
+        cy.get(combobox, { timeout: this.timeout })
+            .scrollIntoView()
             .should('be.visible')
-            .and('be.enabled')
-            .click();
-        cy.contains('[role="option"], .cds--list-box__menu-item', new RegExp(`^${this.escapeRegExp(option)}$`), {
-            timeout: this.timeout,
-        }).click();
-        cy.get(`#${fieldId}`).should('contain.text', option);
+            .then(($combo) => {
+                // A second click toggles the menu shut, so only open a closed list.
+                if (!Cypress.dom.isAttached($combo) || $combo.attr('aria-expanded') !== 'true') {
+                    cy.get(combobox).click();
+                }
+            });
+
+        cy.window({ timeout: this.timeout }).then((win) => new Cypress.Promise<boolean>((resolve) => {
+            const started = win.performance.now();
+            const tick = () => {
+                if (openMenuOption(win.document) || win.performance.now() - started >= openBudgetMs) {
+                    resolve(Boolean(openMenuOption(win.document)));
+                    return;
+                }
+                win.requestAnimationFrame(tick);
+            };
+            tick();
+        })).then((opened) => {
+            if (!opened) {
+                if (attempt >= maxAttempts) {
+                    cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'true');
+                    cy.get(combobox).invoke('attr', 'aria-controls').then((listboxId) => {
+                        expect(listboxId, `${fieldId} listbox`).to.be.a('string').and.not.be.empty;
+                        cy.contains(
+                            `#${CSS.escape(String(listboxId))} [role="option"], #${CSS.escape(String(listboxId))} .cds--list-box__menu-item`,
+                            optionPattern,
+                            { timeout: this.timeout },
+                        ).click();
+                    });
+                    cy.get(combobox, { timeout: this.timeout }).should(($selected) => {
+                        expect(selectedLabel($selected), `${fieldId} selected value`).to.eq(option);
+                    });
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                cy.log(`${fieldId} menu did not show "${option}" (attempt ${attempt}); reopening`);
+                cy.then(() => this.selectDropdownOption(fieldId, option, attempt + 1));
+                return;
+            }
+
+            cy.get(combobox).invoke('attr', 'aria-controls').then((listboxId) => {
+                expect(listboxId, `${fieldId} listbox`).to.be.a('string').and.not.be.empty;
+                cy.get(`#${CSS.escape(String(listboxId))}`)
+                    .find('[role="option"], .cds--list-box__menu-item')
+                    .filter((_, el) => optionLabel(el) === option)
+                    .first()
+                    .click();
+            });
+
+            cy.get(combobox, { timeout: this.timeout }).then(($selected) => {
+                if (Cypress.dom.isAttached($selected) && selectedLabel($selected) === option) {
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                if (attempt >= maxAttempts) {
+                    cy.get(combobox, { timeout: this.timeout }).should(($final) => {
+                        expect(selectedLabel($final), `${fieldId} selected value`).to.eq(option);
+                    });
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                cy.log(`${fieldId} did not keep "${option}" (attempt ${attempt}); retrying`);
+                cy.then(() => this.selectDropdownOption(fieldId, option, attempt + 1));
+            });
+        });
     }
 
     private escapeRegExp(value: string) {

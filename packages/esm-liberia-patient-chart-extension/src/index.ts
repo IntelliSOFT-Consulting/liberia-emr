@@ -8,9 +8,9 @@
  *
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
- * ANC numeric lookup for L&D Gravida/Parity prefill, the transient WHO
- * weight-for-length/height display, the MUAC completed-month check, and
- * Vitamin A supplementation age, history and return-date checks).
+ * ANC numeric lookup for L&D Gravida/Parity prefill, Td pregnancy eligibility,
+ * the transient WHO weight-for-length/height display, the MUAC completed-month
+ * check, and Vitamin A supplementation age, history and return-date checks).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
@@ -31,6 +31,8 @@ import {
   vitaminARouteValue,
   vitaminASharedReturnValue,
 } from './forms/vitamin-a-supplementation';
+import { tdAdministrationGate } from './immunizations/td-administration-gate';
+import { isTdVaccine } from './immunizations/td-pregnancy';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -52,6 +54,8 @@ export function startupApp() {
   registerFormEngineExpressionHelper('getCurrentPregnancyAncNumeric', getCurrentPregnancyAncNumeric);
   registerFormEngineExpressionHelper('calcLiberiaWhz', calcLiberiaWhz);
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
+  registerFormEngineExpressionHelper('tdAdministrationGate', tdAdministrationGate);
+  registerFormEngineExpressionHelper('isTdVaccine', isTdVaccine);
   registerFormEngineExpressionHelper('vitaminACurrentStrength', vitaminACurrentStrength);
   registerFormEngineExpressionHelper('vitaminABlock', vitaminABlock);
   registerFormEngineExpressionHelper('vitaminAReturnDateValue', vitaminAReturnDateValue);

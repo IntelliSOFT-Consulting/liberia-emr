@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.5",
+  "version": "1.6",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -14,7 +14,7 @@
           "label": "Notice",
           "isExpanded": true,
           "hide": {
-            "hideWhenExpression": "age <= 18"
+            "hideWhenExpression": "age < 18"
           },
           "questions": [
             {
@@ -24,7 +24,7 @@
               },
               "id": "age_restriction_notice",
               "value": [
-                "**Notice: This form is only applicable for children aged 18 and below.**"
+                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy."
               ]
             }
           ]
@@ -32,14 +32,25 @@
         {
           "label": "Vaccination",
           "isExpanded": true,
-          "hide": {
-            "hideWhenExpression": "age > 18"
-          },
           "questions": [
+            {
+              "id": "tdEncounterDate",
+              "label": "Encounter Date",
+              "type": "encounterDatetime",
+              "questionOptions": {
+                "rendering": "date"
+              },
+              "hide": {
+                "hideWhenExpression": "true"
+              }
+            },
             {
               "label": "Parent/Caregiver",
               "type": "obs",
               "id": "parent_caregiver",
+              "hide": {
+                "hideWhenExpression": "age > 18"
+              },
               "questionOptions": {
                 "concept": "${var.concept.national.parent-caregiver.uuid}",
                 "rendering": "text"
@@ -49,6 +60,9 @@
               "label": "Caregiver Phone Number",
               "type": "obs",
               "id": "caregiver_phone_number",
+              "hide": {
+                "hideWhenExpression": "age > 18"
+              },
               "questionOptions": {
                 "concept": "${var.concept.national.caregiver-phone-number.uuid}",
                 "rendering": "text"
@@ -60,6 +74,21 @@
                   "message": "Enter a valid phone number."
                 }
               ]
+            },
+            {
+              "label": "Td eligibility",
+              "type": "obs",
+              "id": "td_gate",
+              "hide": {
+                "hideWhenExpression": "true"
+              },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "tdAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, (typeof encounter !== 'undefined' && encounter && encounter.uuid) ? encounter.uuid : '', '${var.concept.ciel.pregnancy-status.uuid}', '${var.concept.national.1st-trimester.uuid}', '${var.concept.national.2nd-trimester.uuid}', '${var.concept.national.3rd-trimester.uuid}', '${var.concept.national.vaccine-name.uuid}', '${var.concept.national.td.uuid}', '${var.concept.national.date-of-tt1.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.date-of-tt2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.date-of-tt3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.date-of-tt4.uuid}', '${var.concept.national.td5.uuid}', '${var.concept.national.date-of-tt5.uuid}').then(code => code)"
+                }
+              }
             },
             {
               "label": "Vaccine Name",
@@ -78,14 +107,67 @@
                   },
                   {
                     "concept": "${var.concept.national.opv0-1-dose.uuid}",
-                    "label": "OPV0"
+                    "label": "OPV0",
+                    "hide": {
+                      "hideWhenExpression": "age > 18"
+                    }
                   },
                   {
                     "concept": "${var.concept.national.opv1.uuid}",
-                    "label": "OPV1"
+                    "label": "OPV1",
+                    "hide": {
+                      "hideWhenExpression": "age > 18"
+                    }
+                  },
+                  {
+                    "concept": "${var.concept.national.td.uuid}",
+                    "label": "TD"
+                  },
+                  {
+                    "concept": "${var.concept.national.td2.uuid}",
+                    "label": "TD2"
+                  },
+                  {
+                    "concept": "${var.concept.national.td3.uuid}",
+                    "label": "TD3"
+                  },
+                  {
+                    "concept": "${var.concept.national.td4.uuid}",
+                    "label": "TD4"
+                  },
+                  {
+                    "concept": "${var.concept.national.td5.uuid}",
+                    "label": "TD5"
                   }
                 ]
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && (isEmpty(td_gate) || td_gate === 'unresolved')",
+                  "message": "Td cannot be given because pregnancy status or tetanus history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'unknown-pregnancy'",
+                  "message": "Confirm the current pregnancy before giving Td. Pregnancy status is not recorded."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'history-conflict'",
+                  "message": "Td cannot be given because the TT and Td dates for the same dose do not match."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'already-given'",
+                  "message": "This Td dose is already recorded."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'too-soon'",
+                  "message": "This Td dose is not due yet. The previous tetanus dose and the required interval have not been met."
+                }
+              ]
             },
             {
               "label": "Route",
