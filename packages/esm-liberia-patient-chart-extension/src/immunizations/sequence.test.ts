@@ -4,7 +4,8 @@ import { describe, it } from 'node:test';
 import { addDateOffset, type AdministeredDose } from './eligibility.ts';
 import type { FhirImmunization, NationalEncounter } from './history.ts';
 import { evaluateDoseRule, evaluateSequence, type SequenceResult } from './sequence.ts';
-import { recognizedDoseIds, ruleById, sequenceRules, type SequenceIdentityConfig } from './sequence-rules.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
+import { recognizedDoseIds, ruleById, sequenceRules } from './sequence-rules.ts';
 
 const patientUuid = 'patient-1';
 const moduleName = '@liberiaemr/esm-liberia-patient-chart-extension';
@@ -175,8 +176,17 @@ describe('runtime identifiers', () => {
   });
   it('loads form and question UUIDs from runtime config', () => {
     const raw = frontendConfig[moduleName].routineImmunizations;
-    assert.deepEqual(raw.nationalFormUuids, ['${var.form.immunization.uuid}']);
-    assert.deepEqual([...national.nationalFormUuids], [variable('var.form.immunization.uuid')]);
+    const formVariables = [
+      'var.form.immunization.v1-0.uuid',
+      'var.form.immunization.v1-1.uuid',
+      'var.form.immunization.v1-2.uuid',
+      'var.form.immunization.v1-3.uuid',
+      'var.form.immunization.v1-4.uuid',
+      'var.form.immunization.v1-5.uuid',
+      'var.form.immunization.uuid',
+    ];
+    assert.deepEqual(raw.nationalFormUuids, formVariables.map((name) => `\${${name}}`));
+    assert.deepEqual([...national.nationalFormUuids], formVariables.map((name) => variable(name)));
     assert.equal(raw.vaccineQuestionUuid, '${var.concept.national.vaccine-name.uuid}');
     assert.equal(national.vaccineQuestionUuid, variable('var.concept.national.vaccine-name.uuid'));
     assert.deepEqual(raw.ancFormUuids, ['${var.form.anc-national.uuid}']);
@@ -529,7 +539,7 @@ describe('runtime overrides', () => {
   });
 
   it('counts only immunization forms in the runtime list', () => {
-    const current = national.nationalFormUuids[0];
+    const current = national.nationalFormUuids.at(-1)!;
     const withSite: SequenceIdentityConfig = { ...national, nationalFormUuids: [current, siteForm] };
     const onCurrent = vaccineEncounter(concept('OPV1'), '2024-02-01', 'current-form');
     const onSite = vaccineEncounter(concept('OPV1'), '2024-02-01', 'site-form', [], withSite);
@@ -562,6 +572,21 @@ describe('runtime overrides', () => {
     const siteTt = ttEncounter(siteTt1, '2024-02-01', 'site-tt', '2020-01-01T00:00:00.000+0000', config);
     blocked(decide('TD2', '2010-01-01', '2024-02-28', [], [siteTt], config), 'WAITING_FOR_INTERVAL');
     allowed(decide('TD2', '2010-01-01', '2024-02-29', [], [siteTt], config));
+  });
+
+  it('counts a mapped FHIR coding and does not treat its system code as a concept UUID', () => {
+    const generic: FhirImmunization = {
+      ...fhir(concept('OPV1'), '2024-02-01', 'generic-opv'),
+      vaccineCode: { coding: [{ code: 'generic-opv', system: 'http://example.org/vax' }] },
+      protocolApplied: [{ doseNumberPositiveInt: 1 }],
+    };
+    blocked(decide('OPV2', birth, '2024-02-29', [generic]), 'UNRESOLVED');
+    const config: SequenceIdentityConfig = {
+      ...national,
+      fhirDoseMappings: [{ code: 'generic-opv', system: 'http://example.org/vax', sequenceNumber: 1, canonicalDoseId: 'OPV1' }],
+    };
+    blocked(decide('OPV2', birth, '2024-02-28', [generic], [], config), 'WAITING_FOR_INTERVAL');
+    allowed(decide('OPV2', birth, '2024-02-29', [generic], [], config));
   });
 
   it('does not let a recognized non-sequence vaccine block another series', () => {

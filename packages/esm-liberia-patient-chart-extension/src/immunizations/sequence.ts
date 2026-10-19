@@ -1,6 +1,7 @@
 import { addDateOffset, evaluateEligibility, type AdministeredDose, type EligibilityStatus } from './eligibility.ts';
 import { consolidateHistory, type FhirImmunization, type NationalEncounter } from './history.ts';
-import { ruleById, toEligibilityRule, type SequenceIdentityConfig, type SequenceRule } from './sequence-rules.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
+import { ruleById, toEligibilityRule, type SequenceRule } from './sequence-rules.ts';
 
 export type SequenceStatus = EligibilityStatus | 'UNRESOLVED';
 

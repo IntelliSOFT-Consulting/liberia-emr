@@ -7,6 +7,7 @@ export function clinicalDate(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(value)) {
     throw new Error('A complete date or timestamp with timezone is required');
   }
+  addDateOffset(value.slice(0, 10), { value: 0, unit: 'days' });
   const instant = new Date(value.replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
   if (!Number.isFinite(instant.getTime())) throw new Error('Invalid timestamp');
   const parts = new Intl.DateTimeFormat('en-US', {

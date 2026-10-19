@@ -1,30 +1,32 @@
 import { Type } from '@openmrs/esm-framework';
 import { recognizedDoseIds, sequenceRules } from './sequence-rules.ts';
+import schedule from './routine-schedule.json' with { type: 'json' };
 
 /**
- * Runtime UUID metadata. National values come from content-package frontend
- * configuration as ${var.*}. Defaults stay empty so UUIDs are not copied into
- * the bundle. nationalFormUuids, vaccineQuestionUuid, vaccineConceptUuids, and
- * fhirDoseMappings are the shared routine immunization config. ancFormUuids and
- * ancTtConceptUuids are the ANC TT fields sequencing needs on top of that.
- * Object keys can be overridden one dose at a time. Arrays are replaced wholesale.
+ * Shared runtime identity for routine schedule display and dose sequencing.
+ * National values come from content-package frontend configuration as ${var.*}.
+ * Defaults stay empty so UUIDs are not copied into the bundle. Object keys can
+ * be overridden one dose at a time. Arrays are replaced wholesale.
+ * Schedule policy and sequence rules stay in the ESM.
  */
-const conceptField = (description: string) => ({
+const conceptField = (id: string) => ({
   _type: Type.ConceptUuid,
   _default: '',
-  _description: description,
+  _description: `Vaccine concept UUID for canonical dose ${id}.`,
 });
 
-const vaccineConceptUuidFields = Object.fromEntries(
-  [...sequenceRules.map((dose) => dose.id), ...recognizedDoseIds].map((id) => [id, conceptField(
-    `Vaccine concept UUID for canonical dose ${id}.`,
-  )]),
-);
+const vaccineConceptUuidFields = Object.fromEntries([
+  ...schedule.map((dose) => [dose.id, conceptField(dose.id)]),
+  ...sequenceRules.map((dose) => [dose.id, conceptField(dose.id)]),
+  ...recognizedDoseIds.map((id) => [id, conceptField(id)]),
+]);
 
 const ancTtConceptUuidFields = Object.fromEntries(
-  sequenceRules.filter((dose) => dose.series === 'tetanus').map((dose) => [dose.id, conceptField(
-    `ANC Date-of-TT concept that counts as ${dose.id}.`,
-  )]),
+  sequenceRules.filter((dose) => dose.series === 'tetanus').map((dose) => [dose.id, {
+    _type: Type.ConceptUuid,
+    _default: '',
+    _description: `ANC Date-of-TT concept that counts as ${dose.id}.`,
+  }]),
 );
 
 export interface FhirDoseMapping {
@@ -42,6 +44,9 @@ export interface RoutineConfig {
   ancFormUuids: string[];
   ancTtConceptUuids: Record<string, string>;
 }
+
+/** Sequencing and the routine schedule share this one runtime object. */
+export type SequenceIdentityConfig = RoutineConfig;
 
 export const routineConfigSchema = {
   nationalFormUuids: {
@@ -63,7 +68,7 @@ export const routineConfigSchema = {
   fhirDoseMappings: {
     _type: Type.Array,
     _default: [],
-    _description: 'Verified vaccine coding plus positive dose number mappings to canonical dose IDs. Sequencing matches concept UUIDs and does not infer a dose from this list.',
+    _description: 'Verified vaccine coding, system, and positive dose number mappings to canonical dose IDs. A coding with a system is not an OpenMRS concept UUID. No inferred OPV0 numbering. Empty until a deployment supplies verified mappings.',
     _elements: {
       _type: Type.Object,
       code: { _type: Type.String },

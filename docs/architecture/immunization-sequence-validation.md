@@ -1,9 +1,10 @@
 # LE-561: immunization dose sequencing and interval validation
 
 O3 Immunizations (`@openmrs/esm-patient-immunizations-app`, pinned at 12.3.4) remains
-the vaccine-entry workflow. This change does not add a schedule dashboard, a chart
-widget, or a second eligibility engine. It reuses `evaluateEligibility` and
-`addDateOffset` from [LE-560](vaccine-eligibility-le560.md).
+the vaccine-entry workflow. Dose sequencing does not replace the routine childhood
+schedule and does not add a second eligibility engine. It reuses `evaluateEligibility`
+and `addDateOffset` from [LE-560](vaccine-eligibility-le560.md). The schedule dashboard
+is the separate [LE-559](routine-childhood-immunization.md) policy.
 
 `evaluateSequence` reads consolidated history and returns that evaluator's status.
 `canAdminister` is true only for `DUE` or `OVERDUE`. These rules set
@@ -32,15 +33,18 @@ add an age gate. It is not a recommendation to give the dose at birth.
 Both collections are required. A missing list is `UNRESOLVED` for every dose.
 Historical doses from either source count.
 
-- FHIR `Immunization` resources for the patient: `completed` only, vaccine coding
-  by concept UUID (display text is ignored), and `occurrenceDateTime`.
-  `entered-in-error` and `not-done` do not count. Any other status, a missing
+- FHIR `Immunization` resources for the patient: `completed` only, and
+  `occurrenceDateTime`. Display text is ignored. A coding with no system is the
+  OpenMRS concept UUID. A coding with a system is not: it matches only an explicit
+  `fhirDoseMappings` entry of `code`, `system`, and `sequenceNumber` to a canonical
+  dose ID. `entered-in-error` and `not-done` do not count. Any other status, a missing
   code, a dose-number string, more than one protocol, or a sequence other than
   the clinical sequence or `1` is unresolved. Sequence `1` is accepted on a
   dose-specific concept because that concept is already the dose.
 - National Immunization encounters whose form UUID is in runtime
-  `routineImmunizations.nationalFormUuids`. National config lists the current
-  Immunization form. The vaccine-name question is `vaccineQuestionUuid`. The
+  `routineImmunizations.nationalFormUuids`. National config lists frozen Immunization
+  v1.0 through v1.5 and `${var.form.immunization.uuid}`, the current v1.6 form.
+  The vaccine-name question is `vaccineQuestionUuid`. The
   form has no administration-date observation, so the encounter datetime is
   the clinical date. Other observations, including the return date, are not
   administrations, so sequencing does not carry the return-date concept UUID.
@@ -56,12 +60,14 @@ An unknown code is unresolved for every series, because it might be the predeces
 configured in `vaccineConceptUuids` without a sequence rule, including BCG and MCV, do not block
 unrelated series. AEFI vaccine answers are not administration evidence.
 
-`src/immunizations/history.ts` is the LE-561 history used for sequencing. It receives the runtime
-form, question, and concept maps. It does not page a live server and it does not write history.
-Those maps are the same `routineImmunizations` object a routine schedule would read
-(`nationalFormUuids`, `vaccineQuestionUuid`, `vaccineConceptUuids`, `fhirDoseMappings`). Sequencing
-matches concept UUIDs. It does not infer a dose from `fhirDoseMappings`. ANC TT uses
-`ancFormUuids` and `ancTtConceptUuids` on that same object.
+`src/immunizations/history.ts` is the shared history module. `consolidateHistory` is the
+sequencing reader. `normalizeHistory` and `duplicateRecordIds` are the routine-schedule
+reader. Neither pages a live server or writes history. There is one `routine-config.ts`
+and one `routineImmunizations` object. The schedule reader uses the form list, vaccine
+question, concept map, and `fhirDoseMappings`. Sequencing uses those same fields and
+also `ancFormUuids` and `ancTtConceptUuids`. A coding with a system matches only a
+verified mapping. A coding with no system matches the concept map, and an empty-system
+mapping can match it as well.
 
 ## Sequence and intervals
 
@@ -91,10 +97,10 @@ only to prove that the later of that date and the 28-day interval is used. That
 age is not national policy. There is no OPV2-to-OPV3 interval, no Penta, Pneumo,
 Rota, or malaria interval, and no Rota or malaria maximum age.
 
-MCV1 and MCV2 concepts exist. Origin/main does not configure MCV2 requires MCV1.
-This change does not add that gate and does not invent an MCV interval. The
-LE-560 evaluator can express a prerequisite without an interval if a later
-change configures one.
+MCV1 and MCV2 concepts exist. The routine schedule requires MCV1 before MCV2.
+This sequencing change does not add a second MCV gate and does not invent an MCV
+interval. The LE-560 evaluator can express a prerequisite without an interval if a
+later sequencing change configures one.
 
 ## TT and TD
 
@@ -125,6 +131,7 @@ that enforcement. See the duplicate section of the LE-560 note.
 
 ## What this is not
 
-This is not the routine childhood schedule display. It does not define due ages
-for the 6-, 10-, or 14-week contacts, BCG, OPV0, or MCV, and it does not
-register a patient-chart widget.
+This is not the routine childhood schedule. That policy, its due ages, and its
+dashboard stay in the LE-559 schedule. Sequencing does not define due ages for
+the 6-, 10-, or 14-week contacts, BCG, OPV0, or MCV, and it does not replace
+the schedule widget. The two layers share canonical dose identity and history.

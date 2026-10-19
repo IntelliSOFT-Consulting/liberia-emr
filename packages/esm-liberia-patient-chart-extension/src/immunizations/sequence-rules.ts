@@ -16,14 +16,6 @@ export interface SequenceRule {
   minimumInterval?: Offset;
 }
 
-export interface SequenceIdentityConfig {
-  nationalFormUuids: readonly string[];
-  vaccineQuestionUuid: string;
-  vaccineConceptUuids: Readonly<Record<string, string>>;
-  ancFormUuids: readonly string[];
-  ancTtConceptUuids: Readonly<Record<string, string>>;
-}
-
 export interface DoseLookup {
   byConcept: ReadonlyMap<string, SequenceRule>;
   recognized: ReadonlySet<string>;
@@ -110,7 +102,10 @@ export function ruleById(id: string): SequenceRule | undefined {
 }
 
 /** Maps trimmed concept UUIDs from runtime config onto sequence rules. */
-export function doseLookup(config: SequenceIdentityConfig): DoseLookup {
+export function doseLookup(config: {
+  vaccineConceptUuids?: Readonly<Record<string, string>>;
+  ancTtConceptUuids?: Readonly<Record<string, string>>;
+}): DoseLookup {
   const byConcept = new Map<string, SequenceRule>();
   const recognized = new Set<string>();
   const unbound = new Set<string>();

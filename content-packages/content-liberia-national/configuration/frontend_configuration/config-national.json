@@ -465,17 +465,26 @@
     ]
   },
   "_comment_routine_immunizations": [
-    "UUID metadata for immunization sequencing. Dose order, intervals, and ages stay in the ESM.",
+    "One routineImmunizations object feeds the routine schedule and dose sequencing.",
+    "Schedule policy and sequence rules stay in the ESM. UUID metadata is runtime config.",
     "vaccineConceptUuids is an object: a site can replace one dose key and the other national values remain.",
     "nationalFormUuids and ancFormUuids are arrays. Frontend config replaces an array wholesale,",
     "so a site that sets either key must list every form version it still wants counted.",
-    "var.form.immunization.uuid is the current Immunization form.",
+    "var.form.immunization.uuid stays the current form. The v1-* variables are frozen historical identities.",
+    "The current variable is also in the list so the next version bump stays visible until it is frozen.",
+    "fhirDoseMappings stays empty until a deployment supplies verified generic vaccine codings.",
     "Configured doses with no sequence rule are recognized and do not block other series.",
     "ancTtConceptUuids maps canonical TD dose IDs to ANC Date-of-TT concepts. TD1 uses the unsuffixed TD concept."
   ],
   "@liberiaemr/esm-liberia-patient-chart-extension": {
     "routineImmunizations": {
       "nationalFormUuids": [
+        "${var.form.immunization.v1-0.uuid}",
+        "${var.form.immunization.v1-1.uuid}",
+        "${var.form.immunization.v1-2.uuid}",
+        "${var.form.immunization.v1-3.uuid}",
+        "${var.form.immunization.v1-4.uuid}",
+        "${var.form.immunization.v1-5.uuid}",
         "${var.form.immunization.uuid}"
       ],
       "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
@@ -493,7 +502,6 @@
         "OPV3": "${var.concept.national.opv3.uuid}",
         "Penta3": "${var.concept.national.penta-3.uuid}",
         "Pneumo3": "${var.concept.national.pneumo-3.uuid}",
-        "IPV": "${var.concept.national.ipv.uuid}",
         "Malaria1": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
         "Malaria2": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
         "Malaria3": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
@@ -511,10 +519,12 @@
         "TD3": "${var.concept.national.td3.uuid}",
         "TD4": "${var.concept.national.td4.uuid}",
         "TD5": "${var.concept.national.td5.uuid}",
+        "IPV": "${var.concept.national.ipv.uuid}",
         "Pfizer": "${var.concept.national.pfizer.uuid}",
         "JJ": "${var.concept.national.j-j.uuid}",
         "CovidBooster": "${var.concept.national.covid-19-booster.uuid}"
       },
+      "fhirDoseMappings": [],
       "ancFormUuids": [
         "${var.form.anc-national.uuid}"
       ],

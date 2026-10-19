@@ -111,3 +111,8 @@ export const externalRecordsDashboard = getAsyncLifecycle(
   () => import('./external-records/external-records-dashboard.extension'),
   options,
 );
+
+export const routineImmunizationSchedule = getAsyncLifecycle(
+  () => import('./immunizations/routine-schedule.extension'),
+  options,
+);
