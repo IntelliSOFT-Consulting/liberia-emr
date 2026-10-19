@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { evaluateAsync } from '@openmrs/esm-expression-evaluator';
 import { isTdVaccine } from './td-pregnancy.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -142,26 +143,21 @@ describe('Immunization form Td entry point', () => {
 
   it('evaluates the shipped calculate expression', async () => {
     const expression = substitute(gate.questionOptions?.calculate?.calculateExpression ?? '');
+    assert.match(expression, /vitaminAEditingEncounterUuid\(\)/);
+    assert.doesNotMatch(expression, /typeof|\bencounter\b/);
     const calls: unknown[][] = [];
     const tdAdministrationGate = (...args: unknown[]) => {
       calls.push(args);
       return Promise.resolve('allowed');
     };
-    const evaluate = new Function(
-      'patient',
-      'tdEncounterDate',
-      'vaccine_name',
-      'encounter',
-      'tdAdministrationGate',
-      `return (${expression});`,
-    );
-    const code = await evaluate(
-      { id: 'patient-1', birthDate: '1990-01-01' },
-      '2024-06-01',
-      'national.td',
-      { uuid: 'encounter-1' },
+    const evaluate = (vaccineName: string, editingEncounterUuid: string) => evaluateAsync(expression, {
+      patient: { id: 'patient-1', birthDate: '1990-01-01' },
+      tdEncounterDate: '2024-06-01',
+      vaccine_name: vaccineName,
+      vitaminAEditingEncounterUuid: () => editingEncounterUuid,
       tdAdministrationGate,
-    );
+    });
+    const code = await evaluate('national.td', 'encounter-1');
     assert.equal(code, 'allowed');
     assert.deepEqual(calls[0], [
       'patient-1',
@@ -186,19 +182,7 @@ describe('Immunization form Td entry point', () => {
       'national.date-of-tt5',
     ]);
 
-    const withoutEncounter = new Function(
-      'patient',
-      'tdEncounterDate',
-      'vaccine_name',
-      'tdAdministrationGate',
-      `return (${expression});`,
-    );
-    await withoutEncounter(
-      { id: 'patient-1', birthDate: '1990-01-01' },
-      '2024-06-01',
-      'national.opv1',
-      tdAdministrationGate,
-    );
+    await evaluate('national.opv1', '');
     assert.equal(calls[1][4], '');
   });
 
