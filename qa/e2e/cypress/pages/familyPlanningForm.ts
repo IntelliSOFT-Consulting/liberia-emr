@@ -27,37 +27,12 @@ class FamilyPlanningFormPage {
     ) {}
 
     private checkOption(id: string) {
-        // Carbon hides the input and the form engine keeps `checked` in React state.
-        // A label click can focus the question without the change event that state
-        // listens to, and the engine can clear that first selection on re-render.
-        // Re-query after each attempt and check again only while it is still unchecked.
-        this.ensureOptionChecked(`input[id="${id}"]`, 1);
-    }
-
-    private ensureOptionChecked(selector: string, attempt: number) {
-        const maxAttempts = 3;
-
-        cy.get(selector, { timeout: this.timeout }).should('not.be.disabled');
-        cy.get(selector).then(($input) => {
-            if (Cypress.dom.isAttached($input) && $input.is(':checked')) {
-                cy.get(selector).should('be.checked');
-                return;
-            }
-
-            cy.get(selector).check({ force: true });
-            cy.get(selector).then(($after) => {
-                if (Cypress.dom.isAttached($after) && $after.is(':checked')) {
-                    cy.get(selector).should('be.checked');
-                    return;
-                }
-                if (attempt >= maxAttempts) {
-                    cy.get(selector).should('be.checked');
-                    return;
-                }
-                cy.log(`${selector} was unchecked after attempt ${attempt}; checking again`);
-                cy.then(() => this.ensureOptionChecked(selector, attempt + 1));
-            });
-        });
+        cy.get(`input[id="${id}"]`, { timeout: this.timeout }).should('not.be.disabled');
+        cy.get(`label[for="${id}"]`, { timeout: this.timeout })
+            .scrollIntoView()
+            .should('be.visible')
+            .click();
+        cy.get(`input[id="${id}"]`).should('be.checked');
     }
 
     openClinicalForms() {

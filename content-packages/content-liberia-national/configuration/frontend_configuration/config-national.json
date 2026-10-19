@@ -480,6 +480,7 @@
         "${var.form.immunization.v1-2.uuid}",
         "${var.form.immunization.v1-3.uuid}",
         "${var.form.immunization.v1-4.uuid}",
+        "${var.form.immunization.v1-5.uuid}",
         "${var.form.immunization.uuid}"
       ],
       "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
