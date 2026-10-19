@@ -78,6 +78,13 @@ RUN node /app/patch-dispensing-pharmacy.cjs
 COPY patch-service-queues-location.cjs /app/patch-service-queues-location.cjs
 RUN node /app/patch-service-queues-location.cjs
 
+# Service queues app 11.1.0 (still in 12.1.1): Serve always opens the chart summary. This
+# patch adds a servePatientChartUrls config key (service concept UUID -> URL template) and
+# makes Serve use it, falling back to the chart. Runs after the location patch above, whose
+# -liberia1 directory it patches and renames to -liberia2 (LE-121).
+COPY patch-service-queues-serve-redirect.cjs /app/patch-service-queues-serve-redirect.cjs
+RUN node /app/patch-service-queues-serve-redirect.cjs
+
 # Patient search app 11.1.0 has no ExtensionSlot where a custom app can add Remote Search
 # (patients on the central server). This patch adds three slots - results (header dropdown,
 # /search page, workspaces), toggle (Refine Search sidebar) and summary (/search heading) -
