@@ -110,8 +110,10 @@ predecessor, including its Vitamin A behavior, and is not reused as the current 
 
 `mamba_fact_nutrition_vitamin_a` counts a Blue observation on any of those versions. It
 matches the form name and version, and also the current form variable, because the
-Immunization form shares the Consultation encounter type. Historical versions are not
-`var.form.*` keys: that check requires a form file still in the package.
+Immunization form shares the Consultation encounter type. Reporting does not key the
+historical versions through `var.form.immunization.uuid`. Frozen
+`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.5.
+The current form is v1.6, supplied through `var.form.immunization.uuid`.
 
 ## Route
 
