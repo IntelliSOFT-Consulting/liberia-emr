@@ -13,8 +13,12 @@ version-controlled national policy: canonical dose id, label, due age, upper age
 prerequisite by canonical dose id, minimum interval, and sequence. It does not
 contain concept UUIDs. Those UUIDs are runtime config under
 `routineImmunizations.vaccineConceptUuids`, supplied by national frontend
-configuration as `${var.*}` from `variables.properties`. A site package overrides
-one key without rebuilding the ESM. `evaluateEligibility` and `addDateOffset`
+configuration as `${var.*}` from `variables.properties`. That same
+`routineImmunizations` object is also the sequencing identity map: one
+`routine-config.ts`, the historical form list, `fhirDoseMappings`, and the ANC TT
+fields sequencing adds. A site package overrides one concept key without
+rebuilding the ESM. Schedule policy stays in this JSON file and is not replaced
+by sequencing rules. `evaluateEligibility` and `addDateOffset`
 from LE-560 are reused unchanged. No second evaluator or new persistence path
 is introduced.
 
@@ -75,7 +79,10 @@ The current national form is Immunization v1.6, supplied through
 `${var.form.immunization.uuid}`. Accepted historical national forms are v1.0
 through v1.5. This change reads all recognized historical national dose answers
 but does not expand or redesign that form or change its existing age/return-date
-behavior.
+behavior. `normalizeHistory` is the schedule reader. It does not treat ANC
+Date-of-TT observations as childhood doses. Sequencing reads the same module
+through `consolidateHistory`. A vaccine answer that is not one of these 21
+schedule doses stays unresolved for the schedule.
 
 Each normalized dose retains canonical ID, date, internal LE-560 identity,
 and source-qualified record IDs. Internal sequence 1 is paired with the unique
