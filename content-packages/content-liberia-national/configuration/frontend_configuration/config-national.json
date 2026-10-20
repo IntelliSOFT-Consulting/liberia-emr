@@ -13,6 +13,33 @@
   ],
   "@openmrs/esm-service-queues-app": {
     "defaultInitialServiceQueue": "TB Screening",
+    "_comment_serve_redirect": "LE-121. Serve target per service (patch-service-queues-serve-redirect.cjs). Unmapped services open the chart.",
+    "servePatientChartUrls": [
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-followup-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.pnc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.labour-delivery-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.family-planning-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.immunization-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/immunizations"
+      }
+    ],
     "concepts": {
       "defaultStatusConceptUuid": "${var.concept.ciel.queue-waiting.uuid}",
       "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
