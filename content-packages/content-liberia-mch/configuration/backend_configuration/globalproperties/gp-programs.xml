@@ -1,0 +1,9 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>liberiaemr.programs.autoCloseRules</property>
+      <value>[{"program":"${var.program.anc.uuid}","closeOnEncounterTypes":["${var.encountertype.delivery.uuid}"],"closeOnForms":["${var.form.third-stage-of-labor-and-delivery.uuid}"]}]</value>
+      <description>Programme enrolments completed by the first closing encounter recorded in them</description>
+    </globalProperty>
+  </globalProperties>
+</config>
