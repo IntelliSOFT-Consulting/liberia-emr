@@ -716,6 +716,22 @@
                   {
                     "concept": "${var.concept.mch.4th-ipt-dose.uuid}",
                     "label": "4th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.5th-ipt-dose.uuid}",
+                    "label": "5th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.6th-ipt-dose.uuid}",
+                    "label": "6th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.7th-ipt-dose.uuid}",
+                    "label": "7th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.8th-ipt-dose.uuid}",
+                    "label": "8th IPT dose"
                   }
                 ]
               },
@@ -848,7 +864,7 @@
     }
   ],
   "uuid": "${var.form.anc-initial.uuid}",
-  "version": "1.2",
+  "version": "1.3",
   "published": true,
   "retired": false,
   "encounter": "ANC Initial Visit",

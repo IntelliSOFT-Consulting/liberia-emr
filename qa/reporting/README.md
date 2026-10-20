@@ -59,7 +59,7 @@ located at the facility root.
 | Voided encounters | `C-ANC4-1`, `C-FP6-1`, `C-LD4-1` (its visit is voided too) |
 | Voided obs and diagnoses | `C-ANC4-2` (a 3rd dose replaced by a 2nd), `C-VITA6-1`, `C-MUAC8-1`, `C-BP7-1`, `C-MAL4-1`, `C-REN5-1`; the diagnoses on `C-DIA6-1` and `C-CAN3-1` |
 | One patient at both facilities | person X is `C-X` and `B-X`: same name, birthdate, sex and National ID `QA-NID-0001` |
-| Old and new form versions | ANC Initial Visit v1.1 (`C-ANC2-1`) and v1.2; 3. Family Planning v1.0 (national, `C-FP2-1`) and v2.2 |
+| Old and new form versions | ANC Initial Visit v1.1 (`C-ANC2-1`, retired) and v1.3 (current MCH initial encounters); ANC Follow-up Visit v1.2 (current MCH follow-up encounters); 3. Family Planning v1.0 (national, `C-FP2-1`) and v2.2 |
 | Both ANC form families | MCH ANC Initial/Follow-up, and the national `1. ANC Form` (`C-ANC3`, `B-ANC2`) |
 | Forms on the shared Consultation encounter type | `1. ANC Form`, `3. Family Planning` v1.0, Immunization, OPD Consultation Form (`B-BP2-1`) |
 | Events at period boundaries | 31 March at 23:59:59 (`C-ANC2-2`, `C-MAL5` result, `B-PNC2-1`); 1 April at 00:00:00 (`C-ANC3-1`); 30 June at 23:59:59 (`C-ANC3-2`, `B-DIA3-1`); 1 July at 00:00:00 (`C-LD3-1`); an episode that spans the Q1/Q2 boundary (`C-DIA5`) |
@@ -96,7 +96,7 @@ Two resolutions to know about:
   layer's separate *Family Planning* type, which no form uses. Until LE-343 the MCH type shared
   that key with a second value (rmncah-nutrition gap 10), and the chain resolved it to MCH's.
 - **Forms with no variable** are referenced by `form:`: `3. Family Planning` v1.0, the
-  retired `ANC Initial Visit` v1.1, and the retired `Immunization` v1.1. Every `var.form.*` holds the runtime uuid Initializer
+  retired `ANC Initial Visit` v1.1 and v1.2, the retired `ANC Follow-up Visit` v1.1, and the retired `Immunization` v1.1. Every `var.form.*` holds the runtime uuid Initializer
   derives from the form's name and version (gap 11, fixed by LE-344), and `validate-content.sh`
   checks it, so a form that has a variable is referenced by it.
 

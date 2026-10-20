@@ -101,7 +101,7 @@ only ever added, never renamed or dropped.
 | `gestational_age_weeks` | DECIMAL or NULL | CIEL 1438, or the local follow-up concept |
 | `trimester` | 1–3 or NULL | Pregnancy trimester (CIEL 5272) |
 | `is_third_trimester` | 0/1 | `trimester = 3` or `gestational_age_weeks >= 28` (MAL-003 denominator) |
-| `iptp_dose_number` | 1–4 or NULL | the highest IPTp dose given at the contact. The national question's 3rd answer means "3rd or later" and is stored as 3 |
+| `iptp_dose_number` | 1–8 or NULL | the highest IPTp dose given at the contact. MCH answers map 1st–8th to 1–8. The national question's 3rd answer means "3rd or later" and is stored as 3. `TINYINT` holds 8 |
 | `woman_receiving_ipt` | 1 / 0 / NULL | Woman receiving IPT, yes or no |
 | `iptp_deferral_reason_uuid`, `iptp_deferred` | CHAR(38), 0/1 | the MCH deferral reason, if one is given |
 | `llin_received` | 1 / 0 / NULL | LLIN received at ANC (MAL-011) |
@@ -109,9 +109,11 @@ only ever added, never renamed or dropped.
 The fixtures' readings are then:
 
 - MAL-002: the numerator is people with `iptp_dose_number >= 3` in the period, and the
-  denominator is people with `is_first_anc_contact = 1` in the period.
+  denominator is people with `is_first_anc_contact = 1` in the period. MCH 5th–8th satisfy
+  `>= 3`.
 - MAL-003: the denominator is people with `is_third_trimester = 1` in the period, and the
-  numerator is those of them with `iptp_dose_number >= 2` on such a contact.
+  numerator is those of them with `iptp_dose_number >= 2` on such a contact. MCH 5th–8th
+  satisfy `>= 2`. The national 3rd+ answer still contributes 3, not a distinct later dose.
 
 ### Interim form matches
 
