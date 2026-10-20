@@ -1,15 +1,17 @@
 # LE-561: immunization dose sequencing and interval validation
 
 O3 Immunizations (`@openmrs/esm-patient-immunizations-app`, pinned at 12.3.4) remains
-the vaccine-entry workflow. Dose sequencing does not replace the routine childhood
+the vaccine-entry workflow except where the national Immunization form blocks a save.
+Pediatric Pfizer uses that form. Dose sequencing does not replace the routine childhood
 schedule and does not add a second eligibility engine. It reuses `evaluateEligibility`
 and `addDateOffset` from [LE-560](vaccine-eligibility-le560.md). The schedule dashboard
 is the separate [LE-559](routine-childhood-immunization.md) policy.
 
 `evaluateSequence` reads consolidated history and returns that evaluator's status.
 `canAdminister` is true only for `DUE` or `OVERDUE`. These rules set
-`overdueAfterDays` to null, so an eligible dose stays `DUE`. No overdue grace was
-specified.
+`overdueAfterDays` to null, so an eligible dose stays `DUE`. Pediatric Pfizer
+dose 2 is the exception: it is `DUE` on its eligible date and `OVERDUE` on
+every later day until it is recorded. That mark is not a maximum interval.
 
 | Clinical meaning | Status |
 | --- | --- |
@@ -43,7 +45,7 @@ Historical doses from either source count.
   dose-specific concept because that concept is already the dose.
 - National Immunization encounters whose form UUID is in runtime
   `routineImmunizations.nationalFormUuids`. National config lists frozen Immunization
-  v1.0 through v1.5 and `${var.form.immunization.uuid}`, the current v1.6 form.
+  v1.0 through v1.6 and `${var.form.immunization.uuid}`, the current v1.7 form.
   The vaccine-name question is `vaccineQuestionUuid`. The
   form has no administration-date observation, so the encounter datetime is
   the clinical date. Other observations, including the return date, are not
@@ -86,7 +88,7 @@ National values are `${var.*}` entries in `config-national.json`, not literals i
 | HPV1 | None | None | 9th birthday through the day before the 14th birthday |
 | HPV2 | HPV1 | 6 calendar months | Same window |
 | Pediatric Pfizer 1 | None | None | 5th birthday through the day before the 12th birthday |
-| Pediatric Pfizer 2 | Pediatric Pfizer 1 | 28 days | Same window |
+| Pediatric Pfizer 2 | Pediatric Pfizer 1 | 28 days after the actual dose 1 date | No separate age window |
 | TD2 | TD1-equivalent | 4 weeks | None specified |
 | TD3 | TD2-equivalent | 6 calendar months | None specified |
 | TD4 | TD3-equivalent | 1 calendar year | None specified |
@@ -125,9 +127,12 @@ cannot be administered again, including when that record is dated after the
 evaluation date. This is the eligibility result only.
 
 The O3 immunization workspace in 12.3.4 can show a duplicate warning and still
-save. Its submit path has no eligibility hook. FHIR2 and the national form do
-not enforce one row per patient, vaccine, and dose. This change does not add
-that enforcement. See the duplicate section of the LE-560 note.
+save. Its submit path has no eligibility hook. FHIR2 does not enforce one row
+per patient, vaccine, and dose. Sequencing itself does not add that
+enforcement. Pediatric Pfizer dose 1 and dose 2 are the exception recorded on
+the national Immunization form, whose validators reject a second save. See
+[Pediatric Pfizer COVID-19 vaccination](pediatric-pfizer-covid-vaccination.md).
+O3 remains warning-only for every vaccine, including these two doses.
 
 ## What this is not
 

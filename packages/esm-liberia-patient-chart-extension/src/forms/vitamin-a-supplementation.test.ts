@@ -470,8 +470,8 @@ describe('form and concept metadata', () => {
   const questions = form.pages.flatMap((page) => page.sections.flatMap((section) => section.questions));
   const byId = (id: string) => questions.find((question) => question.id === id);
 
-  it('is Immunization version 1.6', () => {
-    assert.equal(form.version, '1.6');
+  it('is Immunization version 1.7', () => {
+    assert.equal(form.version, '1.7');
   });
 
   it('blocks an age-inappropriate strength, requires Date received, defaults Oral, and calculates the return date', () => {
@@ -521,7 +521,8 @@ describe('form and concept metadata', () => {
       resolve(root, 'content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv'),
       'utf8',
     );
-    assert.match(variables, /^var\.form\.immunization\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
+    assert.match(variables, /^var\.form\.immunization\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
     assert.match(variables, /v1\.1 5ec3f3ef-f63d-3d4a-a828-8a0be01c1fb8/);
     assert.match(variables, /v1\.2 af9b642f-15d7-3687-812d-9ea2c890cfbd/);
     assert.match(variables, /v1\.3 c1b0a028-d35d-3f54-a240-c027d51ac1df/);
@@ -541,7 +542,7 @@ describe('form and concept metadata', () => {
       'utf8',
     );
     assert.match(sql, /f\.name = 'Immunization'/);
-    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6'\)/);
+    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7'\)/);
     assert.match(sql, /f\.uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     assert.doesNotMatch(sql, /ef\.form_uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     const forms = readFileSync(resolve(root, 'qa/reporting/fixtures/forms.csv'), 'utf8');

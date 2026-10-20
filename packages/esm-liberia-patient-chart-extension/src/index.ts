@@ -9,8 +9,9 @@
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
  * ANC numeric lookup for L&D Gravida/Parity prefill, Td pregnancy eligibility,
- * the transient WHO weight-for-length/height display, the MUAC completed-month
- * check, and Vitamin A supplementation age, history and return-date checks).
+ * Pediatric Pfizer age, interval and duplicate checks, the transient WHO
+ * weight-for-length/height display, the MUAC completed-month check, and
+ * Vitamin A supplementation age, history and return-date checks).
  * Planned consumers: Partograph obs summary, ANC summary.
  */
 import { getAsyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
@@ -31,6 +32,8 @@ import {
   vitaminARouteValue,
   vitaminASharedReturnValue,
 } from './forms/vitamin-a-supplementation';
+import { pediatricPfizerAdministrationGate } from './immunizations/pediatric-pfizer-gate';
+import { isPediatricPfizerDose, pediatricPfizerDoseId, pediatricPfizerStatusLabel } from './immunizations/pediatric-pfizer';
 import { tdAdministrationGate } from './immunizations/td-administration-gate';
 import { isTdVaccine } from './immunizations/td-pregnancy';
 
@@ -56,6 +59,10 @@ export function startupApp() {
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
   registerFormEngineExpressionHelper('tdAdministrationGate', tdAdministrationGate);
   registerFormEngineExpressionHelper('isTdVaccine', isTdVaccine);
+  registerFormEngineExpressionHelper('pediatricPfizerAdministrationGate', pediatricPfizerAdministrationGate);
+  registerFormEngineExpressionHelper('isPediatricPfizerDose', isPediatricPfizerDose);
+  registerFormEngineExpressionHelper('pediatricPfizerDoseId', pediatricPfizerDoseId);
+  registerFormEngineExpressionHelper('pediatricPfizerStatusLabel', pediatricPfizerStatusLabel);
   registerFormEngineExpressionHelper('vitaminACurrentStrength', vitaminACurrentStrength);
   registerFormEngineExpressionHelper('vitaminABlock', vitaminABlock);
   registerFormEngineExpressionHelper('vitaminAReturnDateValue', vitaminAReturnDateValue);
