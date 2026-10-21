@@ -14,6 +14,7 @@ const createdEnrolmentUuids: string[] = [];
 beforeEach(() => {
     createdPatientUuid = undefined;
     createdEnrolmentUuids.length = 0;
+    ancInitialForm.observeClinicalForms();
 });
 
 const enrolTestPatient = (patientUuid: string, date?: Date) =>

@@ -155,6 +155,7 @@ describe('First and Second Stage of Labor and Delivery form ANC pre-fill', { ret
 
     before(() => {
         loginWithSession();
+        ancInitialForm.observeClinicalForms();
         cy.intercept('POST', '**/ws/rest/v1/patient').as('registerAncPrefillPatient');
         registerMotherWithVisit();
         cy.wait('@registerAncPrefillPatient').then(({ response }) => {
