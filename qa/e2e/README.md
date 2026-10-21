@@ -17,6 +17,7 @@ Re-enable this scenario after investigating and verifying the dropdown interacti
 | --- | --- |
 | `Registration.cy.ts` | Login page and home page; registration required-field errors, name-known and date-of-birth-known toggles, future birthdate, request payload, 400/409/500 error dialogs, double submit (POST stubbed with `cy.intercept`); one registration against the live backend |
 | `Visit.cy.ts` | Start a visit after registering a patient; end it |
+| `ANCEnrolmentHelper.cy.ts` | Shared ANC enrolment helper: register synthetic patients, create and read back current and explicitly dated enrolments, then void test enrolments and patients |
 | `OPDConsultation.cy.ts` | OPD consultation form: contract; automatic First Visit and subsequent Follow-up Visit categories with manual override; read-only logged-in clinician and session location, including save payload and persisted encounter; clinician editable for backdated encounters only; vitals inputs and validation, BMI, general and systemic examination toggles, follow-up date, referral fields, complete save. Auto-capture assertions target the form 2.1 behavior introduced by LE-389 |
 | `TBScreening.cy.ts` | TB Screening form: required radio groups and score, negative and mixed screenings, previous-treatment date, both saves |
 | `LabourDelivery.cy.ts` | 1. First and Second Stage of Labor and Delivery form, for women aged 18–40: required Gravida, Parity and Delivery method; save with required fields only; ANC Gravida/Parity pre-fill and edited-value saves; Repair required for an episiotomy or laceration; Parity not above Gravida; SpO2, BP and fetal heart rate boundaries; Partograph admission and cervical-dilation prerequisites |
@@ -30,6 +31,28 @@ Re-enable this scenario after investigating and verifying the dropdown interacti
 | `MflFacilitySwitcher.cy.ts` | Central facility switcher (LE-324), with `chooseLocation.locationTag = Health Facility` applied as an O3 temporary config: search by name and by MFL code, district and code shown, duplicate names told apart, retired facilities hidden, the session switched; without the setting the facility picker is unchanged |
 
 `Visit`, `OPDConsultation` and `TBScreening` register a new patient in every `beforeEach`.
+
+### Shared ANC enrolment setup
+
+Use `enrolInAnc(patientUuid, dateEnrolled?)` from
+[`cypress/support/anc-enrolment.ts`](cypress/support/anc-enrolment.ts) after authenticating
+and registering a synthetic patient on the disposable demo stack. It resolves the active
+`Antenatal Care` programme by exact name (no hard-coded UUID), creates an enrolment, and
+reads it back to verify the patient, programme, date and active/non-voided status.
+Missing or ambiguous programme metadata fails explicitly; the helper never creates metadata.
+
+The optional date is a valid JavaScript `Date`; omitting it uses the time the helper executes.
+Dates are normalized to seconds to match OpenMRS database precision:
+
+```typescript
+enrolInAnc(patientUuid);
+enrolInAnc(patientUuid, new Date('2026-01-15T00:00:00.000Z'));
+```
+
+The helper yields the persisted enrolment, including its UUID for completion or cleanup.
+It uses the current authenticated session without changing credentials or navigating.
+It does not start a visit, select a form or automatically enrol patients in negative tests.
+Call it explicitly in setup; starting a visit is not ANC programme enrolment.
 
 Family Planning clinical-decision-support setup verifies the counselled sections after
 selecting For Commodities. Its existing bounded counselling-toggle workaround restores
