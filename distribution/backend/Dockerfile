@@ -62,8 +62,8 @@ RUN set -eu; \
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \
-      # content-central's backend layer holds nothing of its own yet, and an empty directory
-      # may not survive into its ZIP; the site locations are added below instead.
+      # content-central's backend layer is skipped only if its ZIP carries none (LE-595 added
+      # central's own OpenMRS ID source); the site locations are added below.
       if [ "$pkg" = "liberiaemr-central" ] && [ ! -d /tmp/pkg/configuration/backend_configuration ]; then \
         continue; \
       fi; \
