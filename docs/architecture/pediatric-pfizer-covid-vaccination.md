@@ -72,5 +72,8 @@ and `${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}`.
 Immunization v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) stays in history as
 `var.form.immunization.v1-6.uuid`. v1.7 is `e44cf2d4-169e-3c98-a617-f7d937fbcd74`,
 the Initializer derivation of the name Immunization at version 1.7, frozen as
-`var.form.immunization.v1-7.uuid`. The current form is v1.8
-(`85e6b4f8-620c-3377-82a4-9db35eac1769`), stored as `var.form.immunization.uuid`.
+`var.form.immunization.v1-7.uuid`. v1.8 is frozen as
+`var.form.immunization.v1-8.uuid` (`85e6b4f8-620c-3377-82a4-9db35eac1769`).
+The current form is v1.9 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`), stored as
+`var.form.immunization.uuid`. v1.9 repeats one vaccine administration group per
+vaccine inside the same encounter.

@@ -31,8 +31,17 @@ const tdVariables = [
 ];
 
 function questions() {
-  return form.pages.flatMap((page: { sections: Array<{ questions?: unknown[]; hide?: { hideWhenExpression?: string } }> }) =>
-    page.sections.flatMap((section) => section.questions ?? []));
+  const flat: Array<{ id?: string; questions?: unknown[] }> = [];
+  const visit = (items: Array<{ id?: string; questions?: unknown[] }> | undefined) => {
+    for (const item of items ?? []) {
+      flat.push(item);
+      if (Array.isArray(item.questions)) visit(item.questions as Array<{ id?: string; questions?: unknown[] }>);
+    }
+  };
+  for (const page of form.pages) {
+    for (const section of page.sections) visit(section.questions);
+  }
+  return flat;
 }
 
 function question(id: string) {
@@ -63,9 +72,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.8');
+    assert.equal(form.version, '1.9');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.8';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.9';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -190,7 +199,7 @@ describe('Immunization form Td entry point', () => {
   });
 
   it('applies the shipped validators to Td and leaves other vaccines alone', () => {
-    const validators = (vaccine.validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isTdVaccine'));
+    const validators = (question('route').validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isTdVaccine'));
     assert.deepEqual(validators.map((validator) => validator.message), [
       'Td cannot be given because pregnancy status or tetanus history could not be checked.',
       'Confirm the current pregnancy before giving Td. Pregnancy status is not recorded.',
@@ -199,10 +208,10 @@ describe('Immunization form Td entry point', () => {
       'This Td dose is not due yet. The previous tetanus dose and the required interval have not been met.',
     ]);
 
-    const fails = (myValue: string, tdGate: string) => validators.map((validator) => {
+    const fails = (vaccineName: string, tdGate: string) => validators.map((validator) => {
       const expression = substitute(validator.failsWhenExpression);
-      const evaluate = new Function('myValue', 'td_gate', 'isEmpty', 'isTdVaccine', `return (${expression});`);
-      return evaluate(myValue, tdGate, isEmpty, isTdVaccine);
+      const evaluate = new Function('vaccine_name', 'td_gate', 'isEmpty', 'isTdVaccine', `return (${expression});`);
+      return evaluate(vaccineName, tdGate, isEmpty, isTdVaccine);
     });
 
     assert.deepEqual(fails('national.opv1', 'unknown-pregnancy'), [false, false, false, false, false]);

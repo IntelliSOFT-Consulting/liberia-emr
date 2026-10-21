@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.8",
+  "version": "1.9",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -76,228 +76,247 @@
               ]
             },
             {
-              "label": "Td eligibility",
-              "type": "obs",
-              "id": "td_gate",
-              "hide": {
-                "hideWhenExpression": "true"
-              },
+              "label": "Vaccine administration",
+              "type": "obsGroup",
+              "id": "vaccine_administration",
               "questionOptions": {
-                "rendering": "text",
-                "isTransient": true,
-                "calculate": {
-                  "calculateExpression": "tdAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.ciel.pregnancy-status.uuid}', '${var.concept.national.1st-trimester.uuid}', '${var.concept.national.2nd-trimester.uuid}', '${var.concept.national.3rd-trimester.uuid}', '${var.concept.national.vaccine-name.uuid}', '${var.concept.national.td.uuid}', '${var.concept.national.date-of-tt1.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.date-of-tt2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.date-of-tt3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.date-of-tt4.uuid}', '${var.concept.national.td5.uuid}', '${var.concept.national.date-of-tt5.uuid}').then(code => code)"
+                "concept": "${var.concept.national.vaccine-administration.uuid}",
+                "rendering": "repeating",
+                "repeatOptions": {
+                  "addText": "Add Another Vaccine"
                 }
-              }
-            },
-            {
-              "label": "Pediatric Pfizer eligibility",
-              "type": "obs",
-              "id": "pediatric_pfizer_gate",
-              "hide": {
-                "hideWhenExpression": "true"
               },
-              "questionOptions": {
-                "rendering": "text",
-                "isTransient": true,
-                "calculate": {
-                  "calculateExpression": "pediatricPfizerAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}').then(code => code)"
-                }
-              }
-            },
-            {
-              "label": "Vaccine Name",
-              "type": "obs",
-              "id": "vaccine_name",
-              "questionOptions": {
-                "concept": "${var.concept.national.vaccine-name.uuid}",
-                "rendering": "select",
-                "answers": [
-                  {
-                    "concept": "${var.concept.national.bcg.uuid}",
-                    "label": "BCG",
-                    "hide": {
-                      "hideWhenExpression": "age >= 1"
+              "questions": [
+                {
+                  "label": "Vaccine Name",
+                  "type": "obs",
+                  "id": "vaccine_name",
+                  "questionOptions": {
+                    "concept": "${var.concept.national.vaccine-name.uuid}",
+                    "rendering": "select",
+                    "answers": [
+                      {
+                        "concept": "${var.concept.national.bcg.uuid}",
+                        "label": "BCG",
+                        "hide": {
+                          "hideWhenExpression": "age >= 1"
+                        }
+                      },
+                      {
+                        "concept": "${var.concept.national.opv0-1-dose.uuid}",
+                        "label": "OPV0",
+                        "hide": {
+                          "hideWhenExpression": "age > 18"
+                        }
+                      },
+                      {
+                        "concept": "${var.concept.national.opv1.uuid}",
+                        "label": "OPV1",
+                        "hide": {
+                          "hideWhenExpression": "age > 18"
+                        }
+                      },
+                      {
+                        "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+                        "label": "Pediatric Pfizer COVID-19 dose 1"
+                      },
+                      {
+                        "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+                        "label": "Pediatric Pfizer COVID-19 dose 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.td.uuid}",
+                        "label": "TD"
+                      },
+                      {
+                        "concept": "${var.concept.national.td2.uuid}",
+                        "label": "TD2"
+                      },
+                      {
+                        "concept": "${var.concept.national.td3.uuid}",
+                        "label": "TD3"
+                      },
+                      {
+                        "concept": "${var.concept.national.td4.uuid}",
+                        "label": "TD4"
+                      },
+                      {
+                        "concept": "${var.concept.national.td5.uuid}",
+                        "label": "TD5"
+                      }
+                    ]
+                  },
+                  "validators": [
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "sameSubmissionVaccineDuplicate(myValue, allFieldValues, allFields)",
+                      "message": "This vaccine is already entered on this form."
                     }
+                  ]
+                },
+                {
+                  "label": "Td eligibility",
+                  "type": "obs",
+                  "id": "td_gate",
+                  "hide": {
+                    "hideWhenExpression": "true"
                   },
-                  {
-                    "concept": "${var.concept.national.opv0-1-dose.uuid}",
-                    "label": "OPV0",
-                    "hide": {
-                      "hideWhenExpression": "age > 18"
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "tdAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.ciel.pregnancy-status.uuid}', '${var.concept.national.1st-trimester.uuid}', '${var.concept.national.2nd-trimester.uuid}', '${var.concept.national.3rd-trimester.uuid}', '${var.concept.national.vaccine-name.uuid}', '${var.concept.national.td.uuid}', '${var.concept.national.date-of-tt1.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.date-of-tt2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.date-of-tt3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.date-of-tt4.uuid}', '${var.concept.national.td5.uuid}', '${var.concept.national.date-of-tt5.uuid}').then(code => code)"
                     }
-                  },
-                  {
-                    "concept": "${var.concept.national.opv1.uuid}",
-                    "label": "OPV1",
-                    "hide": {
-                      "hideWhenExpression": "age > 18"
-                    }
-                  },
-                  {
-                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
-                    "label": "Pediatric Pfizer COVID-19 dose 1"
-                  },
-                  {
-                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
-                    "label": "Pediatric Pfizer COVID-19 dose 2"
-                  },
-                  {
-                    "concept": "${var.concept.national.td.uuid}",
-                    "label": "TD"
-                  },
-                  {
-                    "concept": "${var.concept.national.td2.uuid}",
-                    "label": "TD2"
-                  },
-                  {
-                    "concept": "${var.concept.national.td3.uuid}",
-                    "label": "TD3"
-                  },
-                  {
-                    "concept": "${var.concept.national.td4.uuid}",
-                    "label": "TD4"
-                  },
-                  {
-                    "concept": "${var.concept.national.td5.uuid}",
-                    "label": "TD5"
                   }
-                ]
-              },
-              "validators": [
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && (isEmpty(td_gate) || td_gate === 'unresolved')",
-                  "message": "Td cannot be given because pregnancy status or tetanus history could not be checked."
                 },
                 {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'unknown-pregnancy'",
-                  "message": "Confirm the current pregnancy before giving Td. Pregnancy status is not recorded."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'history-conflict'",
-                  "message": "Td cannot be given because the TT and Td dates for the same dose do not match."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'already-given'",
-                  "message": "This Td dose is already recorded."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'too-soon'",
-                  "message": "This Td dose is not due yet. The previous tetanus dose and the required interval have not been met."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
-                  "message": "Pediatric Pfizer dose 1 cannot be given because age or immunization history could not be checked."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-yet-due'",
-                  "message": "Pediatric Pfizer dose 1 cannot be given before the 5th birthday."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-eligible'",
-                  "message": "Pediatric Pfizer dose 1 cannot be given on or after the 12th birthday."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'already-given'",
-                  "message": "Pediatric Pfizer dose 1 is already recorded."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'not-yet-due' && pediatric_pfizer_gate !== 'not-eligible' && pediatric_pfizer_gate !== 'already-given'",
-                  "message": "Pediatric Pfizer dose 1 cannot be given."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
-                  "message": "Pediatric Pfizer dose 2 cannot be given because immunization history could not be checked."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-prerequisite'",
-                  "message": "Pediatric Pfizer dose 2 requires a recorded dose 1."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-interval'",
-                  "message": "Pediatric Pfizer dose 2 cannot be given until 28 days after dose 1."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'already-given'",
-                  "message": "Pediatric Pfizer dose 2 is already recorded."
-                },
-                {
-                  "type": "js_expression",
-                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'waiting-for-prerequisite' && pediatric_pfizer_gate !== 'waiting-for-interval' && pediatric_pfizer_gate !== 'already-given'",
-                  "message": "Pediatric Pfizer dose 2 cannot be given."
-                }
-              ]
-            },
-            {
-              "label": "Pediatric Pfizer status",
-              "type": "obs",
-              "id": "pediatric_pfizer_status",
-              "hide": {
-                "hideWhenExpression": "pediatricPfizerDoseId(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') === ''"
-              },
-              "questionOptions": {
-                "rendering": "text",
-                "isTransient": true,
-                "calculate": {
-                  "calculateExpression": "pediatricPfizerStatusLabel(pediatric_pfizer_gate)"
-                }
-              }
-            },
-            {
-              "label": "Route",
-              "type": "obs",
-              "id": "route",
-              "questionOptions": {
-                "concept": "${var.concept.national.route.uuid}",
-                "rendering": "select",
-                "answers": [
-                  {
-                    "concept": "${var.concept.ciel.oral.uuid}",
-                    "label": "Oral"
+                  "label": "Pediatric Pfizer eligibility",
+                  "type": "obs",
+                  "id": "pediatric_pfizer_gate",
+                  "hide": {
+                    "hideWhenExpression": "true"
+                  },
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "pediatricPfizerAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}').then(code => code)"
+                    }
                   }
-                ],
-                "calculate": {
-                  "calculateExpression": "vitaminARouteValue(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')"
-                }
-              },
-              "validators": [
+                },
                 {
-                  "type": "js_expression",
-                  "failsWhenExpression": "vitaminARouteRejected(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')",
-                  "message": "Vitamin A is given orally."
-                }
-              ]
-            },
-            {
-              "label": "Return date for the next vaccination",
-              "type": "obs",
-              "id": "return_date",
-              "questionOptions": {
-                "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
-                "rendering": "date",
-                "calculate": {
-                  "calculateExpression": "vitaminASharedReturnValue(vaccine_name, patient.birthDate, vitamin_a_date_received, supp_activities, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', today(), myValue)"
-                }
-              },
-              "validators": [
+                  "label": "Pediatric Pfizer status",
+                  "type": "obs",
+                  "id": "pediatric_pfizer_status",
+                  "hide": {
+                    "hideWhenExpression": "pediatricPfizerDoseId(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') === ''"
+                  },
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "pediatricPfizerStatusLabel(pediatric_pfizer_gate)"
+                    }
+                  }
+                },
                 {
-                  "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && !isDateAfterSimple(myValue, today())",
-                  "message": "Return date must be a future date."
+                  "label": "Route",
+                  "type": "obs",
+                  "id": "route",
+                  "questionOptions": {
+                    "concept": "${var.concept.national.route.uuid}",
+                    "rendering": "select",
+                    "answers": [
+                      {
+                        "concept": "${var.concept.ciel.oral.uuid}",
+                        "label": "Oral"
+                      }
+                    ],
+                    "calculate": {
+                      "calculateExpression": "vitaminARouteValue(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')"
+                    }
+                  },
+                  "validators": [
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "vitaminARouteRejected(vaccine_name, supp_activities, myValue, '${var.concept.ciel.oral.uuid}')",
+                      "message": "Vitamin A is given orally."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && (isEmpty(td_gate) || td_gate === 'unresolved')",
+                      "message": "Td cannot be given because pregnancy status or tetanus history could not be checked."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'unknown-pregnancy'",
+                      "message": "Confirm the current pregnancy before giving Td. Pregnancy status is not recorded."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'history-conflict'",
+                      "message": "Td cannot be given because the TT and Td dates for the same dose do not match."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'already-given'",
+                      "message": "This Td dose is already recorded."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'too-soon'",
+                      "message": "This Td dose is not due yet. The previous tetanus dose and the required interval have not been met."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
+                      "message": "Pediatric Pfizer dose 1 cannot be given because age or immunization history could not be checked."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-yet-due'",
+                      "message": "Pediatric Pfizer dose 1 cannot be given before the 5th birthday."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-eligible'",
+                      "message": "Pediatric Pfizer dose 1 cannot be given on or after the 12th birthday."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'already-given'",
+                      "message": "Pediatric Pfizer dose 1 is already recorded."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'not-yet-due' && pediatric_pfizer_gate !== 'not-eligible' && pediatric_pfizer_gate !== 'already-given'",
+                      "message": "Pediatric Pfizer dose 1 cannot be given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
+                      "message": "Pediatric Pfizer dose 2 cannot be given because immunization history could not be checked."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-prerequisite'",
+                      "message": "Pediatric Pfizer dose 2 requires a recorded dose 1."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-interval'",
+                      "message": "Pediatric Pfizer dose 2 cannot be given until 28 days after dose 1."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'already-given'",
+                      "message": "Pediatric Pfizer dose 2 is already recorded."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'waiting-for-prerequisite' && pediatric_pfizer_gate !== 'waiting-for-interval' && pediatric_pfizer_gate !== 'already-given'",
+                      "message": "Pediatric Pfizer dose 2 cannot be given."
+                    }
+                  ]
+                },
+                {
+                  "label": "Return date for the next vaccination",
+                  "type": "obs",
+                  "id": "return_date",
+                  "questionOptions": {
+                    "concept": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
+                    "rendering": "date",
+                    "calculate": {
+                      "calculateExpression": "vitaminASharedReturnValue(vaccine_name, patient.birthDate, vitamin_a_date_received, supp_activities, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', today(), myValue)"
+                    }
+                  },
+                  "validators": [
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(myValue) && !isDateAfterSimple(myValue, today())",
+                      "message": "Return date must be a future date."
+                    }
+                  ]
                 }
               ]
             }

@@ -229,6 +229,29 @@ describe('Pediatric Pfizer save decision', () => {
     assert.equal(followUp, 'due');
   });
 
+  it('keeps dose 1 when a sibling vaccine in the encounter being edited is not dose 1', async () => {
+    const current: NationalEncounter = {
+      uuid: 'enc-editing', patient: { uuid: 'patient-1' }, form: { uuid: national.nationalFormUuids.at(-1)! },
+      encounterDatetime: dose1Date,
+      obs: [
+        {
+          uuid: 'group-pfizer', concept: { uuid: 'vaccine-administration' },
+          groupMembers: [{ uuid: 'pfizer-obs', concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: dose1Concept } }],
+        },
+        {
+          uuid: 'group-bcg', concept: { uuid: 'vaccine-administration' },
+          groupMembers: [{ uuid: 'bcg-obs', concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: national.vaccineConceptUuids.BCG } }],
+        },
+      ],
+    };
+    assert.equal(await code({
+      evaluationDate: day28, vaccineConceptUuid: dose2Concept, encounters: [current], editingEncounterUuid: current.uuid,
+    }), 'due');
+    assert.equal(await code({
+      evaluationDate: dose1Date, vaccineConceptUuid: dose1Concept, encounters: [current], editingEncounterUuid: current.uuid,
+    }), 'due');
+  });
+
   it('excludes only the encounter being edited', async () => {
     const current = encounter(dose1Concept, dose1Date, 'editing');
     const other = encounter(dose1Concept, '2025-12-19', 'other');

@@ -50,6 +50,7 @@
     "lodash-es": "^4.17.21"
   },
   "devDependencies": {
+    "@openmrs/esm-form-engine-lib": "4.2.2-pre.2449",
     "@openmrs/esm-framework": "next",
     "@openmrs/esm-patient-chart-app": "next",
     "@openmrs/esm-patient-common-lib": "next",

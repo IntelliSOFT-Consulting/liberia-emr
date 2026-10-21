@@ -1,5 +1,5 @@
 import { clinicalDate } from './clinical-date.ts';
-import type { FhirImmunization, NationalEncounter } from './history.ts';
+import { encountersOmittingEditingVaccine, type FhirImmunization, type NationalEncounter } from './history.ts';
 import { loadHistory, sequenceHistoryUrls } from './load-history.ts';
 import type { SequenceIdentityConfig } from './routine-config.ts';
 import { evaluateSequence, type SequenceStatus } from './sequence.ts';
@@ -145,9 +145,12 @@ export async function evaluatePediatricPfizerAdministration(input: {
     if (editing && loaded.encounters.some((encounter) => encounter?.uuid === editing && encounter.patient?.uuid !== patientUuid)) {
       return 'unresolved';
     }
-    const encounters = editing
-      ? loaded.encounters.filter((encounter) => encounter?.uuid !== editing)
-      : loaded.encounters;
+    const encounters = encountersOmittingEditingVaccine(
+      loaded.encounters,
+      editing,
+      input.config.vaccineQuestionUuid,
+      vaccine,
+    );
     const result = evaluateSequence({
       patientUuid,
       doseId,

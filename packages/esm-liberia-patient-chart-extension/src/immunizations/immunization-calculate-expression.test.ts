@@ -11,6 +11,7 @@ import {
   vitaminASharedReturnValue,
 } from '../forms/vitamin-a-supplementation.ts';
 import { isPediatricPfizerDose } from './pediatric-pfizer.ts';
+import { sameSubmissionVaccineDuplicate } from './same-submission-vaccine.ts';
 import { decideTdGate, isTdVaccine, tdConceptsFromFormArgs, type TdGateCode } from './td-pregnancy.ts';
 
 /**
@@ -34,8 +35,17 @@ const ORAL = 'ciel.oral';
 const EDITING_ENCOUNTER = 'encounter-being-edited';
 
 function questions() {
-  return form.pages.flatMap((page: { sections: Array<{ questions?: unknown[] }> }) =>
-    page.sections.flatMap((section) => section.questions ?? []));
+  const flat: Array<{ id?: string; questions?: unknown[] }> = [];
+  const visit = (items: Array<{ id?: string; questions?: unknown[] }> | undefined) => {
+    for (const item of items ?? []) {
+      flat.push(item);
+      if (Array.isArray(item.questions)) visit(item.questions as Array<{ id?: string; questions?: unknown[] }>);
+    }
+  };
+  for (const page of form.pages) {
+    for (const section of page.sections) visit(section.questions);
+  }
+  return flat;
 }
 
 function question(id: string) {
@@ -144,6 +154,12 @@ function runtime(values: Record<string, unknown>) {
     vitaminARouteRejected,
     vitaminABlock,
     loadVitaminAAdministrations: async () => 'error',
+    sameSubmissionVaccineDuplicate,
+    allFieldValues: { vaccine_name: values.vaccine_name ?? '' },
+    allFields: [
+      { id: 'vaccine_administration', meta: {} },
+      { id: 'vaccine_name', meta: { groupId: 'vaccine_administration' } },
+    ],
     ...values,
   };
 }
@@ -163,7 +179,7 @@ async function selectVaccine(vaccineName: string) {
 describe('LE-604 vaccine selection calculate expressions', () => {
   it('rejects the pre-fix encounter guard with ReferenceError: encounter is not defined', async () => {
     const shipped = calculate('td_gate');
-    assert.equal(form.version, '1.8');
+    assert.equal(form.version, '1.9');
     assert.match(shipped, /vitaminAEditingEncounterUuid\(\)/);
     assert.doesNotMatch(shipped, /typeof encounter|encounter\.uuid/);
     await assert.rejects(

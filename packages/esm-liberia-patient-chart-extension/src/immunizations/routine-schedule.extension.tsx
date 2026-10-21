@@ -131,6 +131,7 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
               <TableHead><TableRow>
                 <TableHeader>{t('vaccineDose', 'Vaccine dose')}</TableHeader>
                 <TableHeader>{t('administrationDate', 'Administration date')}</TableHeader>
+                <TableHeader>{t('returnDate', 'Return date')}</TableHeader>
                 <TableHeader>{t('administrationContext', 'Context')}</TableHeader>
                 <TableHeader>{t('recordedIn', 'Recorded in')}</TableHeader>
               </TableRow></TableHead>
@@ -139,6 +140,7 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
                   ? t(entry.vitaminAStrength === 'blue' ? 'vitaminABlue' : 'vitaminARed', timelineVitaminALabel(entry.vitaminAStrength))
                   : t(`routineDose${entry.canonicalDoseId}`, timelineDoseLabel(entry))}</TableCell>
                 <TableCell>{entry.administeredDate}</TableCell>
+                <TableCell>{entry.returnDate ?? '—'}</TableCell>
                 <TableCell>{t(entry.administrationContext === 'sia' ? 'siaAdministration' : 'routineAdministration', timelineContextLabel(entry.administrationContext))}</TableCell>
                 <TableCell>{timelineSources(entry.recordIds)}</TableCell>
               </TableRow>)}</TableBody>

@@ -31,8 +31,17 @@ const dose1 = '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}';
 const dose2 = '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}';
 
 function questions() {
-  return form.pages.flatMap((page: { sections: Array<{ questions?: unknown[] }> }) =>
-    page.sections.flatMap((section) => section.questions ?? []));
+  const flat: Array<{ id?: string; questions?: unknown[] }> = [];
+  const visit = (items: Array<{ id?: string; questions?: unknown[] }> | undefined) => {
+    for (const item of items ?? []) {
+      flat.push(item);
+      if (Array.isArray(item.questions)) visit(item.questions as Array<{ id?: string; questions?: unknown[] }>);
+    }
+  };
+  for (const page of form.pages) {
+    for (const section of page.sections) visit(section.questions);
+  }
+  return flat;
 }
 
 function question(id: string) {
@@ -89,9 +98,9 @@ describe('Pediatric Pfizer Immunization form entry', () => {
   const status = question('pediatric_pfizer_status');
 
   it('versions the form and keeps the previous identity', () => {
-    assert.equal(form.version, '1.8');
+    assert.equal(form.version, '1.9');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.8').digest();
+    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.9').digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
     const hex = [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -99,6 +108,7 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     assert.match(variables, new RegExp(`^var\\.form\\.immunization\\.uuid=${derived}$`, 'm'));
     assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-8\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
   });
 
   it('offers both doses on the form and on the vaccine-name concept', () => {
@@ -185,13 +195,13 @@ describe('Pediatric Pfizer Immunization form entry', () => {
   });
 
   it('blocks invalid dose 1 and dose 2 saves and allows due or overdue dose 2', () => {
-    const validators = vaccine.validators ?? [];
-    const fails = (myValue: string, pfizerGate: string) => validators.map((validator) => {
+    const validators = (question('route').validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isPediatricPfizerDose'));
+    const fails = (vaccineName: string, pfizerGate: string) => validators.map((validator) => {
       const evaluate = new Function(
-        'myValue', 'td_gate', 'pediatric_pfizer_gate', 'isEmpty', 'isTdVaccine', 'isPediatricPfizerDose',
+        'vaccine_name', 'td_gate', 'pediatric_pfizer_gate', 'isEmpty', 'isTdVaccine', 'isPediatricPfizerDose',
         `return (${substitute(validator.failsWhenExpression)});`,
       );
-      return evaluate(myValue, 'allowed', pfizerGate, isEmpty, () => false, isPediatricPfizerDose);
+      return evaluate(vaccineName, 'allowed', pfizerGate, isEmpty, () => false, isPediatricPfizerDose);
     });
     const blocked = (myValue: string, pfizerGate: string) => fails(myValue, pfizerGate).some(Boolean);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-1', ''), true);

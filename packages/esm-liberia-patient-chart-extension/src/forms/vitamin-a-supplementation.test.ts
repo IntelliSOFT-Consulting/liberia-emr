@@ -517,11 +517,20 @@ describe('form and concept metadata', () => {
       'utf8',
     ),
   ) as { version: string; pages: Array<{ sections: Array<{ questions: Array<Record<string, unknown>> }> }> };
-  const questions = form.pages.flatMap((page) => page.sections.flatMap((section) => section.questions));
+  const questions: Array<Record<string, unknown>> = [];
+  const visit = (items: Array<Record<string, unknown>> | undefined) => {
+    for (const item of items ?? []) {
+      questions.push(item);
+      if (Array.isArray(item.questions)) visit(item.questions as Array<Record<string, unknown>>);
+    }
+  };
+  for (const page of form.pages) {
+    for (const section of page.sections) visit(section.questions);
+  }
   const byId = (id: string) => questions.find((question) => question.id === id);
 
-  it('is Immunization version 1.8', () => {
-    assert.equal(form.version, '1.8');
+  it('is Immunization version 1.9', () => {
+    assert.equal(form.version, '1.9');
   });
 
   it('stores SIA context on its own concept and leaves DE50 as Vitamin A Blue or Red', () => {
@@ -601,7 +610,8 @@ describe('form and concept metadata', () => {
       resolve(root, 'content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv'),
       'utf8',
     );
-    assert.match(variables, /^var\.form\.immunization\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
+    assert.match(variables, /^var\.form\.immunization\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-8\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
     assert.match(variables, /v1\.1 5ec3f3ef-f63d-3d4a-a828-8a0be01c1fb8/);
@@ -623,7 +633,12 @@ describe('form and concept metadata', () => {
       'utf8',
     );
     assert.match(sql, /f\.name = 'Immunization'/);
-    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7', '1\.8'\)/);
+    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7', '1\.8', '1\.9'\)/);
+    assert.doesNotMatch(sql, /obs_group_id\s+IS\s+NULL/);
+    const administration = byId('vaccine_administration');
+    const members = (administration?.questions as Array<{ id: string }> | undefined)?.map((question) => question.id) ?? [];
+    assert.equal(members.includes('supp_activities'), false);
+    assert.equal(members.includes('administration_context'), false);
     assert.match(sql, /f\.uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     assert.doesNotMatch(sql, /ef\.form_uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     const forms = readFileSync(resolve(root, 'qa/reporting/fixtures/forms.csv'), 'utf8');
