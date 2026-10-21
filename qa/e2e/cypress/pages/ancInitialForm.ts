@@ -153,10 +153,17 @@ class ANCInitialFormPage {
             expect(forms.some((form) => form.name === 'ANC Follow-up Visit'), 'Follow-up availability from backend')
                 .to.equal(followUpVisible);
         });
-        cy.contains('a.cds--link', /^ANC Initial Visit$/, { timeout: this.timeout })
-            .should(initialVisible ? 'be.visible' : 'not.exist');
-        cy.contains('a.cds--link', /^ANC Follow-up Visit$/, { timeout: this.timeout })
-            .should(followUpVisible ? 'be.visible' : 'not.exist');
+        [
+            { name: /^ANC Initial Visit$/, visible: initialVisible },
+            { name: /^ANC Follow-up Visit$/, visible: followUpVisible },
+        ].forEach(({ name, visible }) => {
+            const link = cy.contains('a.cds--link', name, { timeout: this.timeout });
+            if (visible) {
+                link.scrollIntoView().should('be.visible');
+            } else {
+                link.should('not.exist');
+            }
+        });
     }
 
     selectForm() {
