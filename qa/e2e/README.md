@@ -18,7 +18,7 @@ Re-enable this scenario after investigating and verifying the dropdown interacti
 | `Registration.cy.ts` | Login page and home page; registration required-field errors, name-known and date-of-birth-known toggles, future birthdate, request payload, 400/409/500 error dialogs, double submit (POST stubbed with `cy.intercept`); one registration against the live backend |
 | `Visit.cy.ts` | Start a visit after registering a patient; end it |
 | `ANCEnrolmentHelper.cy.ts` | Shared ANC enrolment helper: register synthetic patients, create and read back current and explicitly dated enrolments, then void test enrolments and patients |
-| `ANCInitialAssessment.cy.ts` | Registers and enrols a new synthetic patient in ANC before starting a visit and opening Initial; retains form-contract, obstetric-history, save, physical-exam, BP, IPT and fetal-assessment checks |
+| `ANCInitialAssessment.cy.ts` | Visit alone leaves both ANC forms hidden; an enrolled synthetic patient sees Initial but not Follow-up; saving Initial switches availability to Follow-up. Retains form-contract, obstetric-history, save, physical-exam, BP, IPT and fetal-assessment checks |
 | `OPDConsultation.cy.ts` | OPD consultation form: contract; automatic First Visit and subsequent Follow-up Visit categories with manual override; read-only logged-in clinician and session location, including save payload and persisted encounter; clinician editable for backdated encounters only; vitals inputs and validation, BMI, general and systemic examination toggles, follow-up date, referral fields, complete save. Auto-capture assertions target the form 2.1 behavior introduced by LE-389 |
 | `TBScreening.cy.ts` | TB Screening form: required radio groups and score, negative and mixed screenings, previous-treatment date, both saves |
 | `LabourDelivery.cy.ts` | 1. First and Second Stage of Labor and Delivery form, for women aged 18–40: required Gravida, Parity and Delivery method; save with required fields only; ANC Gravida/Parity pre-fill and edited-value saves; Repair required for an episiotomy or laceration; Parity not above Gravida; SpO2, BP and fetal heart rate boundaries; Partograph admission and cervical-dilation prerequisites |
@@ -54,6 +54,12 @@ The helper yields the persisted enrolment, including its UUID for completion or 
 It uses the current authenticated session without changing credentials or navigating.
 It does not start a visit, select a form or automatically enrol patients in negative tests.
 Call it explicitly in setup; starting a visit is not ANC programme enrolment.
+
+ANC assessment visibility checks wait for a successful form-list response and check both
+the returned forms and launcher links. Initial/Follow-up availability before and after
+the initial save is checked in the existing contract/save scenarios, rather than repeating
+clinical validation or saving another Initial in the same episode. Each clinical test
+still uses a fresh synthetic patient and enrolment.
 
 The Labour and Delivery ANC pre-fill suite explicitly enrols its registered patient before
 recording ANC Initial Visit. Other Labour and Delivery suites do not acquire an ANC

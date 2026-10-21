@@ -129,7 +129,22 @@ class ANCInitialFormPage {
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
+        cy.intercept('GET', '**/ws/rest/v1/liberiaemr/forms?*').as('ancClinicalForms');
         cy.get('button[aria-label="Clinical forms"]', { timeout: this.timeout }).click();
+        cy.wait('@ancClinicalForms', { timeout: this.timeout }).its('response.statusCode').should('eq', 200);
+    }
+
+    verifyAncFormVisibility(initialVisible: boolean, followUpVisible: boolean) {
+        cy.get('@ancClinicalForms').its('response.body.results').then((forms: Array<{ name: string }>) => {
+            expect(forms.some((form) => form.name === 'ANC Initial Visit'), 'Initial availability from backend')
+                .to.equal(initialVisible);
+            expect(forms.some((form) => form.name === 'ANC Follow-up Visit'), 'Follow-up availability from backend')
+                .to.equal(followUpVisible);
+        });
+        cy.contains('a.cds--link', /^ANC Initial Visit$/, { timeout: this.timeout })
+            .should(initialVisible ? 'be.visible' : 'not.exist');
+        cy.contains('a.cds--link', /^ANC Follow-up Visit$/, { timeout: this.timeout })
+            .should(followUpVisible ? 'be.visible' : 'not.exist');
     }
 
     selectForm() {
