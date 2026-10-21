@@ -1,12 +1,12 @@
-import { getConfig, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { fhirBaseUrl, getConfig, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import type { LabourEpisodeConfig } from '../forms/labour-episode.ts';
+import { historyBelongsToPatient } from './pediatric-pfizer.ts';
+import { loadHistory, sequenceHistoryUrls } from './load-history.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
 import {
-  collectEncounterPages,
   decideTdGate,
-  immunizationEncounterPagePath,
   isTdVaccine,
   tdConceptsFromFormArgs,
-  type RestListPage,
   type TdGateCode,
   type TdHistoryEncounter,
 } from './td-pregnancy.ts';
@@ -78,10 +78,17 @@ async function loadTdGate(
   concepts: ReturnType<typeof tdConceptsFromFormArgs>,
 ): Promise<TdGateCode> {
   try {
+    const urls = sequenceHistoryUrls(patientId, fhirBaseUrl, restBaseUrl);
     const [config, loaded] = await Promise.all([
-      getConfig<LabourEpisodeConfig>(MODULE_NAME),
-      fetchImmunizationEncounters(patientId),
+      getConfig<LabourEpisodeConfig & { routineImmunizations: SequenceIdentityConfig }>(MODULE_NAME),
+      loadHistory(urls.fhirUrl, urls.encounterUrl, async (url) => (await openmrsFetch(url)).data),
     ]);
+    if (!historyBelongsToPatient(patientId, loaded.fhir, loaded.encounters)) {
+      return 'unresolved';
+    }
+    // The wire shape genuinely has encounterDatetime/form/patient on every record; history.ts's
+    // NationalEncounter marks them optional for its own defensive parsing, which is stricter than
+    // TdHistoryEncounter needs here.
     return decideTdGate({
       patientId,
       birthDate,
@@ -89,26 +96,14 @@ async function loadTdGate(
       vaccineConceptUuid,
       editingEncounterUuid,
       concepts,
-      encounters: loaded.encounters,
+      fhir: loaded.fhir,
+      encounters: loaded.encounters as unknown as TdHistoryEncounter[],
       episodeConfig: config,
-      historyComplete: loaded.complete,
+      config: config.routineImmunizations,
+      historyComplete: true,
     });
   } catch (error) {
     console.error('Failed to evaluate Td pregnancy eligibility', error);
     return 'unresolved';
   }
-}
-
-async function fetchImmunizationEncounters(patientId: string): Promise<{ encounters: TdHistoryEncounter[]; complete: boolean }> {
-  return collectEncounterPages((startIndex, includeTotalCount) => fetchEncounterPage(patientId, startIndex, includeTotalCount));
-}
-
-async function fetchEncounterPage(
-  patientId: string,
-  startIndex: number,
-  includeTotalCount: boolean,
-): Promise<RestListPage<TdHistoryEncounter>> {
-  const url = `${restBaseUrl}/${immunizationEncounterPagePath(patientId, startIndex, includeTotalCount)}`;
-  const response = await openmrsFetch<RestListPage<TdHistoryEncounter>>(url);
-  return response?.data ?? {};
 }

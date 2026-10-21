@@ -5,18 +5,22 @@
  * and immunization TD–TD5 are the same canonical doses. Pregnancy must be
  * confirmed from the pregnancy-status concept in the current episode. Sex, age,
  * and an ANC visit with no pregnancy-status observation do not establish it.
+ *
+ * Dose identity, duplicate/conflict detection, and interval evaluation are not
+ * reimplemented here: they are read through `evaluateSequence` (sequence.ts),
+ * the same reconciled reader used by the routine schedule and Pediatric Pfizer.
+ * This module adds only the Td-specific pregnancy gate on top of that shared
+ * history. `fhir` history is required here precisely because a Td/TT dose can
+ * be recorded as a FHIR Immunization resource as well as a national/ANC
+ * encounter, and both must count as the same administration.
  */
-import { addDateOffset, evaluateEligibility, type AdministeredDose, type EligibilityRule, type Offset } from './eligibility.ts';
+import { addDateOffset, type Offset } from './eligibility.ts';
+import { CONFLICTING_DATES_ISSUE, type FhirImmunization } from './history.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
+import { evaluateSequence, type SequenceResult } from './sequence.ts';
 import { previousDeliveryTimeBefore, type EpisodeEncounter, type EpisodeObs, type LabourEpisodeConfig } from '../forms/labour-episode.ts';
 
-export const TD_HISTORY_PAGE_LIMIT = 100;
-/** Stop following `next` if a response keeps advertising another page. The chart is then incomplete and Td stays blocked. */
-export const TD_HISTORY_MAX_PAGES = 20;
-export const IMMUNIZATION_FORM_NAME = 'Immunization';
 export const MONROVIA_TIME_ZONE = 'Africa/Monrovia';
-
-const ENCOUNTER_REP =
-  'custom:(uuid,encounterDatetime,encounterType:(uuid,display),form:(uuid,name,display),obs:(uuid,concept:(uuid,display),value))';
 
 export type TdGateCode =
   | 'allowed'
@@ -42,23 +46,19 @@ export interface TdConcepts {
   doses: readonly TdDoseConcepts[];
 }
 
+/** Also assignable to history.ts's `NationalEncounter`: same shape, read through evaluateSequence. */
 export interface TdHistoryEncounter extends EpisodeEncounter {
   voided?: boolean;
+  patient?: { uuid?: string };
+  obs?: HistoryObs[];
 }
 
-interface HistoryObs extends EpisodeObs {
+export interface HistoryObs extends EpisodeObs {
   voided?: boolean;
   groupMembers?: HistoryObs[];
 }
 
 export type PregnancyClassification = 'pregnant' | 'unknown';
-
-/** OpenMRS REST list page. `totalCount` is set when the request asked for it. */
-export interface RestListPage<T> {
-  results?: T[];
-  totalCount?: number;
-  links?: ReadonlyArray<{ rel?: string; uri?: string }>;
-}
 
 const INTERVAL_AFTER_PREVIOUS: Partial<Record<TdSequence, Offset>> = {
   2: { value: 4, unit: 'weeks' },
@@ -107,11 +107,6 @@ export function tdConceptsFromFormArgs(
     vaccineNameConceptUuid,
     doses,
   };
-}
-
-export function isImmunizationFormEncounter(encounter: EpisodeEncounter): boolean {
-  const label = (encounter.form?.name || encounter.form?.display || '').trim();
-  return label === IMMUNIZATION_FORM_NAME || label.startsWith(`${IMMUNIZATION_FORM_NAME} `);
 }
 
 /** Date-only values stay on that calendar day. Timestamps use the Monrovia calendar date. */
@@ -181,67 +176,6 @@ function walkObs(obs: HistoryObs[] | undefined, visit: (item: HistoryObs) => voi
   }
 }
 
-/** Another page exists when the list links `next`, or when a requested `totalCount` is still larger than the rows loaded. */
-export function restPageHasNext(page: RestListPage<unknown>): boolean {
-  return (page.links ?? []).some((link) => link.rel === 'next');
-}
-
-export function immunizationEncounterPagePath(patientId: string, startIndex: number, includeTotalCount: boolean): string {
-  const params = new URLSearchParams({
-    patient: patientId,
-    v: ENCOUNTER_REP,
-    limit: String(TD_HISTORY_PAGE_LIMIT),
-    startIndex: String(startIndex),
-  });
-  if (includeTotalCount) {
-    params.set('totalCount', 'true');
-  }
-  return `encounter?${params.toString()}`;
-}
-
-function reportedTotal(page: RestListPage<unknown>): number | null {
-  return typeof page.totalCount === 'number' && Number.isFinite(page.totalCount) ? page.totalCount : null;
-}
-
-/**
- * Read encounter pages until the REST contract says the list is finished.
- * Page length is not a completeness signal: a full page with no `next` link and no remaining `totalCount` is complete.
- * A further page that cannot be read, or a `next` link that never ends, leaves the history incomplete.
- */
-export async function collectEncounterPages<T>(
-  fetchPage: (startIndex: number, includeTotalCount: boolean) => Promise<RestListPage<T>>,
-  maxPages = TD_HISTORY_MAX_PAGES,
-): Promise<{ encounters: T[]; complete: boolean }> {
-  const encounters: T[] = [];
-  let startIndex = 0;
-  let totalCount: number | null = null;
-
-  for (let pageNumber = 0; pageNumber < maxPages; pageNumber++) {
-    const page = await fetchPage(startIndex, pageNumber === 0);
-    if (!Array.isArray(page.results)) {
-      throw new Error('Immunization history response was incomplete');
-    }
-    if (pageNumber === 0) {
-      totalCount = reportedTotal(page);
-    }
-    const loaded = startIndex + page.results.length;
-    const moreByCount = totalCount !== null && loaded < totalCount;
-    const moreByLink = restPageHasNext(page);
-    if (page.results.length === 0 && (moreByLink || moreByCount)) {
-      throw new Error('Immunization history page was empty while more results were indicated');
-    }
-    encounters.push(...page.results);
-    if (!moreByCount && !moreByLink) {
-      return { encounters, complete: true };
-    }
-    if (pageNumber + 1 >= maxPages) {
-      return { encounters, complete: false };
-    }
-    startIndex += TD_HISTORY_PAGE_LIMIT;
-  }
-  return { encounters, complete: false };
-}
-
 function conceptsReady(concepts: TdConcepts): boolean {
   if (!concepts.pregnancyStatusConceptUuid.trim() || !concepts.vaccineNameConceptUuid.trim()) {
     return false;
@@ -290,145 +224,36 @@ export function classifyCurrentPregnancy(input: {
   return [...kinds][0];
 }
 
-interface CanonicalDose {
-  sequence: TdSequence;
-  administeredDate: string;
-  ids: string[];
+function doseIdForSequence(sequence: TdSequence): string {
+  return `TD${sequence}`;
 }
 
-type HistoryRead =
-  | { ok: true; doses: CanonicalDose[] }
-  | { ok: false; code: 'history-conflict' | 'unresolved' };
-
-export function readTdHistory(input: {
-  encounters: readonly TdHistoryEncounter[];
-  concepts: TdConcepts;
-  editingEncounterUuid?: string;
-}): HistoryRead {
-  const byTd = new Map<string, TdSequence>();
-  const byTt = new Map<string, TdSequence>();
-  for (const dose of input.concepts.doses) {
-    byTd.set(dose.tdConceptUuid.trim(), dose.sequence);
-    byTt.set(dose.ttConceptUuid.trim(), dose.sequence);
+function sequenceStatusToGateCode(result: SequenceResult): TdGateCode {
+  switch (result.status) {
+    case 'ADMINISTERED':
+      return 'already-given';
+    case 'DUE':
+    case 'OVERDUE':
+      return 'allowed';
+    case 'UNRESOLVED':
+      return result.issues.includes(CONFLICTING_DATES_ISSUE) ? 'history-conflict' : 'unresolved';
+    default:
+      // NOT_YET_DUE, WAITING_FOR_PREREQUISITE, WAITING_FOR_INTERVAL, NOT_ELIGIBLE: the
+      // Td sequence rules have no upper age, so only the interval/prerequisite cases
+      // are reachable here in practice, both reported as the dictionary's single
+      // "not yet" outcome for this gate.
+      return 'too-soon';
   }
-  const editing = input.editingEncounterUuid?.trim() ?? '';
-  const grouped = new Map<TdSequence, DoseHistory>();
-
-  for (const encounter of input.encounters) {
-    if (encounter.voided) {
-      continue;
-    }
-    const encounterId = encounter.uuid?.trim() ?? '';
-    const skipImmunizationDose = !!editing && encounterId === editing;
-    walkObs(encounter.obs as HistoryObs[] | undefined, (obs) => {
-      if (obs.voided) {
-        return;
-      }
-      const conceptUuid = obs.concept?.uuid?.trim() ?? '';
-      const ttSequence = byTt.get(conceptUuid);
-      if (ttSequence) {
-        if (obs.value === undefined || obs.value === null || obs.value === '') {
-          return;
-        }
-        const administeredDate = monroviaCalendarDate(obs.value);
-        if (!administeredDate) {
-          markUnreadable(grouped, ttSequence);
-          return;
-        }
-        addDate(grouped, ttSequence, administeredDate);
-        return;
-      }
-      if (skipImmunizationDose || !isImmunizationFormEncounter(encounter) || conceptUuid !== input.concepts.vaccineNameConceptUuid) {
-        return;
-      }
-      const tdSequence = byTd.get(conceptValueUuid(obs.value) ?? '');
-      if (!tdSequence) {
-        return;
-      }
-      const administeredDate = monroviaCalendarDate(encounter.encounterDatetime);
-      if (!administeredDate) {
-        markUnreadable(grouped, tdSequence);
-        return;
-      }
-      addDate(grouped, tdSequence, administeredDate);
-    });
-  }
-
-  const entries = [...grouped.entries()];
-  if (entries.some(([, history]) => history.unreadable)) {
-    return { ok: false, code: 'unresolved' };
-  }
-  if (entries.some(([, history]) => history.dates.size > 1)) {
-    return { ok: false, code: 'history-conflict' };
-  }
-  const doses: CanonicalDose[] = [];
-  for (const [sequence, history] of entries) {
-    if (history.dates.size === 1) {
-      doses.push({ sequence, administeredDate: [...history.dates][0], ids: [`td-${sequence}`] });
-    }
-  }
-  return { ok: true, doses };
 }
 
-interface DoseHistory {
-  dates: Set<string>;
-  unreadable: boolean;
-}
-
-function doseHistory(grouped: Map<TdSequence, DoseHistory>, sequence: TdSequence): DoseHistory {
-  const current = grouped.get(sequence) ?? { dates: new Set<string>(), unreadable: false };
-  grouped.set(sequence, current);
-  return current;
-}
-
-function markUnreadable(grouped: Map<TdSequence, DoseHistory>, sequence: TdSequence) {
-  doseHistory(grouped, sequence).unreadable = true;
-}
-
-function addDate(grouped: Map<TdSequence, DoseHistory>, sequence: TdSequence, administeredDate: string) {
-  doseHistory(grouped, sequence).dates.add(administeredDate);
-}
-
-function eligibilityRule(concepts: TdConcepts, sequence: TdSequence): EligibilityRule {
-  const dose = concepts.doses.find((item) => item.sequence === sequence);
-  if (!dose) {
-    throw new Error('Unknown Td dose');
-  }
-  const rule: EligibilityRule = {
-    vaccineConceptUuid: dose.tdConceptUuid,
-    sequenceNumber: sequence,
-    dueAge: { value: 0, unit: 'days' },
-    overdueAfterDays: null,
-  };
-  if (sequence > 1) {
-    const prior = concepts.doses.find((item) => item.sequence === (sequence - 1) as TdSequence);
-    const minimumInterval = INTERVAL_AFTER_PREVIOUS[sequence];
-    if (!prior || !minimumInterval) {
-      throw new Error('Unknown Td predecessor');
-    }
-    rule.prerequisite = {
-      dose: { vaccineConceptUuid: prior.tdConceptUuid, sequenceNumber: prior.sequence },
-      minimumInterval,
-    };
-  }
-  return rule;
-}
-
-function toAdministered(concepts: TdConcepts, doses: readonly CanonicalDose[]): AdministeredDose[] {
-  return doses.map((dose) => {
-    const conceptsForDose = concepts.doses.find((item) => item.sequence === dose.sequence);
-    if (!conceptsForDose) {
-      throw new Error('Unknown Td dose');
-    }
-    return {
-      id: dose.ids[0],
-      vaccineConceptUuid: conceptsForDose.tdConceptUuid,
-      sequenceNumber: dose.sequence,
-      administeredDate: dose.administeredDate,
-    };
-  });
-}
-
+/**
+ * Td save decision for the national Immunization form. Dose identity and
+ * duplicate/conflict/interval evaluation are read through `evaluateSequence`,
+ * using the patient's full FHIR Immunization history plus national/ANC
+ * encounters, so a Td dose recorded either as a FHIR Immunization resource or
+ * as an ANC TT date counts as the same administration exactly once. Pregnancy
+ * stays a Td-specific gate on top of that shared history.
+ */
 export function decideTdGate(input: {
   patientId?: string;
   birthDate?: string;
@@ -436,15 +261,18 @@ export function decideTdGate(input: {
   vaccineConceptUuid?: string;
   editingEncounterUuid?: string;
   concepts: TdConcepts;
+  fhir?: readonly FhirImmunization[];
   encounters: readonly TdHistoryEncounter[];
   episodeConfig: LabourEpisodeConfig;
+  config: SequenceIdentityConfig;
   historyComplete: boolean;
 }): TdGateCode {
   const doseUuids = input.concepts.doses.map((dose) => dose.tdConceptUuid);
   if (!isTdVaccine(input.vaccineConceptUuid, ...doseUuids)) {
     return 'allowed';
   }
-  if (!input.historyComplete || !input.patientId?.trim() || !conceptsReady(input.concepts)) {
+  const patientId = input.patientId?.trim() ?? '';
+  if (!input.historyComplete || !patientId || !conceptsReady(input.concepts)) {
     return 'unresolved';
   }
   const birthDate = monroviaCalendarDate(input.birthDate);
@@ -464,33 +292,23 @@ export function decideTdGate(input: {
     return 'unknown-pregnancy';
   }
 
-  const history = readTdHistory({
-    encounters: input.encounters,
-    concepts: input.concepts,
-    editingEncounterUuid: input.editingEncounterUuid,
-  });
-  if (history.ok === false) {
-    return history.code;
-  }
-
   const sequence = input.concepts.doses.find((dose) => dose.tdConceptUuid.trim() === input.vaccineConceptUuid?.trim())?.sequence;
   if (!sequence) {
     return 'unresolved';
   }
+  const editing = input.editingEncounterUuid?.trim() ?? '';
+  const encounters = editing ? input.encounters.filter((encounter) => encounter.uuid?.trim() !== editing) : input.encounters;
   try {
-    const result = evaluateEligibility({
+    const result = evaluateSequence({
+      patientUuid: patientId,
+      doseId: doseIdForSequence(sequence),
       birthDate,
       evaluationDate,
-      rule: eligibilityRule(input.concepts, sequence),
-      history: toAdministered(input.concepts, history.doses),
+      fhir: input.fhir ?? [],
+      encounters,
+      config: input.config,
     });
-    if (result.canAdminister) {
-      return 'allowed';
-    }
-    if (result.status === 'ADMINISTERED') {
-      return 'already-given';
-    }
-    return 'too-soon';
+    return sequenceStatusToGateCode(result);
   } catch {
     return 'unresolved';
   }

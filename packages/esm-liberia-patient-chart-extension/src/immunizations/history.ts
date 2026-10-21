@@ -3,11 +3,14 @@ import { clinicalDate } from './clinical-date.ts';
 import type { FhirDoseMapping, SequenceIdentityConfig } from './routine-config.ts';
 import { routineSchedule } from './routine-schedule.ts';
 import {
-  doseLookup, recognizedDoseIds, ruleById,
+  doseLookup, recognizedDoseIds, ruleById, sequenceRules,
   type DoseLookup, type SequenceRule,
 } from './sequence-rules.ts';
 
 export type { FhirDoseMapping };
+
+/** The exact `consolidateHistory` issue message a save-time gate matches to report a date conflict specifically, rather than a generic unresolved history. */
+export const CONFLICTING_DATES_ISSUE = 'Same dose has conflicting administration dates';
 
 /**
  * Two readers share this module and one runtime identity map.
@@ -185,7 +188,7 @@ export function consolidateHistory(input: {
     const dose = dates[0] ? pending.get(`${doseId}|${dates[0].date}`)?.dose : undefined;
     if (!dose) continue;
     if (dates.length > 1) {
-      fail(dates[0].ids[0], 'Same dose has conflicting administration dates', dose.series);
+      fail(dates[0].ids[0], CONFLICTING_DATES_ISSUE, dose.series);
       continue;
     }
     doses.push({
@@ -320,6 +323,110 @@ export function normalizeHistory(input: {
 /** Awareness only: no existing authoritative cross-source save interceptor exists. */
 export function duplicateRecordIds(history: NormalizedHistory, canonicalDoseId: string) {
   return history.doses.filter((dose) => dose.canonicalDoseId === canonicalDoseId).flatMap((dose) => dose.records.map((record) => record.recordId));
+}
+
+/** Canonical doses not in the routine-schedule reader, but shown in the history timeline. */
+const TIMELINE_ONLY_SERIES = new Set(['tetanus', 'hpv', 'pediatric-pfizer']);
+
+export interface TimelineEntry {
+  canonicalDoseId: string;
+  sequenceNumber: number;
+  administeredDate: string;
+  recordIds: string[];
+}
+
+export interface AdministeredTimeline {
+  entries: TimelineEntry[];
+  /** Some record could not be reconciled; the timeline is not known to be complete or duplicate-free. */
+  unresolved: boolean;
+}
+
+/**
+ * The patient's full administered-vaccine timeline for display: the routine
+ * schedule's 21 childhood doses (`normalizeHistory`) plus TD/HPV/Pediatric
+ * Pfizer (`consolidateHistory`, which also reads ANC TT as the same canonical
+ * dose). A Td/TT dose present in both ANC and Immunization history appears
+ * once, by canonical dose and administration date, never twice — both readers
+ * already coalesce a same-dose/same-date match before this merge sees it.
+ *
+ * `normalizeHistory` flags a canonical dose with two different administration
+ * dates as an issue but, unlike `consolidateHistory`, does not remove the
+ * conflicting entries from its own `doses` array. This function does that
+ * filtering itself: a routine-schedule dose that occurs more than once in
+ * `normalized.doses` is omitted entirely from the returned timeline, not
+ * shown under either date, and the conflict still drives `unresolved` (via
+ * `normalizeHistory`'s own issue for that record). Do not guess which date is
+ * right; surface it as needing reconciliation instead, the same stance
+ * `consolidateHistory` already takes for TD/HPV/Pediatric Pfizer.
+ *
+ * Newest administration first; ties break by dose id for a stable order.
+ * Does not page a live server or write history.
+ */
+export function administeredTimeline(input: {
+  patientUuid: string;
+  fhir: readonly FhirImmunization[];
+  encounters: readonly NationalEncounter[];
+  config: SequenceIdentityConfig;
+}): AdministeredTimeline {
+  const normalized = normalizeHistory({
+    patientUuid: input.patientUuid,
+    fhir: input.fhir,
+    encounters: input.encounters,
+    mappings: input.config.fhirDoseMappings,
+    nationalFormUuids: input.config.nationalFormUuids,
+    vaccineQuestionUuid: input.config.vaccineQuestionUuid,
+    vaccineConceptUuids: input.config.vaccineConceptUuids,
+  });
+  const consolidated = consolidateHistory({
+    patientUuid: input.patientUuid,
+    fhir: input.fhir,
+    encounters: input.encounters,
+    config: input.config,
+  });
+
+  const normalizedDoseCounts = new Map<string, number>();
+  for (const dose of normalized.doses) {
+    normalizedDoseCounts.set(dose.canonicalDoseId, (normalizedDoseCounts.get(dose.canonicalDoseId) ?? 0) + 1);
+  }
+  const entries: TimelineEntry[] = normalized.doses
+    .filter((dose) => normalizedDoseCounts.get(dose.canonicalDoseId) === 1)
+    .map((dose) => ({
+      canonicalDoseId: dose.canonicalDoseId,
+      sequenceNumber: dose.sequenceNumber,
+      administeredDate: dose.administeredDate,
+      recordIds: dose.records.map((record) => record.recordId),
+    }));
+
+  const timelineOnlyDoseIdByConcept = new Map<string, string>();
+  for (const rule of sequenceRules) {
+    if (!TIMELINE_ONLY_SERIES.has(rule.series)) continue;
+    const vaccineConceptUuid = input.config.vaccineConceptUuids?.[rule.id]?.trim();
+    if (vaccineConceptUuid) timelineOnlyDoseIdByConcept.set(vaccineConceptUuid, rule.id);
+  }
+  // normalizeHistory conservatively treats any vaccine outside its 21-dose schedule as
+  // unresolved "for the schedule" (see routine-childhood-immunization.md). A TD/HPV/Pediatric
+  // Pfizer record that consolidateHistory resolves cleanly is exactly that case, not a real
+  // problem for this combined timeline, so its per-record issue there is not carried over.
+  const resolvedTimelineOnlyRecordIds = new Set<string>();
+  for (const dose of consolidated.doses) {
+    const canonicalDoseId = timelineOnlyDoseIdByConcept.get(dose.vaccineConceptUuid);
+    if (!canonicalDoseId) continue; // either already covered by normalized, or not a timeline-only series
+    for (const recordId of dose.id.split('+')) resolvedTimelineOnlyRecordIds.add(recordId);
+    entries.push({
+      canonicalDoseId,
+      sequenceNumber: dose.sequenceNumber,
+      administeredDate: dose.administeredDate,
+      recordIds: dose.id.split('+'),
+    });
+  }
+
+  entries.sort((a, b) =>
+    b.administeredDate.localeCompare(a.administeredDate) || a.canonicalDoseId.localeCompare(b.canonicalDoseId));
+
+  const unresolved = normalized.issues.some((issue) => !resolvedTimelineOnlyRecordIds.has(issue.recordId)) ||
+    consolidated.issues.some((issue) => !issue.series || TIMELINE_ONLY_SERIES.has(issue.series));
+
+  return { entries, unresolved };
 }
 
 function mappedDose(

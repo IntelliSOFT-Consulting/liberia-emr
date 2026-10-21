@@ -4,9 +4,9 @@ import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
 import { clinicalDate } from './clinical-date';
-import { normalizeHistory } from './history';
+import { administeredTimeline, normalizeHistory, type TimelineEntry } from './history';
 import { loadHistory } from './load-history';
-import { evaluateRoutineSchedule, type RoutineStatus } from './routine-schedule';
+import { evaluateRoutineSchedule, routineSchedule, type RoutineStatus } from './routine-schedule';
 import type { RoutineConfig } from './routine-config';
 import styles from './routine-schedule.scss';
 
@@ -16,6 +16,40 @@ const statusLabels: Record<RoutineStatus, string> = {
   ADMINISTERED: 'Administered', OUTSIDE_ELIGIBILITY_WINDOW: 'Outside eligibility window',
   HISTORY_UNRESOLVED: 'History unresolved',
 };
+
+/** Labels for canonical doses outside the 21-item routine schedule (which already has its own). */
+const timelineOnlyLabels: Record<string, string> = {
+  TD1: 'TD', TD2: 'TD2', TD3: 'TD3', TD4: 'TD4', TD5: 'TD5',
+  HPV1: 'HPV1', HPV2: 'HPV2',
+  PediatricPfizer1: 'Pediatric Pfizer dose 1', PediatricPfizer2: 'Pediatric Pfizer dose 2',
+};
+
+function timelineDoseLabel(canonicalDoseId: string): string {
+  return routineSchedule.find((dose) => dose.id === canonicalDoseId)?.label
+    ?? timelineOnlyLabels[canonicalDoseId]
+    ?? canonicalDoseId;
+}
+
+const sourceLabels: Record<string, string> = {
+  fhir: 'Immunization record', 'national-form': 'National Immunization form', 'anc-tt': 'ANC (Date of TT)',
+};
+
+/** record ids look like "fhir:<uuid>", "national-form:<uuid>+anc-tt:<uuid>" (coalesced), etc. */
+function timelineSources(recordIds: readonly string[]): string {
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const id of recordIds) {
+    for (const part of id.split('+')) {
+      const prefix = part.slice(0, part.indexOf(':'));
+      const label = sourceLabels[prefix];
+      if (label && !seen.has(label)) {
+        seen.add(label);
+        labels.push(label);
+      }
+    }
+  }
+  return labels.join(', ');
+}
 
 export default function RoutineSchedule({ patientUuid, patient }: { patientUuid: string; patient: fhir.Patient }) {
   const { t } = useTranslation();
@@ -47,6 +81,8 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
   const rows = useMemo(() => normalized && patient?.birthDate
     ? evaluateRoutineSchedule(patient.birthDate, today, normalized, config.vaccineConceptUuids) : undefined,
     [normalized, patient?.birthDate, today, config.vaccineConceptUuids]);
+  const timeline = useMemo(() => data && administeredTimeline({ patientUuid, ...data, config }),
+    [data, patientUuid, config]);
 
   return <section className={styles.schedule} aria-label={t('routineImmunizationSchedule', 'Routine childhood immunization schedule')}>
     <h2>{t('routineImmunizationSchedule', 'Routine childhood immunization schedule')}</h2>
@@ -80,6 +116,27 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
             <TableCell>{t(`routineStatus${row.status}`, statusLabels[row.status])}</TableCell>
           </TableRow>)}</TableBody>
         </Table>
+        <h2>{t('previousImmunizations', 'Previous immunizations')}</h2>
+        {!timeline?.entries.length
+          ? <p>{t('noPreviousImmunizations', 'No previous immunizations recorded.')}</p>
+          : <>
+            {timeline.unresolved &&
+              <InlineNotification kind="warning" lowContrast hideCloseButton
+                title={t('immunizationHistoryUnresolved', 'History needs reconciliation')}
+                subtitle={t('immunizationTimelineUnresolvedDetail', 'Some dates or vaccine records could not be reconciled. This list may be incomplete.')} />}
+            <Table size="sm" aria-label={t('previousImmunizations', 'Previous immunizations')}>
+              <TableHead><TableRow>
+                <TableHeader>{t('vaccineDose', 'Vaccine dose')}</TableHeader>
+                <TableHeader>{t('administrationDate', 'Administration date')}</TableHeader>
+                <TableHeader>{t('recordedIn', 'Recorded in')}</TableHeader>
+              </TableRow></TableHead>
+              <TableBody>{timeline.entries.map((entry: TimelineEntry) => <TableRow key={entry.canonicalDoseId}>
+                <TableCell>{t(`routineDose${entry.canonicalDoseId}`, timelineDoseLabel(entry.canonicalDoseId))}</TableCell>
+                <TableCell>{entry.administeredDate}</TableCell>
+                <TableCell>{timelineSources(entry.recordIds)}</TableCell>
+              </TableRow>)}</TableBody>
+            </Table>
+          </>}
       </>}
   </section>;
 }

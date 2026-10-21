@@ -1,6 +1,6 @@
 import { clinicalDate } from './clinical-date.ts';
 import type { FhirImmunization, NationalEncounter } from './history.ts';
-import { loadHistory } from './load-history.ts';
+import { loadHistory, sequenceHistoryUrls } from './load-history.ts';
 import type { SequenceIdentityConfig } from './routine-config.ts';
 import { evaluateSequence, type SequenceStatus } from './sequence.ts';
 
@@ -72,19 +72,6 @@ export function pediatricPfizerStatusLabel(code: string | null | undefined): str
   }
 }
 
-export function pediatricPfizerHistoryUrls(patientUuid: string, fhirBaseUrl: string, restBaseUrl: string) {
-  const patient = patientUuid.trim();
-  if (!patient) throw new Error('Missing patient');
-  const encoded = encodeURIComponent(patient);
-  const obs = 'uuid,voided,concept:(uuid),value';
-  const rep = `custom:(uuid,voided,patient:(uuid),form:(uuid),encounterDatetime,obs:(${obs},groupMembers:(${obs})))`;
-  return {
-    patient,
-    fhirUrl: `${fhirBaseUrl}/Immunization?patient=${encoded}`,
-    encounterUrl: `${restBaseUrl}/encounter?patient=${encoded}&v=${rep}&limit=100`,
-  };
-}
-
 export function historyBelongsToPatient(
   patientUuid: string,
   fhir: readonly FhirImmunization[],
@@ -139,11 +126,11 @@ export async function evaluatePediatricPfizerAdministration(input: {
   if (!patientUuid) return 'unresolved';
   let birthDate: string;
   let evaluationDate: string;
-  let urls: ReturnType<typeof pediatricPfizerHistoryUrls>;
+  let urls: ReturnType<typeof sequenceHistoryUrls>;
   try {
     birthDate = clinicalDate(input.birthDate);
     evaluationDate = clinicalDate(input.evaluationDate);
-    urls = pediatricPfizerHistoryUrls(patientUuid, input.fhirBaseUrl, input.restBaseUrl);
+    urls = sequenceHistoryUrls(patientUuid, input.fhirBaseUrl, input.restBaseUrl);
   } catch {
     return 'unresolved';
   }

@@ -103,9 +103,16 @@ alone is not a truncation signal. If a later page fails, comes back empty while
 another page is still indicated, or `next` is still set after the page cap, the
 history is incomplete and Td is blocked. Those cases block Td only.
 
-The sequence helper from the unmerged interval work is not on main and is not
-used here. This gate calls the merged `evaluateEligibility` helper for the
-dictionary intervals above.
+**LE-563 update:** this gate now reads dose identity, duplicate/conflict
+detection and intervals through `evaluateSequence` (sequence.ts), the same
+reconciled reader LE-561/Pediatric Pfizer use, instead of its own
+`readTdHistory`/`evaluateEligibility` call (removed). `decideTdGate` fetches
+FHIR Immunization history as well as national/ANC encounters — previously it
+read only the REST encounter list, so a Td dose recorded as a FHIR
+Immunization resource (the O3 Immunizations workspace path) was invisible to
+this gate and could be re-recorded as a second, conflicting administration.
+Pregnancy classification is unchanged and stays Td-specific, on top of that
+shared history.
 
 ## Technical integration
 

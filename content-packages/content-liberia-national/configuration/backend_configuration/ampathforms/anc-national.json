@@ -1,7 +1,7 @@
 {
   "name": "1. ANC Form",
   "uuid": "${var.form.anc-national.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -554,6 +554,31 @@
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-tt1.uuid}",
                 "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt1_gate === 'unresolved'",
+                  "message": "Date of TT1 cannot be saved because tetanus/Td history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt1_gate === 'history-conflict'",
+                  "message": "Date of TT1 does not match a Td dose already recorded for this patient."
+                }
+              ]
+            },
+            {
+              "label": "TT1/Td1 eligibility",
+              "type": "obs",
+              "id": "tt1_gate",
+              "hide": { "hideWhenExpression": "true" },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "ttAdministrationGate(patient.id, 'TD1', tt1, vitaminAEditingEncounterUuid()).then(code => code)"
+                }
               }
             },
             {
@@ -563,6 +588,31 @@
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-tt2.uuid}",
                 "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt2_gate === 'unresolved'",
+                  "message": "Date of TT2 cannot be saved because tetanus/Td history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt2_gate === 'history-conflict'",
+                  "message": "Date of TT2 does not match a Td2 dose already recorded for this patient."
+                }
+              ]
+            },
+            {
+              "label": "TT2/Td2 eligibility",
+              "type": "obs",
+              "id": "tt2_gate",
+              "hide": { "hideWhenExpression": "true" },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "ttAdministrationGate(patient.id, 'TD2', tt2, vitaminAEditingEncounterUuid()).then(code => code)"
+                }
               }
             },
             {
@@ -572,6 +622,31 @@
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-tt3.uuid}",
                 "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt3_gate === 'unresolved'",
+                  "message": "Date of TT3 cannot be saved because tetanus/Td history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt3_gate === 'history-conflict'",
+                  "message": "Date of TT3 does not match a Td3 dose already recorded for this patient."
+                }
+              ]
+            },
+            {
+              "label": "TT3/Td3 eligibility",
+              "type": "obs",
+              "id": "tt3_gate",
+              "hide": { "hideWhenExpression": "true" },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "ttAdministrationGate(patient.id, 'TD3', tt3, vitaminAEditingEncounterUuid()).then(code => code)"
+                }
               }
             },
             {
@@ -581,6 +656,31 @@
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-tt4.uuid}",
                 "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt4_gate === 'unresolved'",
+                  "message": "Date of TT4 cannot be saved because tetanus/Td history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt4_gate === 'history-conflict'",
+                  "message": "Date of TT4 does not match a Td4 dose already recorded for this patient."
+                }
+              ]
+            },
+            {
+              "label": "TT4/Td4 eligibility",
+              "type": "obs",
+              "id": "tt4_gate",
+              "hide": { "hideWhenExpression": "true" },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "ttAdministrationGate(patient.id, 'TD4', tt4, vitaminAEditingEncounterUuid()).then(code => code)"
+                }
               }
             },
             {
@@ -590,6 +690,31 @@
               "questionOptions": {
                 "concept": "${var.concept.national.date-of-tt5.uuid}",
                 "rendering": "date"
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt5_gate === 'unresolved'",
+                  "message": "Date of TT5 cannot be saved because tetanus/Td history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "tt5_gate === 'history-conflict'",
+                  "message": "Date of TT5 does not match a Td5 dose already recorded for this patient."
+                }
+              ]
+            },
+            {
+              "label": "TT5/Td5 eligibility",
+              "type": "obs",
+              "id": "tt5_gate",
+              "hide": { "hideWhenExpression": "true" },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "ttAdministrationGate(patient.id, 'TD5', tt5, vitaminAEditingEncounterUuid()).then(code => code)"
+                }
               }
             }
           ]

@@ -1,102 +1,173 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import type { LabourEpisodeConfig } from '../forms/labour-episode.ts';
+import type { FhirImmunization } from './history.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
 import {
   classifyCurrentPregnancy,
-  collectEncounterPages,
   decideTdGate,
-  immunizationEncounterPagePath,
   isTdVaccine,
   monroviaCalendarDate,
-  readTdHistory,
   tdConceptsFromFormArgs,
   tdIntervalDate,
   type TdConcepts,
   type TdHistoryEncounter,
 } from './td-pregnancy.ts';
 
-const concepts: TdConcepts = tdConceptsFromFormArgs(
-  'pregnancy-status',
-  'trimester-1',
-  'trimester-2',
-  'trimester-3',
-  'vaccine-name',
-  'td1',
-  'tt1',
-  'td2',
-  'tt2',
-  'td3',
-  'tt3',
-  'td4',
-  'tt4',
-  'td5',
-  'tt5',
-);
-
-const episodeConfig: LabourEpisodeConfig = { deliveryEncounterTypeUuid: 'delivery-type' };
+const moduleName = '@liberiaemr/esm-liberia-patient-chart-extension';
+const patientUuid = 'patient-1';
 const birthDate = '1990-01-01';
 
-function encounter(input: {
-  id?: string;
-  datetime: string;
-  formName?: string;
-  type?: string;
-  obs?: TdHistoryEncounter['obs'];
-}): TdHistoryEncounter {
+function propertiesOf(text: string) {
+  const parsed = new Map<string, string>();
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+    const separator = trimmed.indexOf('=');
+    parsed.set(trimmed.slice(0, separator).trim(), trimmed.slice(separator + 1).trim());
+  }
+  return parsed;
+}
+
+function resolveTokens(value: unknown, parsed: Map<string, string>): unknown {
+  if (typeof value === 'string') {
+    return value.replace(/\$\{([^}]+)\}/g, (_match, name: string) => {
+      const resolved = parsed.get(name);
+      if (!resolved) throw new Error(`Unresolved ${name}`);
+      return resolved;
+    });
+  }
+  if (Array.isArray(value)) return value.map((item) => resolveTokens(item, parsed));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveTokens(item, parsed)]));
+  }
+  return value;
+}
+
+const properties = propertiesOf(readFileSync(new URL(
+  '../../../../content-packages/content-liberia-national/configuration/variables.properties',
+  import.meta.url,
+), 'utf8'));
+const frontendConfig = JSON.parse(readFileSync(new URL(
+  '../../../../content-packages/content-liberia-national/configuration/frontend_configuration/config-national.json',
+  import.meta.url,
+), 'utf8'));
+const national = resolveTokens(
+  frontendConfig[moduleName].routineImmunizations,
+  properties,
+) as SequenceIdentityConfig;
+
+function variable(key: string): string {
+  const value = properties.get(key);
+  assert.ok(value, key);
+  return value;
+}
+
+const episodeConfig: LabourEpisodeConfig = { deliveryEncounterTypeUuid: 'delivery-type' };
+
+const pregnancyStatusConceptUuid = variable('var.concept.ciel.pregnancy-status.uuid');
+const trimesters = [
+  variable('var.concept.national.1st-trimester.uuid'),
+  variable('var.concept.national.2nd-trimester.uuid'),
+  variable('var.concept.national.3rd-trimester.uuid'),
+];
+
+const concepts: TdConcepts = tdConceptsFromFormArgs(
+  pregnancyStatusConceptUuid,
+  trimesters[0],
+  trimesters[1],
+  trimesters[2],
+  national.vaccineQuestionUuid,
+  national.vaccineConceptUuids.TD1,
+  national.ancTtConceptUuids.TD1,
+  national.vaccineConceptUuids.TD2,
+  national.ancTtConceptUuids.TD2,
+  national.vaccineConceptUuids.TD3,
+  national.ancTtConceptUuids.TD3,
+  national.vaccineConceptUuids.TD4,
+  national.ancTtConceptUuids.TD4,
+  national.vaccineConceptUuids.TD5,
+  national.ancTtConceptUuids.TD5,
+);
+
+function td(sequence: 1 | 2 | 3 | 4 | 5) {
+  return concepts.doses[sequence - 1].tdConceptUuid;
+}
+
+function tt(sequence: 1 | 2 | 3 | 4 | 5) {
+  return concepts.doses[sequence - 1].ttConceptUuid;
+}
+
+function fhirDose(conceptUuid: string, date: string, id: string): FhirImmunization {
   return {
-    uuid: input.id ?? input.datetime,
-    encounterDatetime: input.datetime,
-    encounterType: input.type ? { uuid: input.type } : undefined,
-    form: input.formName ? { name: input.formName } : undefined,
-    obs: input.obs,
+    resourceType: 'Immunization', id, status: 'completed',
+    patient: { reference: `Patient/${patientUuid}` },
+    vaccineCode: { coding: [{ code: conceptUuid }] },
+    occurrenceDateTime: date,
   };
 }
 
-function pregnancy(datetime: string, value: string, id = datetime): TdHistoryEncounter {
-  return encounter({
-    id,
-    datetime,
-    formName: 'ANC Initial Visit',
-    obs: [{ uuid: `${id}-status`, concept: { uuid: 'pregnancy-status' }, value: { uuid: value } }],
-  });
+function tdEncounter(conceptUuid: string, datetime: string, id = `imm-${conceptUuid}-${datetime}`): TdHistoryEncounter {
+  return {
+    uuid: id, patient: { uuid: patientUuid },
+    form: { uuid: national.nationalFormUuids[national.nationalFormUuids.length - 1] },
+    encounterDatetime: datetime,
+    obs: [{ uuid: `${id}-obs`, concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: conceptUuid } }],
+  };
 }
 
-function tt(concept: string, date: string, datetime = `${date}T09:00:00.000Z`): TdHistoryEncounter {
-  return encounter({
-    id: `tt-${concept}-${date}`,
-    datetime,
-    formName: '1. ANC Form',
-    obs: [{ uuid: `obs-${concept}-${date}`, concept: { uuid: concept }, value: date }],
-  });
+function ttEncounter(
+  ttConceptUuid: string, date: string, id = `tt-${ttConceptUuid}-${date}`,
+  encounterDatetime = `${date}T09:00:00.000Z`,
+): TdHistoryEncounter {
+  return {
+    uuid: id, patient: { uuid: patientUuid },
+    form: { uuid: national.ancFormUuids[national.ancFormUuids.length - 1] },
+    encounterDatetime,
+    obs: [{ uuid: `obs-${id}`, concept: { uuid: ttConceptUuid }, value: date }],
+  };
 }
 
-function tdDose(concept: string, datetime: string, id = `imm-${concept}-${datetime}`): TdHistoryEncounter {
-  return encounter({
-    id,
-    datetime,
-    formName: 'Immunization',
-    obs: [{ uuid: `${id}-obs`, concept: { uuid: 'vaccine-name' }, value: { uuid: concept } }],
-  });
+function pregnancyEncounter(datetime: string, valueUuid: string, id = `preg-${datetime}`): TdHistoryEncounter {
+  return {
+    uuid: id, patient: { uuid: patientUuid },
+    encounterDatetime: datetime,
+    obs: [{ uuid: `${id}-obs`, concept: { uuid: pregnancyStatusConceptUuid }, value: { uuid: valueUuid } }],
+  };
+}
+
+function deliveryEncounter(datetime: string, id = `delivery-${datetime}`): TdHistoryEncounter {
+  return {
+    uuid: id, patient: { uuid: patientUuid },
+    encounterType: { uuid: 'delivery-type' },
+    encounterDatetime: datetime,
+    obs: [],
+  };
 }
 
 function gate(input: {
   vaccine: string;
   evaluationDate: string;
+  fhir?: readonly FhirImmunization[];
   encounters?: readonly TdHistoryEncounter[];
   historyComplete?: boolean;
   patientId?: string;
   editingEncounterUuid?: string;
   birth?: string;
+  config?: SequenceIdentityConfig;
 }) {
   return decideTdGate({
-    patientId: input.patientId === undefined ? 'patient-1' : input.patientId,
+    patientId: input.patientId === undefined ? patientUuid : input.patientId,
     birthDate: input.birth === undefined ? birthDate : input.birth,
     evaluationDate: input.evaluationDate,
     vaccineConceptUuid: input.vaccine,
     editingEncounterUuid: input.editingEncounterUuid,
     concepts,
+    fhir: input.fhir ?? [],
     encounters: input.encounters ?? [],
     episodeConfig,
+    config: input.config ?? national,
     historyComplete: input.historyComplete ?? true,
   });
 }
@@ -121,183 +192,195 @@ describe('Monrovia administration dates', () => {
 });
 
 describe('Td pregnancy eligibility', () => {
-  const pregnant = [pregnancy('2024-05-01T08:00:00.000Z', 'trimester-2')];
+  const pregnant = [pregnancyEncounter('2024-05-01T08:00:00.000Z', trimesters[1])];
 
   it('lets a confirmed pregnancy proceed to Td1', () => {
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: pregnant }), 'allowed');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: pregnant }), 'allowed');
   });
 
   it('treats each trimester as pregnant', () => {
-    for (const value of ['trimester-1', 'trimester-2', 'trimester-3']) {
-      assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: [pregnancy('2024-05-01T08:00:00.000Z', value)] }), 'allowed');
+    for (const value of trimesters) {
+      assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: [pregnancyEncounter('2024-05-01T08:00:00.000Z', value)] }), 'allowed');
     }
   });
 
   it('blocks unknown, missing, and unreadable pregnancy status', () => {
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: [] }), 'unknown-pregnancy');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: [] }), 'unknown-pregnancy');
     for (const value of ['some-other-code', 'ciel-1065', 'ciel-1066']) {
       assert.equal(gate({
-        vaccine: 'td1',
+        vaccine: td(1),
         evaluationDate: '2024-06-01',
-        encounters: [pregnancy('2024-05-01T08:00:00.000Z', value)],
+        encounters: [pregnancyEncounter('2024-05-01T08:00:00.000Z', value)],
       }), 'unknown-pregnancy');
     }
   });
 
   it('does not carry pregnancy across a delivery', () => {
     const encounters = [
-      pregnancy('2024-01-10T08:00:00.000Z', 'trimester-3', 'old-pregnancy'),
-      encounter({ id: 'delivery', datetime: '2024-03-01T08:00:00.000Z', type: 'delivery-type' }),
+      pregnancyEncounter('2024-01-10T08:00:00.000Z', trimesters[2], 'old-pregnancy'),
+      deliveryEncounter('2024-03-01T08:00:00.000Z'),
     ];
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters }), 'unknown-pregnancy');
-    encounters.push(pregnancy('2024-04-02T08:00:00.000Z', 'trimester-1', 'current-pregnancy'));
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters }), 'allowed');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters }), 'unknown-pregnancy');
+    encounters.push(pregnancyEncounter('2024-04-02T08:00:00.000Z', trimesters[0], 'current-pregnancy'));
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters }), 'allowed');
   });
 
   it('fails closed when the latest pregnancy-status values disagree', () => {
     const datetime = '2024-05-01T08:00:00.000Z';
-    const mixed = encounter({
-      datetime,
-      formName: 'ANC Follow-up Visit',
+    const mixed: TdHistoryEncounter = {
+      uuid: 'mixed', patient: { uuid: patientUuid }, encounterDatetime: datetime,
       obs: [
-        { concept: { uuid: 'pregnancy-status' }, value: { uuid: 'trimester-1' } },
-        { concept: { uuid: 'pregnancy-status' }, value: { uuid: 'ciel-1066' } },
+        { uuid: 'mixed-1', concept: { uuid: pregnancyStatusConceptUuid }, value: { uuid: trimesters[0] } },
+        { uuid: 'mixed-2', concept: { uuid: pregnancyStatusConceptUuid }, value: { uuid: 'ciel-1066' } },
       ],
-    });
+    };
     assert.equal(classifyCurrentPregnancy({
       encounters: [mixed],
       config: episodeConfig,
       evaluationTime: Date.parse('2024-06-01T23:59:59.999Z'),
       concepts,
     }), 'unknown');
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: [mixed] }), 'unknown-pregnancy');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: [mixed] }), 'unknown-pregnancy');
   });
 
   it('does not block an unrelated vaccine', () => {
     const conflict = [
-      pregnancy('2024-05-01T08:00:00.000Z', 'trimester-2'),
-      tt('tt1', '2024-01-01'),
-      tdDose('td1', '2024-02-01T10:00:00.000Z'),
+      pregnancyEncounter('2024-05-01T08:00:00.000Z', trimesters[1]),
+      ttEncounter(tt(1), '2024-01-01'),
+      tdEncounter(td(1), '2024-02-01T10:00:00.000Z'),
     ];
-    assert.equal(gate({ vaccine: 'opv', evaluationDate: '2024-06-01', encounters: conflict, historyComplete: false }), 'allowed');
-    assert.equal(gate({ vaccine: 'bcg', evaluationDate: '2024-06-01', encounters: [], patientId: '' }), 'allowed');
+    assert.equal(gate({ vaccine: national.vaccineConceptUuids.OPV1, evaluationDate: '2024-06-01', encounters: conflict, historyComplete: false }), 'allowed');
+    assert.equal(gate({ vaccine: national.vaccineConceptUuids.BCG, evaluationDate: '2024-06-01', encounters: [], patientId: '' }), 'allowed');
   });
 });
 
 describe('TT and Td are one sequence', () => {
-  const pregnant = [pregnancy('2024-05-01T08:00:00.000Z', 'trimester-1')];
+  const pregnant = [pregnancyEncounter('2024-05-01T08:00:00.000Z', trimesters[0])];
 
   it('counts TT1 through TT5 as Td1 through Td5', () => {
-    const pairs = [
-      ['tt1', 'td1'],
-      ['tt2', 'td2'],
-      ['tt3', 'td3'],
-      ['tt4', 'td4'],
-      ['tt5', 'td5'],
-    ] as const;
-    for (const [ttConcept, tdConcept] of pairs) {
+    for (const sequence of [1, 2, 3, 4, 5] as const) {
       assert.equal(gate({
-        vaccine: tdConcept,
+        vaccine: td(sequence),
         evaluationDate: '2024-06-01',
-        encounters: [...pregnant, tt(ttConcept, '2024-01-01')],
+        encounters: [...pregnant, ttEncounter(tt(sequence), '2024-01-01')],
       }), 'already-given');
     }
   });
 
   it('counts a Td dose recorded on the Immunization form', () => {
     assert.equal(gate({
-      vaccine: 'td1',
+      vaccine: td(1),
       evaluationDate: '2024-06-01',
-      encounters: [...pregnant, tdDose('td1', '2024-02-01T10:00:00.000Z')],
+      encounters: [...pregnant, tdEncounter(td(1), '2024-02-01T10:00:00.000Z')],
     }), 'already-given');
+  });
+
+  it('counts a Td dose recorded as a FHIR Immunization resource (the LE-561/LE-565 reconciliation)', () => {
+    // Before this history was read through evaluateSequence, decideTdGate never looked at FHIR
+    // history at all, so a dose recorded through the O3 Immunizations workspace was invisible to
+    // this gate and could be re-recorded as a second, conflicting administration.
+    assert.equal(gate({
+      vaccine: td(2),
+      evaluationDate: '2024-06-01',
+      fhir: [fhirDose(td(2), '2024-02-01', 'fhir-td2')],
+      encounters: [...pregnant, ttEncounter(tt(1), '2024-01-01')],
+    }), 'already-given');
+  });
+
+  it('coalesces a FHIR Td record and an ANC TT record of the same dose on the same date', () => {
+    const earlyPregnant = [pregnancyEncounter('2024-01-02T08:00:00.000Z', trimesters[0])];
+    assert.equal(gate({
+      vaccine: td(1),
+      evaluationDate: '2024-01-29',
+      fhir: [fhirDose(td(1), '2024-01-01', 'fhir-td1')],
+      encounters: [...earlyPregnant, ttEncounter(tt(1), '2024-01-01')],
+    }), 'already-given');
+    assert.equal(gate({
+      vaccine: td(2),
+      evaluationDate: '2024-01-29',
+      fhir: [fhirDose(td(1), '2024-01-01', 'fhir-td1')],
+      encounters: [...earlyPregnant, ttEncounter(tt(1), '2024-01-01')],
+    }), 'allowed');
+  });
+
+  it('treats a FHIR Td record and a conflicting ANC TT date for the same dose as unresolved', () => {
+    assert.equal(gate({
+      vaccine: td(2),
+      evaluationDate: '2024-06-01',
+      fhir: [fhirDose(td(1), '2024-01-01', 'fhir-td1')],
+      encounters: [...pregnant, ttEncounter(tt(1), '2024-02-01')],
+    }), 'history-conflict');
   });
 
   it('does not count the same canonical dose twice when TT and Td share a date', () => {
     const encounters = [
-      pregnancy('2024-01-02T08:00:00.000Z', 'trimester-1', 'early-pregnancy'),
-      tt('tt1', '2024-01-01'),
-      tdDose('td1', '2024-01-01T11:00:00.000Z'),
+      pregnancyEncounter('2024-01-02T08:00:00.000Z', trimesters[0], 'early-pregnancy'),
+      ttEncounter(tt(1), '2024-01-01'),
+      tdEncounter(td(1), '2024-01-01T11:00:00.000Z'),
     ];
-    const history = readTdHistory({ encounters, concepts });
-    assert.equal(history.ok, true);
-    if (history.ok) {
-      assert.equal(history.doses.length, 1);
-      assert.equal(history.doses[0].administeredDate, '2024-01-01');
-    }
     assert.equal(tdIntervalDate('2024-01-01', 2), '2024-01-29');
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-01-29', encounters }), 'allowed');
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-01-29', encounters }), 'allowed');
   });
 
   it('fails closed when equivalent representations have different dates', () => {
     const encounters = [
       ...pregnant,
-      tt('tt1', '2024-01-01'),
-      tdDose('td1', '2024-02-01T10:00:00.000Z'),
+      ttEncounter(tt(1), '2024-01-01'),
+      tdEncounter(td(1), '2024-02-01T10:00:00.000Z'),
     ];
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-06-01', encounters }), 'history-conflict');
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-06-01', encounters }), 'history-conflict');
     assert.equal(gate({
-      vaccine: 'td1',
+      vaccine: td(1),
       evaluationDate: '2024-06-01',
-      encounters: [...pregnant, tdDose('td1', '2024-01-01T10:00:00.000Z', 'first'), tdDose('td1', '2024-03-01T10:00:00.000Z', 'second')],
+      encounters: [...pregnant, tdEncounter(td(1), '2024-01-01T10:00:00.000Z', 'first'), tdEncounter(td(1), '2024-03-01T10:00:00.000Z', 'second')],
     }), 'history-conflict');
   });
 
   it('classifies an unreadable mapped date the same way in either encounter order', () => {
-    const unreadable = encounter({
-      id: 'unreadable-tt2',
-      datetime: '2024-04-01T10:00:00.000Z',
-      formName: '1. ANC Form',
-      obs: [{ concept: { uuid: 'tt2' }, value: 'not-a-date' }],
-    });
-    const earlier = tt('tt1', '2024-01-01');
-    const later = tt('tt1', '2024-02-01');
-    const forward = readTdHistory({ encounters: [earlier, later, unreadable], concepts });
-    const reverse = readTdHistory({ encounters: [unreadable, later, earlier], concepts });
-    assert.deepEqual(forward, { ok: false, code: 'unresolved' });
-    assert.deepEqual(reverse, forward);
-
-    const sameDose = encounter({
-      id: 'unreadable-tt1',
-      datetime: '2024-03-01T10:00:00.000Z',
-      formName: '1. ANC Form',
-      obs: [{ concept: { uuid: 'tt1' }, value: 'not-a-date' }],
-    });
-    const valid = tt('tt1', '2024-01-01');
-    assert.deepEqual(readTdHistory({ encounters: [valid, sameDose], concepts }), { ok: false, code: 'unresolved' });
-    assert.deepEqual(readTdHistory({ encounters: [sameDose, valid], concepts }), { ok: false, code: 'unresolved' });
+    const unreadable: TdHistoryEncounter = {
+      uuid: 'unreadable-tt2', patient: { uuid: patientUuid },
+      form: { uuid: national.ancFormUuids[national.ancFormUuids.length - 1] },
+      encounterDatetime: '2024-04-01T10:00:00.000Z',
+      obs: [{ uuid: 'obs-unreadable-tt2', concept: { uuid: tt(2) }, value: 'not-a-date' }],
+    };
+    const dose1 = ttEncounter(tt(1), '2024-01-01');
+    assert.equal(gate({ vaccine: td(3), evaluationDate: '2024-06-01', encounters: [...pregnant, dose1, unreadable] }), 'unresolved');
+    assert.equal(gate({ vaccine: td(3), evaluationDate: '2024-06-01', encounters: [...pregnant, unreadable, dose1] }), 'unresolved');
   });
 
   it('fails closed when a mapped dose has no usable date', () => {
     const encounters = [
       ...pregnant,
-      encounter({
-        datetime: '2024-02-01T10:00:00.000Z',
-        formName: '1. ANC Form',
-        obs: [{ concept: { uuid: 'tt1' }, value: 'not-a-date' }],
-      }),
+      {
+        uuid: 'bad-tt1', patient: { uuid: patientUuid },
+        form: { uuid: national.ancFormUuids[national.ancFormUuids.length - 1] },
+        encounterDatetime: '2024-02-01T10:00:00.000Z',
+        obs: [{ uuid: 'obs-bad-tt1', concept: { uuid: tt(1) }, value: 'not-a-date' }],
+      } as TdHistoryEncounter,
     ];
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-06-01', encounters }), 'unresolved');
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-06-01', encounters }), 'unresolved');
   });
 
   it('ignores Td answers that were not recorded on the Immunization form', () => {
-    const elsewhere = encounter({
-      datetime: '2024-02-01T10:00:00.000Z',
-      formName: 'OPD Consultation',
-      obs: [{ concept: { uuid: 'vaccine-name' }, value: { uuid: 'td1' } }],
-    });
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: [...pregnant, elsewhere] }), 'allowed');
+    const elsewhere: TdHistoryEncounter = {
+      uuid: 'elsewhere', patient: { uuid: patientUuid },
+      form: { uuid: 'some-other-form' },
+      encounterDatetime: '2024-02-01T10:00:00.000Z',
+      obs: [{ uuid: 'obs-elsewhere', concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: td(1) } }],
+    };
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: [...pregnant, elsewhere] }), 'allowed');
   });
 
   it('does not treat the dose being edited as already given', () => {
-    const current = tdDose('td1', '2024-02-01T10:00:00.000Z', 'editing');
+    const current = tdEncounter(td(1), '2024-02-01T10:00:00.000Z', 'editing');
     assert.equal(gate({
-      vaccine: 'td1',
+      vaccine: td(1),
       evaluationDate: '2024-06-01',
       encounters: [...pregnant, current],
       editingEncounterUuid: 'editing',
     }), 'allowed');
     assert.equal(gate({
-      vaccine: 'td1',
+      vaccine: td(1),
       evaluationDate: '2024-06-01',
       encounters: [...pregnant, current],
     }), 'already-given');
@@ -305,155 +388,49 @@ describe('TT and Td are one sequence', () => {
 });
 
 describe('Td sequence intervals', () => {
-  const pregnant = [pregnancy('2024-01-02T08:00:00.000Z', 'trimester-2')];
+  const pregnant = [pregnancyEncounter('2024-01-02T08:00:00.000Z', trimesters[1])];
 
   it('applies the Td2 interval after TT1', () => {
-    const encounters = [...pregnant, tt('tt1', '2024-01-01')];
+    const encounters = [...pregnant, ttEncounter(tt(1), '2024-01-01')];
     assert.equal(tdIntervalDate('2024-01-01', 2), '2024-01-29');
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-01-28', encounters }), 'too-soon');
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-01-29', encounters }), 'allowed');
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-01-28', encounters }), 'too-soon');
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-01-29', encounters }), 'allowed');
   });
 
   it('applies the Td3 interval after TT2', () => {
-    const encounters = [...pregnant, tt('tt2', '2024-01-15')];
+    const encounters = [...pregnant, ttEncounter(tt(2), '2024-01-15')];
     assert.equal(tdIntervalDate('2024-01-15', 3), '2024-07-15');
-    assert.equal(gate({ vaccine: 'td3', evaluationDate: '2024-07-14', encounters }), 'too-soon');
-    assert.equal(gate({ vaccine: 'td3', evaluationDate: '2024-07-15', encounters }), 'allowed');
+    assert.equal(gate({ vaccine: td(3), evaluationDate: '2024-07-14', encounters }), 'too-soon');
+    assert.equal(gate({ vaccine: td(3), evaluationDate: '2024-07-15', encounters }), 'allowed');
   });
 
   it('applies the one-year intervals after TT3 and TT4', () => {
     assert.equal(tdIntervalDate('2024-01-31', 4), '2025-01-31');
     assert.equal(tdIntervalDate('2024-02-29', 5), '2025-02-28');
     assert.equal(gate({
-      vaccine: 'td4',
+      vaccine: td(4),
       evaluationDate: '2025-01-30',
-      encounters: [...pregnant, tt('tt3', '2024-01-31')],
+      encounters: [...pregnant, ttEncounter(tt(3), '2024-01-31')],
     }), 'too-soon');
     assert.equal(gate({
-      vaccine: 'td4',
+      vaccine: td(4),
       evaluationDate: '2025-01-31',
-      encounters: [...pregnant, tt('tt3', '2024-01-31')],
+      encounters: [...pregnant, ttEncounter(tt(3), '2024-01-31')],
     }), 'allowed');
-    const td5History = [pregnancy('2025-02-01T08:00:00.000Z', 'trimester-3'), tt('tt4', '2024-02-29')];
-    assert.equal(gate({ vaccine: 'td5', evaluationDate: '2025-02-27', encounters: td5History }), 'too-soon');
-    assert.equal(gate({ vaccine: 'td5', evaluationDate: '2025-02-28', encounters: td5History }), 'allowed');
+    const td5History = [pregnancyEncounter('2025-02-01T08:00:00.000Z', trimesters[2]), ttEncounter(tt(4), '2024-02-29')];
+    assert.equal(gate({ vaccine: td(5), evaluationDate: '2025-02-27', encounters: td5History }), 'too-soon');
+    assert.equal(gate({ vaccine: td(5), evaluationDate: '2025-02-28', encounters: td5History }), 'allowed');
   });
 
   it('still blocks Td when pregnancy is not confirmed even if the interval would allow it', () => {
-    const encounters = [tt('tt1', '2024-01-01')];
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-06-01', encounters }), 'unknown-pregnancy');
+    const encounters = [ttEncounter(tt(1), '2024-01-01')];
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-06-01', encounters }), 'unknown-pregnancy');
   });
 
   it('blocks Td when pregnancy status or history cannot be established', () => {
-    const pregnantHistory = [pregnancy('2024-05-01T08:00:00.000Z', 'trimester-1'), tt('tt1', '2024-01-01')];
-    assert.equal(gate({ vaccine: 'td2', evaluationDate: '2024-06-01', encounters: pregnantHistory, historyComplete: false }), 'unresolved');
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: pregnant, patientId: ' ' }), 'unresolved');
-    assert.equal(gate({ vaccine: 'td1', evaluationDate: '2024-06-01', encounters: pregnant, birth: '' }), 'unresolved');
-  });
-});
-
-describe('encounter history paging', () => {
-  function rows(count: number, idPrefix = 'row'): TdHistoryEncounter[] {
-    return Array.from({ length: count }, (_, index) => encounter({
-      id: `${idPrefix}-${index}`,
-      datetime: '2020-01-01T08:00:00.000Z',
-      formName: 'OPD Consultation',
-    }));
-  }
-
-  it('treats 99 records with no next page as complete', async () => {
-    let calls = 0;
-    const loaded = await collectEncounterPages(async (startIndex, includeTotalCount) => {
-      calls += 1;
-      assert.equal(startIndex, 0);
-      assert.equal(includeTotalCount, true);
-      return { results: rows(99) };
-    });
-    assert.equal(calls, 1);
-    assert.equal(loaded.complete, true);
-    assert.equal(loaded.encounters.length, 99);
-  });
-
-  it('treats exactly 100 records with no next page as complete', async () => {
-    let calls = 0;
-    const loaded = await collectEncounterPages(async () => {
-      calls += 1;
-      return { results: rows(100) };
-    });
-    assert.equal(calls, 1);
-    assert.equal(loaded.complete, true);
-    assert.equal(loaded.encounters.length, 100);
-  });
-
-  it('keeps reading when exactly 100 records include a next page', async () => {
-    const calls: Array<{ startIndex: number; includeTotalCount: boolean }> = [];
-    const loaded = await collectEncounterPages(async (startIndex, includeTotalCount) => {
-      calls.push({ startIndex, includeTotalCount });
-      if (startIndex === 0) {
-        return { results: rows(100), links: [{ rel: 'next', uri: '/ws/rest/v1/encounter?startIndex=100' }] };
-      }
-      return { results: rows(1, 'second') };
-    });
-    assert.deepEqual(calls, [
-      { startIndex: 0, includeTotalCount: true },
-      { startIndex: 100, includeTotalCount: false },
-    ]);
-    assert.equal(loaded.complete, true);
-    assert.equal(loaded.encounters.length, 101);
-
-    const byCount = await collectEncounterPages(async (startIndex) => {
-      if (startIndex === 0) {
-        return { results: rows(100, 'counted'), totalCount: 101 };
-      }
-      return { results: rows(1, 'counted-rest') };
-    });
-    assert.equal(byCount.complete, true);
-    assert.equal(byCount.encounters.length, 101);
-  });
-
-  it('uses tetanus history loaded from the second page', async () => {
-    const loaded = await collectEncounterPages(async (startIndex) => {
-      if (startIndex === 0) {
-        return {
-          results: [pregnancy('2024-05-01T08:00:00.000Z', 'trimester-1'), ...rows(99)],
-          totalCount: 101,
-          links: [{ rel: 'next', uri: '/ws/rest/v1/encounter?startIndex=100' }],
-        };
-      }
-      return { results: [tt('tt1', '2024-01-01')] };
-    });
-    assert.equal(loaded.complete, true);
-    assert.equal(gate({
-      vaccine: 'td1',
-      evaluationDate: '2024-06-01',
-      encounters: loaded.encounters,
-      historyComplete: loaded.complete,
-    }), 'already-given');
-  });
-
-  it('blocks Td when a later page cannot be loaded', async () => {
-    await assert.rejects(collectEncounterPages(async (startIndex) => {
-      if (startIndex === 0) {
-        return { results: rows(100), links: [{ rel: 'next' }] };
-      }
-      throw new Error('page failed');
-    }));
-    assert.equal(gate({
-      vaccine: 'td1',
-      evaluationDate: '2024-06-01',
-      encounters: [pregnancy('2024-05-01T08:00:00.000Z', 'trimester-1')],
-      historyComplete: false,
-    }), 'unresolved');
-  });
-
-  it('asks the first encounter page for totalCount and does not treat a full page as truncated', () => {
-    const first = new URLSearchParams(immunizationEncounterPagePath('patient 1', 0, true).split('?')[1]);
-    const next = new URLSearchParams(immunizationEncounterPagePath('patient 1', 100, false).split('?')[1]);
-    assert.equal(first.get('limit'), '100');
-    assert.equal(first.get('startIndex'), '0');
-    assert.equal(first.get('totalCount'), 'true');
-    assert.equal(first.get('patient'), 'patient 1');
-    assert.equal(next.get('startIndex'), '100');
-    assert.equal(next.has('totalCount'), false);
+    const pregnantHistory = [pregnancyEncounter('2024-05-01T08:00:00.000Z', trimesters[0]), ttEncounter(tt(1), '2024-01-01')];
+    assert.equal(gate({ vaccine: td(2), evaluationDate: '2024-06-01', encounters: pregnantHistory, historyComplete: false }), 'unresolved');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: pregnant, patientId: ' ' }), 'unresolved');
+    assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: pregnant, birth: '' }), 'unresolved');
   });
 });

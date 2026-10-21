@@ -140,6 +140,8 @@ it is not wired to upstream saves. Existing writers can still save duplicates.
 A frontend schedule or warning does **not** satisfy the ticket's must-prevent
 criterion. Follow-up needs authoritative validation covering FHIR and legacy
 writes, edit/void handling and concurrency. No claim of enforcement is made.
+Re-checked for LE-563 against current main: unchanged. See
+[`immunization-history-display.md`](immunization-history-display.md).
 
 ## Verification
 
