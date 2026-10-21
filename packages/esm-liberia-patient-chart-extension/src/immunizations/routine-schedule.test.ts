@@ -113,8 +113,8 @@ describe('LE-559 DOB schedule', () => {
   it('uses distinct released national dose concepts', () => {
     assert.equal(routineSchedule.length, 21);
     assert.equal(new Set(routineSchedule.map((d) => d.id)).size, 21);
-    assert.deepEqual(Object.keys(configured.vaccineConceptUuids), routineSchedule.map((d) => d.id));
-    assert.equal(new Set(Object.values(configured.vaccineConceptUuids)).size, 21);
+    for (const id of routineSchedule.map((d) => d.id)) assert.ok(configured.vaccineConceptUuids[id], id);
+    assert.equal(new Set(Object.values(configured.vaccineConceptUuids)).size, Object.keys(configured.vaccineConceptUuids).length);
     for (const rule of routineSchedule) {
       assert.equal(configured.vaccineConceptUuids[rule.id], properties.get(vaccineVariables[rule.id]));
       assert.match(configured.vaccineConceptUuids[rule.id], uuidLiteral);

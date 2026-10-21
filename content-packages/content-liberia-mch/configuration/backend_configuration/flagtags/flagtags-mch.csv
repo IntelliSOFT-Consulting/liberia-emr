@@ -1,2 +1,3 @@
 Uuid,Name,Description
 6b8a2134-d9b4-465b-ca4f-75cd12450005,ANC Danger Sign,Patient flags for Antenatal Care danger signs
+${var.patientflagtag.programme-closure.uuid},Programme Closure,Patient flags prompting closure of a programme enrolment

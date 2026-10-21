@@ -503,19 +503,35 @@
                 "answers": [
                   {
                     "concept": "${var.concept.mch.1st-ipt-dose.uuid}",
-                    "label": "First IPTp Dose at ANC"
+                    "label": "1st IPT dose"
                   },
                   {
                     "concept": "${var.concept.mch.2nd-ipt-dose.uuid}",
-                    "label": "Second IPTp Dose at ANC"
+                    "label": "2nd IPT dose"
                   },
                   {
                     "concept": "${var.concept.mch.3rd-ipt-dose.uuid}",
-                    "label": "Third IPTp Dose at ANC"
+                    "label": "3rd IPT dose"
                   },
                   {
                     "concept": "${var.concept.mch.4th-ipt-dose.uuid}",
-                    "label": "Fourth IPTp Dose at ANC"
+                    "label": "4th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.5th-ipt-dose.uuid}",
+                    "label": "5th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.6th-ipt-dose.uuid}",
+                    "label": "6th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.7th-ipt-dose.uuid}",
+                    "label": "7th IPT dose"
+                  },
+                  {
+                    "concept": "${var.concept.mch.8th-ipt-dose.uuid}",
+                    "label": "8th IPT dose"
                   }
                 ]
               },
@@ -599,7 +615,7 @@
   "referencedForms": [],
   "uuid": "${var.form.anc-followup.uuid}",
   "description": "Captures clinical information for a pregnant woman’s follow-up antenatal care visit, including physical examination, maternal and fetal assessment, preventive interventions, and treatment notes.",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false
 }

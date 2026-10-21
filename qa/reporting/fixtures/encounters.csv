@@ -1,20 +1,20 @@
 key,patient,datetime,encounter_type,form,location,entered,voided,visit_voided,purpose
-C-ANC1-1,C-ANC1,2026-01-15 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,ANC first visit
-C-ANC1-2,C-ANC1,2026-02-20 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
-C-ANC1-3,C-ANC1,2026-04-10 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,GA exactly 28 on the follow-up concept; no trimester answer
-C-ANC1-4,C-ANC1,2026-05-15 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
+C-ANC1-1,C-ANC1,2026-01-15 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,ANC first visit
+C-ANC1-2,C-ANC1,2026-02-20 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
+C-ANC1-3,C-ANC1,2026-04-10 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,GA exactly 28 on the follow-up concept; no trimester answer
+C-ANC1-4,C-ANC1,2026-05-15 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
 C-ANC2-1,C-ANC2,2026-02-05 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.1,${var.location.maternity.uuid},,,,old form version
-C-ANC2-2,C-ANC2,2026-03-31 23:59:59,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,last second of Q1
+C-ANC2-2,C-ANC2,2026-03-31 23:59:59,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,last second of Q1
 C-ANC3-1,C-ANC3,2026-04-01 00:00:00,${var.encountertype.consultation.uuid},anc-national-v1.1,${var.location.maternity.uuid},,,,first second of Q2
 C-ANC3-2,C-ANC3,2026-06-30 23:59:59,${var.encountertype.consultation.uuid},anc-national-v1.1,${var.location.maternity.uuid},,,,last second of Q2
-C-ANC4-1,C-ANC4,2026-05-05 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,1,,voided encounter (the visit stays)
-C-ANC4-2,C-ANC4,2026-06-01 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
-C-ANC5-0,C-ANC5,2025-12-16 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,before both periods
-C-ANC5-1,C-ANC5,2026-06-18 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
-C-ANC6-0,C-ANC6,2025-12-18 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,before both periods
-C-ANC6-1,C-ANC6,2026-05-20 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
+C-ANC4-1,C-ANC4,2026-05-05 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,1,,voided encounter (the visit stays)
+C-ANC4-2,C-ANC4,2026-06-01 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
+C-ANC5-0,C-ANC5,2025-12-16 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,before both periods
+C-ANC5-1,C-ANC5,2026-06-18 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
+C-ANC6-0,C-ANC6,2025-12-18 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,before both periods
+C-ANC6-1,C-ANC6,2026-05-20 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
 C-X-1,C-X,2026-01-18 10:00:00,${var.encountertypes.visit-note.uuid},,${var.location.opd.uuid},,,,
-C-X-2,C-X,2026-02-10 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,
+C-X-2,C-X,2026-02-10 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,
 C-FP1-1,C-FP1,2026-02-20 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 C-FP1-2,C-FP1,2026-05-20 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 C-FP2-1,C-FP2,2025-11-10 09:00:00,${var.encountertype.consultation.uuid},fp-national-v1.0,${var.location.maternity.uuid},,,,old form version on Consultation
@@ -108,11 +108,11 @@ C-REN3-1,C-REN3,2026-05-14 10:00:00,${var.encountertypes.visit-note.uuid},,${var
 C-REN4-1,C-REN4,2026-04-20 09:30:00,${var.encountertypes.order.uuid},,${var.location.laboratory.uuid},,,,
 C-REN5-1,C-REN5,2026-06-08 09:00:00,${var.encountertypes.order.uuid},,${var.location.laboratory.uuid},,,,
 C-REN6-1,C-REN6,2026-06-22 09:00:00,${var.encountertypes.order.uuid},,${var.location.laboratory.uuid},,,,
-B-X-1,B-X,2026-03-20 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,
-B-X-2,B-X,2026-04-25 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.1,${var.location.maternity.uuid},,,,
+B-X-1,B-X,2026-03-20 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,
+B-X-2,B-X,2026-04-25 09:00:00,${var.encountertype.anc-followup.uuid},anc-followup-v1.2,${var.location.maternity.uuid},,,,
 B-X-3,B-X,2026-04-28 10:00:00,${var.encountertypes.visit-note.uuid},,${var.location.opd.uuid},,,,
 B-ANC2-1,B-ANC2,2026-05-12 09:00:00,${var.encountertype.consultation.uuid},anc-national-v1.1,${var.location.maternity.uuid},,,,
-B-ANC3-1,B-ANC3,2026-06-02 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.2,${var.location.maternity.uuid},,,,
+B-ANC3-1,B-ANC3,2026-06-02 09:00:00,${var.encountertype.anc-initial.uuid},anc-initial-v1.3,${var.location.maternity.uuid},,,,
 B-FP1-1,B-FP1,2026-06-25 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 B-FP2-1,B-FP2,2026-01-10 09:00:00,${var.encountertype.mch-family-planning.uuid},fp-v2.2,${var.location.maternity.uuid},,,,
 B-LD1-1,B-LD1,2026-03-05 09:00:00,${var.encountertype.labor-delivery.uuid},ld-first-second-v1.2,${var.location.maternity.uuid},,,,

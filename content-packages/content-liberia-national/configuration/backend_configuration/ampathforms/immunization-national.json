@@ -24,7 +24,7 @@
               },
               "id": "age_restriction_notice",
               "value": [
-                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy."
+                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy. Pediatric Pfizer dose 1 is recorded from the 5th birthday through the day before the 12th birthday. Pediatric Pfizer dose 2 is recorded 28 days after dose 1, including after the 12th birthday."
               ]
             }
           ]
@@ -91,6 +91,21 @@
               }
             },
             {
+              "label": "Pediatric Pfizer eligibility",
+              "type": "obs",
+              "id": "pediatric_pfizer_gate",
+              "hide": {
+                "hideWhenExpression": "true"
+              },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "pediatricPfizerAdministrationGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}').then(code => code)"
+                }
+              }
+            },
+            {
               "label": "Vaccine Name",
               "type": "obs",
               "id": "vaccine_name",
@@ -118,6 +133,14 @@
                     "hide": {
                       "hideWhenExpression": "age > 18"
                     }
+                  },
+                  {
+                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+                    "label": "Pediatric Pfizer COVID-19 dose 1"
+                  },
+                  {
+                    "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+                    "label": "Pediatric Pfizer COVID-19 dose 2"
                   },
                   {
                     "concept": "${var.concept.national.td.uuid}",
@@ -166,8 +189,73 @@
                   "type": "js_expression",
                   "failsWhenExpression": "isTdVaccine(myValue, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && td_gate === 'too-soon'",
                   "message": "This Td dose is not due yet. The previous tetanus dose and the required interval have not been met."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
+                  "message": "Pediatric Pfizer dose 1 cannot be given because age or immunization history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-yet-due'",
+                  "message": "Pediatric Pfizer dose 1 cannot be given before the 5th birthday."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'not-eligible'",
+                  "message": "Pediatric Pfizer dose 1 cannot be given on or after the 12th birthday."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && pediatric_pfizer_gate === 'already-given'",
+                  "message": "Pediatric Pfizer dose 1 is already recorded."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'not-yet-due' && pediatric_pfizer_gate !== 'not-eligible' && pediatric_pfizer_gate !== 'already-given'",
+                  "message": "Pediatric Pfizer dose 1 cannot be given."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && (isEmpty(pediatric_pfizer_gate) || pediatric_pfizer_gate === 'unresolved')",
+                  "message": "Pediatric Pfizer dose 2 cannot be given because immunization history could not be checked."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-prerequisite'",
+                  "message": "Pediatric Pfizer dose 2 requires a recorded dose 1."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'waiting-for-interval'",
+                  "message": "Pediatric Pfizer dose 2 cannot be given until 28 days after dose 1."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && pediatric_pfizer_gate === 'already-given'",
+                  "message": "Pediatric Pfizer dose 2 is already recorded."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isPediatricPfizerDose(myValue, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'waiting-for-prerequisite' && pediatric_pfizer_gate !== 'waiting-for-interval' && pediatric_pfizer_gate !== 'already-given'",
+                  "message": "Pediatric Pfizer dose 2 cannot be given."
                 }
               ]
+            },
+            {
+              "label": "Pediatric Pfizer status",
+              "type": "obs",
+              "id": "pediatric_pfizer_status",
+              "hide": {
+                "hideWhenExpression": "pediatricPfizerDoseId(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') === ''"
+              },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "pediatricPfizerStatusLabel(pediatric_pfizer_gate)"
+                }
+              }
             },
             {
               "label": "Route",

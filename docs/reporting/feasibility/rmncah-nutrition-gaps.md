@@ -121,8 +121,8 @@ missing from 1.0.5 is CIEL 160085, which was added in 1.0.8.
       on the shared `Consultation` encounter type).
     * Gestational age: 1438 on ANC Initial, local `00663865-…` on ANC Follow-up.
     * Fundal height: 1439 on ANC Initial, local `c696ec1b-…` on ANC Follow-up.
-    * IPT dose: MCH `edf4344a-…` with answers 1st to 4th; national `7d6e6ee9-…` with 1st, 2nd
-      and 3rd+.
+    * IPT dose: MCH `edf4344a-…` with exact answers 1st to 8th; national `7d6e6ee9-…` with 1st, 2nd
+      and 3rd+ (the 3rd+ answer is still stored as dose 3).
     * **Ask:** retire `1. ANC Form`, or document it as supported. Either way the ETL must union
       both families.
 14. **Delivery method answers.** `Delivery method` (`1b4f3a40-…`) offers only SVD and Caesarean,

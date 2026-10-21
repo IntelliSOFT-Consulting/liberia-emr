@@ -13,6 +13,33 @@
   ],
   "@openmrs/esm-service-queues-app": {
     "defaultInitialServiceQueue": "TB Screening",
+    "_comment_serve_redirect": "LE-121. Serve target per service (patch-service-queues-serve-redirect.cjs). Unmapped services open the chart.",
+    "servePatientChartUrls": [
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-followup-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.pnc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.labour-delivery-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.family-planning-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.immunization-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/immunizations"
+      }
+    ],
     "concepts": {
       "defaultStatusConceptUuid": "${var.concept.ciel.queue-waiting.uuid}",
       "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
@@ -465,12 +492,16 @@
     ]
   },
   "_comment_routine_immunizations": [
-    "LE-559 schedule policy stays in the ESM. UUID metadata is runtime config.",
+    "One routineImmunizations object feeds the routine schedule and dose sequencing.",
+    "Schedule policy and sequence rules stay in the ESM. UUID metadata is runtime config.",
     "vaccineConceptUuids is an object: a site can replace one dose key and the other national values remain.",
-    "nationalFormUuids is an array. Frontend config replaces arrays wholesale, so a site that sets",
-    "this key must list every Immunization form version it still wants counted.",
+    "nationalFormUuids and ancFormUuids are arrays. Frontend config replaces an array wholesale,",
+    "so a site that sets either key must list every form version it still wants counted.",
     "var.form.immunization.uuid stays the current form. The v1-* variables are frozen historical identities.",
-    "The current variable is also in the list so the next version bump stays visible until it is frozen."
+    "The current variable is also in the list so the next version bump stays visible until it is frozen.",
+    "fhirDoseMappings stays empty until a deployment supplies verified generic vaccine codings.",
+    "Configured doses with no sequence rule are recognized and do not block other series.",
+    "ancTtConceptUuids maps canonical TD dose IDs to ANC Date-of-TT concepts. TD1 uses the unsuffixed TD concept."
   ],
   "@liberiaemr/esm-liberia-patient-chart-extension": {
     "routineImmunizations": {
@@ -506,7 +537,31 @@
         "TCV": "${var.concept.national.tcv.uuid}",
         "YellowFever": "${var.concept.national.yellow-fever.uuid}",
         "MCV2": "${var.concept.national.mcv2.uuid}",
-        "Malaria4": "${var.concept.national.malaria-vaccine-dose-4.uuid}"
+        "Malaria4": "${var.concept.national.malaria-vaccine-dose-4.uuid}",
+        "HPV1": "${var.concept.national.hpv1.uuid}",
+        "HPV2": "${var.concept.national.hpv2.uuid}",
+        "PediatricPfizer1": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+        "PediatricPfizer2": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+        "TD1": "${var.concept.national.td.uuid}",
+        "TD2": "${var.concept.national.td2.uuid}",
+        "TD3": "${var.concept.national.td3.uuid}",
+        "TD4": "${var.concept.national.td4.uuid}",
+        "TD5": "${var.concept.national.td5.uuid}",
+        "IPV": "${var.concept.national.ipv.uuid}",
+        "Pfizer": "${var.concept.national.pfizer.uuid}",
+        "JJ": "${var.concept.national.j-j.uuid}",
+        "CovidBooster": "${var.concept.national.covid-19-booster.uuid}"
+      },
+      "fhirDoseMappings": [],
+      "ancFormUuids": [
+        "${var.form.anc-national.uuid}"
+      ],
+      "ancTtConceptUuids": {
+        "TD1": "${var.concept.national.date-of-tt1.uuid}",
+        "TD2": "${var.concept.national.date-of-tt2.uuid}",
+        "TD3": "${var.concept.national.date-of-tt3.uuid}",
+        "TD4": "${var.concept.national.date-of-tt4.uuid}",
+        "TD5": "${var.concept.national.date-of-tt5.uuid}"
       }
     }
   }

@@ -301,13 +301,14 @@ So the EMR reports "women who had **at least two** IPTp doses by a third-trimest
 That is neither "three or more" nor "two doses both given within the third trimester".
 
 The dose comes from the ANC forms: on the *ANC Initial Visit* and *ANC Follow-up Visit* forms,
-*IPTp Dose Administered at ANC* (First, Second, Third, Fourth); on the national *1. ANC Form*,
+*IPTp Dose Administered at ANC* (1st through 8th); on the national *1. ANC Form*,
 *IPT dose administered* (1st, 2nd, 3rd+). The trimester is *Pregnancy trimester* (CIEL 5272).
 The gestational age is CIEL 1438 on the Initial Visit form and a local *Gestational age
 (Weeks)* question on the Follow-up form. Two cautions:
 
 - the dose is a number the clinician selects ("this is the 2nd dose"), not a count of SP given;
-- the national form's *3rd+* answer cannot tell a 3rd dose from a 4th.
+- the national form's *3rd+* answer cannot tell a 3rd dose from a later one. MCH 5th–8th are
+  exact and are stored as 5–8, so MAL-002 (`>= 3`) and MAL-003 (`>= 2`) include them.
 
 *For the technical team:* `MalariaReportManager.iptp2ThirdTrimester()`, reading
 `mamba_fact_rmncah_anc_visit` (`is_third_trimester = 1 AND iptp_dose_number >= 2`, over

@@ -10,8 +10,8 @@ is recorded against the existing concepts, using the variables — never a bare 
 
 | Form | Variable | Encounter type | Status |
 | --- | --- | --- | --- |
-| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`, v1.2) |
-| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`, v1.1) |
+| ANC Initial Visit | `${var.form.anc-initial.uuid}` | ANC Initial Visit | released (`anc-initial.json`, v1.3; v1.2 frozen as `var.form.anc-initial-visit.v1-2.uuid`) |
+| ANC Follow-up Visit | `${var.form.anc-followup.uuid}` | ANC Follow-up Visit | released (`anc-followup.json`, v1.2; v1.1 frozen as `var.form.anc-follow-up-visit.v1-1.uuid`) |
 | Delivery Summary | `${var.form.delivery-summary.uuid}` | Delivery | not written |
 | Mother PNC | `${var.form.pnc-visit.uuid}` | Postnatal Visit | released (`pnc-visit.json`, v1.0) |
 | Newborn PNC | `${var.form.newborn-pnc.uuid}` | Postnatal Visit | released (`newborn-pnc.json`, v1.0) |
@@ -74,6 +74,11 @@ clinical meaning changes.
 altered encounter meaning, a materially different workflow or data interpretation)
 require a new version, migration/reporting analysis, and preservation of historical
 rendering/data semantics per §9.
+
+Extending the selectable IPT dose answers from exact 1st–4th to exact 1st–8th changes
+the answer set, so ANC Initial Visit moved from 1.2 to 1.3 and ANC Follow-up Visit from
+1.1 to 1.2. The previous form UUIDs stay declared. The 1st–4th answer concept UUIDs did
+not change, and the national `1. ANC Form` (1st / 2nd / 3rd+) is not part of this change.
 
 ## Before writing any of these
 

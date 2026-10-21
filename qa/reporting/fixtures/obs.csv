@@ -33,12 +33,14 @@ C-ANC4-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.3rd-ipt
 C-ANC4-2,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,correction
 C-ANC5-0,${var.concept.ciel.gestational-age.uuid},12,,,,
 C-ANC5-0,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+C-ANC5-0,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.5th-ipt-dose.uuid},,,,5th dose before both reporting periods; does not change in-period MAL-002 or MAL-003
 C-ANC5-1,${var.concept.national.gestational-age-weeks.uuid},31,,,,
 C-ANC5-1,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.3rd-trimester.uuid},,,,
 C-ANC5-1,${var.concept.national.woman-receiving-ipt.uuid},${var.concept.ciel.no.uuid},,,,
 C-ANC5-1,${var.concept.mch.iptp-deferral-reason.uuid},${var.concept.mch.iptp-deferred-malaria-treatment.uuid},,,,
 C-ANC6-0,${var.concept.ciel.gestational-age.uuid},10,,,,
 C-ANC6-0,${var.concept.ciel.pregnancy-status.uuid},${var.concept.national.1st-trimester.uuid},,,,
+C-ANC6-0,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.8th-ipt-dose.uuid},,,,8th dose before both reporting periods; does not change in-period MAL-002 or MAL-003
 C-ANC6-1,${var.concept.national.gestational-age-weeks.uuid},27,,,,one week short of the 3rd trimester; no trimester answer
 C-ANC6-1,${var.concept.mch.ipt-dose-administered.uuid},${var.concept.mch.2nd-ipt-dose.uuid},,,,
 C-X-2,${var.concept.ciel.gestational-age.uuid},20,,,,

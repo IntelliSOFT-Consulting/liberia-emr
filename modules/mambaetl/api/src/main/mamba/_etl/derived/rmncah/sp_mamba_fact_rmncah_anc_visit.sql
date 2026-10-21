@@ -5,7 +5,8 @@
 --
 -- Contacts:
 --   * MCH family: every encounter of type ANC Initial Visit or ANC Follow-up Visit, whatever
---     the form version (ANC Initial v1.1 and v1.2 both count).
+--     the form version (ANC Initial v1.1, v1.2 and v1.3, and ANC Follow-up v1.1 and v1.2,
+--     all count). v1.3 / v1.2 only add exact 5th–8th IPT answers; 1st–4th UUIDs are unchanged.
 --   * National family: `1. ANC Form` v1.1 on the shared Consultation type, matched on
 --     ${var.form.anc-national.uuid}, the runtime uuid Initializer derives from the form's name
 --     and version (so a new form version needs its own token here).
@@ -18,8 +19,10 @@
 --   gestational_age_weeks   CIEL 1438 (ANC Initial, national form) or the local follow-up concept
 --   trimester               1-3, from Pregnancy trimester (CIEL 5272)
 --   is_third_trimester      1 when trimester = 3 or gestational_age_weeks >= 28 (MAL-003)
---   iptp_dose_number        the highest IPTp dose given at the contact: 1-4 from the MCH question,
---                           1-3 from the national one, whose 3rd answer means "3rd or later"
+--   iptp_dose_number        the highest IPTp dose given at the contact: 1-8 from the MCH question
+--                           (TINYINT holds 8), 1-3 from the national one, whose 3rd answer
+--                           means "3rd or later" and stays stored as 3. MAL-002 (>= 3) and
+--                           MAL-003 (>= 2) therefore include MCH 5th–8th without a new predicate.
 --   woman_receiving_ipt     1 yes, 0 no
 --   iptp_deferral_reason_uuid, iptp_deferred   the MCH deferral reason, and 1 when one is given
 --   llin_received           1 yes, 0 no (MAL-011)
@@ -157,6 +160,10 @@ FROM (SELECT e.encounter_id,
                                   WHEN '${var.concept.mch.2nd-ipt-dose.uuid}' THEN 2
                                   WHEN '${var.concept.mch.3rd-ipt-dose.uuid}' THEN 3
                                   WHEN '${var.concept.mch.4th-ipt-dose.uuid}' THEN 4
+                                  WHEN '${var.concept.mch.5th-ipt-dose.uuid}' THEN 5
+                                  WHEN '${var.concept.mch.6th-ipt-dose.uuid}' THEN 6
+                                  WHEN '${var.concept.mch.7th-ipt-dose.uuid}' THEN 7
+                                  WHEN '${var.concept.mch.8th-ipt-dose.uuid}' THEN 8
                          END
                      WHEN q.uuid = '${var.concept.national.ipt-dose-administered.uuid}'
                          THEN CASE a.uuid

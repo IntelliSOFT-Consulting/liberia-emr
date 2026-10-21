@@ -10,6 +10,7 @@ import {
   vitaminARouteValue,
   vitaminASharedReturnValue,
 } from '../forms/vitamin-a-supplementation.ts';
+import { isPediatricPfizerDose } from './pediatric-pfizer.ts';
 import { decideTdGate, isTdVaccine, tdConceptsFromFormArgs, type TdGateCode } from './td-pregnancy.ts';
 
 /**
@@ -135,6 +136,7 @@ function runtime(values: Record<string, unknown>) {
     today: () => '2024-06-01',
     isEmpty,
     isTdVaccine,
+    isPediatricPfizerDose,
     tdAdministrationGate,
     vitaminAEditingEncounterUuid: () => EDITING_ENCOUNTER,
     vitaminARouteValue,

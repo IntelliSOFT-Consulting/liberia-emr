@@ -110,10 +110,95 @@ public class DeployScriptTest {
 	}
 
 	@Test
+	public void mchIptpDosesMapThroughEighth_andNationalThirdStaysThree() throws IOException {
+		java.nio.file.Path root = java.nio.file.Paths.get("").toAbsolutePath();
+		while (root != null && !java.nio.file.Files.isDirectory(root.resolve("content-packages"))) {
+			root = root.getParent();
+		}
+		assertNotNull("content-packages not found from the module directory", root);
+		java.util.Map<String, String> vars = new java.util.HashMap<String, String>();
+		loadVars(vars, root.resolve(
+		    "content-packages/content-liberia-mch/configuration/variables.properties"));
+		loadVars(vars, root.resolve(
+		    "content-packages/content-liberia-national/configuration/variables.properties"));
+		assertMaps(vars, "var.concept.mch.1st-ipt-dose.uuid", 1);
+		assertMaps(vars, "var.concept.mch.2nd-ipt-dose.uuid", 2);
+		assertMaps(vars, "var.concept.mch.3rd-ipt-dose.uuid", 3);
+		assertMaps(vars, "var.concept.mch.4th-ipt-dose.uuid", 4);
+		assertMaps(vars, "var.concept.mch.5th-ipt-dose.uuid", 5);
+		assertMaps(vars, "var.concept.mch.6th-ipt-dose.uuid", 6);
+		assertMaps(vars, "var.concept.mch.7th-ipt-dose.uuid", 7);
+		assertMaps(vars, "var.concept.mch.8th-ipt-dose.uuid", 8);
+		assertMaps(vars, "var.concept.national.3rd-ipt-dose.uuid", 3);
+		assertFalse(script.contains("${var.concept.mch.5th-ipt-dose.uuid}"));
+		assertFalse(script.contains("${var.concept.mch.8th-ipt-dose.uuid}"));
+	}
+
+	private static void loadVars(java.util.Map<String, String> into, java.nio.file.Path file) throws IOException {
+		for (String line : java.nio.file.Files.readAllLines(file, StandardCharsets.UTF_8)) {
+			String trimmed = line.trim();
+			if (trimmed.isEmpty() || trimmed.startsWith("#") || !trimmed.contains("=")) {
+				continue;
+			}
+			int eq = trimmed.indexOf('=');
+			into.put(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
+		}
+	}
+
+	private static void assertMaps(java.util.Map<String, String> vars, String name, int dose) {
+		String uuid = vars.get(name);
+		assertNotNull(name, uuid);
+		assertTrue(name + " does not map to " + dose + " in the compiled ANC fact",
+		    script.contains("WHEN '" + uuid + "' THEN " + dose));
+	}
+
+	@Test
+	public void mchIptpDosesMapThroughEighth_andNationalThirdPlusStaysThree() throws IOException {
+		java.nio.file.Path repo = java.nio.file.Paths.get("").toAbsolutePath();
+		while (repo != null && !java.nio.file.Files.isDirectory(repo.resolve("content-packages"))) {
+			repo = repo.getParent();
+		}
+		assertNotNull("content-packages not found from the module directory", repo);
+		java.util.Map<String, String> vars = new java.util.HashMap<String, String>();
+		for (String line : java.nio.file.Files.readAllLines(repo.resolve(
+		    "content-packages/content-liberia-mch/configuration/variables.properties"))) {
+			String trimmed = line.trim();
+			if (trimmed.isEmpty() || trimmed.startsWith("#") || !trimmed.contains("=")) {
+				continue;
+			}
+			int eq = trimmed.indexOf('=');
+			vars.put(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
+		}
+		for (String line : java.nio.file.Files.readAllLines(repo.resolve(
+		    "content-packages/content-liberia-national/configuration/variables.properties"))) {
+			String trimmed = line.trim();
+			if (trimmed.isEmpty() || trimmed.startsWith("#") || !trimmed.contains("=")) {
+				continue;
+			}
+			int eq = trimmed.indexOf('=');
+			vars.put(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
+		}
+		String fact = lastDefinition("sp_mamba_fact_rmncah_anc_visit()");
+		assertTrue(fact.contains("iptp_dose_number          TINYINT"));
+		String[] mch = { "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th" };
+		for (int dose = 1; dose <= mch.length; dose++) {
+			String uuid = vars.get("var.concept.mch." + mch[dose - 1] + "-ipt-dose.uuid");
+			assertTrue("compiled ETL missing MCH dose " + dose + " (" + uuid + ")",
+			    fact.contains("WHEN '" + uuid + "' THEN " + dose));
+		}
+		assertTrue(fact.contains(
+		    "WHEN '" + vars.get("var.concept.national.3rd-ipt-dose.uuid") + "' THEN 3"));
+		assertFalse("national 3rd+ must stay dose 3",
+		    fact.contains("WHEN '" + vars.get("var.concept.national.3rd-ipt-dose.uuid") + "' THEN 4"));
+		assertFalse(fact.contains("${var.concept.mch.5th-ipt-dose.uuid}"));
+		assertFalse(fact.contains("${var.concept.mch.8th-ipt-dose.uuid}"));
+	}
+
+	@Test
 	public void vitaminAFactCountsEveryImmunizationFormVersion() {
 		String fact = lastDefinition("sp_mamba_fact_nutrition_vitamin_a()");
 		assertTrue(fact.contains("f.name = 'Immunization'"));
-		assertTrue(fact.contains("f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6')"));
+		assertTrue(fact.contains("f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7')"));
 		assertTrue(fact.contains("e44cf2d4-169e-3c98-a617-f7d937fbcd74"));
 		assertFalse(fact.contains("ef.form_uuid = "));
 	}

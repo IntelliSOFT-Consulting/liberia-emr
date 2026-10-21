@@ -1,0 +1,177 @@
+import { clinicalDate } from './clinical-date.ts';
+import type { FhirImmunization, NationalEncounter } from './history.ts';
+import { loadHistory } from './load-history.ts';
+import type { SequenceIdentityConfig } from './routine-config.ts';
+import { evaluateSequence, type SequenceStatus } from './sequence.ts';
+
+/**
+ * Pediatric Pfizer save decision for the national Immunization form.
+ * Dose identity comes from the form's ${var.*} arguments and must match
+ * runtime routineImmunizations config. History is read through the shared
+ * sequence helper. This module does not write encounters.
+ */
+export type PediatricPfizerGateCode =
+  | 'allowed'
+  | 'not-yet-due'
+  | 'not-eligible'
+  | 'waiting-for-prerequisite'
+  | 'waiting-for-interval'
+  | 'due'
+  | 'overdue'
+  | 'already-given'
+  | 'unresolved';
+
+export type PediatricPfizerDoseId = 'PediatricPfizer1' | 'PediatricPfizer2';
+
+const STATUS_CODE: Record<SequenceStatus, PediatricPfizerGateCode> = {
+  NOT_YET_DUE: 'not-yet-due',
+  NOT_ELIGIBLE: 'not-eligible',
+  WAITING_FOR_PREREQUISITE: 'waiting-for-prerequisite',
+  WAITING_FOR_INTERVAL: 'waiting-for-interval',
+  DUE: 'due',
+  OVERDUE: 'overdue',
+  ADMINISTERED: 'already-given',
+  UNRESOLVED: 'unresolved',
+};
+
+export function isPediatricPfizerDose(
+  vaccineConceptUuid: string | null | undefined,
+  ...doseConceptUuids: Array<string | null | undefined>
+): boolean {
+  const vaccine = vaccineConceptUuid?.trim() ?? '';
+  if (!vaccine) return false;
+  return doseConceptUuids.some((uuid) => !!uuid?.trim() && uuid.trim() === vaccine);
+}
+
+export function pediatricPfizerDoseId(
+  vaccineConceptUuid: string | null | undefined,
+  dose1ConceptUuid: string | null | undefined,
+  dose2ConceptUuid: string | null | undefined,
+): '' | PediatricPfizerDoseId {
+  const vaccine = vaccineConceptUuid?.trim() ?? '';
+  const dose1 = dose1ConceptUuid?.trim() ?? '';
+  const dose2 = dose2ConceptUuid?.trim() ?? '';
+  if (!vaccine || (dose1 && dose2 && dose1 === dose2)) return '';
+  if (dose1 && vaccine === dose1) return 'PediatricPfizer1';
+  if (dose2 && vaccine === dose2) return 'PediatricPfizer2';
+  return '';
+}
+
+export function pediatricPfizerStatusLabel(code: string | null | undefined): string {
+  switch (code) {
+    case 'due': return 'Due';
+    case 'overdue': return 'Overdue';
+    case 'waiting-for-prerequisite': return 'Waiting for dose 1';
+    case 'waiting-for-interval': return 'Waiting until 28 days after dose 1';
+    case 'already-given': return 'Already recorded';
+    case 'not-yet-due': return 'Not yet due';
+    case 'not-eligible': return 'Not eligible';
+    case 'unresolved': return 'History could not be checked';
+    case 'allowed': return '';
+    default: return code ? 'History could not be checked' : 'Checking immunization history…';
+  }
+}
+
+export function pediatricPfizerHistoryUrls(patientUuid: string, fhirBaseUrl: string, restBaseUrl: string) {
+  const patient = patientUuid.trim();
+  if (!patient) throw new Error('Missing patient');
+  const encoded = encodeURIComponent(patient);
+  const obs = 'uuid,voided,concept:(uuid),value';
+  const rep = `custom:(uuid,voided,patient:(uuid),form:(uuid),encounterDatetime,obs:(${obs},groupMembers:(${obs})))`;
+  return {
+    patient,
+    fhirUrl: `${fhirBaseUrl}/Immunization?patient=${encoded}`,
+    encounterUrl: `${restBaseUrl}/encounter?patient=${encoded}&v=${rep}&limit=100`,
+  };
+}
+
+export function historyBelongsToPatient(
+  patientUuid: string,
+  fhir: readonly FhirImmunization[],
+  encounters: readonly NationalEncounter[],
+): boolean {
+  const patient = patientUuid.trim();
+  if (!patient) return false;
+  const reference = `Patient/${patient}`;
+  return fhir.every((record) => record?.patient?.reference === reference)
+    && encounters.every((encounter) => encounter?.patient?.uuid === patient);
+}
+
+function gateCode(status: SequenceStatus): PediatricPfizerGateCode {
+  return STATUS_CODE[status] ?? 'unresolved';
+}
+
+function configuredDose(config: SequenceIdentityConfig, doseId: PediatricPfizerDoseId, supplied: string): boolean {
+  return (config.vaccineConceptUuids?.[doseId]?.trim() ?? '') === supplied.trim() && supplied.trim() !== '';
+}
+
+type HistoryPage = {
+  resourceType?: string;
+  type?: string;
+  total?: number;
+  entry?: Array<{ resource: FhirImmunization }>;
+  link?: Array<{ relation: string; url: string }>;
+  results?: NationalEncounter[];
+  links?: Array<{ rel: string; uri: string }>;
+};
+
+export async function evaluatePediatricPfizerAdministration(input: {
+  patientUuid: string;
+  birthDate: string;
+  evaluationDate: string;
+  vaccineConceptUuid: string;
+  dose1ConceptUuid: string;
+  dose2ConceptUuid: string;
+  editingEncounterUuid?: string;
+  config: SequenceIdentityConfig;
+  fhirBaseUrl: string;
+  restBaseUrl: string;
+  fetchPage: (url: string) => Promise<HistoryPage>;
+}): Promise<PediatricPfizerGateCode> {
+  const dose1 = input.dose1ConceptUuid?.trim() ?? '';
+  const dose2 = input.dose2ConceptUuid?.trim() ?? '';
+  const vaccine = input.vaccineConceptUuid?.trim() ?? '';
+  if (dose1 && dose2 && dose1 === dose2 && vaccine === dose1) return 'unresolved';
+  const doseId = pediatricPfizerDoseId(vaccine, dose1, dose2);
+  if (!doseId) return 'allowed';
+  if (!configuredDose(input.config, doseId, doseId === 'PediatricPfizer1' ? dose1 : dose2)) return 'unresolved';
+  const patientUuid = input.patientUuid?.trim() ?? '';
+  if (!patientUuid) return 'unresolved';
+  let birthDate: string;
+  let evaluationDate: string;
+  let urls: ReturnType<typeof pediatricPfizerHistoryUrls>;
+  try {
+    birthDate = clinicalDate(input.birthDate);
+    evaluationDate = clinicalDate(input.evaluationDate);
+    urls = pediatricPfizerHistoryUrls(patientUuid, input.fhirBaseUrl, input.restBaseUrl);
+  } catch {
+    return 'unresolved';
+  }
+  try {
+    const loaded = await loadHistory(urls.fhirUrl, urls.encounterUrl, async (url) => {
+      const requested = new URL(url, 'http://openmrs.local').searchParams.get('patient');
+      if (requested && requested !== patientUuid) throw new Error('History request changed patient');
+      return input.fetchPage(url);
+    });
+    if (!historyBelongsToPatient(patientUuid, loaded.fhir, loaded.encounters)) return 'unresolved';
+    const editing = input.editingEncounterUuid?.trim() ?? '';
+    if (editing && loaded.encounters.some((encounter) => encounter?.uuid === editing && encounter.patient?.uuid !== patientUuid)) {
+      return 'unresolved';
+    }
+    const encounters = editing
+      ? loaded.encounters.filter((encounter) => encounter?.uuid !== editing)
+      : loaded.encounters;
+    const result = evaluateSequence({
+      patientUuid,
+      doseId,
+      birthDate,
+      evaluationDate,
+      fhir: loaded.fhir,
+      encounters,
+      config: input.config,
+    });
+    return gateCode(result.status);
+  } catch {
+    return 'unresolved';
+  }
+}

@@ -77,7 +77,10 @@ describe('Immunization form Td entry point', () => {
   it('keeps childhood vaccines available and gates only Td', () => {
     assert.equal(vaccinationSection.hide, undefined);
     const answers = vaccine.questionOptions?.answers ?? [];
-    assert.deepEqual(answers.map((answer) => answer.label), ['BCG', 'OPV0', 'OPV1', 'TD', 'TD2', 'TD3', 'TD4', 'TD5']);
+    assert.deepEqual(answers.map((answer) => answer.label), [
+      'BCG', 'OPV0', 'OPV1', 'Pediatric Pfizer COVID-19 dose 1', 'Pediatric Pfizer COVID-19 dose 2',
+      'TD', 'TD2', 'TD3', 'TD4', 'TD5',
+    ]);
     assert.equal(answers[0].hide?.hideWhenExpression, 'age >= 1');
     assert.equal(answers[1].hide?.hideWhenExpression, 'age > 18');
     assert.equal(answers[2].hide?.hideWhenExpression, 'age > 18');
@@ -187,7 +190,7 @@ describe('Immunization form Td entry point', () => {
   });
 
   it('applies the shipped validators to Td and leaves other vaccines alone', () => {
-    const validators = vaccine.validators ?? [];
+    const validators = (vaccine.validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isTdVaccine'));
     assert.deepEqual(validators.map((validator) => validator.message), [
       'Td cannot be given because pregnancy status or tetanus history could not be checked.',
       'Confirm the current pregnancy before giving Td. Pregnancy status is not recorded.',
