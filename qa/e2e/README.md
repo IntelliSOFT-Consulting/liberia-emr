@@ -65,14 +65,18 @@ The lifecycle scenario in the same spec follows one synthetic patient through un
 enrolled, Initial saved, Follow-up available, completed, and re-enrolled states. It reopens
 the Clinical forms launcher and checks each real backend response and visible links without
 reloading or revisiting the chart. Enrolment/completion use REST with persisted read-back;
-Initial is saved through the UI. The first visit/episode is backdated and Initial is recorded
-yesterday, before completion and today's re-enrolment. Same-day re-enrolment remains outside
+Initial is saved through the UI, then its synthetic encounter date is backdated through REST
+and read back, because Encounter Date is hidden in the ANC form. The first visit/episode is
+backdated and Initial is dated yesterday, before completion and today's re-enrolment.
+Same-day re-enrolment remains outside
 this scenario until episode attribution is agreed. Test enrolments and the patient are voided
 afterwards. Missing ANC programme metadata fails the scenario rather than skipping it.
 
 The Labour and Delivery ANC pre-fill suite explicitly enrols its registered patient before
 recording ANC Initial Visit. Other Labour and Delivery suites do not acquire an ANC
 enrolment requirement; the pre-fill and edited-value persistence assertions stay unchanged.
+ANC assessment tests void their synthetic enrolments and patients after each test; the
+Labour/Delivery pre-fill suite does so after both shared-patient assertions have finished.
 
 Family Planning clinical-decision-support setup verifies the counselled sections after
 selecting For Commodities. Its existing bounded counselling-toggle workaround restores

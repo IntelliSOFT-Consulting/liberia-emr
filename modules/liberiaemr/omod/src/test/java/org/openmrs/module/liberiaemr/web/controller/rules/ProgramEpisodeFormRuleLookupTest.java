@@ -18,18 +18,30 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.Encounter;
 import org.openmrs.EncounterType;
 import org.openmrs.Form;
+import org.openmrs.GlobalProperty;
 import org.openmrs.Patient;
 import org.openmrs.PatientProgram;
+import org.openmrs.Person;
+import org.openmrs.PersonName;
+import org.openmrs.Privilege;
 import org.openmrs.Program;
+import org.openmrs.Role;
+import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.ValidationException;
+import org.openmrs.module.liberiaemr.ContentUuids;
+import org.openmrs.module.liberiaemr.web.controller.LiberiaEMRFormsController;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
 /**
@@ -188,6 +200,121 @@ public class ProgramEpisodeFormRuleLookupTest extends BaseModuleContextSensitive
     @Test(expected = ValidationException.class)
     public void saveServiceRejectsNewFutureEncounter() {
         encounter("2099-01-01T10:00:00", initialForm, patient);
+    }
+
+    @Test
+    public void activeEnrolmentDoesNotOverrideGenderRestrictionInFormList() {
+        configureLauncher();
+        enrolment("2020-01-01T00:00:00", null);
+        patient.setGender("F");
+        assertTrue(listed(initialForm));
+        patient.setGender("M");
+        assertFalse(listed(initialForm));
+    }
+
+    @Test
+    public void ancEnrolmentIsNotRequiredToListOpdLabourOrPartographForms() {
+        configureLauncher();
+        for (String[] identity : new String[][] {
+                { "opd-consultation", "consultation" },
+                { "first-and-second-stage-of-labor-and-delivery", "labor-delivery" },
+                { "partograph", "labor-delivery" } }) {
+            String typeUuid = ContentUuids.get("var.encountertype." + identity[1] + ".uuid");
+            EncounterType type = Context.getEncounterService().getEncounterTypeByUuid(typeUuid);
+            if (type == null) {
+                type = new EncounterType(identity[1], "Launcher regression");
+                type.setUuid(typeUuid);
+                type = Context.getEncounterService().saveEncounterType(type);
+            }
+            Form other = form("1", type);
+            other.setUuid(ContentUuids.get("var.form." + identity[0] + ".uuid"));
+            other.setPublished(true);
+            Context.getFormService().saveForm(other);
+            assertTrue(identity[0] + " must not acquire an ANC enrolment requirement", listed(other));
+        }
+    }
+
+    @Test
+    public void hidingInitialAfterCompletionDoesNotHideOrModifyHistoricalEncounter() {
+        configureLauncher();
+        PatientProgram episode = enrolment("2020-01-01T00:00:00", null);
+        Encounter historical = encounter("2020-01-02T10:00:00", initialForm, patient);
+        episode.setDateCompleted(date("2020-02-01T00:00:00"));
+        Context.getProgramWorkflowService().savePatientProgram(episode);
+        Context.flushSession();
+        Context.clearSession();
+        assertFalse(listed(initialForm));
+        Encounter saved = Context.getEncounterService().getEncounterByUuid(historical.getUuid());
+        assertEquals(initialForm.getUuid(), saved.getForm().getUuid());
+        assertEquals(date("2020-01-02T10:00:00"), saved.getEncounterDatetime());
+        assertFalse(saved.getVoided());
+    }
+
+    @Test
+    public void activeEnrolmentDoesNotBypassModuleAccessFiltering() throws Exception {
+        initialType.setUuid(ContentUuids.get("var.encountertype.anc-initial.uuid"));
+        Context.getEncounterService().saveEncounterType(initialType);
+        initialForm.setUuid(ContentUuids.get("var.form.anc-initial.uuid"));
+        Context.getFormService().saveForm(initialForm);
+        configureLauncher();
+        patient.setGender("F");
+        enrolment("2020-01-01T00:00:00", null);
+        Role role = new Role("Registrar");
+        role.setDescription("Matrix-role launcher regression");
+        for (String name : new String[] { "Get Patients", "Get Forms", "Get Programs",
+                "Get Patient Programs", "Get Encounters", "Get Global Properties" }) {
+            Privilege privilege = Context.getUserService().getPrivilege(name);
+            if (privilege == null) {
+                privilege = Context.getUserService().savePrivilege(new Privilege(name, name));
+            }
+            role.addPrivilege(privilege);
+        }
+        role = Context.getUserService().saveRole(role);
+        Person person = new Person();
+        person.addName(new PersonName("Launcher", null, "Regression"));
+        person.setGender("F");
+        person = Context.getPersonService().savePerson(person);
+        User user = new User();
+        user.setUsername("anc-launcher-regression");
+        user.setPerson(person);
+        user.addRole(role);
+        String password = java.util.UUID.randomUUID().toString() + "aA1!";
+        user = Context.getUserService().createUser(user, password);
+        Context.authenticate(user.getUsername(), password);
+        assertFalse("An eligible episode cannot grant Manage ANC", listed(initialForm));
+        Context.authenticate("admin", "test");
+        Privilege manageAnc = Context.getUserService().getPrivilege("Manage ANC");
+        if (manageAnc == null) {
+            manageAnc = Context.getUserService().savePrivilege(new Privilege("Manage ANC", "Manage ANC"));
+        }
+        role.addPrivilege(manageAnc);
+        Context.getUserService().saveRole(role);
+        Context.authenticate(user.getUsername(), password);
+        assertTrue("An authorized caller can launch the eligible Initial", listed(initialForm));
+    }
+
+    private void configureLauncher() {
+        initialForm.setPublished(true);
+        Context.getFormService().saveForm(initialForm);
+        Context.getAdministrationService().saveGlobalProperty(new GlobalProperty(
+                ProgramEpisodeFormRule.GP_PROGRAM_EPISODE_RULES, "[{\"program\":\"" + program.getUuid()
+                        + "\",\"initialForms\":[\"" + initialForm.getUuid() + "\"],\"followUpForms\":[]}]"));
+        Context.getAdministrationService().saveGlobalProperty(
+                new GlobalProperty(FormsGenderRule.GP_FEMALE_ONLY_FORMS_UUIDS, initialForm.getUuid()));
+    }
+
+    private boolean listed(Form expected) {
+        ResponseEntity<Map<String, Object>> response = new LiberiaEMRFormsController().getForms(patient.getUuid());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Object results = response.getBody().get("results");
+        assertTrue("Form-list results must be an array", results instanceof List);
+        for (Object result : (List<?>) results) {
+            assertTrue("Each form-list result must be an object", result instanceof Map);
+            if (expected.getUuid().equals(((Map<?, ?>) result).get("uuid"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean recorded(PatientProgram episode) {

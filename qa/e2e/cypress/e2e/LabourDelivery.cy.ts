@@ -141,6 +141,17 @@ describe('First and Second Stage of Labor and Delivery form (one shared patient)
 
 describe('First and Second Stage of Labor and Delivery form ANC pre-fill', { retries: 1 }, () => {
     let patientChartUrl: string;
+    let createdPatientUuid: string | undefined;
+    let createdEnrolmentUuid: string | undefined;
+
+    after(() => {
+        if (createdEnrolmentUuid) {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/programenrollment/${createdEnrolmentUuid}?reason=ANC-prefill-test-cleanup`);
+        }
+        if (createdPatientUuid) {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/patient/${createdPatientUuid}?reason=ANC-prefill-test-cleanup`);
+        }
+    });
 
     before(() => {
         loginWithSession();
@@ -152,7 +163,10 @@ describe('First and Second Stage of Labor and Delivery form ANC pre-fill', { ret
             if (typeof patientUuid !== 'string' || !patientUuid.trim()) {
                 throw new Error('Patient registration did not return a patient UUID for ANC enrolment');
             }
-            return enrolInAnc(patientUuid);
+            createdPatientUuid = patientUuid;
+            return enrolInAnc(patientUuid).then((saved) => {
+                createdEnrolmentUuid = saved.uuid;
+            });
         });
 
         ancInitialForm.openClinicalForms();

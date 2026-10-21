@@ -8,6 +8,28 @@ import ANCInitialFormPage from '../pages/ancInitialForm';
 const registrationPage = new RegistrationPage();
 const visitPage = new VisitPage();
 const ancInitialForm = new ANCInitialFormPage();
+let createdPatientUuid: string | undefined;
+const createdEnrolmentUuids: string[] = [];
+
+beforeEach(() => {
+    createdPatientUuid = undefined;
+    createdEnrolmentUuids.length = 0;
+});
+
+const enrolTestPatient = (patientUuid: string, date?: Date) =>
+    enrolInAnc(patientUuid, date).then((saved) => {
+        createdEnrolmentUuids.push(saved.uuid);
+        return saved;
+    });
+
+afterEach(() => {
+    createdEnrolmentUuids.forEach((uuid) => {
+        cy.request('DELETE', `/openmrs/ws/rest/v1/programenrollment/${uuid}?reason=ANC-assessment-test-cleanup`);
+    });
+    if (createdPatientUuid) {
+        cy.request('DELETE', `/openmrs/ws/rest/v1/patient/${createdPatientUuid}?reason=ANC-assessment-test-cleanup`);
+    }
+});
 
 const registerMotherWithVisit = () => {
     registrationPage.visitPage();
@@ -26,6 +48,7 @@ const registerMotherWithVisit = () => {
         if (typeof patientUuid !== 'string' || !patientUuid.trim()) {
             throw new Error('Patient registration did not return a patient UUID for ANC enrolment');
         }
+        createdPatientUuid = patientUuid;
         return patientUuid;
     });
     cy.url({ timeout: 100000 }).should('include', '/openmrs/spa/patient/');
@@ -46,20 +69,9 @@ describe('ANC forms without programme enrolment', () => {
 
 describe('ANC enrolment lifecycle', () => {
     let patientUuid: string | undefined;
-    const enrolmentUuids: string[] = [];
-
-    afterEach(() => {
-        enrolmentUuids.forEach((uuid) => {
-            cy.request('DELETE', `/openmrs/ws/rest/v1/programenrollment/${uuid}?reason=ANC-lifecycle-test-cleanup`);
-        });
-        if (patientUuid) {
-            cy.request('DELETE', `/openmrs/ws/rest/v1/patient/${patientUuid}?reason=ANC-lifecycle-test-cleanup`);
-        }
-    });
 
     it('refreshes ANC availability through completion and a later-day re-enrolment without reloading the chart', () => {
         patientUuid = undefined;
-        enrolmentUuids.length = 0;
         const firstEnrolled = new Date();
         firstEnrolled.setDate(firstEnrolled.getDate() - 2);
         firstEnrolled.setHours(0, 0, 0, 0);
@@ -94,16 +106,17 @@ describe('ANC enrolment lifecycle', () => {
             checkAvailability(false, false);
             cy.then(() => {
                 if (!patientUuid) throw new Error('Lifecycle patient was not registered');
-                return enrolInAnc(patientUuid, firstEnrolled).then((saved) => {
-                    enrolmentUuids.push(saved.uuid);
-                    return saved;
-                });
+                return enrolTestPatient(patientUuid, firstEnrolled);
             }).then((firstEpisode) => {
                 checkAvailability(true, false);
                 ancInitialForm.selectForm();
-                ancInitialForm.saveInitialVisit(initialDate);
+                ancInitialForm.saveInitialVisit();
                 cy.get('@saveAncInitial').then(({ response }) => {
                     expect(response?.body.uuid, 'saved Initial encounter UUID').to.be.a('string').and.not.be.empty;
+                    // Encounter Date is hidden in ANC; prepare the historical fixture through REST after the real UI save.
+                    cy.request('POST', `/openmrs/ws/rest/v1/encounter/${response?.body.uuid}`, {
+                        encounterDatetime: initialDate.toISOString(),
+                    }).its('status').should('be.oneOf', [200, 201]);
                     cy.request<{ encounterDatetime: string }>(
                         `/openmrs/ws/rest/v1/encounter/${response?.body.uuid}?v=full`,
                     ).its('body.encounterDatetime').then((savedDate) => {
@@ -127,8 +140,7 @@ describe('ANC enrolment lifecycle', () => {
                 checkAvailability(false, false);
                 cy.then(() => {
                     if (!patientUuid) throw new Error('Lifecycle patient was not registered');
-                    return enrolInAnc(patientUuid).then((saved) => {
-                        enrolmentUuids.push(saved.uuid);
+                    return enrolTestPatient(patientUuid).then((saved) => {
                         expect(saved.uuid, 'new episode UUID').not.to.equal(firstEpisode.uuid);
                     });
                 });
@@ -141,7 +153,7 @@ describe('ANC enrolment lifecycle', () => {
 describe('Initial ANC Assessment form', () => {
     beforeEach(() => {
         loginWithSession();
-        registerMotherWithVisit().then((patientUuid) => enrolInAnc(patientUuid));
+        registerMotherWithVisit().then((patientUuid) => enrolTestPatient(patientUuid));
         ancInitialForm.openClinicalForms();
     });
 

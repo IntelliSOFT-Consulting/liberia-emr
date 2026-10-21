@@ -19,6 +19,21 @@ The module introduces a generic rules-based architecture for conditionally displ
 #### Rules Framework
 The endpoint fetches all published forms and evaluates them against an extensible list of `FormVisibilityRule` components. For example, the `FormsGenderRule` checks the patient's registered sex/gender and completely hides all female-only forms (such as ANC, PNC, and Labor & Delivery forms) if the patient is male.
 
+#### ANC form configuration
+
+The MCH content package supplies `liberiaemr.forms.programEpisodeRules` in
+[`gp-forms.xml`](../../content-packages/content-liberia-mch/configuration/backend_configuration/globalproperties/gp-forms.xml).
+Its JSON array contains a `program` UUID, an `initialForms` UUID array and a
+`followUpForms` UUID array for each configured programme. The ANC entry uses the
+existing `${var.program.anc.uuid}`, `${var.form.anc-initial.uuid}` and
+`${var.form.anc-followup.uuid}` variables, resolved when content is built.
+Gender restrictions remain separately configured by `liberiaemr.forms.femaleOnlyUuids`;
+episode eligibility does not grant module access or remove gender restrictions.
+
+Browser tests require the deployed episode-rule configuration, ANC programme and
+its terminology dependencies, and published ANC Initial/Follow-up forms. Starting a
+visit alone is not enrolment. See the [E2E prerequisites and lifecycle coverage](../../qa/e2e/README.md#shared-anc-enrolment-setup).
+
 #### ANC episode lookup tests
 
 `ProgramEpisodeFormRuleLookupTest` exercises the unmodified rule methods through real
@@ -30,6 +45,21 @@ truth table and configuration parsing, without duplicating those checks here.
 Coverage includes active/completed/voided enrolments, latest uncompleted selection,
 previous-episode encounters, the midnight boundary, voided encounters, patient/type
 isolation and earlier form versions sharing the initial encounter type.
+
+Controller-level regression cases in the same suite verify that active ANC enrolment
+does not override gender restrictions or module-access filtering, OPD/Labour/Partograph
+forms do not acquire an ANC enrolment requirement, and completed-episode encounter
+records remain readable and unchanged when Initial disappears from the launcher.
+These exercise the actual registered visibility rules and controller, not HTTP/browser
+rendering. Run alongside `FormsGenderRuleTest`, `ModuleAccessPolicyTest`,
+`ModuleAccessGuardTest`, `ModuleAccessLifecycleTest`, `FormWorkflowSupportTest` and
+`ClinicalJsonTest` for the existing access/filtering regression checks.
+
+The existing Labour/Delivery browser assertions (including ANC pre-fill, edited-value
+persistence and Partograph prerequisites) remain in `qa/e2e/cypress/e2e/LabourDelivery.cy.ts`;
+there is no standalone Partograph E2E spec on this branch. Backend launcher checks do
+not verify Partograph monitoring or clinical UI behaviour. The browser regression run is
+deferred to the PR environment with complete MCH metadata.
 
 Tests prefixed `currentBehavior` characterize unresolved policy, not clinical acceptance:
 an earlier encounter on the same day currently counts after re-enrolment, the latest
