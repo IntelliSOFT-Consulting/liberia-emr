@@ -127,6 +127,10 @@ RUN set -eu; \
       # source. Central is not a point-of-care system (sync-eip.md) and must not issue a
       # facility-scoped identifier, so the option is dropped here rather than satisfied.
       rm -f /openmrs_config/autogenerationoptions/autogenerationoptions-national.csv; \
+      # The common OpenMRS ID option names the generator facilities share, whose range the
+      # facility IDs synced to central already fill (LE-595). Central's own file carries the
+      # same option UUID against its own generator, so the common one is dropped, not doubled.
+      rm -f /openmrs_config/autogenerationoptions/autogenerationoptions-common.csv; \
     fi; \
     rm -rf /tmp/pkg; \
     # A resolved configuration must never contain demo content.
