@@ -1,4 +1,5 @@
 import { loginWithSession } from '../support/session';
+import { enrolInAnc } from '../support/anc-enrolment';
 import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 import RegistrationPage from '../pages/Registration';
 import VisitPage from '../pages/visit';
@@ -143,7 +144,16 @@ describe('First and Second Stage of Labor and Delivery form ANC pre-fill', { ret
 
     before(() => {
         loginWithSession();
+        cy.intercept('POST', '**/ws/rest/v1/patient').as('registerAncPrefillPatient');
         registerMotherWithVisit();
+        cy.wait('@registerAncPrefillPatient').then(({ response }) => {
+            expect(response?.statusCode, 'synthetic patient registration').to.equal(201);
+            const patientUuid: unknown = response?.body.uuid;
+            if (typeof patientUuid !== 'string' || !patientUuid.trim()) {
+                throw new Error('Patient registration did not return a patient UUID for ANC enrolment');
+            }
+            return enrolInAnc(patientUuid);
+        });
 
         ancInitialForm.openClinicalForms();
         ancInitialForm.selectForm();
