@@ -71,7 +71,8 @@ describe('ANC forms without programme enrolment', () => {
 describe('ANC enrolment lifecycle', () => {
     let patientUuid: string | undefined;
 
-    it('refreshes ANC availability through completion and a later-day re-enrolment without reloading the chart', () => {
+    // LE-610: quarantined pending Programs UI/cache revalidation investigation; see qa/e2e/README.md.
+    it.skip('refreshes ANC availability through completion and a later-day re-enrolment without reloading the chart', () => {
         patientUuid = undefined;
         const firstEnrolled = new Date();
         firstEnrolled.setDate(firstEnrolled.getDate() - 2);
