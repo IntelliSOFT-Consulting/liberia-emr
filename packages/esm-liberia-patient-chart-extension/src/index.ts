@@ -28,6 +28,7 @@ import {
   vitaminABlock,
   vitaminACurrentStrength,
   vitaminAReturnDateValue,
+  siaAdministrationContext,
   vitaminARouteRejected,
   vitaminARouteValue,
   vitaminASharedReturnValue,
@@ -70,6 +71,7 @@ export function startupApp() {
   registerFormEngineExpressionHelper('vitaminAReturnDateValue', vitaminAReturnDateValue);
   registerFormEngineExpressionHelper('vitaminASharedReturnValue', vitaminASharedReturnValue);
   registerFormEngineExpressionHelper('vitaminARouteValue', vitaminARouteValue);
+  registerFormEngineExpressionHelper('siaAdministrationContext', siaAdministrationContext);
   registerFormEngineExpressionHelper('vitaminARouteRejected', vitaminARouteRejected);
   registerFormEngineExpressionHelper('vitaminAEditingEncounterUuid', vitaminAEditingEncounterUuid);
   registerFormEngineExpressionHelper('loadVitaminAAdministrations', loadVitaminAAdministrations);

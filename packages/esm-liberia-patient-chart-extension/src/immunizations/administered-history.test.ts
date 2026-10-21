@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { administeredTimeline } from './history.ts';
+import { administeredTimeline, consolidateHistory, timelineContextLabel, timelineVitaminALabel } from './history.ts';
 import type { FhirImmunization, NationalEncounter } from './history.ts';
 import type { SequenceIdentityConfig } from './routine-config.ts';
+import { evaluateSequence } from './sequence.ts';
 
 const moduleName = '@liberiaemr/esm-liberia-patient-chart-extension';
 const patientUuid = 'patient-1';
@@ -178,5 +179,138 @@ describe('administered timeline', () => {
     const opv1Entries = result.entries.filter((entry) => entry.canonicalDoseId === 'OPV1');
     assert.equal(opv1Entries.length, 1);
     assert.equal(opv1Entries[0].administeredDate, '2024-01-01');
+    assert.equal(opv1Entries[0].administrationContext, 'routine');
+  });
+});
+
+describe('SIA Vitamin A on the administered timeline', () => {
+  const siaConfig = national.supplementaryImmunization;
+  assert.ok(siaConfig);
+
+  function siaEncounter(input: {
+    obsId: string;
+    strength: 'blue' | 'red';
+    date: string;
+    context?: 'sia' | 'routine' | 'missing';
+    encounterId?: string;
+  }): NationalEncounter {
+    const strengthUuid = input.strength === 'blue' ? siaConfig!.blueConceptUuid : siaConfig!.redConceptUuid;
+    const contextUuid = input.context === 'routine'
+      ? siaConfig!.routineAnswerConceptUuid
+      : siaConfig!.siaAnswerConceptUuid;
+    const obs: NationalEncounter['obs'] = [
+      { uuid: input.obsId, concept: { uuid: siaConfig!.activitiesConceptUuid }, value: { uuid: strengthUuid } },
+      { uuid: `${input.obsId}-date`, concept: { uuid: siaConfig!.dateReceivedConceptUuid }, value: input.date },
+    ];
+    if (input.context !== 'missing') {
+      obs!.push({
+        uuid: `${input.obsId}-context`,
+        concept: { uuid: siaConfig!.administrationContextConceptUuid },
+        value: { uuid: contextUuid },
+      });
+    }
+    return {
+      uuid: input.encounterId ?? `enc-${input.obsId}`,
+      patient: { uuid: patientUuid },
+      form: { uuid: national.nationalFormUuids[national.nationalFormUuids.length - 1] },
+      encounterDatetime: `${input.date}T10:00:00.000Z`,
+      obs,
+    };
+  }
+
+  it('shows Vitamin A Blue with the administration date and an explicit SIA context', () => {
+    const result = timeline([], [
+      vaccineEncounter(concept('OPV1'), '2024-06-15T10:00:00.000Z', 'opv1-obs'),
+      siaEncounter({ obsId: 'vita-blue', strength: 'blue', date: '2024-06-15' }),
+    ]);
+    assert.equal(result.unresolved, false);
+    const opv = result.entries.find((entry) => entry.canonicalDoseId === 'OPV1');
+    const blue = result.entries.find((entry) => entry.vitaminAStrength === 'blue');
+    assert.ok(opv);
+    assert.equal(opv.administrationContext, 'routine');
+    assert.equal(opv.administeredDate, '2024-06-15');
+    assert.ok(blue);
+    assert.equal(blue.administrationContext, 'sia');
+    assert.equal(blue.administeredDate, '2024-06-15');
+    assert.equal(blue.sequenceNumber, null);
+    assert.equal(timelineVitaminALabel(blue.vitaminAStrength!), 'Vitamin A Blue 100,000 IU');
+    assert.equal(timelineContextLabel(blue.administrationContext), 'SIA');
+    assert.equal(timelineContextLabel(opv.administrationContext), 'Routine');
+    assert.notEqual(timelineVitaminALabel(blue.vitaminAStrength!), blue.canonicalDoseId);
+  });
+
+  it('keeps a routine vaccine sequence unchanged when an SIA Vitamin A record is present', () => {
+    const birthDate = '2020-01-01';
+    const evaluationDate = '2024-06-15';
+    const sia = siaEncounter({ obsId: 'vita-red', strength: 'red', date: '2024-06-01' });
+    const without = evaluateSequence({
+      patientUuid, doseId: 'OPV1', birthDate, evaluationDate, fhir: [], encounters: [], config: national,
+    });
+    const withSia = evaluateSequence({
+      patientUuid, doseId: 'OPV1', birthDate, evaluationDate, fhir: [], encounters: [sia], config: national,
+    });
+    assert.equal(withSia.status, without.status);
+    assert.notEqual(withSia.status, 'ADMINISTERED');
+    const nextWithout = evaluateSequence({
+      patientUuid, doseId: 'OPV2', birthDate, evaluationDate, fhir: [], encounters: [], config: national,
+    });
+    const nextWithSia = evaluateSequence({
+      patientUuid, doseId: 'OPV2', birthDate, evaluationDate, fhir: [], encounters: [sia], config: national,
+    });
+    assert.equal(nextWithSia.status, 'WAITING_FOR_PREREQUISITE');
+    assert.equal(nextWithSia.status, nextWithout.status);
+    const history = consolidateHistory({
+      patientUuid,
+      fhir: [],
+      encounters: [sia, vaccineEncounter(concept('Penta1'), '2024-03-01T00:00:00.000Z', 'penta1-obs')],
+      config: national,
+    });
+    assert.deepEqual(history.doses.map((dose) => dose.vaccineConceptUuid), [concept('Penta1')]);
+  });
+
+  it('coalesces duplicate SIA documentation and keeps separate administrations', () => {
+    const result = timeline([], [
+      siaEncounter({ obsId: 'blue-a', strength: 'blue', date: '2024-07-15', encounterId: 'enc-a' }),
+      siaEncounter({ obsId: 'blue-b', strength: 'blue', date: '2024-07-15', encounterId: 'enc-b' }),
+      siaEncounter({ obsId: 'blue-later', strength: 'blue', date: '2024-08-15', encounterId: 'enc-later' }),
+      siaEncounter({ obsId: 'red-same-day', strength: 'red', date: '2024-07-15', encounterId: 'enc-red' }),
+      siaEncounter({
+        obsId: 'blue-routine', strength: 'blue', date: '2024-07-15', context: 'routine', encounterId: 'enc-routine',
+      }),
+    ]);
+    assert.equal(result.unresolved, false);
+    const sameDaySia = result.entries.filter((entry) =>
+      entry.vitaminAStrength === 'blue' && entry.administrationContext === 'sia' && entry.administeredDate === '2024-07-15');
+    assert.equal(sameDaySia.length, 1);
+    assert.deepEqual(sameDaySia[0].recordIds, ['national-form:blue-a', 'national-form:blue-b']);
+    assert.equal(result.entries.filter((entry) => entry.vitaminAStrength === 'blue' && entry.administrationContext === 'sia').length, 2);
+    const red = result.entries.find((entry) => entry.vitaminAStrength === 'red' && entry.administrationContext === 'sia');
+    assert.ok(red);
+    assert.equal(red.administeredDate, '2024-07-15');
+    assert.equal(timelineVitaminALabel(red.vitaminAStrength!), 'Vitamin A Red 200,000 IU');
+    assert.equal(timelineContextLabel(red.administrationContext), 'SIA');
+    const routineVitaminA = result.entries.find((entry) =>
+      entry.vitaminAStrength === 'blue' && entry.administrationContext === 'routine');
+    assert.ok(routineVitaminA);
+    assert.equal(routineVitaminA.administeredDate, '2024-07-15');
+    assert.equal(timelineContextLabel(routineVitaminA.administrationContext), 'Routine');
+  });
+
+  it('does not treat a Vitamin A observation without the SIA marker as an SIA dose', () => {
+    const result = timeline([], [
+      siaEncounter({ obsId: 'historical', strength: 'blue', date: '2024-07-15', context: 'missing' }),
+      vaccineEncounter(concept('OPV1'), '2024-03-01T00:00:00.000Z', 'opv1-obs'),
+    ]);
+    assert.equal(result.unresolved, false);
+    assert.equal(result.entries.some((entry) => entry.vitaminAStrength), false);
+    assert.equal(result.entries[0].canonicalDoseId, 'OPV1');
+    assert.equal(result.entries[0].administrationContext, 'routine');
+  });
+
+  it('renders context from the timeline field', () => {
+    const source = readFileSync(new URL('./routine-schedule.extension.tsx', import.meta.url), 'utf8');
+    assert.match(source, /timelineContextLabel\(entry\.administrationContext\)/);
+    assert.match(source, /timelineVitaminALabel\(entry\.vitaminAStrength\)/);
+    assert.doesNotMatch(source, /entry\.canonicalDoseId\.includes\('SIA'\)|label\.includes\('SIA'\)/);
   });
 });

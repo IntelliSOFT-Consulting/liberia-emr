@@ -63,9 +63,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.7');
+    assert.equal(form.version, '1.8');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.7';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.8';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;

@@ -1,6 +1,6 @@
 import type { AdministeredDose } from './eligibility.ts';
 import { clinicalDate } from './clinical-date.ts';
-import type { FhirDoseMapping, SequenceIdentityConfig } from './routine-config.ts';
+import type { FhirDoseMapping, SequenceIdentityConfig, SupplementaryImmunizationConfig } from './routine-config.ts';
 import { routineSchedule } from './routine-schedule.ts';
 import {
   doseLookup, recognizedDoseIds, ruleById, sequenceRules,
@@ -328,11 +328,25 @@ export function duplicateRecordIds(history: NormalizedHistory, canonicalDoseId: 
 /** Canonical doses not in the routine-schedule reader, but shown in the history timeline. */
 const TIMELINE_ONLY_SERIES = new Set(['tetanus', 'hpv', 'pediatric-pfizer']);
 
+/** Stored on the timeline entry. Display reads this field; it does not parse the dose label. */
+export type AdministrationContext = 'routine' | 'sia';
+
 export interface TimelineEntry {
   canonicalDoseId: string;
-  sequenceNumber: number;
+  sequenceNumber: number | null;
   administeredDate: string;
   recordIds: string[];
+  administrationContext: AdministrationContext;
+  /** Set for a Vitamin A administration. Absent on routine vaccine doses. */
+  vitaminAStrength?: 'blue' | 'red';
+}
+
+export function timelineVitaminALabel(strength: 'blue' | 'red'): string {
+  return strength === 'blue' ? 'Vitamin A Blue 100,000 IU' : 'Vitamin A Red 200,000 IU';
+}
+
+export function timelineContextLabel(context: AdministrationContext): string {
+  return context === 'sia' ? 'SIA' : 'Routine';
 }
 
 export interface AdministeredTimeline {
@@ -359,7 +373,11 @@ export interface AdministeredTimeline {
  * right; surface it as needing reconciliation instead, the same stance
  * `consolidateHistory` already takes for TD/HPV/Pediatric Pfizer.
  *
- * Newest administration first; ties break by dose id for a stable order.
+ * Newest administration first. Ties break by administration context, then dose id.
+ * A Vitamin A SIA record is added beside those doses. It is not a sequence dose:
+ * consolidateHistory does not read it, so it cannot advance OPV, Penta, or any
+ * other routine series. Duplicate SIA documentation (same strength, date, and
+ * context) is one entry. A different date or a different context stays separate.
  * Does not page a live server or write history.
  */
 export function administeredTimeline(input: {
@@ -395,6 +413,7 @@ export function administeredTimeline(input: {
       sequenceNumber: dose.sequenceNumber,
       administeredDate: dose.administeredDate,
       recordIds: dose.records.map((record) => record.recordId),
+      administrationContext: 'routine' as const,
     }));
 
   const timelineOnlyDoseIdByConcept = new Map<string, string>();
@@ -417,16 +436,129 @@ export function administeredTimeline(input: {
       sequenceNumber: dose.sequenceNumber,
       administeredDate: dose.administeredDate,
       recordIds: dose.id.split('+'),
+      administrationContext: 'routine',
     });
   }
 
+  const supplementary = readSupplementaryImmunizations({
+    patientUuid: input.patientUuid,
+    encounters: input.encounters,
+    nationalFormUuids: input.config.nationalFormUuids,
+    supplementary: input.config.supplementaryImmunization,
+  });
+  entries.push(...supplementary.entries);
+
   entries.sort((a, b) =>
-    b.administeredDate.localeCompare(a.administeredDate) || a.canonicalDoseId.localeCompare(b.canonicalDoseId));
+    b.administeredDate.localeCompare(a.administeredDate)
+    || a.administrationContext.localeCompare(b.administrationContext)
+    || a.canonicalDoseId.localeCompare(b.canonicalDoseId)
+    || (a.vitaminAStrength ?? '').localeCompare(b.vitaminAStrength ?? ''));
 
   const unresolved = normalized.issues.some((issue) => !resolvedTimelineOnlyRecordIds.has(issue.recordId)) ||
-    consolidated.issues.some((issue) => !issue.series || TIMELINE_ONLY_SERIES.has(issue.series));
+    consolidated.issues.some((issue) => !issue.series || TIMELINE_ONLY_SERIES.has(issue.series)) ||
+    supplementary.unresolved;
 
   return { entries, unresolved };
+}
+
+function codedAnswer(observation: NationalObs): string {
+  const value = observation.value;
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object' && 'uuid' in value) {
+    const uuid = (value as { uuid?: string }).uuid;
+    return typeof uuid === 'string' ? uuid.trim() : '';
+  }
+  return '';
+}
+
+function flattenObs(observations: readonly NationalObs[]): NationalObs[] {
+  const flat: NationalObs[] = [];
+  const visit = (items: readonly NationalObs[]) => {
+    for (const observation of items) {
+      if (!observation || observation.voided) continue;
+      flat.push(observation);
+      if (observation.groupMembers) visit(observation.groupMembers);
+    }
+  };
+  visit(observations);
+  return flat;
+}
+
+/**
+ * Vitamin A administrations whose separate administration-context observation
+ * says SIA or routine. DE50 supplies the strength only. Missing context is not
+ * inferred as SIA: historical Vitamin A stays on the supplementation schedule
+ * and is not shown here. A context without one strength and one date received
+ * is unresolved rather than guessed.
+ */
+function readSupplementaryImmunizations(input: {
+  patientUuid: string;
+  encounters: readonly NationalEncounter[];
+  nationalFormUuids: readonly string[] | undefined;
+  supplementary: SupplementaryImmunizationConfig | undefined;
+}): { entries: TimelineEntry[]; unresolved: boolean } {
+  const sia = input.supplementary;
+  if (!sia?.activitiesConceptUuid || !sia.blueConceptUuid || !sia.redConceptUuid
+    || !sia.dateReceivedConceptUuid || !sia.administrationContextConceptUuid
+    || !sia.siaAnswerConceptUuid || !sia.routineAnswerConceptUuid) {
+    return { entries: [], unresolved: false };
+  }
+  const nationalForms = new Set((input.nationalFormUuids ?? []).map((uuid) => uuid.trim()).filter(Boolean));
+  const pending = new Map<string, TimelineEntry>();
+  let unresolved = false;
+
+  for (const encounter of input.encounters) {
+    if (!encounter?.uuid || encounter.voided || encounter.patient?.uuid !== input.patientUuid) continue;
+    const formUuid = encounter.form?.uuid?.trim();
+    if (!formUuid || !nationalForms.has(formUuid) || !Array.isArray(encounter.obs)) continue;
+    const observations = flattenObs(encounter.obs);
+    const contexts = observations.filter((item) => item.concept?.uuid?.trim() === sia.administrationContextConceptUuid);
+    if (contexts.length === 0) continue;
+    const contextValue = contexts.length === 1 ? codedAnswer(contexts[0]) : '';
+    const administrationContext: AdministrationContext | null = contextValue === sia.siaAnswerConceptUuid
+      ? 'sia'
+      : contextValue === sia.routineAnswerConceptUuid
+        ? 'routine'
+        : null;
+    if (!administrationContext) {
+      unresolved = true;
+      continue;
+    }
+    const strengths = observations.filter((item) => item.concept?.uuid?.trim() === sia.activitiesConceptUuid);
+    const dates = observations.filter((item) => item.concept?.uuid?.trim() === sia.dateReceivedConceptUuid);
+    const strengthUuid = strengths.length === 1 ? codedAnswer(strengths[0]) : '';
+    const vitaminAStrength = strengthUuid === sia.blueConceptUuid ? 'blue' : strengthUuid === sia.redConceptUuid ? 'red' : null;
+    let administeredDate = '';
+    if (dates.length === 1 && typeof dates[0].value === 'string') {
+      try {
+        administeredDate = clinicalDate(dates[0].value);
+      } catch {
+        administeredDate = '';
+      }
+    }
+    if (!vitaminAStrength || !strengths[0]?.uuid || !administeredDate) {
+      unresolved = true;
+      continue;
+    }
+    const recordId = `national-form:${strengths[0].uuid}`;
+    const key = `${administrationContext}|${vitaminAStrength}|${administeredDate}`;
+    const existing = pending.get(key);
+    if (existing) {
+      if (!existing.recordIds.includes(recordId)) existing.recordIds.push(recordId);
+      continue;
+    }
+    pending.set(key, {
+      canonicalDoseId: vitaminAStrength === 'blue' ? 'VitaminABlue' : 'VitaminARed',
+      sequenceNumber: null,
+      administeredDate,
+      recordIds: [recordId],
+      administrationContext,
+      vitaminAStrength,
+    });
+  }
+
+  for (const entry of pending.values()) entry.recordIds.sort();
+  return { entries: [...pending.values()], unresolved };
 }
 
 function mappedDose(

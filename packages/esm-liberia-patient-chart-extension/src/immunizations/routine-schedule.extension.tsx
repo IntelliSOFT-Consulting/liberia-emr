@@ -4,7 +4,9 @@ import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
 import { clinicalDate } from './clinical-date';
-import { administeredTimeline, normalizeHistory, type TimelineEntry } from './history';
+import {
+  administeredTimeline, normalizeHistory, timelineContextLabel, timelineVitaminALabel, type TimelineEntry,
+} from './history';
 import { loadHistory } from './load-history';
 import { evaluateRoutineSchedule, routineSchedule, type RoutineStatus } from './routine-schedule';
 import type { RoutineConfig } from './routine-config';
@@ -24,10 +26,11 @@ const timelineOnlyLabels: Record<string, string> = {
   PediatricPfizer1: 'Pediatric Pfizer dose 1', PediatricPfizer2: 'Pediatric Pfizer dose 2',
 };
 
-function timelineDoseLabel(canonicalDoseId: string): string {
-  return routineSchedule.find((dose) => dose.id === canonicalDoseId)?.label
-    ?? timelineOnlyLabels[canonicalDoseId]
-    ?? canonicalDoseId;
+function timelineDoseLabel(entry: TimelineEntry): string {
+  if (entry.vitaminAStrength) return timelineVitaminALabel(entry.vitaminAStrength);
+  return routineSchedule.find((dose) => dose.id === entry.canonicalDoseId)?.label
+    ?? timelineOnlyLabels[entry.canonicalDoseId]
+    ?? entry.canonicalDoseId;
 }
 
 const sourceLabels: Record<string, string> = {
@@ -128,11 +131,15 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
               <TableHead><TableRow>
                 <TableHeader>{t('vaccineDose', 'Vaccine dose')}</TableHeader>
                 <TableHeader>{t('administrationDate', 'Administration date')}</TableHeader>
+                <TableHeader>{t('administrationContext', 'Context')}</TableHeader>
                 <TableHeader>{t('recordedIn', 'Recorded in')}</TableHeader>
               </TableRow></TableHead>
-              <TableBody>{timeline.entries.map((entry: TimelineEntry) => <TableRow key={entry.canonicalDoseId}>
-                <TableCell>{t(`routineDose${entry.canonicalDoseId}`, timelineDoseLabel(entry.canonicalDoseId))}</TableCell>
+              <TableBody>{timeline.entries.map((entry: TimelineEntry) => <TableRow key={`${entry.administrationContext}:${entry.canonicalDoseId}:${entry.vitaminAStrength ?? ''}:${entry.administeredDate}`}>
+                <TableCell>{entry.vitaminAStrength
+                  ? t(entry.vitaminAStrength === 'blue' ? 'vitaminABlue' : 'vitaminARed', timelineVitaminALabel(entry.vitaminAStrength))
+                  : t(`routineDose${entry.canonicalDoseId}`, timelineDoseLabel(entry))}</TableCell>
                 <TableCell>{entry.administeredDate}</TableCell>
+                <TableCell>{t(entry.administrationContext === 'sia' ? 'siaAdministration' : 'routineAdministration', timelineContextLabel(entry.administrationContext))}</TableCell>
                 <TableCell>{timelineSources(entry.recordIds)}</TableCell>
               </TableRow>)}</TableBody>
             </Table>

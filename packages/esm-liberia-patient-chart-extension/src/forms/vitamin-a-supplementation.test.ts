@@ -17,6 +17,7 @@ import {
   vitaminAReturnDateValue,
   vitaminARouteRejected,
   vitaminARouteValue,
+  siaAdministrationContext,
   vitaminASharedReturnValue,
   vitaminAStrengthForAge,
   type VitaminAAdministration,
@@ -59,6 +60,55 @@ function decide(input: {
     currentEncounterUuid: input.currentEncounterUuid,
   });
 }
+
+describe('SIA age bands use the administration date', () => {
+  const birth = '2019-01-15';
+  const before6 = addCalendarDays(addCalendarMonths(birth, 6), -1)!;
+  const exactly6 = addCalendarMonths(birth, 6)!;
+  const months11 = addCalendarMonths(birth, 11)!;
+  const exactly12 = addCalendarMonths(birth, 12)!;
+  const months59 = addCalendarMonths(birth, 59)!;
+  const months60 = addCalendarMonths(birth, 60)!;
+
+  it('accepts Blue only from the 6-month birthday through 11 months', () => {
+    assert.equal(vitaminAStrengthForAge(birth, before6), null);
+    assert.equal(vitaminAStrengthForAge(birth, exactly6), 'blue');
+    assert.equal(vitaminAStrengthForAge(birth, months11), 'blue');
+    assert.equal(decide({ birthDate: birth, asOf: exactly6, dateGiven: exactly6, strength: 'blue' }).block, '');
+    assert.equal(decide({ birthDate: birth, asOf: months11, dateGiven: months11, strength: 'blue' }).block, '');
+    assert.equal(decide({ birthDate: birth, asOf: before6, dateGiven: before6, strength: 'blue' }).block, 'age');
+    assert.equal(decide({ birthDate: birth, asOf: exactly12, dateGiven: exactly12, strength: 'blue' }).block, 'age');
+  });
+
+  it('accepts Red only from the 12-month birthday through 59 months', () => {
+    assert.equal(vitaminAStrengthForAge(birth, exactly12), 'red');
+    assert.equal(vitaminAStrengthForAge(birth, months59), 'red');
+    assert.equal(vitaminAStrengthForAge(birth, months60), null);
+    assert.equal(vitaminAStrengthForAge(birth, addCalendarDays(months60, 1)), null);
+    assert.equal(decide({ birthDate: birth, asOf: exactly12, dateGiven: exactly12, strength: 'red' }).block, '');
+    assert.equal(decide({ birthDate: birth, asOf: months59, dateGiven: months59, strength: 'red' }).block, '');
+    assert.equal(decide({ birthDate: birth, asOf: months60, dateGiven: months60, strength: 'red' }).block, 'age');
+    assert.equal(decide({ birthDate: birth, asOf: months11, dateGiven: months11, strength: 'red' }).block, 'age');
+  });
+
+  it('uses the administration date, not a later age', () => {
+    const laterAge = decide({
+      birthDate: birth,
+      asOf: exactly6,
+      dateGiven: before6,
+      strength: 'blue',
+    });
+    assert.equal(laterAge.block, 'age');
+    assert.equal(laterAge.currentStrength, 'blue');
+    const onTheBirthday = decide({
+      birthDate: birth,
+      asOf: exactly6,
+      dateGiven: exactly6,
+      strength: 'blue',
+    });
+    assert.equal(onTheBirthday.block, '');
+  });
+});
 
 describe('calendar arithmetic', () => {
   it('uses the exact 6-month, 12-month and 5th-birthday boundaries', () => {
@@ -470,8 +520,38 @@ describe('form and concept metadata', () => {
   const questions = form.pages.flatMap((page) => page.sections.flatMap((section) => section.questions));
   const byId = (id: string) => questions.find((question) => question.id === id);
 
-  it('is Immunization version 1.7', () => {
-    assert.equal(form.version, '1.7');
+  it('is Immunization version 1.8', () => {
+    assert.equal(form.version, '1.8');
+  });
+
+  it('stores SIA context on its own concept and leaves DE50 as Vitamin A Blue or Red', () => {
+    const activity = byId('supp_activities');
+    const context = byId('administration_context');
+    const activityOptions = activity?.questionOptions as { concept: string; answers: Array<{ concept: string }> };
+    const contextOptions = context?.questionOptions as {
+      concept: string;
+      isTransient?: boolean;
+      answers: Array<{ concept: string }>;
+      calculate?: { calculateExpression: string };
+    };
+    assert.equal(activityOptions.concept, '${var.concept.national.supplementary-immunization-activities.uuid}');
+    assert.deepEqual(activityOptions.answers.map((answer) => answer.concept), [
+      '${var.concept.national.vit-a-blue-100-000iu.uuid}',
+      '${var.concept.national.vit-a-red-200-000iu.uuid}',
+    ]);
+    assert.equal(contextOptions.concept, '${var.concept.national.immunization-administration-context.uuid}');
+    assert.notEqual(contextOptions.concept, activityOptions.concept);
+    assert.equal(contextOptions.isTransient, undefined);
+    assert.deepEqual(contextOptions.answers.map((answer) => answer.concept), [
+      '${var.concept.national.supplementary-immunization-activity.uuid}',
+    ]);
+    assert.equal(
+      contextOptions.calculate?.calculateExpression,
+      "siaAdministrationContext(supp_activities, '${var.concept.national.supplementary-immunization-activity.uuid}')",
+    );
+    assert.equal(siaAdministrationContext(BLUE, 'sia-answer'), 'sia-answer');
+    assert.equal(siaAdministrationContext('', 'sia-answer'), null);
+    assert.equal(siaAdministrationContext(BLUE, ''), null);
   });
 
   it('blocks an age-inappropriate strength, requires Date received, defaults Oral, and calculates the return date', () => {
@@ -521,7 +601,8 @@ describe('form and concept metadata', () => {
       resolve(root, 'content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv'),
       'utf8',
     );
-    assert.match(variables, /^var\.form\.immunization\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
+    assert.match(variables, /^var\.form\.immunization\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
     assert.match(variables, /v1\.1 5ec3f3ef-f63d-3d4a-a828-8a0be01c1fb8/);
     assert.match(variables, /v1\.2 af9b642f-15d7-3687-812d-9ea2c890cfbd/);
@@ -542,7 +623,7 @@ describe('form and concept metadata', () => {
       'utf8',
     );
     assert.match(sql, /f\.name = 'Immunization'/);
-    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7'\)/);
+    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7', '1\.8'\)/);
     assert.match(sql, /f\.uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     assert.doesNotMatch(sql, /ef\.form_uuid = '\$\{var\.form\.immunization\.uuid\}'/);
     const forms = readFileSync(resolve(root, 'qa/reporting/fixtures/forms.csv'), 'utf8');

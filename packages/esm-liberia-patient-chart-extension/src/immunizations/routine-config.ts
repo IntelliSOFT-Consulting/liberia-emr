@@ -36,6 +36,18 @@ export interface FhirDoseMapping {
   canonicalDoseId: string;
 }
 
+/** Runtime concepts for SIA Vitamin A. UUIDs stay in frontend config, not the bundle. */
+export interface SupplementaryImmunizationConfig {
+  /** EMR.IMMZ.DE50. Answers remain Vitamin A Blue and Red. Not the SIA marker. */
+  activitiesConceptUuid: string;
+  blueConceptUuid: string;
+  redConceptUuid: string;
+  dateReceivedConceptUuid: string;
+  administrationContextConceptUuid: string;
+  siaAnswerConceptUuid: string;
+  routineAnswerConceptUuid: string;
+}
+
 export interface RoutineConfig {
   nationalFormUuids: string[];
   vaccineQuestionUuid: string;
@@ -43,6 +55,7 @@ export interface RoutineConfig {
   fhirDoseMappings: FhirDoseMapping[];
   ancFormUuids: string[];
   ancTtConceptUuids: Record<string, string>;
+  supplementaryImmunization?: SupplementaryImmunizationConfig;
 }
 
 /** Sequencing and the routine schedule share this one runtime object. */
@@ -87,5 +100,44 @@ export const routineConfigSchema = {
     _type: Type.Object,
     _description: 'Canonical TD dose ID to the ANC Date-of-TT concept that counts as that dose. TD1 is the unsuffixed TD concept.',
     ...ancTtConceptUuidFields,
+  },
+  supplementaryImmunization: {
+    _type: Type.Object,
+    _description: 'Vitamin A SIA concepts. DE50 stays the strength question. Administration context is a separate concept. A site that replaces routineImmunizations must include this object to show SIA history.',
+    activitiesConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'EMR.IMMZ.DE50, Supplementary immunization activities. Answers are Vitamin A Blue and Red only.',
+    },
+    blueConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Vitamin A Blue 100,000 IU answer.',
+    },
+    redConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Vitamin A Red 200,000 IU answer.',
+    },
+    dateReceivedConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Date received for the Vitamin A administration.',
+    },
+    administrationContextConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Immunization administration context. Distinguishes SIA from routine. Not DE50.',
+    },
+    siaAnswerConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Answer that marks the administration as a supplementary immunization activity.',
+    },
+    routineAnswerConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '',
+      _description: 'Answer that marks the administration as routine rather than SIA.',
+    },
   },
 };

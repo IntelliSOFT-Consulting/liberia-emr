@@ -163,7 +163,7 @@ async function selectVaccine(vaccineName: string) {
 describe('LE-604 vaccine selection calculate expressions', () => {
   it('rejects the pre-fix encounter guard with ReferenceError: encounter is not defined', async () => {
     const shipped = calculate('td_gate');
-    assert.equal(form.version, '1.7');
+    assert.equal(form.version, '1.8');
     assert.match(shipped, /vitaminAEditingEncounterUuid\(\)/);
     assert.doesNotMatch(shipped, /typeof encounter|encounter\.uuid/);
     await assert.rejects(
