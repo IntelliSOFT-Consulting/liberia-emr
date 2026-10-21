@@ -19,6 +19,34 @@ The module introduces a generic rules-based architecture for conditionally displ
 #### Rules Framework
 The endpoint fetches all published forms and evaluates them against an extensible list of `FormVisibilityRule` components. For example, the `FormsGenderRule` checks the patient's registered sex/gender and completely hides all female-only forms (such as ANC, PNC, and Labor & Delivery forms) if the patient is male.
 
+#### ANC episode lookup tests
+
+`ProgramEpisodeFormRuleLookupTest` exercises the unmodified rule methods through real
+OpenMRS services and Hibernate queries against the transactional in-memory test database.
+It creates isolated programme/form metadata; it needs neither the local demo stack nor
+an OCL export. The existing `ProgramEpisodeFormRuleTest` separately covers the visibility
+truth table and configuration parsing, without duplicating those checks here.
+
+Coverage includes active/completed/voided enrolments, latest uncompleted selection,
+previous-episode encounters, the midnight boundary, voided encounters, patient/type
+isolation and earlier form versions sharing the initial encounter type.
+
+Tests prefixed `currentBehavior` characterize unresolved policy, not clinical acceptance:
+an earlier encounter on the same day currently counts after re-enrolment, the latest
+uncompleted enrolment wins, and legacy future-dated records can influence the lookup.
+OpenMRS save services reject new future-dated enrolments and encounters; separate tests
+verify that rejection. Legacy future-date fixtures deliberately bypass save validation
+through Hibernate. Revisit the characterization expectations once episode/date policy is
+agreed rather than treating a green test as approval of those semantics.
+
+Run both suites from the repository root with JDK 17:
+
+```bash
+mvn -f modules/liberiaemr/pom.xml \
+  -Dtest=ProgramEpisodeFormRuleTest,ProgramEpisodeFormRuleLookupTest \
+  -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
 ### National Sync Status
 Backs the national sync status page (`packages/esm-liberia-sync-status-app`): which
 facilities are sending, and what is waiting at central.
