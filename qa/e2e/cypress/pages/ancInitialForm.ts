@@ -151,8 +151,12 @@ class ANCInitialFormPage {
         cy.contains('a.cds--link', 'ANC Initial Visit', { timeout: this.timeout }).click();
     }
 
-    saveInitialVisit() {
+    saveInitialVisit(encounterDate?: Date) {
         this.completeRequiredAssessmentFields();
+        if (encounterDate) {
+            this.enterDate('encounterDate', encounterDate);
+            cy.get('#encounterDate [data-type="year"]').blur();
+        }
         cy.intercept('POST', '**/ws/rest/v1/encounter**').as('saveAncInitial');
         cy.contains('button', 'Save', { timeout: this.timeout }).click();
         cy.wait('@saveAncInitial', { timeout: this.timeout }).its('response.statusCode').should('be.oneOf', [200, 201]);

@@ -1,5 +1,5 @@
 import { loginWithSession } from '../support/session';
-import { enrolInAnc } from '../support/anc-enrolment';
+import { AncEnrolment, enrolInAnc } from '../support/anc-enrolment';
 import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 import RegistrationPage from '../pages/Registration';
 import VisitPage from '../pages/visit';
@@ -41,6 +41,100 @@ describe('ANC forms without programme enrolment', () => {
         registerMotherWithVisit();
         ancInitialForm.openClinicalForms();
         ancInitialForm.verifyAncFormVisibility(false, false);
+    });
+});
+
+describe('ANC enrolment lifecycle', () => {
+    let patientUuid: string | undefined;
+    const enrolmentUuids: string[] = [];
+
+    afterEach(() => {
+        enrolmentUuids.forEach((uuid) => {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/programenrollment/${uuid}?reason=ANC-lifecycle-test-cleanup`);
+        });
+        if (patientUuid) {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/patient/${patientUuid}?reason=ANC-lifecycle-test-cleanup`);
+        }
+    });
+
+    it('refreshes ANC availability through completion and a later-day re-enrolment without reloading the chart', () => {
+        patientUuid = undefined;
+        enrolmentUuids.length = 0;
+        const firstEnrolled = new Date();
+        firstEnrolled.setDate(firstEnrolled.getDate() - 2);
+        firstEnrolled.setHours(0, 0, 0, 0);
+        const initialDate = new Date(firstEnrolled);
+        initialDate.setDate(initialDate.getDate() + 1);
+        initialDate.setHours(12);
+        const completedDate = new Date(initialDate);
+        completedDate.setHours(18);
+
+        loginWithSession();
+        cy.intercept('POST', '**/ws/rest/v1/visit').as('startLifecycleVisit');
+        registerMotherWithVisit().then((uuid) => {
+            patientUuid = uuid;
+        });
+        // Keep the historical Initial encounter inside its visit, using real past dates.
+        cy.wait('@startLifecycleVisit').then(({ response }) => {
+            expect(response?.statusCode, 'start lifecycle visit').to.equal(201);
+            const visitUuid: unknown = response?.body.uuid;
+            expect(visitUuid, 'lifecycle visit UUID').to.be.a('string').and.not.be.empty;
+            cy.request('POST', `/openmrs/ws/rest/v1/visit/${visitUuid}`, {
+                startDatetime: firstEnrolled.toISOString(),
+            }).its('status').should('be.oneOf', [200, 201]);
+        });
+
+        cy.window().then((chartWindow) => {
+            const checkAvailability = (initial: boolean, followUp: boolean) => {
+                ancInitialForm.openClinicalForms();
+                ancInitialForm.verifyAncFormVisibility(initial, followUp);
+                cy.window().should('equal', chartWindow);
+            };
+
+            checkAvailability(false, false);
+            cy.then(() => {
+                if (!patientUuid) throw new Error('Lifecycle patient was not registered');
+                return enrolInAnc(patientUuid, firstEnrolled).then((saved) => {
+                    enrolmentUuids.push(saved.uuid);
+                    return saved;
+                });
+            }).then((firstEpisode) => {
+                checkAvailability(true, false);
+                ancInitialForm.selectForm();
+                ancInitialForm.saveInitialVisit(initialDate);
+                cy.get('@saveAncInitial').then(({ response }) => {
+                    expect(response?.body.uuid, 'saved Initial encounter UUID').to.be.a('string').and.not.be.empty;
+                    cy.request<{ encounterDatetime: string }>(
+                        `/openmrs/ws/rest/v1/encounter/${response?.body.uuid}?v=full`,
+                    ).its('body.encounterDatetime').then((savedDate) => {
+                        const actual = new Date(savedDate);
+                        expect(actual.toDateString(), 'persisted historical Initial date')
+                            .to.equal(initialDate.toDateString());
+                    });
+                });
+                checkAvailability(false, true);
+                cy.request('POST', `/openmrs/ws/rest/v1/programenrollment/${firstEpisode.uuid}`, {
+                    dateCompleted: completedDate.toISOString(),
+                }).its('status').should('be.oneOf', [200, 201]);
+                cy.request<AncEnrolment>(
+                    `/openmrs/ws/rest/v1/programenrollment/${firstEpisode.uuid}?v=full`,
+                ).then(({ body }) => {
+                    if (!body.dateCompleted) throw new Error('Lifecycle episode completion was not persisted');
+                    expect(new Date(body.dateCompleted).getTime(), 'persisted episode completion')
+                        .to.equal(completedDate.getTime());
+                    expect(body.voided, 'completion is not voiding').to.equal(false);
+                });
+                checkAvailability(false, false);
+                cy.then(() => {
+                    if (!patientUuid) throw new Error('Lifecycle patient was not registered');
+                    return enrolInAnc(patientUuid).then((saved) => {
+                        enrolmentUuids.push(saved.uuid);
+                        expect(saved.uuid, 'new episode UUID').not.to.equal(firstEpisode.uuid);
+                    });
+                });
+                checkAvailability(true, false);
+            });
+        });
     });
 });
 
