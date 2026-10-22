@@ -79,6 +79,7 @@
 		<aware_of_module>org.openmrs.module.auditlog</aware_of_module>
 		<aware_of_module>org.openmrs.module.labonfhir</aware_of_module>
 		<aware_of_module>org.openmrs.module.patientflags</aware_of_module>
+		<aware_of_module>org.openmrs.module.queue</aware_of_module>
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->
