@@ -371,6 +371,28 @@ describe('TT and Td are one sequence', () => {
     assert.equal(gate({ vaccine: td(1), evaluationDate: '2024-06-01', encounters: [...pregnant, elsewhere] }), 'allowed');
   });
 
+  it('keeps a sibling Td dose when another administration in the encounter is being edited', () => {
+    const shared: TdHistoryEncounter = {
+      uuid: 'editing', patient: { uuid: patientUuid },
+      form: { uuid: national.nationalFormUuids[national.nationalFormUuids.length - 1] },
+      encounterDatetime: '2024-01-01T10:00:00.000Z',
+      obs: [
+        {
+          uuid: 'group-td1', concept: { uuid: 'vaccine-administration' },
+          groupMembers: [{ uuid: 'td1-obs', concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: td(1) } }],
+        },
+        {
+          uuid: 'group-td2', concept: { uuid: 'vaccine-administration' },
+          groupMembers: [{ uuid: 'td2-obs', concept: { uuid: national.vaccineQuestionUuid }, value: { uuid: td(2) } }],
+        },
+      ],
+    };
+    const pregnant = [pregnancyEncounter('2024-01-02T08:00:00.000Z', trimesters[0])];
+    assert.equal(gate({
+      vaccine: td(2), evaluationDate: '2024-06-01', encounters: [...pregnant, shared], editingEncounterUuid: 'editing',
+    }), 'allowed');
+  });
+
   it('does not treat the dose being edited as already given', () => {
     const current = tdEncounter(td(1), '2024-02-01T10:00:00.000Z', 'editing');
     assert.equal(gate({

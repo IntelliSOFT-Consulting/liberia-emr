@@ -15,7 +15,7 @@
  * encounter, and both must count as the same administration.
  */
 import { addDateOffset, type Offset } from './eligibility.ts';
-import { CONFLICTING_DATES_ISSUE, type FhirImmunization } from './history.ts';
+import { CONFLICTING_DATES_ISSUE, encountersOmittingEditingVaccine, type FhirImmunization } from './history.ts';
 import type { SequenceIdentityConfig } from './routine-config.ts';
 import { evaluateSequence, type SequenceResult } from './sequence.ts';
 import { previousDeliveryTimeBefore, type EpisodeEncounter, type EpisodeObs, type LabourEpisodeConfig } from '../forms/labour-episode.ts';
@@ -296,8 +296,12 @@ export function decideTdGate(input: {
   if (!sequence) {
     return 'unresolved';
   }
-  const editing = input.editingEncounterUuid?.trim() ?? '';
-  const encounters = editing ? input.encounters.filter((encounter) => encounter.uuid?.trim() !== editing) : input.encounters;
+  const encounters = encountersOmittingEditingVaccine(
+    input.encounters,
+    input.editingEncounterUuid,
+    input.concepts.vaccineNameConceptUuid,
+    input.vaccineConceptUuid,
+  );
   try {
     const result = evaluateSequence({
       patientUuid: patientId,

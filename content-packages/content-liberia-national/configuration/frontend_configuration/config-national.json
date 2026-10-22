@@ -514,9 +514,12 @@
         "${var.form.immunization.v1-5.uuid}",
         "${var.form.immunization.v1-6.uuid}",
         "${var.form.immunization.v1-7.uuid}",
+        "${var.form.immunization.v1-8.uuid}",
         "${var.form.immunization.uuid}"
       ],
       "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
+      "routeQuestionUuid": "${var.concept.national.route.uuid}",
+      "returnDateQuestionUuid": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
       "vaccineConceptUuids": {
         "BCG": "${var.concept.national.bcg.uuid}",
         "OPV0": "${var.concept.national.opv0-1-dose.uuid}",

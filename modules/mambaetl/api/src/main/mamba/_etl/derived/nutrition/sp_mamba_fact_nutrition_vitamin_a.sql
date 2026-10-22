@@ -5,7 +5,7 @@
 --                               100,000iu obs on the Immunization form. The form saves under the
 --                               shared Consultation type, so it is keyed on the form, not the
 --                               encounter type. A new form version is a new form uuid. Every
---                               shipped version counts: v1.1, v1.2, v1.3, v1.4, v1.5, v1.6, v1.7 and v1.8, matched on
+--                               shipped version counts: v1.1 through v1.9, matched on
 --                               form name and version the way `3. Family Planning` v1.0 is,
 --                               plus ${var.form.immunization.uuid} for the current form.
 --   source 'drug_order'         a live, non-DISCONTINUE drug order for a Vitamin A capsule drug
@@ -23,6 +23,10 @@
 --
 -- Rebuilt in full on every run. Runs in the ETL schema's context; mamba_source_db is replaced
 -- at runtime.
+--
+-- Each obs_id counts once, whether the Vitamin A observation is top-level (every shipped
+-- Immunization form, including v1.9) or a group member. Vaccine-administration groups do
+-- not use this concept, so they are not a second row for the same dose.
 
 -- $BEGIN
 
@@ -84,7 +88,7 @@ WHERE o.voided = 0
   AND q.uuid = '${var.concept.national.supplementary-immunization-activities.uuid}'
   AND a.uuid = '${var.concept.national.vit-a-blue-100-000iu.uuid}'
   AND f.name = 'Immunization'
-  AND (f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8')
+  AND (f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9')
     OR f.uuid = '${var.form.immunization.uuid}');
 
 INSERT INTO mamba_fact_nutrition_vitamin_a (source, event_id, encounter_id, visit_id, client_id,

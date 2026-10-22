@@ -581,9 +581,11 @@ section "CSV short rows"
 # 54 of the 126 rows in concepts-mch.csv were rejected while this script stayed green:
 # csv.DictReader pads a short row with None, so none of the checks above could see it.
 #
-# Only SHORT rows are an error. A row with extra trailing cells is tolerated by Initializer
-# (the surplus is past the last named column and never read) and several of the concept
-# exports vendored from upstream have them; failing on those would fail files we do not own.
+# Only SHORT rows are an error in general. A row with extra trailing cells is tolerated by
+# Initializer (the surplus is past the last named column and never read) and several of the
+# concept exports vendored from upstream have them; failing on those would fail files we do
+# not own. concepts-national.csv is hand-written, so it must be exactly as wide as its
+# header: an unquoted comma in a description widens the row and shifts Data class.
 #
 # Columns whose name begins with '_' are Initializer directives ('_order:1000',
 # '_version:1') rather than data, and how far a row must reach past them is NOT uniform
@@ -618,9 +620,15 @@ for f in sorted(glob.glob(f"{pkg_dir}/**/*.csv", recursive=True)):
     else:
         width = len([c for c in rows[0] if not c.strip().startswith("_")])
         what = "header names"
+    exact_width = os.path.basename(f) == "concepts-national.csv"
     for n, row in enumerate(rows[1:], start=2):
         if len(row) < width:
             problems.append(f"{rel}:{n} has {len(row)} cells, {what} {width} columns")
+        elif exact_width and len(row) > width:
+            problems.append(
+                f"{rel}:{n} has {len(row)} cells, header has {width}. "
+                "Extra cells in concepts-national.csv shift the concept columns."
+            )
 
 for p in problems:
     print(f"       {p}", file=sys.stderr)

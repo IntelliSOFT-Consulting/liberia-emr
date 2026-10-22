@@ -339,6 +339,10 @@ export interface TimelineEntry {
   administrationContext: AdministrationContext;
   /** Set for a Vitamin A administration. Absent on routine vaccine doses. */
   vitaminAStrength?: 'blue' | 'red';
+  /** Coded route from the same administration as this vaccine. Absent when that group has no route. */
+  routeConceptUuid?: string;
+  /** Return date from the same administration as this vaccine. Absent when that group has no return date. */
+  returnDate?: string;
 }
 
 export function timelineVitaminALabel(strength: 'blue' | 'red'): string {
@@ -448,6 +452,21 @@ export function administeredTimeline(input: {
   });
   entries.push(...supplementary.entries);
 
+  const details = vaccineAdministrationDetails({
+    encounters: input.encounters,
+    nationalFormUuids: input.config.nationalFormUuids,
+    vaccineQuestionUuid: input.config.vaccineQuestionUuid,
+    routeQuestionUuid: input.config.routeQuestionUuid,
+    returnDateQuestionUuid: input.config.returnDateQuestionUuid,
+  });
+  for (const entry of entries) {
+    if (entry.vitaminAStrength) continue;
+    const route = singleDetail(entry.recordIds, details, 'routeConceptUuid');
+    const returnDate = singleDetail(entry.recordIds, details, 'returnDate');
+    if (route) entry.routeConceptUuid = route;
+    if (returnDate) entry.returnDate = returnDate;
+  }
+
   entries.sort((a, b) =>
     b.administeredDate.localeCompare(a.administeredDate)
     || a.administrationContext.localeCompare(b.administrationContext)
@@ -459,6 +478,133 @@ export function administeredTimeline(input: {
     supplementary.unresolved;
 
   return { entries, unresolved };
+}
+
+/**
+ * Route and return date that belong to one vaccine answer.
+ *
+ * A repeating administration group contributes only its own members. A legacy
+ * ungrouped encounter contributes its top-level route and return date only
+ * when that encounter has one top-level vaccine answer. Encounter UUID is not
+ * the administration id: the vaccine-name observation UUID is.
+ */
+export function vaccineAdministrationDetails(input: {
+  encounters: readonly NationalEncounter[] | null | undefined;
+  nationalFormUuids: readonly string[] | undefined;
+  vaccineQuestionUuid: string | undefined;
+  routeQuestionUuid: string | undefined;
+  returnDateQuestionUuid: string | undefined;
+}): Map<string, { routeConceptUuid?: string; returnDate?: string }> {
+  const details = new Map<string, { routeConceptUuid?: string; returnDate?: string }>();
+  const question = input.vaccineQuestionUuid?.trim() ?? '';
+  const routeQuestion = input.routeQuestionUuid?.trim() ?? '';
+  const returnQuestion = input.returnDateQuestionUuid?.trim() ?? '';
+  const nationalForms = new Set((input.nationalFormUuids ?? []).map((uuid) => uuid.trim()).filter(Boolean));
+  if (!question || !Array.isArray(input.encounters)) return details;
+
+  for (const encounter of input.encounters) {
+    if (!encounter?.uuid || encounter.voided || !Array.isArray(encounter.obs)) continue;
+    const formUuid = encounter.form?.uuid?.trim();
+    if (!formUuid || !nationalForms.has(formUuid)) continue;
+    const topLevel = encounter.obs.filter((observation) => observation && !observation.voided);
+    for (const group of topLevel) {
+      if (!group.groupMembers?.length) continue;
+      const members = group.groupMembers.filter((member) => member && !member.voided);
+      rememberAdministration(details, members, question, routeQuestion, returnQuestion);
+    }
+    const ungrouped = topLevel.filter((observation) => !observation.groupMembers?.length);
+    const ungroupedVaccines = ungrouped.filter((observation) => observation.concept?.uuid?.trim() === question && observation.uuid);
+    if (ungroupedVaccines.length !== 1) continue;
+    const detail = detailFrom(ungrouped, routeQuestion, returnQuestion);
+    if (detail.routeConceptUuid || detail.returnDate) details.set(`national-form:${ungroupedVaccines[0].uuid}`, detail);
+  }
+  return details;
+}
+
+function rememberAdministration(
+  details: Map<string, { routeConceptUuid?: string; returnDate?: string }>,
+  members: readonly NationalObs[],
+  question: string,
+  routeQuestion: string,
+  returnQuestion: string,
+) {
+  const vaccines = members.filter((member) => member.concept?.uuid?.trim() === question && member.uuid);
+  if (vaccines.length !== 1) return;
+  const detail = detailFrom(members, routeQuestion, returnQuestion);
+  if (detail.routeConceptUuid || detail.returnDate) details.set(`national-form:${vaccines[0].uuid}`, detail);
+}
+
+function detailFrom(observations: readonly NationalObs[], routeQuestion: string, returnQuestion: string) {
+  const detail: { routeConceptUuid?: string; returnDate?: string } = {};
+  if (routeQuestion) {
+    const routes = observations.filter((observation) => observation.concept?.uuid?.trim() === routeQuestion);
+    const route = routes.length === 1 ? codedAnswer(routes[0]) : '';
+    if (route) detail.routeConceptUuid = route;
+  }
+  if (returnQuestion) {
+    const dates = observations.filter((observation) => observation.concept?.uuid?.trim() === returnQuestion);
+    if (dates.length === 1 && typeof dates[0].value === 'string' && dates[0].value.trim()) {
+      try {
+        detail.returnDate = clinicalDate(dates[0].value);
+      } catch {
+        detail.returnDate = undefined;
+      }
+    }
+  }
+  return detail;
+}
+
+function singleDetail(
+  recordIds: readonly string[],
+  details: Map<string, { routeConceptUuid?: string; returnDate?: string }>,
+  key: 'routeConceptUuid' | 'returnDate',
+) {
+  const values = new Set<string>();
+  for (const recordId of recordIds) {
+    const value = details.get(recordId)?.[key];
+    if (value) values.add(value);
+  }
+  return values.size === 1 ? [...values][0] : undefined;
+}
+
+/**
+ * While an Immunization encounter is open for edit, drop only the vaccine answer
+ * being re-saved. Other administrations in that encounter stay in history.
+ * Without a question or answer concept, the whole encounter is omitted, which
+ * is the single-vaccine behavior.
+ */
+export function encountersOmittingEditingVaccine<T extends { uuid?: string; obs?: NationalObs[] }>(
+  encounters: readonly T[],
+  editingEncounterUuid: string | undefined,
+  vaccineQuestionUuid: string | undefined,
+  vaccineAnswerUuid: string | undefined,
+): T[] {
+  const editing = editingEncounterUuid?.trim() ?? '';
+  if (!editing) return encounters.slice();
+  const question = vaccineQuestionUuid?.trim() ?? '';
+  const answer = vaccineAnswerUuid?.trim() ?? '';
+  if (!question || !answer) return encounters.filter((encounter) => encounter.uuid?.trim() !== editing);
+  return encounters.map((encounter) => {
+    if (encounter.uuid?.trim() !== editing || !Array.isArray(encounter.obs)) return encounter;
+    return { ...encounter, obs: omitMatchingVaccineAnswer(encounter.obs, question, answer) };
+  });
+}
+
+function omitMatchingVaccineAnswer(observations: readonly NationalObs[], question: string, answer: string): NationalObs[] {
+  const kept: NationalObs[] = [];
+  for (const observation of observations) {
+    if (!observation || observation.voided) {
+      if (observation) kept.push(observation);
+      continue;
+    }
+    if (observation.concept?.uuid?.trim() === question && codedAnswer(observation) === answer) continue;
+    if (observation.groupMembers) {
+      kept.push({ ...observation, groupMembers: omitMatchingVaccineAnswer(observation.groupMembers, question, answer) });
+    } else {
+      kept.push(observation);
+    }
+  }
+  return kept;
 }
 
 function codedAnswer(observation: NationalObs): string {

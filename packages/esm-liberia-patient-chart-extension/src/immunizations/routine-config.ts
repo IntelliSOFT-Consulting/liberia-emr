@@ -51,6 +51,10 @@ export interface SupplementaryImmunizationConfig {
 export interface RoutineConfig {
   nationalFormUuids: string[];
   vaccineQuestionUuid: string;
+  /** Concept of the per-administration route. Optional so an older site config still loads history. */
+  routeQuestionUuid?: string;
+  /** Concept of the per-administration return date. Optional so an older site config still loads history. */
+  returnDateQuestionUuid?: string;
   vaccineConceptUuids: Record<string, string>;
   fhirDoseMappings: FhirDoseMapping[];
   ancFormUuids: string[];
@@ -72,6 +76,16 @@ export const routineConfigSchema = {
     _type: Type.ConceptUuid,
     _default: '',
     _description: 'Concept UUID of the vaccine-name question on the national Immunization form.',
+  },
+  routeQuestionUuid: {
+    _type: Type.ConceptUuid,
+    _default: '',
+    _description: 'Concept UUID of the route question stored with one vaccine administration.',
+  },
+  returnDateQuestionUuid: {
+    _type: Type.ConceptUuid,
+    _default: '',
+    _description: 'Concept UUID of the return-date question stored with one vaccine administration.',
   },
   vaccineConceptUuids: {
     _type: Type.Object,
