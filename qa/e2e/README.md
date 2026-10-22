@@ -13,6 +13,16 @@ dropdown detached during click in [CI run 39038512933](https://github.com/Intell
 The no-chosen-method transition described below is therefore not currently exercised.
 Re-enable this scenario after investigating and verifying the dropdown interaction.
 
+Family Planning method-gating quarantine (LE-610): `gates method-specific sections by
+chosen and dispensed method` is temporarily `it.skip` after the dispensed-method options
+could not be found in [CI run 39611495493](https://github.com/IntelliSOFT-Consulting/liberia-emr/actions/runs/39611495493).
+Its assertions are preserved, but green CI does not verify this scenario's chosen-method
+gate matrix, dispensed-implant transition, or exclusion of LAM from dispensed options.
+After deployment, revisit alongside the other quarantined scenarios on a metadata-complete
+non-production instance using synthetic patients. Verify the dropdown's expanded state and
+actual listbox, repair the interaction as needed, remove `it.skip`, and rerun the scenario
+and full Family Planning spec without weakening the clinical assertions.
+
 | Spec | Covers |
 | --- | --- |
 | `Registration.cy.ts` | Login page and home page; registration required-field errors, name-known and date-of-birth-known toggles, future birthdate, request payload, 400/409/500 error dialogs, double submit (POST stubbed with `cy.intercept`); one registration against the live backend |
