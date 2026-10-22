@@ -2,6 +2,46 @@
   "_comment": [
     "OPD / IPD runtime configuration.",
     "Loaded after config-mch.json and before config-site.json. Must be listed in",
-    "SPA_CONFIG_URLS or O3 will not read it (IMPLEMENTATION.md §7)."
-  ]
+    "SPA_CONFIG_URLS or O3 will not read it (IMPLEMENTATION.md §7).",
+    "Random blood sugar history is read-only. Triage and OPD capture the value.",
+    "The O3 Record Vitals workspace is not given an input: its concept list has no glucose key.",
+    "mg/dL is CIEL 887 (Random blood sugar). mmol/L is CIEL 1458 (the same serum glucose in mmol/L).",
+    "Fasting blood glucose (CIEL 160912) is not this measurement."
+  ],
+  "liberia-rbs-history": {
+    "title": "Vitals history",
+    "displayMode": "table",
+    "showAddButton": false,
+    "hideWhenEmpty": true,
+    "formUuid": "",
+    "encounterTypes": [
+      "${var.encountertype.triage.uuid}",
+      "${var.encountertype.consultation.uuid}"
+    ],
+    "formUuids": [
+      "${var.form.triage.uuid}",
+      "${var.form.triage-form.v2-1.uuid}",
+      "${var.form.opd-consultation.uuid}",
+      "${var.form.opd-consultation-form.v2-1.uuid}"
+    ],
+    "dedicatedTypeUuids": [
+      "${var.encountertype.triage.uuid}"
+    ],
+    "data": [
+      {
+        "label": "Initial blood sugar / RBS",
+        "concept": "${var.concept.ciel.887.uuid}",
+        "concepts": [
+          {
+            "concept": "${var.concept.ciel.887.uuid}",
+            "unit": "mg/dL"
+          },
+          {
+            "concept": "${var.concept.ciel.1458.uuid}",
+            "unit": "mmol/L"
+          }
+        ]
+      }
+    ]
+  }
 }

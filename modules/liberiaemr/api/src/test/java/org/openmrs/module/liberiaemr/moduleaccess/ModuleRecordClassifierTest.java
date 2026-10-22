@@ -75,6 +75,13 @@ public class ModuleRecordClassifierTest {
 		}
 	}
 
+	@Test public void frozenOpdConsultationStaysGeneralConsultation() {
+		Ownership frozen = classifier.assessStoredEncounter(
+		    encounter("opd-consultation-form.v2-1", "encountertype.consultation"));
+		assertEquals(ModuleAccess.GENERAL_CONSULTATION, frozen.module);
+		assertFalse(frozen.isUnrelated());
+	}
+
 	@Test public void dedicatedTypesClassifyFormlessEncountersAndConsultationAloneDoesNot() {
 		String[][] cases = { { "TB_SCREENING", "tb-screening" }, { "ANC", "anc" }, { "ANC", "anc-initial" },
 		    { "ANC", "anc-followup" }, { "PNC", "pnc" }, { "PNC", "mch-pnc" },

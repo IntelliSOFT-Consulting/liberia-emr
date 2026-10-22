@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
+import { columnConceptUuids } from './history-value';
 import { keepHistoryEncounter } from './keep-history-encounter';
 
 /** Shape of a single obs returned by the REST custom rep */
@@ -68,7 +69,7 @@ export function useObsByEncounter(patientUuid: string): UseObsByEncounterResult 
   );
 
   const targetConceptUuids = useMemo(
-    () => new Set(config.data?.map((d) => d.concept).filter(Boolean)),
+    () => new Set((config.data ?? []).flatMap((column) => columnConceptUuids(column))),
     [config.data]
   );
 

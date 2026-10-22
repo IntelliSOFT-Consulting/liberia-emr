@@ -71,6 +71,9 @@ public final class ModuleRecordClassifier {
 		dedicatedTypes.put(uuid("encountertypes.immunizations"), ModuleAccess.IMMUNIZATION);
 		form(ModuleAccess.TB_SCREENING, "tb-screening", "tb-screening");
 		form(ModuleAccess.GENERAL_CONSULTATION, "opd-consultation", "consultation");
+		// Form 2.1 stays owned after the 2.2 bump. An unknown form on Consultation is unrelated,
+		// and unrelated records are readable without the General Consultation privilege.
+		form(ModuleAccess.GENERAL_CONSULTATION, "opd-consultation-form.v2-1", "consultation");
 		form(ModuleAccess.ANC, "anc-initial", "anc-initial");
 		form(ModuleAccess.ANC, "anc-followup", "anc-followup");
 		form(ModuleAccess.ANC, "anc-national", "consultation");
