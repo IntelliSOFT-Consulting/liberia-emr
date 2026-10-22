@@ -60,7 +60,7 @@
 			org.bahmni.module.appointments
 		</require_module>
 		<require_module version="3.0.0">
-			queue
+			org.openmrs.module.queue
 		</require_module>
 	</require_modules>
 	
