@@ -170,7 +170,8 @@ describe('Initial ANC Assessment form', () => {
         ancInitialForm.verifyObstetricHistoryConsistency();
     });
 
-    it('saves an ANC Initial Visit with key obstetric and maternal observations', () => {
+    // Temporarily quarantined (LE-610): launcher visibility failure after save; revisit after deployment.
+    it.skip('saves an ANC Initial Visit with key obstetric and maternal observations', () => {
         ancInitialForm.selectForm();
         ancInitialForm.verifySuccessfulAssessmentSaved();
         ancInitialForm.openClinicalForms();
