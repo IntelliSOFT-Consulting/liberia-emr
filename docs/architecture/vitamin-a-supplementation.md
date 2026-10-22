@@ -82,6 +82,12 @@ A dose fewer than 30 calendar days after any other Vitamin A administration is b
 A dose exactly 30 days later meets the minimum and can still be earlier than the
 six-month routine date.
 
+LE-567 leaves this interval as it is. The 30-day minimum stays context-agnostic: a
+Vitamin A administration counts toward the gap whether or not it has an
+administration-context observation. The interval predates LE-567. It is still
+provisional, from Mercy Kamau's earlier clarification, pending the national guideline.
+LE-567 does not redefine that clinical interval.
+
 ## What is stored
 
 | Field | Concept | Behaviour |
@@ -94,9 +100,10 @@ six-month routine date.
 No lot, batch, provider, remarks, or dose number is collected. The dictionary does not
 require them for these elements. DE55 batch number belongs to AEFI, not to Vitamin A.
 
-The Immunization form is version 1.7. Initializer derives
-`e44cf2d4-169e-3c98-a617-f7d937fbcd74`, which is `var.form.immunization.uuid`. The earlier
-forms stay in the database. v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) is frozen as
+The Immunization form is version 1.8. Initializer derives
+`85e6b4f8-620c-3377-82a4-9db35eac1769`, which is `var.form.immunization.uuid`. The earlier
+forms stay in the database. v1.7 (`e44cf2d4-169e-3c98-a617-f7d937fbcd74`) is frozen as
+`var.form.immunization.v1-7.uuid`. v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) is frozen as
 `var.form.immunization.v1-6.uuid`. v1.5 (`ed2202f0-c074-34ab-bde0-a08468ab3900`) remains a
 historical form, including its Vitamin A behavior, and is not reused as the current form:
 
@@ -109,13 +116,16 @@ historical form, including its Vitamin A behavior, and is not reused as the curr
 | 1.5 | `ed2202f0-c074-34ab-bde0-a08468ab3900` |
 | 1.6 | `337600b2-9ea3-310a-bbc5-cb2dfa221318` |
 | 1.7 | `e44cf2d4-169e-3c98-a617-f7d937fbcd74` |
+| 1.8 | `85e6b4f8-620c-3377-82a4-9db35eac1769` |
 
 `mamba_fact_nutrition_vitamin_a` counts a Blue observation on any of those versions. It
 matches the form name and version, and also the current form variable, because the
 Immunization form shares the Consultation encounter type. Reporting does not key the
 historical versions through `var.form.immunization.uuid`. Frozen
-`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.6.
-The current form is v1.7, supplied through `var.form.immunization.uuid`.
+`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.7.
+The current form is v1.8, supplied through `var.form.immunization.uuid`. v1.8 adds
+Immunization administration context beside DE50. It does not change the Blue or Red
+answers. Reporting still counts a Blue observation on v1.1 through v1.8.
 
 ## Route
 
@@ -172,6 +182,48 @@ drop any dose. Dropping by date would hide the other encounter.
 History is loaded through `loadVitaminAAdministrations`. If it cannot be confirmed, including
 when 100 or more matching observations are returned, the dose is not saved.
 
+## Administration context
+
+Mercy Kamau's product clarification on LE-567 is the provenance for this decision:
+
+- Introduce a separate data element that identifies an administration as SIA.
+- Existing EMR.IMMZ.DE50 remains the Vitamin A question.
+- An SIA administration must not automatically advance the routine vaccine sequence.
+- Routine and SIA records may coexist as separate administration events.
+
+The Immunization sheet of the data dictionary, read 2026-10-16, confirms that
+EMR.IMMZ.DE50–DE52 are the current Vitamin A SIA-related elements. DE51 and DE52
+define the Blue 6–11 month and Red 12–59 month age bands. Those elements stay the
+strength question and its answers. They are not the SIA marker.
+
+v1.8 stores a second observation, **Immunization administration context**, when a
+strength is selected. Its SIA answer is Supplementary immunization activity. The
+routine answer exists on the concept so a record can say routine instead, but this
+form writes SIA for Vitamin A and rejects any other value. Clearing the strength
+clears the context. The context is not a dose number and it is not a FHIR Immunization.
+
+Immunization v1.1–v1.7 Vitamin A records remain intact. They still participate in
+Vitamin A clinical history and eligibility through DE50. Those encounters have no
+administration-context observation, so they are not retrospectively classified as
+SIA. They do not appear as SIA rows on the consolidated Previous immunizations
+timeline. That omission is intentional: the timeline does not invent a historical
+context the saved encounter did not store.
+
+The chronological history reads the context observation from the encounter. It shows
+Vitamin A Blue or Red, the date received, and SIA or Routine from that field. A
+routine vaccine on the same encounter stays a routine timeline row. Same strength,
+same date received, and same context are one history event. A different date, or a
+routine context beside an SIA context, stays two events.
+
+SIA Vitamin A is not passed to `consolidateHistory` or `evaluateSequence`. It does
+not satisfy or advance OPV, Penta, Pneumo, or any other routine series.
+
+There is no new platform-wide save validator. Two stored representations of one SIA
+dose are collapsed only in the history display. The 30-day minimum is unchanged; see
+Minimum interval of 30 days. Because that interval still counts every DE50
+administration, the form cannot save a routine-context Vitamin A and an SIA Vitamin A
+inside the 30-day floor.
+
 ## Where the rules live
 
 `vitamin-a-supplementation.ts` is the date and eligibility logic. The national Immunization
@@ -180,3 +232,4 @@ form calls `vitaminACurrentStrength`, `vitaminABlock`, `vitaminAReturnDateValue`
 `vitaminAEditingEncounterUuid`, and `loadVitaminAAdministrations`, which are registered
 when the patient-chart extension starts.
 The form rules do not run unless that extension is the one loaded with the form.
+v1.8 also calls `siaAdministrationContext`.

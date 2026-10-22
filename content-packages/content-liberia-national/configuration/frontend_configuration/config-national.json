@@ -513,6 +513,7 @@
         "${var.form.immunization.v1-4.uuid}",
         "${var.form.immunization.v1-5.uuid}",
         "${var.form.immunization.v1-6.uuid}",
+        "${var.form.immunization.v1-7.uuid}",
         "${var.form.immunization.uuid}"
       ],
       "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
@@ -557,6 +558,15 @@
         "${var.form.1-anc-form.v1-1.uuid}",
         "${var.form.anc-national.uuid}"
       ],
+      "supplementaryImmunization": {
+        "activitiesConceptUuid": "${var.concept.national.supplementary-immunization-activities.uuid}",
+        "blueConceptUuid": "${var.concept.national.vit-a-blue-100-000iu.uuid}",
+        "redConceptUuid": "${var.concept.national.vit-a-red-200-000iu.uuid}",
+        "dateReceivedConceptUuid": "${var.concept.national.date-received.uuid}",
+        "administrationContextConceptUuid": "${var.concept.national.immunization-administration-context.uuid}",
+        "siaAnswerConceptUuid": "${var.concept.national.supplementary-immunization-activity.uuid}",
+        "routineAnswerConceptUuid": "${var.concept.national.routine-immunization-administration.uuid}"
+      },
       "ancTtConceptUuids": {
         "TD1": "${var.concept.national.date-of-tt1.uuid}",
         "TD2": "${var.concept.national.date-of-tt2.uuid}",

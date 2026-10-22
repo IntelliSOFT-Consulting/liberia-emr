@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.7",
+  "version": "1.8",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -390,6 +390,39 @@
                   "type": "js_expression",
                   "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'strength'",
                   "message": "Select the Vitamin A strength."
+                }
+              ]
+            },
+            {
+              "label": "Administration context",
+              "type": "obs",
+              "id": "administration_context",
+              "hide": {
+                "hideWhenExpression": "isEmpty(supp_activities)"
+              },
+              "questionOptions": {
+                "concept": "${var.concept.national.immunization-administration-context.uuid}",
+                "rendering": "select",
+                "answers": [
+                  {
+                    "concept": "${var.concept.national.supplementary-immunization-activity.uuid}",
+                    "label": "Supplementary immunization activity"
+                  }
+                ],
+                "calculate": {
+                  "calculateExpression": "siaAdministrationContext(supp_activities, '${var.concept.national.supplementary-immunization-activity.uuid}')"
+                }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(supp_activities) && myValue !== '${var.concept.national.supplementary-immunization-activity.uuid}'",
+                  "message": "Record this Vitamin A administration as a supplementary immunization activity. The Vitamin A strength stays on its own question."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "isEmpty(supp_activities) && !isEmpty(myValue)",
+                  "message": "Administration context is stored only with a Vitamin A strength."
                 }
               ]
             },

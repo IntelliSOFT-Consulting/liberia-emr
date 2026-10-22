@@ -614,6 +614,26 @@ export function vitaminARouteValue(
   return currentRoute;
 }
 
+/**
+ * Coded administration-context value for a Vitamin A strength.
+ * Returns the SIA answer, or null when no strength is selected so a stale
+ * context observation is cleared. This does not change DE50.
+ *
+ * Provenance: Mercy Kamau product clarification on LE-567. Introduce a separate
+ * data element that identifies an administration as SIA. EMR.IMMZ.DE50 remains
+ * the Vitamin A question. An SIA administration must not automatically advance
+ * the routine vaccine sequence. Routine and SIA records may coexist as separate
+ * events. The data dictionary (Immunization sheet, read 2026-10-16) confirms
+ * DE50–DE52 are the current Vitamin A SIA-related elements and defines the
+ * Blue/Red age bands. This helper only writes the separate SIA answer.
+ */
+export function siaAdministrationContext(vitaminAStrength: unknown, siaAnswerUuid: unknown): string | null {
+  if (isBlank(vitaminAStrength) || isBlank(siaAnswerUuid)) {
+    return null;
+  }
+  return String(siaAnswerUuid);
+}
+
 /** True only for a Vitamin A-only administration whose route is not Oral. */
 export function vitaminARouteRejected(
   vaccineName: unknown,

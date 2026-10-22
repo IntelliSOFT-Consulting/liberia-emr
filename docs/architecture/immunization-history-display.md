@@ -105,3 +105,12 @@ hook was invented here, per instruction: the narrowest bounded option identified
 `org.openmrs.validator`-style component registered against `Obs`/`Encounter` saves, scoped to the
 sequenced vaccine concepts — has not been verified safe (it would run on every `Obs` save
 platform-wide) and is follow-up work, not implemented in this change.
+
+## SIA Vitamin A
+
+LE-567 adds SIA Vitamin A to this same timeline. Each entry carries
+`administrationContext` (`routine` or `sia`) and, for Vitamin A, `vitaminAStrength`.
+The context is the Immunization administration context observation, not the DE50 answer
+and not the display text. `consolidateHistory` does not read those observations, so an
+SIA dose does not change routine sequence status. Details and the save limitation are in
+`vitamin-a-supplementation.md`.

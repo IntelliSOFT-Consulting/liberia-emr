@@ -89,15 +89,16 @@ describe('Pediatric Pfizer Immunization form entry', () => {
   const status = question('pediatric_pfizer_status');
 
   it('versions the form and keeps the previous identity', () => {
-    assert.equal(form.version, '1.7');
+    assert.equal(form.version, '1.8');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.7').digest();
+    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.8').digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
     const hex = [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     const derived = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     assert.match(variables, new RegExp(`^var\\.form\\.immunization\\.uuid=${derived}$`, 'm'));
     assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
   });
 
   it('offers both doses on the form and on the vaccine-name concept', () => {
