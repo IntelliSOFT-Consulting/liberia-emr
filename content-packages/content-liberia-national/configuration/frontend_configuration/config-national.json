@@ -554,6 +554,7 @@
       },
       "fhirDoseMappings": [],
       "ancFormUuids": [
+        "${var.form.1-anc-form.v1-1.uuid}",
         "${var.form.anc-national.uuid}"
       ],
       "ancTtConceptUuids": {

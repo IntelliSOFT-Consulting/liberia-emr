@@ -53,3 +53,28 @@ export async function loadHistory(
   const [fhir, encounters] = await Promise.all([allPages(fhirUrl, true), allPages(encounterUrl, false)]);
   return { fhir: fhir as FhirImmunization[], encounters: encounters as NationalEncounter[] };
 }
+
+/**
+ * The FHIR Immunization search and national/ANC encounter list URLs that every
+ * sequencing-aware save gate reads. One shape for Pediatric Pfizer, Td, and any
+ * later gate, so pagination and encounter representation do not drift apart.
+ *
+ * `encounterType` and `form.name`/`form.display` are included even though dose
+ * sequencing itself only reads `form.uuid`: the Td gate's delivery/ANC-episode
+ * detection falls back to matching by name when a site has not configured the
+ * corresponding encounter-type/form UUID, and must not silently lose that match
+ * just because this URL is shared.
+ */
+export function sequenceHistoryUrls(patientUuid: string, fhirBaseUrl: string, restBaseUrl: string) {
+  const patient = patientUuid.trim();
+  if (!patient) throw new Error('Missing patient');
+  const encoded = encodeURIComponent(patient);
+  const obs = 'uuid,voided,concept:(uuid),value';
+  const rep = `custom:(uuid,voided,patient:(uuid),encounterDatetime,encounterType:(uuid,display),` +
+    `form:(uuid,name,display),obs:(${obs},groupMembers:(${obs})))`;
+  return {
+    patient,
+    fhirUrl: `${fhirBaseUrl}/Immunization?patient=${encoded}`,
+    encounterUrl: `${restBaseUrl}/encounter?patient=${encoded}&v=${rep}&limit=100`,
+  };
+}

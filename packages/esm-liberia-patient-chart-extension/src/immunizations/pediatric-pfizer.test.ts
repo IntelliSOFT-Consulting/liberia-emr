@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import type { FhirImmunization, NationalEncounter } from './history.ts';
+import { sequenceHistoryUrls } from './load-history.ts';
 import { evaluateSequence } from './sequence.ts';
 import { ruleById } from './sequence-rules.ts';
 import type { SequenceIdentityConfig } from './routine-config.ts';
 import {
   evaluatePediatricPfizerAdministration,
   historyBelongsToPatient,
-  pediatricPfizerHistoryUrls,
   pediatricPfizerStatusLabel,
   type PediatricPfizerGateCode,
 } from './pediatric-pfizer.ts';
@@ -244,7 +244,7 @@ describe('Pediatric Pfizer save decision', () => {
   });
 
   it('loads history for the active patient and does not reuse another patient', async () => {
-    const urls = pediatricPfizerHistoryUrls('patient-a', fhirBaseUrl, restBaseUrl);
+    const urls = sequenceHistoryUrls('patient-a', fhirBaseUrl, restBaseUrl);
     assert.equal(new URL(urls.fhirUrl).searchParams.get('patient'), 'patient-a');
     assert.equal(new URL(urls.encounterUrl).searchParams.get('patient'), 'patient-a');
     const seen: string[] = [];

@@ -134,6 +134,14 @@ the national Immunization form, whose validators reject a second save. See
 [Pediatric Pfizer COVID-19 vaccination](pediatric-pfizer-covid-vaccination.md).
 O3 remains warning-only for every vaccine, including these two doses.
 
+## History display and the ANC Date-of-TT gate (LE-563)
+
+[`immunization-history-display.md`](immunization-history-display.md) covers the chronological,
+deduplicated "Previous immunizations" display built from this module's two readers, and the new
+symmetric save-time gate on the ANC form's Date-of-TT1–TT5 questions (the Immunization form's
+`td_gate` already had one; the ANC side did not). It also re-confirms the duplicate-save blocker
+below is unchanged.
+
 ## What this is not
 
 This is not the routine childhood schedule. That policy, its due ages, and its

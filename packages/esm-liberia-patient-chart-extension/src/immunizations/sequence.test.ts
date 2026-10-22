@@ -190,8 +190,9 @@ describe('runtime identifiers', () => {
     assert.deepEqual([...national.nationalFormUuids], formVariables.map((name) => variable(name)));
     assert.equal(raw.vaccineQuestionUuid, '${var.concept.national.vaccine-name.uuid}');
     assert.equal(national.vaccineQuestionUuid, variable('var.concept.national.vaccine-name.uuid'));
-    assert.deepEqual(raw.ancFormUuids, ['${var.form.anc-national.uuid}']);
-    assert.deepEqual([...national.ancFormUuids], [variable('var.form.anc-national.uuid')]);
+    const ancFormVariables = ['var.form.1-anc-form.v1-1.uuid', 'var.form.anc-national.uuid'];
+    assert.deepEqual(raw.ancFormUuids, ancFormVariables.map((name) => `\${${name}}`));
+    assert.deepEqual([...national.ancFormUuids], ancFormVariables.map((name) => variable(name)));
     for (const value of JSON.stringify(raw).match(/[0-9a-fA-F-]{36}/g) ?? []) {
       assert.equal(uuidLiteral.test(value), false);
     }

@@ -32,6 +32,7 @@ import {
   vitaminARouteValue,
   vitaminASharedReturnValue,
 } from './forms/vitamin-a-supplementation';
+import { ttAdministrationGate } from './immunizations/anc-tt-gate';
 import { pediatricPfizerAdministrationGate } from './immunizations/pediatric-pfizer-gate';
 import { isPediatricPfizerDose, pediatricPfizerDoseId, pediatricPfizerStatusLabel } from './immunizations/pediatric-pfizer';
 import { tdAdministrationGate } from './immunizations/td-administration-gate';
@@ -59,6 +60,7 @@ export function startupApp() {
   registerFormEngineExpressionHelper('isMuacRequired', isMuacRequired);
   registerFormEngineExpressionHelper('tdAdministrationGate', tdAdministrationGate);
   registerFormEngineExpressionHelper('isTdVaccine', isTdVaccine);
+  registerFormEngineExpressionHelper('ttAdministrationGate', ttAdministrationGate);
   registerFormEngineExpressionHelper('pediatricPfizerAdministrationGate', pediatricPfizerAdministrationGate);
   registerFormEngineExpressionHelper('isPediatricPfizerDose', isPediatricPfizerDose);
   registerFormEngineExpressionHelper('pediatricPfizerDoseId', pediatricPfizerDoseId);

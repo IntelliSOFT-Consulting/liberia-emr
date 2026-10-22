@@ -7,9 +7,10 @@
 --   * MCH family: every encounter of type ANC Initial Visit or ANC Follow-up Visit, whatever
 --     the form version (ANC Initial v1.1, v1.2 and v1.3, and ANC Follow-up v1.1 and v1.2,
 --     all count). v1.3 / v1.2 only add exact 5th–8th IPT answers; 1st–4th UUIDs are unchanged.
---   * National family: `1. ANC Form` v1.1 on the shared Consultation type, matched on
---     ${var.form.anc-national.uuid}, the runtime uuid Initializer derives from the form's name
---     and version (so a new form version needs its own token here).
+--   * National family: `1. ANC Form` on the shared Consultation type, matched on
+--     ${var.form.anc-national.uuid} (current, v1.2) or ${var.form.1-anc-form.v1-1.uuid}
+--     (frozen v1.1), the runtime uuids Initializer derives from the form's name and version.
+--     A later version bump needs its own frozen token added here too, same as Immunization.
 --
 -- Columns (NULL = not recorded on that contact):
 --   anc_form_family         'mch' or 'national'
@@ -122,7 +123,7 @@ FROM (SELECT e.encounter_id,
         AND (et.uuid IN ('${var.encountertype.anc-initial.uuid}',
                          '${var.encountertype.anc-followup.uuid}')
           OR (et.uuid = '${var.encountertype.consultation.uuid}'
-              AND f.uuid = '${var.form.anc-national.uuid}'))) c
+              AND f.uuid IN ('${var.form.anc-national.uuid}', '${var.form.1-anc-form.v1-1.uuid}')))) c
          LEFT JOIN
      (SELECT o.encounter_id,
              SUBSTRING_INDEX(GROUP_CONCAT(
