@@ -52,9 +52,10 @@ const mockShowSnackbar = showSnackbar as jest.Mock;
 const NEW_UUID = '22222222-2222-2222-2222-222222222222';
 const LOCAL_UUID = '11111111-1111-1111-1111-111111111111';
 
-const patient = (uuid: string, alreadyLocal = false) => ({
+const patient = (uuid: string, alreadyLocal = false, localVoided = false) => ({
   uuid,
   alreadyLocal,
+  localVoided,
   person: { display: 'Jane Doe', gender: 'F', age: 29, birthdate: '1997-01-11' },
   identifiers: [{ identifier: 'BC-2026-00417', preferred: true, identifierType: { name: 'MOH Health Record Number' } }],
 });
@@ -111,6 +112,17 @@ describe('remote search results', () => {
     render(<RemoteSearchResults query="Jane Doe" isFullPage />);
 
     expect(screen.getByText('Ask a Records Officer to import this patient.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import & Open' })).not.toBeInTheDocument();
+  });
+
+  it('tells the user a voided local patient needs to be un-voided, with no Open or import', async () => {
+    given({ results: [patient(LOCAL_UUID, true, true)] });
+    await turnOn();
+    render(<RemoteSearchResults query="Jane Doe" isFullPage />);
+
+    expect(screen.getByText(/currently voided\. Un-void the patient to restore them/)).toBeInTheDocument();
+    expect(screen.queryByText('Already imported at this facility')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Import & Open' })).not.toBeInTheDocument();
   });
 

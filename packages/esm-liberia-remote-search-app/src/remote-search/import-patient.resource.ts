@@ -6,6 +6,8 @@ export interface RemoteSearchedPatient {
   display?: string;
   /** Already at this facility (imported earlier): offered as "Open", not imported again. */
   alreadyLocal?: boolean;
+  /** The local record is voided: restore it by un-voiding, do not import again. */
+  localVoided?: boolean;
   person?: {
     uuid?: string;
     display?: string;
