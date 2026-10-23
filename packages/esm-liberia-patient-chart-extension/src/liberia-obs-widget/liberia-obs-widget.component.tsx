@@ -40,6 +40,7 @@ import {
   useStartVisitIfNeeded,
   type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
+import { formatHistoryCell } from './history-value';
 import { summarizeObsDisplays } from './keep-history-encounter';
 import { moduleEntryVisible } from './module-entry';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
@@ -145,6 +146,10 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 
   if (error) {
     return <ErrorState error={error} headerTitle={config.title} />;
+  }
+
+  if (!encounters.length && config.hideWhenEmpty) {
+    return null;
   }
 
   if (!encounters.length) {
@@ -256,10 +261,9 @@ const ObsTable: React.FC<ObsTableProps> = ({ encounters, configData, summarizeOb
               <TableCell>
                 {formatDatetime(new Date(enc.encounterDatetime), { mode: 'wide' })}
               </TableCell>
-              {configData.map(({ concept }: any) => {
-                const obs = enc.obs.find((o: any) => o.concept.uuid === concept);
+              {configData.map((column) => {
                 return (
-                  <TableCell key={`${concept}-${enc.uuid}`}>{getObsDisplayValue(obs)}</TableCell>
+                  <TableCell key={`${column.concept}-${enc.uuid}`}>{formatHistoryCell(enc.obs, column)}</TableCell>
                 );
               })}
               {summarizeObs ? <TableCell>{summarizeObsDisplays(enc.obs)}</TableCell> : null}

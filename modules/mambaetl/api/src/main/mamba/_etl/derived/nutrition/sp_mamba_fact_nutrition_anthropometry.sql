@@ -5,9 +5,10 @@
 -- Sources (source column):
 --   'triage'  encounters of type Triage (only the Triage Form writes it)
 --   'vitals'  encounters of type Vitals (the O3 vitals app; no form)
---   'opd'     `OPD Consultation Form` v2.0 on the shared Consultation type, matched on
---             ${var.form.opd-consultation.uuid}, the runtime uuid Initializer derives from the
---             form's name and version (so a new form version needs its own token here).
+--   'opd'     `OPD Consultation Form` on the shared Consultation type. The current schema
+--             is ${var.form.opd-consultation.uuid}. v2.1 stays in the match
+--             (${var.form.opd-consultation-form.v2-1.uuid}) so a version bump does not drop
+--             anthropometry already saved on that form.
 --
 -- Values are CIEL 5089 weight (kg), 5090 height/length (cm) and 1343 MUAC (cm). A voided obs
 -- never counts; if a concept has several live obs on one encounter, the latest wins. The
@@ -179,7 +180,8 @@ FROM (SELECT y.*,
                           AND (et.uuid IN ('${var.encountertype.triage.uuid}',
                                            '${var.encountertype.vitals.uuid}')
                             OR (et.uuid = '${var.encountertype.consultation.uuid}'
-                                AND f.uuid = '${var.form.opd-consultation.uuid}'))) w) x
+                                AND f.uuid IN ('${var.form.opd-consultation.uuid}',
+                                               '${var.form.opd-consultation-form.v2-1.uuid}')))) w) x
                      LEFT JOIN mamba_dim_nutrition_who_wflh lo
                                ON lo.measure = x.whz_measure
                                    AND lo.sex = x.gender
