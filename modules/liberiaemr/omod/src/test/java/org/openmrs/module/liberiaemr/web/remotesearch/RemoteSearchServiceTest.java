@@ -72,6 +72,8 @@ public class RemoteSearchServiceTest {
 
 	private final Set<String> localUuids = new HashSet<>();
 
+	private final Set<String> voidedUuids = new HashSet<>();
+
 	private CentralClient client;
 
 	private RemoteSearchService service;
@@ -100,6 +102,7 @@ public class RemoteSearchServiceTest {
 		base = "http://127.0.0.1:" + central.getAddress().getPort();
 		remoteUrl = base;
 		localUuids.clear();
+		voidedUuids.clear();
 		localUuids.add(LOCAL_UUID);
 
 		client = new CentralClient() {
@@ -125,6 +128,11 @@ public class RemoteSearchServiceTest {
 			protected boolean existsLocally(String uuid) {
 				return localUuids.contains(uuid);
 			}
+
+			@Override
+			protected boolean isVoidedLocally(String uuid) {
+				return voidedUuids.contains(uuid);
+			}
 		};
 	}
 
@@ -142,6 +150,18 @@ public class RemoteSearchServiceTest {
 	}
 
 	// --- search -----------------------------------------------------------------------------------
+
+	@Test
+	public void searchFlagsAVoidedLocalPatient() throws Exception {
+		voidedUuids.add(LOCAL_UUID);
+		body = "{\"results\":[" + patient(LOCAL_UUID) + "," + patient(NEW_UUID) + "]}";
+
+		SearchOutcome outcome = service.searchPatients("kate");
+
+		assertTrue(outcome.getResults().get(0).path("alreadyLocal").asBoolean());
+		assertTrue(outcome.getResults().get(0).path("localVoided").asBoolean());
+		assertFalse(outcome.getResults().get(1).path("localVoided").asBoolean());
+	}
 
 	@Test
 	public void searchKeepsPatientsAlreadyHereFlaggedAndCountsThem() throws Exception {

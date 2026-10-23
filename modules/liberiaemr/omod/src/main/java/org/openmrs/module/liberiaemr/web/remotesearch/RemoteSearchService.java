@@ -128,6 +128,12 @@ public class RemoteSearchService {
 		return Context.getPatientService().getPatientByUuid(uuid) != null;
 	}
 
+	/** Whether the local patient with this UUID is voided; un-voiding restores it, so it must not be imported again. */
+	protected boolean isVoidedLocally(String uuid) {
+		Patient patient = Context.getPatientService().getPatientByUuid(uuid);
+		return patient != null && Boolean.TRUE.equals(patient.getVoided());
+	}
+
 	/** How long the import's first step waits for central before saying it cannot be reached. */
 	static final int PING_TIMEOUT_MS = 5000;
 
@@ -188,6 +194,7 @@ public class RemoteSearchService {
 					}
 					if (result.isObject()) {
 						((ObjectNode) result).put("alreadyLocal", local);
+						((ObjectNode) result).put("localVoided", local && isVoidedLocally(uuid));
 					}
 					matches.add(result);
 				}
