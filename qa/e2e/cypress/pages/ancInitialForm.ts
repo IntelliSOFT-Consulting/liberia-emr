@@ -126,10 +126,44 @@ class ANCInitialFormPage {
         cy.contains('Abnormal Fetal Heart Tone (<110 or >160 bpm):').should('not.exist');
     }
 
+    observeClinicalForms() {
+        cy.intercept('GET', '**/ws/rest/v1/liberiaemr/forms?*').as('ancClinicalForms');
+    }
+
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: 30000 })
             .should('be.visible');
+        cy.get('body').then(($body) => {
+            const openHeader = $body.find('header').filter((_, header) =>
+                header.textContent?.includes('Clinical forms') === true && Cypress.dom.isVisible(header));
+            if (openHeader.length) {
+                cy.wrap(openHeader).find('button[aria-label="Close"]').click();
+                cy.contains('header', 'Clinical forms', { timeout: this.timeout }).should('not.exist');
+            }
+        });
         cy.get('button[aria-label="Clinical forms"]', { timeout: this.timeout }).click();
+        cy.wait('@ancClinicalForms', { timeout: this.timeout }).its('response.statusCode').should('eq', 200);
+        cy.contains('header', 'Clinical forms', { timeout: this.timeout }).should('be.visible');
+    }
+
+    verifyAncFormVisibility(initialVisible: boolean, followUpVisible: boolean) {
+        cy.get('@ancClinicalForms').its('response.body.results').then((forms: Array<{ name: string }>) => {
+            expect(forms.some((form) => form.name === 'ANC Initial Visit'), 'Initial availability from backend')
+                .to.equal(initialVisible);
+            expect(forms.some((form) => form.name === 'ANC Follow-up Visit'), 'Follow-up availability from backend')
+                .to.equal(followUpVisible);
+        });
+        [
+            { name: /^ANC Initial Visit$/, visible: initialVisible },
+            { name: /^ANC Follow-up Visit$/, visible: followUpVisible },
+        ].forEach(({ name, visible }) => {
+            const link = cy.contains('a.cds--link', name, { timeout: this.timeout });
+            if (visible) {
+                link.scrollIntoView().should('be.visible');
+            } else {
+                link.should('not.exist');
+            }
+        });
     }
 
     selectForm() {
