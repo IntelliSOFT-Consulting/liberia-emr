@@ -22,6 +22,7 @@ FROM eclipse-temurin:17-jdk AS content
 WORKDIR /build
 
 COPY content-packages/*/target/*.zip /build/zips/
+COPY distribution/backend/central-untag-queue-locations.pl /build/central-untag-queue-locations.pl
 
 # Layer order is load order: later layers override earlier ones.
 # The site layer is chosen at build time; default is Careysburg.
@@ -122,6 +123,9 @@ RUN set -eu; \
       done; \
       [ "$sites" -ge 1 ] || { echo "central: no site package in the build context" >&2; exit 1; }; \
       echo "central: locations from ${sites} site package(s)"; \
+      # Central runs no patient queues (LE-404): untagged, no location is offered as a queue
+      # location, so the queue screen cannot list one facility's entries to another.
+      perl /build/central-untag-queue-locations.pl /openmrs_config/locations/*.csv; \
       # The national MOH Health Record Number auto-generation option points at the ID source
       # each SITE package defines, with that site's HRN prefix, and central loads no site ID
       # source. Central is not a point-of-care system (sync-eip.md) and must not issue a
