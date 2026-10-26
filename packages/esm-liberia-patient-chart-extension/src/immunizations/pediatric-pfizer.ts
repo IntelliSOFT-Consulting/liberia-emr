@@ -19,6 +19,7 @@ export type PediatricPfizerGateCode =
   | 'due'
   | 'overdue'
   | 'already-given'
+  | 'history-unavailable-dose1'
   | 'unresolved';
 
 export type PediatricPfizerDoseId = 'PediatricPfizer1' | 'PediatricPfizer2';
@@ -66,6 +67,8 @@ export function pediatricPfizerStatusLabel(code: string | null | undefined): str
     case 'already-given': return 'Already recorded';
     case 'not-yet-due': return 'Not yet due';
     case 'not-eligible': return 'Not eligible';
+    case 'history-unavailable-dose1':
+      return 'Immunization history could not be checked. Verify prior vaccination history before administration.';
     case 'unresolved': return 'History could not be checked';
     case 'allowed': return '';
     default: return code ? 'History could not be checked' : 'Checking immunization history…';
@@ -84,8 +87,35 @@ export function historyBelongsToPatient(
     && encounters.every((encounter) => encounter?.patient?.uuid === patient);
 }
 
+const HISTORY_REQUEST_CHANGED_PATIENT = 'History request changed patient';
+
 function gateCode(status: SequenceStatus): PediatricPfizerGateCode {
   return STATUS_CODE[status] ?? 'unresolved';
+}
+
+/**
+ * History did not load. Age can still be decided for dose 1, because that rule
+ * has no predecessor. An empty chart is not passed through as Due: that would
+ * claim there is no earlier dose. Dose 2 is not handled here.
+ */
+function dose1WhenHistoryUnavailable(
+  patientUuid: string,
+  birthDate: string,
+  evaluationDate: string,
+  config: SequenceIdentityConfig,
+): PediatricPfizerGateCode {
+  const ageOnly = evaluateSequence({
+    patientUuid,
+    doseId: 'PediatricPfizer1',
+    birthDate,
+    evaluationDate,
+    fhir: [],
+    encounters: [],
+    config,
+  });
+  if (ageOnly.status === 'DUE' || ageOnly.status === 'OVERDUE') return 'history-unavailable-dose1';
+  if (ageOnly.status === 'NOT_YET_DUE' || ageOnly.status === 'NOT_ELIGIBLE') return gateCode(ageOnly.status);
+  return 'unresolved';
 }
 
 function configuredDose(config: SequenceIdentityConfig, doseId: PediatricPfizerDoseId, supplied: string): boolean {
@@ -137,7 +167,7 @@ export async function evaluatePediatricPfizerAdministration(input: {
   try {
     const loaded = await loadHistory(urls.fhirUrl, urls.encounterUrl, async (url) => {
       const requested = new URL(url, 'http://openmrs.local').searchParams.get('patient');
-      if (requested && requested !== patientUuid) throw new Error('History request changed patient');
+      if (requested && requested !== patientUuid) throw new Error(HISTORY_REQUEST_CHANGED_PATIENT);
       return input.fetchPage(url);
     });
     if (!historyBelongsToPatient(patientUuid, loaded.fhir, loaded.encounters)) return 'unresolved';
@@ -161,7 +191,9 @@ export async function evaluatePediatricPfizerAdministration(input: {
       config: input.config,
     });
     return gateCode(result.status);
-  } catch {
-    return 'unresolved';
+  } catch (error) {
+    if (error instanceof Error && error.message === HISTORY_REQUEST_CHANGED_PATIENT) return 'unresolved';
+    if (doseId !== 'PediatricPfizer1') return 'unresolved';
+    return dose1WhenHistoryUnavailable(patientUuid, birthDate, evaluationDate, input.config);
   }
 }

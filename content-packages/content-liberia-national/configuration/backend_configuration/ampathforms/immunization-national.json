@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.10",
+  "version": "1.11",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -269,7 +269,7 @@
                     },
                     {
                       "type": "js_expression",
-                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'not-yet-due' && pediatric_pfizer_gate !== 'not-eligible' && pediatric_pfizer_gate !== 'already-given'",
+                      "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'not-yet-due' && pediatric_pfizer_gate !== 'not-eligible' && pediatric_pfizer_gate !== 'already-given' && pediatric_pfizer_gate !== 'history-unavailable-dose1'",
                       "message": "Pediatric Pfizer dose 1 cannot be given."
                     },
                     {

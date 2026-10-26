@@ -64,8 +64,8 @@ Both complete, paginated collections are required:
 - REST `/encounter?patient=...`: encounters whose form UUID is one of
   `routineImmunizations.nationalFormUuids`, and whose vaccine-name answer uses
   `routineImmunizations.vaccineQuestionUuid`. National frontend configuration
-  lists the frozen Immunization identities v1.0 through v1.9 and
-  `${var.form.immunization.uuid}`, the current form (Immunization v1.10). The vaccine-name question
+  lists the frozen Immunization identities v1.0 through v1.10 and
+  `${var.form.immunization.uuid}`, the current form (Immunization v1.11). The vaccine-name question
   is `${var.concept.national.vaccine-name.uuid}` on every one of these versions.
   Current form identity alone is not enough: an upgrade that only recognized
   the new form UUID would drop administrations recorded on an older version.
@@ -75,9 +75,9 @@ Both complete, paginated collections are required:
   observation, so its encounter datetime is used. Return-date Obs and AEFI
   vaccine mentions are never administration evidence.
 
-The current national form is Immunization v1.10, supplied through
+The current national form is Immunization v1.11, supplied through
 `${var.form.immunization.uuid}`. Accepted historical national forms are v1.0
-through v1.9. v1.10 stores each vaccine in its own administration group inside
+through v1.10. v1.11 stores each vaccine in its own administration group inside
 one encounter. History still keys each dose by the vaccine-name observation,
 including a group member, so two vaccines that share an encounter stay separate.
 This change reads all recognized historical national dose answers

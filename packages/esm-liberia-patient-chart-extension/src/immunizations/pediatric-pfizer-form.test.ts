@@ -98,9 +98,9 @@ describe('Pediatric Pfizer Immunization form entry', () => {
   const status = question('pediatric_pfizer_status');
 
   it('versions the form and keeps the previous identity', () => {
-    assert.equal(form.version, '1.10');
+    assert.equal(form.version, '1.11');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.10').digest();
+    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11').digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
     const hex = [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -110,6 +110,7 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-8\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-9\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-10\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
   });
 
   it('offers both doses on the form and on the vaccine-name concept', () => {
@@ -211,12 +212,15 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-1', 'not-eligible'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-1', 'already-given'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-1', 'due'), false);
+    assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-1', 'history-unavailable-dose1'), false);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'waiting-for-prerequisite'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'waiting-for-interval'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'already-given'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'not-eligible'), true);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'due'), false);
     assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'overdue'), false);
+    assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'unresolved'), true);
+    assert.equal(blocked('national.pediatric-pfizer-covid-19-dose-2', 'history-unavailable-dose1'), true);
     assert.equal(blocked('national.bcg', 'not-eligible'), false);
     assert.equal(blocked('national.td', 'waiting-for-interval'), false);
     assert.equal(pediatricPfizerDoseId('national.pediatric-pfizer-covid-19-dose-2', 'national.pediatric-pfizer-covid-19-dose-1', 'national.pediatric-pfizer-covid-19-dose-2'), 'PediatricPfizer2');
@@ -225,6 +229,11 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     const show = new Function('pediatric_pfizer_gate', 'pediatricPfizerStatusLabel', `return (${label});`);
     assert.equal(show('overdue', pediatricPfizerStatusLabel), 'Overdue');
     assert.equal(show('due', pediatricPfizerStatusLabel), 'Due');
+    assert.equal(
+      show('history-unavailable-dose1', pediatricPfizerStatusLabel),
+      'Immunization history could not be checked. Verify prior vaccination history before administration.',
+    );
+    assert.equal(show('unresolved', pediatricPfizerStatusLabel), 'History could not be checked');
   });
 });
 
