@@ -111,8 +111,9 @@ class FourthStageFormPage {
         return cy.wait('@saveFourthStage', { timeout: this.timeout }).then(({ request, response }) => {
             expect(request.url, 'encounter save URL').to.match(/\/ws\/rest\/v1\/encounter/);
             expect(response?.statusCode, JSON.stringify(response?.body)).to.be.oneOf([200, 201]);
-            cy.contains('button', /^Save$/, { timeout: this.chartLoadTimeout }).should('not.exist');
-            return request.body.obs as Observation[];
+            return cy.contains('button', /^Save$/, { timeout: this.chartLoadTimeout })
+                .should('not.exist')
+                .then(() => request.body.obs as Observation[]);
         });
     }
 
