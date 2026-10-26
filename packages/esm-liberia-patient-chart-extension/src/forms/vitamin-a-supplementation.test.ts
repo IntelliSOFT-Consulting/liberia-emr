@@ -529,8 +529,8 @@ describe('form and concept metadata', () => {
   }
   const byId = (id: string) => questions.find((question) => question.id === id);
 
-  it('is Immunization version 1.9', () => {
-    assert.equal(form.version, '1.9');
+  it('is Immunization version 1.10', () => {
+    assert.equal(form.version, '1.10');
   });
 
   it('stores SIA context on its own concept and leaves DE50 as Vitamin A Blue or Red', () => {
@@ -610,7 +610,8 @@ describe('form and concept metadata', () => {
       resolve(root, 'content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv'),
       'utf8',
     );
-    assert.match(variables, /^var\.form\.immunization\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
+    assert.match(variables, /^var\.form\.immunization\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-9\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-8\.uuid=85e6b4f8-620c-3377-82a4-9db35eac1769$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-7\.uuid=e44cf2d4-169e-3c98-a617-f7d937fbcd74$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-6\.uuid=337600b2-9ea3-310a-bbc5-cb2dfa221318$/m);
@@ -633,7 +634,7 @@ describe('form and concept metadata', () => {
       'utf8',
     );
     assert.match(sql, /f\.name = 'Immunization'/);
-    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7', '1\.8', '1\.9'\)/);
+    assert.match(sql, /f\.version IN \('1\.1', '1\.2', '1\.3', '1\.4', '1\.5', '1\.6', '1\.7', '1\.8', '1\.9', '1\.10'\)/);
     assert.doesNotMatch(sql, /obs_group_id\s+IS\s+NULL/);
     const administration = byId('vaccine_administration');
     const members = (administration?.questions as Array<{ id: string }> | undefined)?.map((question) => question.id) ?? [];

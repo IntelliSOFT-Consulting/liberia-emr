@@ -74,6 +74,8 @@ Immunization v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) stays in history as
 the Initializer derivation of the name Immunization at version 1.7, frozen as
 `var.form.immunization.v1-7.uuid`. v1.8 is frozen as
 `var.form.immunization.v1-8.uuid` (`85e6b4f8-620c-3377-82a4-9db35eac1769`).
-The current form is v1.9 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`), stored as
-`var.form.immunization.uuid`. v1.9 repeats one vaccine administration group per
+v1.9 is frozen as `var.form.immunization.v1-9.uuid`
+(`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`).
+The current form is v1.10 (`94f8fe92-b48c-3d44-a133-c572fa0b17bd`), stored as
+`var.form.immunization.uuid`. v1.10 repeats one vaccine administration group per
 vaccine inside the same encounter.

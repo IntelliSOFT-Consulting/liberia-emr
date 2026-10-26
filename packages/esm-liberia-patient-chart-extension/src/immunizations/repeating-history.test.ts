@@ -86,6 +86,25 @@ describe('grouped and legacy immunization history', () => {
   const bcg = configured.vaccineConceptUuids.BCG;
   const opv0 = configured.vaccineConceptUuids.OPV0;
 
+  it('reads grouped encounters recorded on frozen v1.9 and current v1.10', () => {
+    const frozen = properties.get('var.form.immunization.v1-9.uuid');
+    assert.equal(frozen, '03bb283b-fa68-3b2e-a97c-b8adf72d4a76');
+    assert.notEqual(frozen, formUuid);
+    assert.equal(configured.nationalFormUuids.includes(frozen!), true);
+    assert.equal(configured.nationalFormUuids.includes(formUuid), true);
+    for (const recordedForm of [frozen, formUuid]) {
+      const history = doses([{
+        ...encounter([
+          group('group-bcg', [vaccine('obs-bcg', bcg)]),
+          group('group-opv', [vaccine('obs-opv', opv0)]),
+        ]),
+        form: { uuid: recordedForm },
+      }]);
+      assert.deepEqual(history.issues, []);
+      assert.deepEqual(history.doses.map((dose) => dose.canonicalDoseId), ['BCG', 'OPV0']);
+    }
+  });
+
   it('reads two administrations from one encounter without collapsing them', () => {
     const history = doses([encounter([
       group('group-bcg', [

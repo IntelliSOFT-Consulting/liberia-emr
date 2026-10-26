@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.9",
+  "version": "1.10",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -156,7 +156,7 @@
                 },
                 {
                   "label": "Td eligibility",
-                  "type": "obs",
+                  "type": "control",
                   "id": "td_gate",
                   "hide": {
                     "hideWhenExpression": "true"
@@ -171,7 +171,7 @@
                 },
                 {
                   "label": "Pediatric Pfizer eligibility",
-                  "type": "obs",
+                  "type": "control",
                   "id": "pediatric_pfizer_gate",
                   "hide": {
                     "hideWhenExpression": "true"
@@ -186,7 +186,7 @@
                 },
                 {
                   "label": "Pediatric Pfizer status",
-                  "type": "obs",
+                  "type": "control",
                   "id": "pediatric_pfizer_status",
                   "hide": {
                     "hideWhenExpression": "pediatricPfizerDoseId(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') === ''"
