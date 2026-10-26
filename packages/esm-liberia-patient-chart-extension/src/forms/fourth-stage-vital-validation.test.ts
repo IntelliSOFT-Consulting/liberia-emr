@@ -21,6 +21,7 @@ const controlsPath = require.resolve(
 type Question = {
   id: string;
   required?: boolean;
+  datePickerFormat?: string;
   questionOptions: {
     rendering: string;
     min?: number;
@@ -163,7 +164,8 @@ describe('Fourth Stage vital validation against form-engine-lib 4.2.1 FieldValid
     const observationTime = question('observation_time');
     assert.equal(observationTime.required, true);
     assert.equal(observationTime.questionOptions.rendering, 'date');
-    assert.equal(observationTime.questionOptions.datePickerFormat, 'timer');
+    assert.equal(observationTime.datePickerFormat, 'timer');
+    assert.equal(observationTime.questionOptions.datePickerFormat, undefined);
     const controls = readFileSync(controlsPath, 'utf8');
     assert.match(controls, /name: 'date'/);
     assert.match(controls, /name: 'datetime'/);
