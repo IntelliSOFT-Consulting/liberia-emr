@@ -3,6 +3,7 @@
   "ageInYears_other": "{{count}} Years",
   "alreadyAtFacility": "{{count}} matching patient(s) on the central server are already at this facility. See the local results.",
   "alreadyImported": "Already imported at this facility",
+  "alreadyImportedVoided": "This patient was already imported at this facility but is currently voided. Un-void the patient to restore them.",
   "askRecordsOfficer": "Ask a Records Officer to import this patient.",
   "cancel": "Cancel",
   "dateOfBirth": "Date of birth",

@@ -1,7 +1,7 @@
 {
   "name": "Triage Form",
   "uuid": "${var.form.triage.uuid}",
-  "version": "2.1",
+  "version": "2.2",
   "published": true,
   "retired": false,
   "encounter": "Triage",
@@ -331,6 +331,85 @@
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 10)",
                   "message": "Pain Score must be between 0 and 10."
+                }
+              ]
+            },
+            {
+              "id": "rbsUnit",
+              "label": "Initial blood sugar unit",
+              "type": "obs",
+              "questionOptions": {
+                "rendering": "radio",
+                "isTransient": true,
+                "orientation": "horizontal",
+                "answers": [
+                  {
+                    "label": "mg/dL",
+                    "concept": "${var.concept.ciel.887.uuid}"
+                  },
+                  {
+                    "label": "mmol/L",
+                    "concept": "${var.concept.ciel.1458.uuid}"
+                  }
+                ],
+                "calculate": {
+                  "calculateExpression": "!isEmpty(myValue) ? myValue : (!isEmpty(rbsMgdl) ? '${var.concept.ciel.887.uuid}' : (!isEmpty(rbsMmol) ? '${var.concept.ciel.1458.uuid}' : ''))"
+                }
+              }
+            },
+            {
+              "id": "rbsMgdl",
+              "label": "Initial blood sugar / RBS",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "rbsUnit === '${var.concept.ciel.1458.uuid}' || (rbsUnit !== '${var.concept.ciel.887.uuid}' && isEmpty(myValue))"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.887.uuid}",
+                "min": "0",
+                "max": "600",
+                "step": 1,
+                "disallowDecimals": true,
+                "calculate": {
+                  "calculateExpression": "rbsUnit === '${var.concept.ciel.887.uuid}' ? (isEmpty(myValue) ? rbsMmol : myValue) : (rbsUnit === '${var.concept.ciel.1458.uuid}' ? '' : myValue)"
+                }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && myValue % 1 !== 0",
+                  "message": "Initial blood sugar in mg/dL must be a whole number."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 600)",
+                  "message": "Initial blood sugar must be between 0 and 600 mg/dL."
+                }
+              ]
+            },
+            {
+              "id": "rbsMmol",
+              "label": "Initial blood sugar / RBS",
+              "type": "obs",
+              "hide": {
+                "hideWhenExpression": "rbsUnit === '${var.concept.ciel.887.uuid}' || (rbsUnit !== '${var.concept.ciel.1458.uuid}' && isEmpty(myValue))"
+              },
+              "questionOptions": {
+                "rendering": "number",
+                "concept": "${var.concept.ciel.1458.uuid}",
+                "min": "0",
+                "max": "33.3",
+                "step": 0.1,
+                "calculate": {
+                  "calculateExpression": "rbsUnit === '${var.concept.ciel.1458.uuid}' ? (isEmpty(myValue) ? rbsMgdl : myValue) : (rbsUnit === '${var.concept.ciel.887.uuid}' ? '' : myValue)"
+                }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 33.3)",
+                  "message": "Initial blood sugar must be between 0 and 33.3 mmol/L."
                 }
               ]
             }

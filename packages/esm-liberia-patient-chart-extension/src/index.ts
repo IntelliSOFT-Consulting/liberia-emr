@@ -52,6 +52,7 @@ const options = {
 export function startupApp() {
   defineConfigSchema('liberia-obs-widget', configSchema);
   defineConfigSchema('liberia-immunization-history', configSchema);
+  defineConfigSchema('liberia-rbs-history', configSchema);
   defineConfigSchema(moduleName, {
     ...currentPregnancyAncConfigSchema,
     routineImmunizations: routineConfigSchema,
@@ -92,6 +93,15 @@ export const liberiaObsWidget = getAsyncLifecycle(
   {
     featureName: 'liberia-obs-widget',
     moduleName: 'liberia-obs-widget',
+  },
+);
+
+/** Read-only history for random blood sugar saved on Triage and OPD. No data-entry workspace. */
+export const liberiaRbsHistory = getAsyncLifecycle(
+  () => import('./liberia-obs-widget/liberia-obs-widget.component'),
+  {
+    featureName: 'liberia-rbs-history',
+    moduleName: 'liberia-rbs-history',
   },
 );
 

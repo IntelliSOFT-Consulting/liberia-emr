@@ -74,6 +74,16 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		catch (Exception e) {
 			log.error("Failed to subscribe to Obs CREATED event", e);
 		}
+		try {
+			org.openmrs.event.Event.subscribe(
+			    org.openmrs.Patient.class,
+			    org.openmrs.event.Event.Action.VOIDED.name(),
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.PatientVoidedEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to subscribe to Patient VOIDED event", e);
+		}
 		scheduleIdentityTask();
 		scheduleMflTask();
 		LabOnFhirTasks.apply();
@@ -123,6 +133,16 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		catch (Exception e) {
 			log.error("Failed to unsubscribe from Obs CREATED event", e);
+		}
+		try {
+			org.openmrs.event.Event.unsubscribe(
+			    org.openmrs.Patient.class,
+			    org.openmrs.event.Event.Action.VOIDED,
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.PatientVoidedEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to unsubscribe from Patient VOIDED event", e);
 		}
 		if (identitySchedule != null) {
 			Context.getAdministrationService().removeGlobalPropertyListener(identitySchedule);

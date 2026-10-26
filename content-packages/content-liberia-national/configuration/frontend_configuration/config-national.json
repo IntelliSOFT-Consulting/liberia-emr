@@ -429,6 +429,7 @@
           "patient-flags-list",
           "liberia-obs-widget",
           "vitals-overview-widget",
+          "liberia-rbs-history",
           "biometrics-overview-widget",
           "conditions-overview-widget",
           "active-medications-widget",

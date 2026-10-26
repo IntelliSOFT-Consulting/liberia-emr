@@ -59,6 +59,9 @@
 		<require_module version="2.1.0">
 			org.bahmni.module.appointments
 		</require_module>
+		<require_module version="3.0.0">
+			org.openmrs.module.queue
+		</require_module>
 	</require_modules>
 	
 	<!--
