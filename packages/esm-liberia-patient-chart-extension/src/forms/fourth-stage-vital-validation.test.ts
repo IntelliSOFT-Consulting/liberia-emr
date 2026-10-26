@@ -27,7 +27,6 @@ type Question = {
     min?: number;
     max?: number;
     disallowDecimals?: boolean;
-    datePickerFormat?: string;
   };
   validators?: Array<{ type: string; failsWhenExpression?: string; message?: string }>;
 };

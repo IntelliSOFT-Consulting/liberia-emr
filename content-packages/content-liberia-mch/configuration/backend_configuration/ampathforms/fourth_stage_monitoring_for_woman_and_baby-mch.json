@@ -135,9 +135,9 @@
               "id": "observation_time",
               "questionOptions": {
                 "concept": "${var.concept.mch.observation-time.uuid}",
-                "rendering": "date",
-                "datePickerFormat": "timer"
+                "rendering": "date"
               },
+              "datePickerFormat": "timer",
               "required": true
             }
           ]
