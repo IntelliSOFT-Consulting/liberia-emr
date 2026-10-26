@@ -40,11 +40,14 @@ class FourthStageFormPage {
     }
 
     setTime(value: string) {
-        cy.get('#observation_time', { timeout: this.timeout })
+        cy.get('input#observation_time', { timeout: this.timeout })
             .scrollIntoView()
-            .type(`{selectall}${value}`)
+            .should('have.attr', 'type', 'time')
+            .clear()
+            .type(value)
             .should('have.value', value)
             .blur();
+        cy.get('input#observation_time').should('have.value', value);
     }
 
     private choose(fieldId: string, option: string) {

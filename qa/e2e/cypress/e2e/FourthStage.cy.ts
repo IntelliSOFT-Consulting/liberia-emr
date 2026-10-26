@@ -125,7 +125,7 @@ describe('Fourth Stage vital-sign validation (one shared patient)', { retries: 1
             expect(Number(fourthStageForm.observationValue(observations, 'bp_dia'))).to.equal(144);
             expect(Number(fourthStageForm.observationValue(observations, 'pulse'))).to.equal(76);
             expect(fourthStageForm.observationValue(observations, 'observation_time'), 'saved observation time')
-                .to.match(/^\d{2}:\d{2}/);
+                .to.equal('10:15');
         });
     });
 });
