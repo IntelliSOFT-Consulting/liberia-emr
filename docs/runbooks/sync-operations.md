@@ -667,6 +667,13 @@ central dev, readable by root only, so a later run reuses it.
 - **Dev sync check** (`.github/workflows/dev-sync-check.yml`) is read-only: what runs on both
   servers, which sync settings are present, and whether the facility reaches central's broker.
 
+The workflow serves one facility server (`DEV_HOST`). Do not run it with a second facility's
+code: it issues broker and receiver material for that facility alone, replacing central's
+enrolment and the receiver's PGP key, so every facility already enrolled stops syncing. Enrol
+a second dev facility by hand with section 1, issuing its certificate from the dev CA in
+`/etc/liberiaemr/sync-ca` on central and re-rendering the broker from the certificates in
+`/etc/liberiaemr/broker-certs/public/certs/` with every facility listed.
+
 A facility that cannot reach central on 61617 is the hosting provider's firewall in front of
 central, not the servers (neither runs a host firewall): allow TCP 61617 from the facility
 server's address there. The enable run does not fail on it; the sender captures and queues
