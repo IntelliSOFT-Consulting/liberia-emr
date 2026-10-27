@@ -57,6 +57,7 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 	@Override
 	public void contextRefreshed() {
 		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.install();
+		org.openmrs.module.liberiaemr.flags.PatientFlagsCommitOrder.apply();
 	}
 
 	/**
