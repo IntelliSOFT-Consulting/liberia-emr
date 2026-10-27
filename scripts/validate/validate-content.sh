@@ -1160,6 +1160,218 @@ for f in "$ROOT"/distribution/sync/*.template "$ROOT"/distribution/sync/*.proper
 done
 ok "no liberiaemr_remote_history table in eip.watchedTables"
 
+section "pulse absolute ceiling (LE-615)"
+# Fourth Stage accepts pulse 250. OpenMRS 2.8.8 ObsValidator.validateAbsoluteRanges rejects a
+# numeric obs against the matching ConceptReferenceRange absolute high (error.value.outOfRange.high)
+# and does not consult ConceptNumeric.hiAbsolute once any range matches. Initializer 2.12.0 loads
+# conceptreferencerange CSVs with OrderedCsvFile: a missing _order is Integer.MAX_VALUE, and equal
+# orders are sorted by absolute path. In the flattened image that puts
+# vitalsreferenceranges-national.csv (absolute high 250) BEFORE the vendored
+# vitalsreferenceranges.csv (absolute high 230). Both rows share one UUID, so the demo file
+# overwrites the adult ceiling to 230 and a pulse of 250 is rejected.
+#
+# content-demo is lifted verbatim (lift-demo-content.sh --check). The national file below is
+# unordered, like the demo file, and its name sorts after vitalsreferenceranges.csv, so it
+# re-saves only the adult row at absolute high 250. Normal and critical bounds are copied, not
+# widened. Pediatric rows stay on the demo file and keep absolute high 230.
+#
+# The Pulse concept is a separate last-writer. findings-core_demo.csv (_order:1000, absolute
+# high 230) loses to vitals-national.csv (no _order, absolute high 250). Nothing that loads
+# later may put 230 back.
+python3 - "$PKG_DIR" <<'PY' || err "pulse absolute ceiling drifted (see above)"
+import csv, glob, os, re, sys
+
+pkg_dir = sys.argv[1]
+MAX_ORDER = 2147483647  # BaseLineProcessor.getOrder when _order is absent
+PULSE_BOUNDS = {
+    "absolute low": "0", "critical low": "49", "normal low": "55",
+    "normal high": "100", "critical high": "130", "absolute high": "250",
+}
+ADULT_BOUNDS = {
+    "absolute low": "0", "critical low": "45", "normal low": "60",
+    "normal high": "100", "critical high": "110", "absolute high": "250",
+}
+ADULT_CRITERIA = "$patient.getAge() >= 18"
+OVERRIDE = "z-pulse-adult-absolute-high.csv"
+DEMO_RANGES = "vitalsreferenceranges.csv"
+NATIONAL_RANGES = "vitalsreferenceranges-national.csv"
+
+base_layers = [
+    "content-common", "content-liberia-national", "content-liberia-mch",
+    "content-liberia-lab", "content-liberia-pharmacy", "content-liberia-opd-ipd",
+]
+# distribution/backend/Dockerfile unpacks these in order, then one site, then demo.
+# Same basename: the later layer replaces the earlier. Different names all survive,
+# and Initializer — not this copy order — sorts them.
+problems = []
+
+def load_vars(pkg, into):
+    vf = os.path.join(pkg_dir, pkg, "configuration", "variables.properties")
+    if os.path.exists(vf):
+        for line in open(vf, encoding="utf-8"):
+            s = line.strip()
+            if s and not s.startswith("#") and "=" in s:
+                k, _, v = s.partition("=")
+                into[k.strip()] = v.strip()
+
+shared = {}
+for layer in base_layers:
+    load_vars(layer, shared)
+pulse = shared.get("var.concept.ciel.pulse.uuid", "")
+adult = shared.get("var.conceptreferencerange.vitals.pulse-adult.uuid", "")
+if pulse != "5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":
+    problems.append(f"var.concept.ciel.pulse.uuid is {pulse!r}")
+if not adult:
+    problems.append("var.conceptreferencerange.vitals.pulse-adult.uuid is unset")
+
+def resolve(text, variables):
+    out = text
+    for _ in range(5):
+        nxt = re.sub(r"\$\{([^}]+)\}", lambda m: variables.get(m.group(1), m.group(0)), out)
+        if nxt == out:
+            return out
+        out = nxt
+    return out
+
+def pkg_vars(pkg):
+    own = dict(shared)
+    load_vars(pkg, own)
+    return own
+
+def order_of(header):
+    for cell in header:
+        if cell.startswith("_order:"):
+            return int(cell.split(":", 1)[1])
+    return MAX_ORDER
+
+def read_csv(path, variables):
+    with open(path, newline="", encoding="utf-8") as fh:
+        rows = list(csv.reader(fh))
+    if not rows:
+        return None, []
+    header = rows[0]
+    index = {h.strip().lower(): i for i, h in enumerate(header) if h and not h.startswith("_")}
+    parsed = []
+    for row in rows[1:]:
+        if not row or not any(cell.strip() for cell in row):
+            continue
+        parsed.append({key: resolve(row[i].strip(), variables) if i < len(row) else ""
+                       for key, i in index.items()})
+    return order_of(header), parsed
+
+def assemble(layers, domain):
+    chosen = {}
+    for pkg in layers:
+        folder = os.path.join(pkg_dir, pkg, "configuration", "backend_configuration", domain)
+        if not os.path.isdir(folder):
+            continue
+        variables = pkg_vars(pkg)
+        for path in sorted(glob.glob(os.path.join(folder, "*.csv"))):
+            name = os.path.basename(path)
+            order, rows = read_csv(path, variables)
+            if order is None:
+                continue
+            chosen[name] = (order, name, pkg, rows)
+    return sorted(chosen.values(), key=lambda item: (item[0], item[1]))
+
+def last_pulse_concept(files):
+    winner = None
+    for _order, name, pkg, rows in files:
+        for row in rows:
+            if row.get("uuid") == pulse and "absolute high" in row:
+                winner = (name, pkg, row)
+    return winner
+
+def pulse_ranges(files):
+    found = {}
+    for _order, name, pkg, rows in files:
+        for row in rows:
+            if row.get("concept numeric uuid") == pulse and row.get("uuid"):
+                found[row["uuid"]] = (name, pkg, row)
+    return found
+
+sites = sorted(os.path.basename(p) for p in glob.glob(f"{pkg_dir}/content-site-*"))
+compositions = {site: base_layers + [site] for site in sites}
+compositions.update({f"{site} + demo": base_layers + [site, "content-demo"] for site in sites})
+if os.path.isdir(f"{pkg_dir}/content-central"):
+    compositions["content-central"] = base_layers + ["content-central"]
+
+# The override must sort after the vendored demo file under OrderedCsvFile, or the
+# demo absolute high of 230 is what gets saved.
+if not OVERRIDE > DEMO_RANGES:
+    problems.append(f"{OVERRIDE} sorts before {DEMO_RANGES}; the demo adult ceiling of 230 would win")
+
+override_path = os.path.join(
+    pkg_dir, "content-liberia-national", "configuration", "backend_configuration",
+    "conceptreferencerange", OVERRIDE)
+_order, override_rows = read_csv(override_path, pkg_vars("content-liberia-national"))
+if _order != MAX_ORDER:
+    problems.append(f"{OVERRIDE} must stay unordered so it loads with the demo range file")
+if len(override_rows) != 1 or override_rows[0].get("uuid") != adult:
+    problems.append(f"{OVERRIDE} must contain only the adult pulse range")
+else:
+    row = override_rows[0]
+    if row.get("label") != "Pulse Adult" or row.get("criteria") != ADULT_CRITERIA:
+        problems.append(f"{OVERRIDE} label/criteria drifted: {row.get('label')!r} {row.get('criteria')!r}")
+    for key, expected in ADULT_BOUNDS.items():
+        if row.get(key) != expected:
+            problems.append(f"{OVERRIDE} {key} is {row.get(key)!r}, expected {expected}")
+
+national_ranges = os.path.join(
+    pkg_dir, "content-liberia-national", "configuration", "backend_configuration",
+    "conceptreferencerange", NATIONAL_RANGES)
+_order, national_rows = read_csv(national_ranges, pkg_vars("content-liberia-national"))
+national_adult = next((row for row in national_rows if row.get("uuid") == adult), None)
+if national_adult is None:
+    problems.append(f"{NATIONAL_RANGES} has no adult pulse row")
+else:
+    for key, expected in ADULT_BOUNDS.items():
+        if national_adult.get(key) != expected:
+            problems.append(f"{NATIONAL_RANGES} adult {key} is {national_adult.get(key)!r}, expected {expected}")
+    if national_adult.get("criteria") != ADULT_CRITERIA:
+        problems.append(f"{NATIONAL_RANGES} adult criteria drifted")
+
+for label, layers in sorted(compositions.items()):
+    concept = last_pulse_concept(assemble(layers, "concepts"))
+    if concept is None:
+        problems.append(f"{label}: Pulse concept never loaded")
+    else:
+        name, pkg, row = concept
+        for key, expected in PULSE_BOUNDS.items():
+            if row.get(key) != expected:
+                problems.append(
+                    f"{label}: loaded Pulse concept {key} is {row.get(key)!r} from {pkg}/{name}, expected {expected}")
+    ranges = pulse_ranges(assemble(layers, "conceptreferencerange"))
+    loaded_adult = ranges.get(adult)
+    if loaded_adult is None:
+        problems.append(f"{label}: adult pulse reference range never loaded")
+    else:
+        name, pkg, row = loaded_adult
+        if name != OVERRIDE:
+            problems.append(f"{label}: adult pulse range last writer is {pkg}/{name}, not {OVERRIDE}")
+        for key, expected in ADULT_BOUNDS.items():
+            if row.get(key) != expected:
+                problems.append(f"{label}: loaded adult {key} is {row.get(key)!r}, expected {expected}")
+        if row.get("criteria") != ADULT_CRITERIA or row.get("label") != "Pulse Adult":
+            problems.append(f"{label}: loaded adult label/criteria drifted")
+    demo = label.endswith("+ demo")
+    for uuid, (name, pkg, row) in sorted(ranges.items()):
+        if uuid == adult:
+            continue
+        if demo:
+            if name != DEMO_RANGES or row.get("absolute high") != "230":
+                problems.append(
+                    f"{label}: pediatric/non-adult pulse range {row.get('label')!r} last writer is "
+                    f"{pkg}/{name} absolute high {row.get('absolute high')!r}; expected {DEMO_RANGES} at 230")
+        elif name == OVERRIDE:
+            problems.append(f"{label}: {OVERRIDE} overwrote non-adult range {row.get('label')!r}")
+
+for p in problems:
+    print(f"       {p}", file=sys.stderr)
+sys.exit(1 if problems else 0)
+PY
+ok "pulse 250 is the loaded adult ceiling; pediatric absolute high stays 230 on the demo stack"
+
 echo
 if [[ $fail -ne 0 ]]; then
   echo "content validation FAILED" >&2
