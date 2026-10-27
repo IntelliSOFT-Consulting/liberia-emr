@@ -178,15 +178,18 @@ function savedEncounter(groups: Group[], formUuid = properties.get('var.form.imm
 }
 
 describe('immunization repeating save payload', () => {
-  it('keeps form v1.11 and the pinned form engine', () => {
+  it('keeps form v1.12 and the pinned form engine', () => {
     assert.equal(probe.version, '4.2.2-pre.2449');
-    assert.equal(probe.formVersion, '1.11');
-    const current = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11');
+    assert.equal(probe.formVersion, '1.12');
+    const current = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.12');
+    const frozenV111 = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11');
     const frozenV19 = '03bb283b-fa68-3b2e-a97c-b8adf72d4a76';
     assert.equal(nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.9'), frozenV19);
     assert.equal(properties.get('var.form.immunization.uuid'), current);
+    assert.equal(properties.get('var.form.immunization.v1-11.uuid'), frozenV111);
     assert.equal(properties.get('var.form.immunization.v1-9.uuid'), frozenV19);
     assert.equal(configured.nationalFormUuids.includes(frozenV19), true);
+    assert.equal(configured.nationalFormUuids.includes(frozenV111), true);
     assert.equal(configured.nationalFormUuids.includes(current), true);
     for (const id of transientIds) {
       assert.equal(probe.comparison[id].type, 'control');
