@@ -74,7 +74,7 @@
     "sass": "*",
     "single-spa": "*",
     "single-spa-react": "6.x",
-    "swr": "2.x",
+    "swr": "2.2.5",
     "typescript": "^5.6.0",
     "uuid": "9.x",
     "zustand": "4.x"

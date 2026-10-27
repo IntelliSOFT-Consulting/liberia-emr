@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { mutate } from 'swr';
+import { useSWRConfig } from 'swr';
 import { restBaseUrl } from '@openmrs/esm-framework';
 import { encounterSignature, isPatientFlagsKey } from './patient-flags-key';
 
@@ -11,6 +11,8 @@ const REGENERATION_SETTLE_MS = 2000;
  * stays until reload. Refetches the patient's flags whenever the encounter list gains or loses one.
  */
 export function useRefreshPatientFlags(patientUuid: string, encounters: ReadonlyArray<{ uuid: string }>, isLoading: boolean) {
+  // Bound to the framework's shared cache; the global `mutate` targets SWR's default cache, which no app reads.
+  const { mutate } = useSWRConfig();
   const signature = encounterSignature(encounters);
   const previous = useRef<string | undefined>(undefined);
 
@@ -27,5 +29,5 @@ export function useRefreshPatientFlags(patientUuid: string, encounters: Readonly
     refresh();
     const timer = setTimeout(refresh, REGENERATION_SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [patientUuid, signature, isLoading]);
+  }, [patientUuid, signature, isLoading, mutate]);
 }
