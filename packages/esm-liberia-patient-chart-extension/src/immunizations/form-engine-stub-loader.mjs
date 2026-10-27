@@ -23,6 +23,7 @@ export async function load(url, context, nextLoad) {
         export const restBaseUrl = '/ws/rest/v1';
         export function openmrsFetch() { return Promise.resolve({}); }
         export function useConfig() { return {}; }
+        export function getConfig() { return Promise.resolve({}); }
       `,
     };
   }

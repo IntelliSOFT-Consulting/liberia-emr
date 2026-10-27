@@ -69,6 +69,9 @@ const laterSibling = {
 };
 const leaked = cloneRepeatField(laterSibling, null, 1).questions.find((question) => question.id === 'route_1');
 
+// constructObs here skips isTransient, so it never shows the live encounter body.
+// prepareEncounter reads meta.submission, and processObsGroup does not skip
+// transient members. repeating-vaccine-submission.probe.mjs covers that path.
 function submit(field, values) {
   const obsGroup = constructObs(field, null);
   for (const nested of field.questions ?? []) {

@@ -56,17 +56,40 @@ Vaccine Name and runs `pediatricPfizerAdministrationGate` before save. A
 failing validator blocks the save. The gate reads the same consolidated
 history as sequencing: completed FHIR Immunizations and national Immunization
 encounters. AEFI vaccine answers are not administrations. The same canonical
-dose on the same date counts once. Two dates for one dose, or history that
-does not load, stays unresolved and the save is blocked.
+dose on the same date counts once. Two dates for one dose stay unresolved and
+the save is blocked.
+
+When history cannot be loaded, dose 1 and dose 2 are not treated the same way.
+Dose 1 may be saved for an age-eligible child, from the 5th birthday through
+the day before the 12th birthday, if the history lookup cannot be completed.
+The save is not blocked for that reason alone. The Pediatric Pfizer status
+field shows a non-blocking warning: immunization history could not be checked,
+and prior vaccination should be verified before administration. That warning
+does not mean the chart was read and found to have no earlier dose. Dose 2
+stays fail-closed. Its prerequisite and the 28-day interval cannot be verified
+without history, so an unresolved history state still blocks dose 2. Age,
+configuration, and date failures still block both doses. A loaded history that
+shows a duplicate or a sequence violation still blocks. A record, or a later
+history page, for a different patient stays unresolved for both doses.
+`history-unavailable-dose1` is only the dose 1 history-unavailable warning. It
+is not a global "unresolved means allowed" state, and other vaccines do not
+use it.
+
+Those blocking validators sit on the Route question. The form engine paints a
+validator failure on the question that declares it, which is why a blocking
+Pediatric Pfizer message appears on Route rather than on Vaccine Name. The
+gate itself is a hidden transient field. The history-unavailable dose 1 state
+is omitted from the Route failures, so that state does not turn Route red.
+The status field is the warning. It is transient and is not stored.
 
 The form expression passes `patient.id` for the patient whose chart is open.
-History is requested for that patient. A record, or a later history page, for
-a different patient is unresolved. The encounter processor saves the form for
-that same chart patient. Re-saving the encounter that is open does not count
-as a second dose; any other record of that dose still does.
+History is requested for that patient. The encounter processor saves the form
+for that same chart patient. Re-saving the encounter that is open does not
+count as a second dose; any other record of that dose still does.
 
-The visible Pediatric Pfizer status field shows Due or Overdue. It is not
-stored. The dictionary concepts are `${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}`
+The visible Pediatric Pfizer status field shows Due, Overdue, or the
+history-unavailable warning. It is not stored. The dictionary concepts are
+`${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}`
 and `${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}`.
 
 Immunization v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) stays in history as
@@ -74,6 +97,11 @@ Immunization v1.6 (`337600b2-9ea3-310a-bbc5-cb2dfa221318`) stays in history as
 the Initializer derivation of the name Immunization at version 1.7, frozen as
 `var.form.immunization.v1-7.uuid`. v1.8 is frozen as
 `var.form.immunization.v1-8.uuid` (`85e6b4f8-620c-3377-82a4-9db35eac1769`).
-The current form is v1.9 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`), stored as
-`var.form.immunization.uuid`. v1.9 repeats one vaccine administration group per
-vaccine inside the same encounter.
+v1.9 is frozen as `var.form.immunization.v1-9.uuid`
+(`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`).
+v1.10 is frozen as `var.form.immunization.v1-10.uuid`
+(`94f8fe92-b48c-3d44-a133-c572fa0b17bd`).
+The current form is v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`), stored as
+`var.form.immunization.uuid`. v1.11 repeats one vaccine administration group per
+vaccine inside the same encounter. The stored questions are the same as v1.10.
+v1.11 changes the dose 1 history-unavailable warning only.

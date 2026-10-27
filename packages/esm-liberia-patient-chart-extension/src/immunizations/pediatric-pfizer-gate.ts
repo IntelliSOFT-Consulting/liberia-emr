@@ -10,8 +10,11 @@ const MODULE_NAME = '@liberiaemr/esm-liberia-patient-chart-extension';
 /**
  * Form-engine expression helper. Always returns a Promise so a calculateExpression
  * can chain `.then(code => code)`. Vaccines other than Pediatric Pfizer resolve
- * to `allowed` without reading the chart. Pediatric Pfizer failures resolve to
- * `unresolved` and must not be saved.
+ * to `allowed` without reading the chart. Age, configuration, date, and dose 2
+ * history failures resolve to `unresolved` and must not be saved. An age-eligible
+ * dose 1 whose history cannot be loaded resolves to `history-unavailable-dose1`.
+ * That code is a warning: it does not by itself block the save, and it does not
+ * mean the chart was checked and found empty.
  *
  * The patient argument is the form's active patient. History is loaded for that
  * patient only, and a page or record for anyone else stays unresolved.

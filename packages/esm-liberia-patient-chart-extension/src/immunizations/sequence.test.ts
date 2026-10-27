@@ -186,6 +186,8 @@ describe('runtime identifiers', () => {
       'var.form.immunization.v1-6.uuid',
       'var.form.immunization.v1-7.uuid',
       'var.form.immunization.v1-8.uuid',
+      'var.form.immunization.v1-9.uuid',
+      'var.form.immunization.v1-10.uuid',
       'var.form.immunization.uuid',
     ];
     assert.deepEqual(raw.nationalFormUuids, formVariables.map((name) => `\${${name}}`));
