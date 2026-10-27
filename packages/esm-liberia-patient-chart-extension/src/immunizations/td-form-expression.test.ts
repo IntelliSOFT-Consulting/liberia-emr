@@ -72,9 +72,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.10');
+    assert.equal(form.version, '1.11');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.10';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -82,6 +82,7 @@ describe('Immunization form Td entry point', () => {
     const derived = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     assert.match(variables, new RegExp(`^var\\.form\\.immunization\\.uuid=${derived}$`, 'm'));
     assert.match(variables, /^var\.form\.immunization\.v1-9\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-10\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
   });
 
   it('keeps childhood vaccines available and gates only Td', () => {

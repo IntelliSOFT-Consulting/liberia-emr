@@ -321,10 +321,74 @@ describe('Pediatric Pfizer save decision', () => {
     });
     assert.equal(await skipped.result, 'unresolved');
     assert.deepEqual(skipped.calls, []);
+  });
+
+  it('warns and allows only age-eligible dose 1 when history cannot be checked', async () => {
+    const historyDown = async () => { throw new Error('history down'); };
+    const dayBeforeFifth = '2018-12-31';
+    const fifthBirthday = '2019-01-01';
+    const ageSix = '2020-06-01';
+    const dayBeforeTwelfth = '2025-12-31';
+    const twelfthBirthday = '2026-01-01';
+    assert.equal(await code({ evaluationDate: dayBeforeFifth, vaccineConceptUuid: dose1Concept }), 'not-yet-due');
     assert.equal(await code({
-      evaluationDate: dose1Date, vaccineConceptUuid: dose1Concept,
-      fetchPage: async () => { throw new Error('history down'); },
+      evaluationDate: dayBeforeFifth, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'not-yet-due');
+    assert.equal(await code({ evaluationDate: fifthBirthday, vaccineConceptUuid: dose1Concept }), 'due');
+    assert.equal(await code({
+      evaluationDate: fifthBirthday, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'history-unavailable-dose1');
+    assert.equal(await code({
+      evaluationDate: ageSix, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'history-unavailable-dose1');
+    assert.equal(await code({
+      evaluationDate: dayBeforeTwelfth, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'history-unavailable-dose1');
+    assert.notEqual(await code({
+      evaluationDate: ageSix, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'due');
+    assert.notEqual(await code({
+      evaluationDate: ageSix, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'allowed');
+    assert.equal(pediatricPfizerStatusLabel('history-unavailable-dose1'),
+      'Immunization history could not be checked. Verify prior vaccination history before administration.');
+    assert.notEqual(pediatricPfizerStatusLabel('history-unavailable-dose1'), 'Due');
+    assert.equal(await code({
+      evaluationDate: ageSix, vaccineConceptUuid: dose1Concept, fhir: [fhir(dose1Concept, '2020-01-01', 'prior-dose-1')],
+    }), 'already-given');
+    assert.equal(await code({ evaluationDate: twelfthBirthday, vaccineConceptUuid: dose1Concept }), 'not-eligible');
+    assert.equal(await code({
+      evaluationDate: twelfthBirthday, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'not-eligible');
+    assert.equal(await code({
+      evaluationDate: day28, vaccineConceptUuid: dose2Concept, fetchPage: historyDown,
     }), 'unresolved');
-    assert.equal(await code({ evaluationDate: '2019-01-01', vaccineConceptUuid: national.vaccineConceptUuids.BCG }), 'allowed');
+    assert.notEqual(await code({
+      evaluationDate: day28, vaccineConceptUuid: dose2Concept, fetchPage: historyDown,
+    }), 'history-unavailable-dose1');
+    assert.equal(await code({ evaluationDate: day28, vaccineConceptUuid: dose2Concept }), 'waiting-for-prerequisite');
+    assert.equal(await code({
+      evaluationDate: day27, vaccineConceptUuid: dose2Concept, fhir: [fhir(dose1Concept, dose1Date, 'pfizer1')],
+    }), 'waiting-for-interval');
+    assert.equal(await code({
+      evaluationDate: day28, vaccineConceptUuid: dose2Concept, fhir: [fhir(dose1Concept, dose1Date, 'pfizer1')],
+    }), 'due');
+    assert.equal(await code({
+      evaluationDate: day28, vaccineConceptUuid: dose2Concept,
+      fhir: [fhir(dose1Concept, dose1Date, 'pfizer1'), fhir(dose2Concept, day28, 'pfizer2')],
+    }), 'already-given');
+    const other = gate({ evaluationDate: fifthBirthday, vaccineConceptUuid: national.vaccineConceptUuids.BCG });
+    assert.equal(await other.result, 'allowed');
+    assert.deepEqual(other.calls, []);
+    assert.equal(await code({
+      birthDate: 'not-a-date', evaluationDate: fifthBirthday, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'unresolved');
+    const misconfigured = {
+      ...national,
+      vaccineConceptUuids: { ...national.vaccineConceptUuids, PediatricPfizer1: 'not-the-configured-dose' },
+    };
+    assert.equal(await code({
+      evaluationDate: fifthBirthday, vaccineConceptUuid: dose1Concept, config: misconfigured, fetchPage: historyDown,
+    }), 'unresolved');
   });
 });
