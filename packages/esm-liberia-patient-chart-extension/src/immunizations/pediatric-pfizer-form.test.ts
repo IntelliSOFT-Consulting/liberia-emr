@@ -194,6 +194,14 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     assert.equal(await evaluate(dose2Uuid), 'waiting-for-prerequisite');
     assert.equal(calls[1][3], dose2Uuid);
     assert.equal(calls[1][4], 'encounter-1');
+    assert.equal(await evaluateAsync(expression, {
+      patient: { id: 'patient-1', birthDate: birthDate() },
+      tdEncounterDate: new Date('2025-12-20T12:00:00.000Z'),
+      vaccine_name: dose1Uuid,
+      vitaminAEditingEncounterUuid: () => 'encounter-1',
+      pediatricPfizerAdministrationGate,
+    }), 'due');
+    assert.ok(calls[2][2] instanceof Date);
   });
 
   it('blocks invalid dose 1 and dose 2 saves and allows due or overdue dose 2', () => {

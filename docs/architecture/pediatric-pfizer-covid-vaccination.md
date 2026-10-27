@@ -67,8 +67,10 @@ field shows a non-blocking warning: immunization history could not be checked,
 and prior vaccination should be verified before administration. That warning
 does not mean the chart was read and found to have no earlier dose. Dose 2
 stays fail-closed. Its prerequisite and the 28-day interval cannot be verified
-without history, so an unresolved history state still blocks dose 2. Age,
-configuration, and date failures still block both doses. A loaded history that
+without history, so an unresolved history state still blocks dose 2. The hidden
+encounter date arrives as the form engine's Date instant and is read as that
+instant's Monrovia calendar day. Age, configuration, and unreadable date
+failures still block both doses. A loaded history that
 shows a duplicate or a sequence violation still blocks. A record, or a later
 history page, for a different patient stays unresolved for both doses.
 `history-unavailable-dose1` is only the dose 1 history-unavailable warning. It
