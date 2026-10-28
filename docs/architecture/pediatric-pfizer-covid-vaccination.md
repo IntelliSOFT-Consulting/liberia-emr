@@ -67,8 +67,10 @@ field shows a non-blocking warning: immunization history could not be checked,
 and prior vaccination should be verified before administration. That warning
 does not mean the chart was read and found to have no earlier dose. Dose 2
 stays fail-closed. Its prerequisite and the 28-day interval cannot be verified
-without history, so an unresolved history state still blocks dose 2. Age,
-configuration, and date failures still block both doses. A loaded history that
+without history, so an unresolved history state still blocks dose 2. The hidden
+encounter date arrives as the form engine's Date instant and is read as that
+instant's Monrovia calendar day. Age, configuration, and unreadable date
+failures still block both doses. A loaded history that
 shows a duplicate or a sequence violation still blocks. A record, or a later
 history page, for a different patient stays unresolved for both doses.
 `history-unavailable-dose1` is only the dose 1 history-unavailable warning. It
@@ -101,7 +103,9 @@ v1.9 is frozen as `var.form.immunization.v1-9.uuid`
 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`).
 v1.10 is frozen as `var.form.immunization.v1-10.uuid`
 (`94f8fe92-b48c-3d44-a133-c572fa0b17bd`).
-The current form is v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`), stored as
+v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`) is frozen as
+`var.form.immunization.v1-11.uuid`. The current form is v1.12
+(`52b3da7c-1749-3c54-9e65-2a508dad2748`), stored as
 `var.form.immunization.uuid`. v1.11 repeats one vaccine administration group per
 vaccine inside the same encounter. The stored questions are the same as v1.10.
 v1.11 changes the dose 1 history-unavailable warning only.

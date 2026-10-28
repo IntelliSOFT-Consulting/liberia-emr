@@ -292,4 +292,30 @@ public class ModuleEntitlementsTest {
 		}
 		assertEquals(expected, actual);
 	}
+
+	/**
+	 * The pinned form engine lists encounter roles while saving an encounter, and OpenMRS
+	 * allows that read only with Get Encounter Roles (LE-617). Nurse, Clinician, and Midwife
+	 * are the roles that both open forms and add encounters. A role that cannot add an
+	 * encounter does not receive the privilege, and the three do not inherit a broader role.
+	 */
+	@Test public void encounterFormSubmittersCanReadEncounterRoles() throws Exception {
+		Map<String, String[]> rows = roles();
+		for (String role : new String[] { "Nurse", "Clinician", "Midwife" }) {
+			assertEquals(role + " inheritance", "", rows.get(role)[5]);
+			Set<String> privileges = grants(role, rows, new HashSet<String>());
+			assertTrue(role, privileges.contains("Get Encounter Roles"));
+			assertFalse(role + " Get Providers", privileges.contains("Get Providers"));
+			assertFalse(role + " Manage Forms", privileges.contains("Manage Forms"));
+			assertFalse(role + " Manage FormEntry XSN", privileges.contains("Manage FormEntry XSN"));
+		}
+		// These roles are in this CSV and cannot add an encounter. RefApp roles that inherit
+		// System Developer are not in the file, so they are not walked here.
+		for (String role : new String[] { "Records Officer", "Remote History Service", "Pharmacist", "Registrar",
+		        "Physician Assistant", "Facility in-charge", "Finance", "Systems Administrator" }) {
+			Set<String> privileges = grants(role, rows, new HashSet<String>());
+			assertFalse(role + " Add Encounters", privileges.contains("Add Encounters"));
+			assertFalse(role + " must not gain Get Encounter Roles", privileges.contains("Get Encounter Roles"));
+		}
+	}
 }

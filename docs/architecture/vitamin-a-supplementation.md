@@ -100,8 +100,10 @@ LE-567 does not redefine that clinical interval.
 No lot, batch, provider, remarks, or dose number is collected. The dictionary does not
 require them for these elements. DE55 batch number belongs to AEFI, not to Vitamin A.
 
-The Immunization form is version 1.11. Initializer derives
-`6bf44913-ca7a-358c-a066-6de97661f13d`, which is `var.form.immunization.uuid`. The earlier
+The Immunization form is version 1.12. Initializer derives
+`52b3da7c-1749-3c54-9e65-2a508dad2748`, which is `var.form.immunization.uuid`.
+v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`) is frozen as
+`var.form.immunization.v1-11.uuid`. The earlier
 forms stay in the database. v1.10 (`94f8fe92-b48c-3d44-a133-c572fa0b17bd`) is frozen as
 `var.form.immunization.v1-10.uuid`. v1.9 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`) is frozen as
 `var.form.immunization.v1-9.uuid`. v1.8 (`85e6b4f8-620c-3377-82a4-9db35eac1769`) is frozen as
@@ -123,16 +125,17 @@ historical form, including its Vitamin A behavior, and is not reused as the curr
 | 1.9 | `03bb283b-fa68-3b2e-a97c-b8adf72d4a76` |
 | 1.10 | `94f8fe92-b48c-3d44-a133-c572fa0b17bd` |
 | 1.11 | `6bf44913-ca7a-358c-a066-6de97661f13d` |
+| 1.12 | `52b3da7c-1749-3c54-9e65-2a508dad2748` |
 
 `mamba_fact_nutrition_vitamin_a` counts a Blue observation on any of those versions. It
 matches the form name and version, and also the current form variable, because the
 Immunization form shares the Consultation encounter type. Reporting does not key the
 historical versions through `var.form.immunization.uuid`. Frozen
-`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.10.
-The current form is v1.11, supplied through `var.form.immunization.uuid`. v1.11 repeats a
+`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.11.
+The current form is v1.12, supplied through `var.form.immunization.uuid`. v1.11 repeats a
 vaccine-administration group. Vitamin A stays outside that group, on its own questions.
 v1.8 adds Immunization administration context beside DE50. It does not change the Blue or Red
-answers. Reporting still counts a Blue observation on v1.1 through v1.11, once per obs.
+answers. Reporting still counts a Blue observation on v1.1 through v1.12, once per obs.
 
 ## Route
 
