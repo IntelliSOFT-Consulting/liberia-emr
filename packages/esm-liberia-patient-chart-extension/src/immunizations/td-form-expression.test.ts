@@ -72,9 +72,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.11');
+    assert.equal(form.version, '1.12');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.12';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -83,17 +83,24 @@ describe('Immunization form Td entry point', () => {
     assert.match(variables, new RegExp(`^var\\.form\\.immunization\\.uuid=${derived}$`, 'm'));
     assert.match(variables, /^var\.form\.immunization\.v1-9\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-10\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-11\.uuid=6bf44913-ca7a-358c-a066-6de97661f13d$/m);
   });
 
   it('keeps childhood vaccines available and gates only Td', () => {
     assert.equal(vaccinationSection.hide, undefined);
     const answers = vaccine.questionOptions?.answers ?? [];
     assert.deepEqual(answers.map((answer) => answer.label), [
-      'BCG', 'OPV0', 'OPV1', 'Pediatric Pfizer COVID-19 dose 1', 'Pediatric Pfizer COVID-19 dose 2',
+      'BCG', 'OPV0', 'OPV1',
+      'Penta 1', 'Pneumo 1', 'Rota 1', 'OPV2', 'Penta 2', 'Pneumo 2', 'Rota 2', 'OPV3', 'Penta 3', 'Pneumo 3',
+      'IPV', 'MCV1', 'MCV2', 'TCV', 'Yellow Fever',
+      'Malaria Vaccine dose 1', 'Malaria Vaccine dose 2', 'Malaria Vaccine dose 3', 'Malaria Vaccine dose 4',
+      'Pediatric Pfizer COVID-19 dose 1', 'Pediatric Pfizer COVID-19 dose 2',
+      'HPV1', 'HPV2',
       'TD', 'TD2', 'TD3', 'TD4', 'TD5',
+      'Pfizer', 'J & J', 'COVID-19 Booster',
     ]);
-    assert.equal(answers[0].hide?.hideWhenExpression, 'age >= 1');
-    assert.equal(answers[1].hide?.hideWhenExpression, 'age > 18');
+    assert.match(answers[0].hide?.hideWhenExpression ?? '', /routineDoseOutsideWindow\(patient\.birthDate, tdEncounterDate, '\$\{var\.concept\.national\.bcg\.uuid\}'/);
+    assert.match(answers[1].hide?.hideWhenExpression ?? '', /routineDoseOutsideWindow\(patient\.birthDate, tdEncounterDate, '\$\{var\.concept\.national\.opv0-1-dose\.uuid\}'/);
     assert.equal(answers[2].hide?.hideWhenExpression, 'age > 18');
     for (const answer of answers.slice(3)) {
       assert.equal(answer.hide, undefined);
@@ -146,7 +153,10 @@ describe('Immunization form Td entry point', () => {
     const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
     assert.deepEqual(duplicates, []);
     assert.equal(ids.filter((id) => id === 'tdEncounterDate').length, 1);
-    assert.equal(ids.filter((id) => id === 'encounterDate').length, 1);
+    assert.equal(ids.filter((id) => id === 'encounterDate').length, 0);
+    assert.equal(question('tdEncounterDate').label, 'Date received');
+    assert.equal(question('tdEncounterDate').required, true);
+    assert.equal(question('tdEncounterDate').hide, undefined);
     assert.match(gate.questionOptions?.calculate?.calculateExpression ?? '', /tdAdministrationGate\(patient\.id, patient\.birthDate, tdEncounterDate,/);
   });
 

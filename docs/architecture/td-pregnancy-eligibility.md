@@ -123,7 +123,9 @@ Vitamin A behavior, so LE-565 does not reuse that version. Immunization v1.6, UU
 `var.form.immunization.v1-6.uuid`. v1.7 is frozen as `var.form.immunization.v1-7.uuid`.
 v1.8 is frozen as `var.form.immunization.v1-8.uuid`. v1.9 is frozen as
 `var.form.immunization.v1-9.uuid`. v1.10 is frozen as
-`var.form.immunization.v1-10.uuid`. The current form is v1.11.
+`var.form.immunization.v1-10.uuid`. v1.11 is frozen as
+`var.form.immunization.v1-11.uuid` (`6bf44913-ca7a-358c-a066-6de97661f13d`).
+The current form is v1.12 (`52b3da7c-1749-3c54-9e65-2a508dad2748`).
 v1.4 and v1.5 are not
 republished under a second body.
 
