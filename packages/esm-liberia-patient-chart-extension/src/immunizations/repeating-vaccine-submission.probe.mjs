@@ -139,6 +139,8 @@ async function gateValue(vaccine) {
     pfizer: doseId ? 'needs-history' : 'allowed',
     statusNow: pediatricPfizerStatusLabel(undefined),
     statusSettled: pediatricPfizerStatusLabel('allowed'),
+    hpv: 'allowed',
+    hpvStatus: '',
   };
 }
 
@@ -147,6 +149,8 @@ function settleRow(fields, suffix, vaccine, route, returnDate, gates) {
   commitCalculated(fields, id('td_gate'), gates.td);
   commitCalculated(fields, id('pediatric_pfizer_gate'), gates.pfizer);
   commitCalculated(fields, id('pediatric_pfizer_status'), gates.statusSettled);
+  commitCalculated(fields, id('hpv_gate'), gates.hpv);
+  commitCalculated(fields, id('hpv_status'), gates.hpvStatus);
   commitUserValue(fields, id('vaccine_name'), vaccine);
   if (route) commitUserValue(fields, id('route'), route);
   if (returnDate) commitUserValue(fields, id('return_date'), returnDate);
@@ -230,6 +234,8 @@ function buildMany(rows, { blankOptional = false } = {}) {
         [`td_gate_${suffix}`]: emptyGates.td,
         [`pediatric_pfizer_gate_${suffix}`]: emptyGates.pfizer,
         [`pediatric_pfizer_status_${suffix}`]: emptyGates.statusNow,
+        [`hpv_gate_${suffix}`]: emptyGates.hpv,
+        [`hpv_status_${suffix}`]: emptyGates.hpvStatus,
       });
     }
     const route = blankOptional && index > 0 ? '' : oral;
@@ -261,6 +267,8 @@ function buildChecking() {
     td_gate_1: emptyGates.td,
     pediatric_pfizer_gate_1: emptyGates.pfizer,
     pediatric_pfizer_status_1: emptyGates.statusNow,
+    hpv_gate_1: emptyGates.hpv,
+    hpv_status_1: emptyGates.hpvStatus,
   });
   commitUserValue(fields, 'vaccine_name_1', opv1);
   commitUserValue(fields, 'route_1', oral);
@@ -268,6 +276,8 @@ function buildChecking() {
   commitCalculated(fields, 'td_gate_1', opvGates.td);
   commitCalculated(fields, 'pediatric_pfizer_gate_1', opvGates.pfizer);
   commitCalculated(fields, 'pediatric_pfizer_status_1', emptyGates.statusNow);
+  commitCalculated(fields, 'hpv_gate_1', opvGates.hpv);
+  commitCalculated(fields, 'hpv_status_1', emptyGates.hpvStatus);
   return { fields, body: payload(fields) };
 }
 
@@ -288,8 +298,8 @@ function metaOf(fields, id) {
 }
 
 const comparisonIds = [
-  'vaccine_administration', 'vaccine_name', 'route', 'return_date', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status',
-  'vaccine_administration_1', 'vaccine_name_1', 'route_1', 'return_date_1', 'td_gate_1', 'pediatric_pfizer_gate_1', 'pediatric_pfizer_status_1',
+  'vaccine_administration', 'vaccine_name', 'route', 'return_date', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status', 'hpv_gate', 'hpv_status',
+  'vaccine_administration_1', 'vaccine_name_1', 'route_1', 'return_date_1', 'td_gate_1', 'pediatric_pfizer_gate_1', 'pediatric_pfizer_status_1', 'hpv_gate_1', 'hpv_status_1',
 ];
 
 process.stdout.write(`${JSON.stringify({
