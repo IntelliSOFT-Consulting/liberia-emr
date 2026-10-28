@@ -135,8 +135,9 @@
               "id": "observation_time",
               "questionOptions": {
                 "concept": "${var.concept.mch.observation-time.uuid}",
-                "rendering": "time"
+                "rendering": "date"
               },
+              "datePickerFormat": "timer",
               "required": true
             }
           ]
@@ -165,8 +166,8 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250)",
-                  "message": "Systolic Blood Pressure must be between 0 and 250 mmHg."
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250 || myValue % 1 !== 0)",
+                  "message": "Systolic Blood Pressure is outside the permitted range. Enter a whole number from 0 to 250 mmHg."
                 }
               ]
             },
@@ -185,8 +186,8 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150)",
-                  "message": "Diastolic Blood Pressure must be between 0 and 150 mmHg."
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 150 || myValue % 1 !== 0)",
+                  "message": "Diastolic Blood Pressure is outside the permitted range. Enter a whole number from 0 to 150 mmHg."
                 }
               ]
             }
@@ -203,7 +204,7 @@
               "questionOptions": {
                 "concept": "${var.concept.ciel.pulse.uuid}",
                 "rendering": "number",
-                "min": 20,
+                "min": 0,
                 "max": 250,
                 "step": 1,
                 "disallowDecimals": true
@@ -211,8 +212,8 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 20 || myValue > 250)",
-                  "message": "Pulse/Heart Rate must be between 20 and 250 beats/min."
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 0 || myValue > 250 || myValue % 1 !== 0)",
+                  "message": "Pulse/Heart Rate is outside the permitted range. Enter a whole number from 0 to 250 beats/min."
                 }
               ]
             },

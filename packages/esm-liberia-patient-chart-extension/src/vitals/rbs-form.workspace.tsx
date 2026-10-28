@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { Button, ButtonSet, FormLabel, NumberInput, RadioButton, RadioButtonGroup } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import {
+  Button,
+  ButtonSet,
+  FormLabel,
+  InlineNotification,
+  NumberInput,
+  RadioButton,
+  RadioButtonGroup,
+} from '@carbon/react';
 import {
   openmrsFetch,
   restBaseUrl,
@@ -10,7 +18,14 @@ import {
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import type { ConfigObject } from '../config-schema';
-import { buildRbsEncounter, rbsConceptPair, validateRbsValue, type RbsUnit } from './random-blood-sugar';
+import {
+  buildRbsEncounter,
+  clinicianEncounterRole,
+  rbsConceptPair,
+  rbsEncounterMetadataError,
+  validateRbsValue,
+  type RbsUnit,
+} from './random-blood-sugar';
 
 interface RbsGroupProps {
   patientUuid?: string;
@@ -32,19 +47,66 @@ const RbsFormWorkspace: React.FC<Workspace2DefinitionProps<object, object, RbsGr
   const [unit, setUnit] = useState<RbsUnit | ''>('');
   const [raw, setRaw] = useState('');
   const [saving, setSaving] = useState(false);
+  const [encounterRoleUuid, setEncounterRoleUuid] = useState<string | null | undefined>(undefined);
+  const providerUuid = session?.currentProvider?.uuid;
   const error = unit || raw ? validateRbsValue(unit, raw) : null;
-  const encounter = buildRbsEncounter({
-    patientUuid: groupProps?.patientUuid ?? '',
-    encounterTypeUuid: config.entryEncounterType,
-    locationUuid: session?.sessionLocation?.uuid,
-    visitUuid: groupProps?.visitContext?.uuid,
-    unit,
-    raw,
-    concepts,
-  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    openmrsFetch(`${restBaseUrl}/encounterrole?v=custom:(uuid,name)`, { signal: controller.signal })
+      .then((response) => {
+        setEncounterRoleUuid(clinicianEncounterRole(response?.data?.results));
+      })
+      .catch(() => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setEncounterRoleUuid(null);
+      });
+    return () => controller.abort();
+  }, []);
+
+  function encounterAt(encounterDatetime: Date) {
+    return buildRbsEncounter({
+      patientUuid: groupProps?.patientUuid ?? '',
+      encounterTypeUuid: config.entryEncounterType,
+      locationUuid: session?.sessionLocation?.uuid,
+      visitUuid: groupProps?.visitContext?.uuid,
+      providerUuid,
+      encounterRoleUuid,
+      encounterDatetime,
+      unit,
+      raw,
+      concepts,
+    });
+  }
+
+  const metadataError =
+    !error &&
+    raw.trim() !== '' &&
+    unit &&
+    (providerUuid ? encounterRoleUuid !== undefined : true) &&
+    !encounterAt(new Date())
+      ? rbsEncounterMetadataError({
+          patientUuid: groupProps?.patientUuid,
+          encounterTypeUuid: config.entryEncounterType,
+          locationUuid: session?.sessionLocation?.uuid,
+          providerUuid,
+          encounterRoleUuid,
+          encounterDatetime: new Date(),
+        })
+      : null;
 
   async function save() {
+    const encounter = encounterAt(new Date());
     if (!encounter || saving) {
+      if (!encounter && metadataError) {
+        showSnackbar({
+          kind: 'error',
+          title: 'Unable to save blood sugar',
+          subtitle: metadataError,
+        });
+      }
       return;
     }
     setSaving(true);
@@ -97,11 +159,20 @@ const RbsFormWorkspace: React.FC<Workspace2DefinitionProps<object, object, RbsGr
         ) : (
           <FormLabel>Choose a unit to enter initial blood sugar.</FormLabel>
         )}
+        {metadataError ? (
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title="Unable to save blood sugar"
+            subtitle={metadataError}
+          />
+        ) : null}
         <ButtonSet>
           <Button kind="secondary" onClick={() => closeWorkspace()}>
             Discard
           </Button>
-          <Button kind="primary" disabled={!encounter || saving} onClick={() => void save()}>
+          <Button kind="primary" disabled={!encounterAt(new Date()) || saving} onClick={() => void save()}>
             Save and close
           </Button>
         </ButtonSet>

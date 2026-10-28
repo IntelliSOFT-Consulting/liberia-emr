@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.11",
+  "version": "1.12",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -24,7 +24,7 @@
               },
               "id": "age_restriction_notice",
               "value": [
-                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy. Pediatric Pfizer dose 1 is recorded from the 5th birthday through the day before the 12th birthday. Pediatric Pfizer dose 2 is recorded 28 days after dose 1, including after the 12th birthday."
+                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy. Pediatric Pfizer dose 1 is recorded from the 5th birthday through the day before the 12th birthday. Pediatric Pfizer dose 2 is recorded 28 days after dose 1, including after the 12th birthday. BCG is recorded before 11 months of age. OPV0 is recorded from birth through day 7."
               ]
             }
           ]
@@ -35,14 +35,12 @@
           "questions": [
             {
               "id": "tdEncounterDate",
-              "label": "Encounter Date",
+              "label": "Date received",
               "type": "encounterDatetime",
               "questionOptions": {
                 "rendering": "date"
               },
-              "hide": {
-                "hideWhenExpression": "true"
-              }
+              "required": true
             },
             {
               "label": "Parent/Caregiver",
@@ -54,7 +52,14 @@
               "questionOptions": {
                 "concept": "${var.concept.national.parent-caregiver.uuid}",
                 "rendering": "text"
-              }
+              },
+              "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!(age > 18) && isEmpty(myValue)",
+                  "message": "Parent/Caregiver is required."
+                }
+              ]
             },
             {
               "label": "Caregiver Phone Number",
@@ -68,6 +73,11 @@
                 "rendering": "text"
               },
               "validators": [
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!(age > 18) && isEmpty(myValue)",
+                  "message": "Caregiver phone number is required."
+                },
                 {
                   "type": "js_expression",
                   "failsWhenExpression": "!isEmpty(myValue) && doesNotMatchExpression('^\\\\+?(?=(?:[ ()\\\\-]*\\\\d){7,15}[ ()\\\\-]*$)[\\\\d ()\\\\-]+$', myValue)",
@@ -99,14 +109,14 @@
                         "concept": "${var.concept.national.bcg.uuid}",
                         "label": "BCG",
                         "hide": {
-                          "hideWhenExpression": "age >= 1"
+                          "hideWhenExpression": "routineDoseOutsideWindow(patient.birthDate, tdEncounterDate, '${var.concept.national.bcg.uuid}', '${var.concept.national.bcg.uuid}', '${var.concept.national.opv0-1-dose.uuid}')"
                         }
                       },
                       {
                         "concept": "${var.concept.national.opv0-1-dose.uuid}",
                         "label": "OPV0",
                         "hide": {
-                          "hideWhenExpression": "age > 18"
+                          "hideWhenExpression": "routineDoseOutsideWindow(patient.birthDate, tdEncounterDate, '${var.concept.national.opv0-1-dose.uuid}', '${var.concept.national.bcg.uuid}', '${var.concept.national.opv0-1-dose.uuid}')"
                         }
                       },
                       {
@@ -117,12 +127,96 @@
                         }
                       },
                       {
+                        "concept": "${var.concept.national.penta-1.uuid}",
+                        "label": "Penta 1"
+                      },
+                      {
+                        "concept": "${var.concept.national.pneumo-1.uuid}",
+                        "label": "Pneumo 1"
+                      },
+                      {
+                        "concept": "${var.concept.national.rota-1.uuid}",
+                        "label": "Rota 1"
+                      },
+                      {
+                        "concept": "${var.concept.national.opv2.uuid}",
+                        "label": "OPV2"
+                      },
+                      {
+                        "concept": "${var.concept.national.penta-2.uuid}",
+                        "label": "Penta 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.pneumo-2.uuid}",
+                        "label": "Pneumo 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.rota-2.uuid}",
+                        "label": "Rota 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.opv3.uuid}",
+                        "label": "OPV3"
+                      },
+                      {
+                        "concept": "${var.concept.national.penta-3.uuid}",
+                        "label": "Penta 3"
+                      },
+                      {
+                        "concept": "${var.concept.national.pneumo-3.uuid}",
+                        "label": "Pneumo 3"
+                      },
+                      {
+                        "concept": "${var.concept.national.ipv.uuid}",
+                        "label": "IPV"
+                      },
+                      {
+                        "concept": "${var.concept.national.mcv1.uuid}",
+                        "label": "MCV1"
+                      },
+                      {
+                        "concept": "${var.concept.national.mcv2.uuid}",
+                        "label": "MCV2"
+                      },
+                      {
+                        "concept": "${var.concept.national.tcv.uuid}",
+                        "label": "TCV"
+                      },
+                      {
+                        "concept": "${var.concept.national.yellow-fever.uuid}",
+                        "label": "Yellow Fever"
+                      },
+                      {
+                        "concept": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
+                        "label": "Malaria Vaccine dose 1"
+                      },
+                      {
+                        "concept": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
+                        "label": "Malaria Vaccine dose 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
+                        "label": "Malaria Vaccine dose 3"
+                      },
+                      {
+                        "concept": "${var.concept.national.malaria-vaccine-dose-4.uuid}",
+                        "label": "Malaria Vaccine dose 4"
+                      },
+                      {
                         "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
                         "label": "Pediatric Pfizer COVID-19 dose 1"
                       },
                       {
                         "concept": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
                         "label": "Pediatric Pfizer COVID-19 dose 2"
+                      },
+                      {
+                        "concept": "${var.concept.national.hpv1.uuid}",
+                        "label": "HPV1"
+                      },
+                      {
+                        "concept": "${var.concept.national.hpv2.uuid}",
+                        "label": "HPV2"
                       },
                       {
                         "concept": "${var.concept.national.td.uuid}",
@@ -143,6 +237,18 @@
                       {
                         "concept": "${var.concept.national.td5.uuid}",
                         "label": "TD5"
+                      },
+                      {
+                        "concept": "${var.concept.national.pfizer.uuid}",
+                        "label": "Pfizer"
+                      },
+                      {
+                        "concept": "${var.concept.national.j-j.uuid}",
+                        "label": "J & J"
+                      },
+                      {
+                        "concept": "${var.concept.national.covid-19-booster.uuid}",
+                        "label": "COVID-19 Booster"
                       }
                     ]
                   },
@@ -151,6 +257,21 @@
                       "type": "js_expression",
                       "failsWhenExpression": "sameSubmissionVaccineDuplicate(myValue, allFieldValues, allFields)",
                       "message": "This vaccine is already entered on this form."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(myValue) && myValue === '${var.concept.national.bcg.uuid}' && routineDoseOutsideWindow(patient.birthDate, tdEncounterDate, myValue, '${var.concept.national.bcg.uuid}', '${var.concept.national.opv0-1-dose.uuid}')",
+                      "message": "BCG is given before 11 months of age."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(myValue) && myValue === '${var.concept.national.opv0-1-dose.uuid}' && routineDoseOutsideWindow(patient.birthDate, tdEncounterDate, myValue, '${var.concept.national.bcg.uuid}', '${var.concept.national.opv0-1-dose.uuid}')",
+                      "message": "OPV0 is given from birth through day 7."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "vaccineNameRequired(myValue, node.value.id, allFieldValues, allFields, supp_activities)",
+                      "message": "Vaccine Name is required."
                     }
                   ]
                 },
@@ -296,6 +417,11 @@
                       "type": "js_expression",
                       "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'waiting-for-prerequisite' && pediatric_pfizer_gate !== 'waiting-for-interval' && pediatric_pfizer_gate !== 'already-given'",
                       "message": "Pediatric Pfizer dose 2 cannot be given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "routeRequired(myValue, node.value.id, allFieldValues, allFields, supp_activities)",
+                      "message": "Route is required."
                     }
                   ]
                 },
@@ -315,6 +441,11 @@
                       "type": "js_expression",
                       "failsWhenExpression": "!isEmpty(myValue) && !isDateAfterSimple(myValue, today())",
                       "message": "Return date must be a future date."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(vaccine_name) && isEmpty(myValue) && routineNextDoseDate(patient.birthDate, tdEncounterDate, vaccine_name, 'BCG=${var.concept.national.bcg.uuid},OPV0=${var.concept.national.opv0-1-dose.uuid},OPV1=${var.concept.national.opv1.uuid},Penta1=${var.concept.national.penta-1.uuid},Pneumo1=${var.concept.national.pneumo-1.uuid},Rota1=${var.concept.national.rota-1.uuid},OPV2=${var.concept.national.opv2.uuid},Penta2=${var.concept.national.penta-2.uuid},Pneumo2=${var.concept.national.pneumo-2.uuid},Rota2=${var.concept.national.rota-2.uuid},OPV3=${var.concept.national.opv3.uuid},Penta3=${var.concept.national.penta-3.uuid},Pneumo3=${var.concept.national.pneumo-3.uuid},IPV=${var.concept.national.ipv.uuid},MCV1=${var.concept.national.mcv1.uuid},MCV2=${var.concept.national.mcv2.uuid},TCV=${var.concept.national.tcv.uuid},YellowFever=${var.concept.national.yellow-fever.uuid},Malaria1=${var.concept.national.malaria-vaccine-dose-1.uuid},Malaria2=${var.concept.national.malaria-vaccine-dose-2.uuid},Malaria3=${var.concept.national.malaria-vaccine-dose-3.uuid},Malaria4=${var.concept.national.malaria-vaccine-dose-4.uuid},PediatricPfizer1=${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid},PediatricPfizer2=${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid},HPV1=${var.concept.national.hpv1.uuid},HPV2=${var.concept.national.hpv2.uuid},TD1=${var.concept.national.td.uuid},TD2=${var.concept.national.td2.uuid},TD3=${var.concept.national.td3.uuid},TD4=${var.concept.national.td4.uuid},TD5=${var.concept.national.td5.uuid},Pfizer=${var.concept.national.pfizer.uuid},JJ=${var.concept.national.j-j.uuid},CovidBooster=${var.concept.national.covid-19-booster.uuid}') !== ''",
+                      "message": "Return date is required for the next dose."
                     }
                   ]
                 }
@@ -334,17 +465,6 @@
             "hideWhenExpression": "age > 18"
           },
           "questions": [
-            {
-              "id": "encounterDate",
-              "label": "Encounter Date",
-              "type": "encounterDatetime",
-              "questionOptions": {
-                "rendering": "date"
-              },
-              "hide": {
-                "hideWhenExpression": "true"
-              }
-            },
             {
               "label": "Vitamin A administration history",
               "type": "obs",
@@ -372,14 +492,14 @@
                     "concept": "${var.concept.national.vit-a-blue-100-000iu.uuid}",
                     "label": "Vit.-A.Blue 100,000iu",
                     "hide": {
-                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, encounterDate) !== 'blue'"
+                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, tdEncounterDate) !== 'blue'"
                     }
                   },
                   {
                     "concept": "${var.concept.national.vit-a-red-200-000iu.uuid}",
                     "label": "Vit.-A.Red 200,000iu",
                     "hide": {
-                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, encounterDate) !== 'red'"
+                      "hideWhenExpression": "vitaminACurrentStrength(patient.birthDate, tdEncounterDate) !== 'red'"
                     }
                   }
                 ]
@@ -387,27 +507,27 @@
               "validators": [
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'age'",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, tdEncounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'age'",
                   "message": "Vitamin A strength does not match this child's age. Blue 100,000 IU is for 6-11 months and Red 200,000 IU is for 12-59 months. A missed colour is not given after the child leaves that age band."
                 },
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'blue-repeat'",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, tdEncounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'blue-repeat'",
                   "message": "Vitamin A Blue can be given only once from the 6-month birthday until the 12-month birthday."
                 },
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'minimum-interval'",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, tdEncounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'minimum-interval'",
                   "message": "Vitamin A cannot be given until 30 days after the previous dose."
                 },
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'history'",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, tdEncounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'history'",
                   "message": "Vitamin A history could not be confirmed, so this dose cannot be saved."
                 },
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "vitaminABlock(patient.birthDate, encounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'strength'",
+                  "failsWhenExpression": "vitaminABlock(patient.birthDate, tdEncounterDate, vitamin_a_date_received, myValue, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) === 'strength'",
                   "message": "Select the Vitamin A strength."
                 }
               ]
@@ -465,7 +585,7 @@
                 },
                 {
                   "type": "js_expression",
-                  "failsWhenExpression": "!isEmpty(supp_activities) && !isEmpty(myValue) && vitaminABlock(patient.birthDate, encounterDate, myValue, supp_activities, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) !== ''",
+                  "failsWhenExpression": "!isEmpty(supp_activities) && !isEmpty(myValue) && vitaminABlock(patient.birthDate, tdEncounterDate, myValue, supp_activities, vitamin_a_history, '${var.concept.national.vit-a-blue-100-000iu.uuid}', '${var.concept.national.vit-a-red-200-000iu.uuid}', mode, vitaminAEditingEncounterUuid()) !== ''",
                   "message": "This Vitamin A dose cannot be recorded on this date."
                 }
               ]

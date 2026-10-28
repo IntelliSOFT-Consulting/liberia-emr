@@ -5,11 +5,19 @@ export interface RbsConceptPair {
   mmol: string;
 }
 
+/** OpenMRS REST create uses this list. The legacy top-level provider property is not the contract. */
+export interface RbsEncounterProvider {
+  provider: string;
+  encounterRole: string;
+}
+
 export interface RbsEncounter {
   patient: string;
   encounterType: string;
-  location?: string;
+  encounterDatetime: string;
+  location: string;
   visit?: string;
+  encounterProviders: RbsEncounterProvider[];
   obs: Array<{ concept: string; value: number }>;
 }
 
@@ -56,22 +64,80 @@ export function rbsConceptPair(
 }
 
 /**
+ * webservices.rest 3.5 parses yyyy-MM-dd'T'HH:mm:ss.SSS±HH:mm.
+ * The offset is this session's timezone, so the clock is not rewritten as UTC.
+ */
+export function formatOpenmrsEncounterDatetime(date: Date): string | null {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return null;
+  }
+  const pad = (value: number, width = 2) => String(Math.trunc(Math.abs(value))).padStart(width, '0');
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absoluteOffset = Math.abs(offsetMinutes);
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}` +
+    `${sign}${pad(Math.trunc(absoluteOffset / 60))}:${pad(absoluteOffset % 60)}`
+  );
+}
+
+/** Same choice as the form engine: the Clinician role, otherwise the first role returned. */
+export function clinicianEncounterRole(roles: Array<{ uuid?: string; name?: string }> | undefined): string | null {
+  const listed = (roles ?? []).filter((role) => role.uuid);
+  return (listed.find((role) => role.name === 'Clinician') ?? listed[0])?.uuid ?? null;
+}
+
+/** Why a valid number still cannot be saved. Null when the encounter can be built. */
+export function rbsEncounterMetadataError(input: {
+  patientUuid?: string;
+  encounterTypeUuid?: string;
+  locationUuid?: string;
+  providerUuid?: string;
+  encounterRoleUuid?: string | null;
+  encounterDatetime?: Date;
+}): string | null {
+  if (!input.patientUuid || !input.encounterTypeUuid || !input.locationUuid) {
+    return 'The patient, location, or vitals encounter type is missing.';
+  }
+  if (!input.providerUuid) {
+    return 'The logged-in user has no provider.';
+  }
+  if (!input.encounterRoleUuid) {
+    return 'No encounter role is available.';
+  }
+  if (!formatOpenmrsEncounterDatetime(input.encounterDatetime ?? new Date(Number.NaN))) {
+    return 'The encounter time could not be determined.';
+  }
+  return null;
+}
+
+/**
  * One vitals encounter and one observation. The concept is the unit.
- * An empty or invalid value produces nothing.
+ * An empty or invalid value, or missing encounter metadata, produces nothing.
  */
 export function buildRbsEncounter(input: {
   patientUuid: string;
   encounterTypeUuid: string;
   locationUuid?: string;
   visitUuid?: string;
+  providerUuid?: string;
+  encounterRoleUuid?: string | null;
+  encounterDatetime?: Date;
   unit: RbsUnit | '';
   raw: string;
   concepts: RbsConceptPair | null;
 }): RbsEncounter | null {
+  const encounterDatetime = input.encounterDatetime
+    ? formatOpenmrsEncounterDatetime(input.encounterDatetime)
+    : null;
   if (
     !input.patientUuid ||
     !input.encounterTypeUuid ||
     !input.locationUuid ||
+    !input.providerUuid ||
+    !input.encounterRoleUuid ||
+    !encounterDatetime ||
     !input.concepts ||
     !input.unit ||
     input.raw.trim() === ''
@@ -84,6 +150,14 @@ export function buildRbsEncounter(input: {
   const encounter: RbsEncounter = {
     patient: input.patientUuid,
     encounterType: input.encounterTypeUuid,
+    encounterDatetime,
+    location: input.locationUuid,
+    encounterProviders: [
+      {
+        provider: input.providerUuid,
+        encounterRole: input.encounterRoleUuid,
+      },
+    ],
     obs: [
       {
         concept: input.unit === 'mg/dL' ? input.concepts.mgDl : input.concepts.mmol,
@@ -91,7 +165,6 @@ export function buildRbsEncounter(input: {
       },
     ],
   };
-  encounter.location = input.locationUuid;
   if (input.visitUuid) {
     encounter.visit = input.visitUuid;
   }

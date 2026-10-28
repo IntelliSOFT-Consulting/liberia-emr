@@ -132,10 +132,24 @@ type HistoryPage = {
   links?: Array<{ rel: string; uri: string }>;
 };
 
+/**
+ * The hidden encounter date is a form-engine Date instant, not a date string.
+ * Read that instant on the Monrovia calendar. A missing or unreadable value
+ * still fails closed. This does not accept a history timestamp.
+ */
+function formClinicalDate(value: unknown): string {
+  if (value instanceof Date) {
+    if (!Number.isFinite(value.getTime())) throw new Error('Invalid timestamp');
+    return clinicalDate(value.toISOString());
+  }
+  if (typeof value !== 'string') throw new Error('Missing clinical date');
+  return clinicalDate(value);
+}
+
 export async function evaluatePediatricPfizerAdministration(input: {
   patientUuid: string;
-  birthDate: string;
-  evaluationDate: string;
+  birthDate: string | Date;
+  evaluationDate: string | Date;
   vaccineConceptUuid: string;
   dose1ConceptUuid: string;
   dose2ConceptUuid: string;
@@ -158,8 +172,8 @@ export async function evaluatePediatricPfizerAdministration(input: {
   let evaluationDate: string;
   let urls: ReturnType<typeof sequenceHistoryUrls>;
   try {
-    birthDate = clinicalDate(input.birthDate);
-    evaluationDate = clinicalDate(input.evaluationDate);
+    birthDate = formClinicalDate(input.birthDate);
+    evaluationDate = formClinicalDate(input.evaluationDate);
     urls = sequenceHistoryUrls(patientUuid, input.fhirBaseUrl, input.restBaseUrl);
   } catch {
     return 'unresolved';

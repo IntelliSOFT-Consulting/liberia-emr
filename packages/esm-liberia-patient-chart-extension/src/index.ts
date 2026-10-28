@@ -37,7 +37,8 @@ import { ttAdministrationGate } from './immunizations/anc-tt-gate';
 import { pediatricPfizerAdministrationGate } from './immunizations/pediatric-pfizer-gate';
 import { isPediatricPfizerDose, pediatricPfizerDoseId, pediatricPfizerStatusLabel } from './immunizations/pediatric-pfizer';
 import { tdAdministrationGate } from './immunizations/td-administration-gate';
-import { sameSubmissionVaccineDuplicate } from './immunizations/same-submission-vaccine';
+import { routineDoseOutsideWindow, routineNextDoseDate } from './immunizations/routine-dose-gate';
+import { routeRequired, sameSubmissionVaccineDuplicate, vaccineNameRequired } from './immunizations/same-submission-vaccine';
 import { isTdVaccine } from './immunizations/td-pregnancy';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
@@ -64,6 +65,10 @@ export function startupApp() {
   registerFormEngineExpressionHelper('tdAdministrationGate', tdAdministrationGate);
   registerFormEngineExpressionHelper('isTdVaccine', isTdVaccine);
   registerFormEngineExpressionHelper('sameSubmissionVaccineDuplicate', sameSubmissionVaccineDuplicate);
+  registerFormEngineExpressionHelper('vaccineNameRequired', vaccineNameRequired);
+  registerFormEngineExpressionHelper('routeRequired', routeRequired);
+  registerFormEngineExpressionHelper('routineDoseOutsideWindow', routineDoseOutsideWindow);
+  registerFormEngineExpressionHelper('routineNextDoseDate', routineNextDoseDate);
   registerFormEngineExpressionHelper('ttAdministrationGate', ttAdministrationGate);
   registerFormEngineExpressionHelper('pediatricPfizerAdministrationGate', pediatricPfizerAdministrationGate);
   registerFormEngineExpressionHelper('isPediatricPfizerDose', isPediatricPfizerDose);

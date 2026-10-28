@@ -93,7 +93,7 @@ function bundle(records: FhirImmunization[]) {
 function gate(input: {
   patientUuid?: string;
   birthDate?: string;
-  evaluationDate: string;
+  evaluationDate: string | Date;
   vaccineConceptUuid: string;
   fhir?: FhirImmunization[];
   encounters?: NationalEncounter[];
@@ -382,6 +382,38 @@ describe('Pediatric Pfizer save decision', () => {
     assert.deepEqual(other.calls, []);
     assert.equal(await code({
       birthDate: 'not-a-date', evaluationDate: fifthBirthday, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'unresolved');
+    const encounterInstant = new Date('2020-06-01T15:00:00.000Z');
+    const seen: string[] = [];
+    const liveEmpty = async (url: string) => {
+      seen.push(url);
+      if (url.includes('/Immunization')) {
+        return { resourceType: 'Bundle', type: 'searchset', total: 0, link: [{ relation: 'self', url }] };
+      }
+      return { results: [] };
+    };
+    assert.equal(await code({
+      evaluationDate: encounterInstant, vaccineConceptUuid: dose1Concept, fetchPage: liveEmpty,
+    }), 'due');
+    assert.ok(seen.length >= 2);
+    assert.equal(await code({
+      evaluationDate: encounterInstant, vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'history-unavailable-dose1');
+    assert.equal(await code({
+      evaluationDate: new Date('2018-12-31T12:00:00.000Z'), vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'not-yet-due');
+    assert.equal(await code({
+      evaluationDate: new Date('2026-01-01T12:00:00.000Z'), vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
+    }), 'not-eligible');
+    assert.equal(await code({
+      evaluationDate: encounterInstant, vaccineConceptUuid: dose2Concept, fetchPage: historyDown,
+    }), 'unresolved');
+    assert.equal(await code({
+      evaluationDate: encounterInstant, vaccineConceptUuid: dose1Concept,
+      fhir: [fhir(dose1Concept, '2020-01-01', 'prior-dose-1')],
+    }), 'already-given');
+    assert.equal(await code({
+      evaluationDate: new Date(Number.NaN), vaccineConceptUuid: dose1Concept, fetchPage: historyDown,
     }), 'unresolved');
     const misconfigured = {
       ...national,
