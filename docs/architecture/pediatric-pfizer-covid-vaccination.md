@@ -101,7 +101,9 @@ v1.9 is frozen as `var.form.immunization.v1-9.uuid`
 (`03bb283b-fa68-3b2e-a97c-b8adf72d4a76`).
 v1.10 is frozen as `var.form.immunization.v1-10.uuid`
 (`94f8fe92-b48c-3d44-a133-c572fa0b17bd`).
-The current form is v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`), stored as
+v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`) is frozen as
+`var.form.immunization.v1-11.uuid`. The current form is v1.12
+(`52b3da7c-1749-3c54-9e65-2a508dad2748`), stored as
 `var.form.immunization.uuid`. v1.11 repeats one vaccine administration group per
 vaccine inside the same encounter. The stored questions are the same as v1.10.
 v1.11 changes the dose 1 history-unavailable warning only.

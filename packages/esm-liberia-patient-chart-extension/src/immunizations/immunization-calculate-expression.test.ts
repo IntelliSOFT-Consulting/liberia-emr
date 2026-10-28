@@ -11,7 +11,8 @@ import {
   vitaminASharedReturnValue,
 } from '../forms/vitamin-a-supplementation.ts';
 import { isPediatricPfizerDose } from './pediatric-pfizer.ts';
-import { sameSubmissionVaccineDuplicate } from './same-submission-vaccine.ts';
+import { routeRequired, sameSubmissionVaccineDuplicate, vaccineNameRequired } from './same-submission-vaccine.ts';
+import { routineDoseOutsideWindow, routineNextDoseDate } from './routine-dose-gate.ts';
 import { decideTdGate, isTdVaccine, tdConceptsFromFormArgs, type TdGateCode } from './td-pregnancy.ts';
 
 /**
@@ -155,6 +156,11 @@ function runtime(values: Record<string, unknown>) {
     vitaminABlock,
     loadVitaminAAdministrations: async () => 'error',
     sameSubmissionVaccineDuplicate,
+    vaccineNameRequired,
+    routeRequired,
+    routineDoseOutsideWindow,
+    routineNextDoseDate,
+    node: { value: { id: 'vaccine_name' } },
     allFieldValues: { vaccine_name: values.vaccine_name ?? '' },
     allFields: [
       { id: 'vaccine_administration', meta: {} },
@@ -179,7 +185,7 @@ async function selectVaccine(vaccineName: string) {
 describe('LE-604 vaccine selection calculate expressions', () => {
   it('rejects the pre-fix encounter guard with ReferenceError: encounter is not defined', async () => {
     const shipped = calculate('td_gate');
-    assert.equal(form.version, '1.11');
+    assert.equal(form.version, '1.12');
     assert.match(shipped, /vitaminAEditingEncounterUuid\(\)/);
     assert.doesNotMatch(shipped, /typeof encounter|encounter\.uuid/);
     await assert.rejects(
