@@ -38,8 +38,18 @@ class FamilyPlanningFormPage {
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: this.chartLoadTimeout })
             .should('be.visible');
-        cy.get('button[aria-label="Clinical forms"]', { timeout: this.chartLoadTimeout })
+        const clinicalFormsButton = 'button[aria-label="Clinical forms"]';
+        let previousPosition = '';
+        let stableReadings = 0;
+        cy.get(clinicalFormsButton, { timeout: this.chartLoadTimeout })
             .should('be.visible')
+            .should(($button) => {
+                const { x, y, width, height } = $button[0].getBoundingClientRect();
+                const position = [x, y, width, height].map(Math.round).join(':');
+                stableReadings = position === previousPosition ? stableReadings + 1 : 0;
+                previousPosition = position;
+                expect(stableReadings, 'Clinical Forms button position is stable').to.be.at.least(2);
+            })
             .click();
     }
 
@@ -69,7 +79,7 @@ class FamilyPlanningFormPage {
         const deadline = Date.now() + 10000;
         const poll = (): void => {
             cy.get('body').then(($body) => {
-                if ($body.find('#chosenFamilyPlanningMethod').length) {
+                if ($body.find('#parity').length && $body.find('#chosenFamilyPlanningMethod').length) {
                     return;
                 }
                 if (Date.now() < deadline) {
@@ -77,9 +87,11 @@ class FamilyPlanningFormPage {
                     return;
                 }
                 if (attempt >= maxAttempts) {
-                    throw new Error(`Method Record section did not render after ${maxAttempts} Counselling Done = Yes attempts`);
+                    throw new Error(
+                        `Obstetric Profile and Method Record sections did not render after ${maxAttempts} Counselling Done = Yes attempts`
+                    );
                 }
-                cy.log(`Method Record not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
+                cy.log(`Conditional Family Planning sections not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
                 this.checkOption('counsellingDone-No');
                 this.checkOption('counsellingDone-Yes');
                 if (restorePurpose) {
