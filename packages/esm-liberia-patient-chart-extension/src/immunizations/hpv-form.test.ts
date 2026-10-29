@@ -125,7 +125,8 @@ function hidden(expression: string, scope: Record<string, unknown>) {
   return Boolean(new Function(...names, `return (${expression});`)(...names.map((name) => scope[name])));
 }
 
-const hpvValidators = (question('route').validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isHpvDose'));
+const hpvValidators = (question('route').validators ?? []).filter((validator) =>
+  validator.failsWhenExpression.includes('isHpvDose') && !validator.failsWhenExpression.includes('already_captured_gate'));
 
 function failures(vaccineName: string, hpvGate: string) {
   return hpvValidators.flatMap((validator) => {
@@ -203,7 +204,7 @@ describe('HPV Immunization form entry', () => {
   const status = question('hpv_status');
 
   it('registers the gate against the current form and the vaccine-name concept', () => {
-    assert.equal(form.version, '1.13');
+    assert.equal(form.version, '1.14');
     const group = question('vaccine_administration') as { questions?: Array<{ id?: string }> };
     assert.equal(group.questions?.some((child) => child.id === 'hpv2_offer'), false);
     assert.equal(questions().some((item) => item.id === 'hpv2_offer'), true);

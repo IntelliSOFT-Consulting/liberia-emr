@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.13",
+  "version": "1.14",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -372,6 +372,21 @@
                   }
                 },
                 {
+                  "label": "Already recorded vaccine",
+                  "type": "control",
+                  "id": "already_captured_gate",
+                  "hide": {
+                    "hideWhenExpression": "true"
+                  },
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "alreadyCapturedVaccineGate(patient.id, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid()).then(code => code)"
+                    }
+                  }
+                },
+                {
                   "label": "Route",
                   "type": "obs",
                   "id": "route",
@@ -533,6 +548,16 @@
                       "type": "js_expression",
                       "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && !isEmpty(hpv_gate) && hpv_gate !== 'due' && hpv_gate !== 'overdue' && hpv_gate !== 'unresolved' && hpv_gate !== 'not-female' && hpv_gate !== 'not-yet-due' && hpv_gate !== 'not-eligible' && hpv_gate !== 'waiting-for-prerequisite' && hpv_gate !== 'waiting-for-interval' && hpv_gate !== 'already-given'",
                       "message": "HPV2 cannot be given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "!isEmpty(vaccine_name) && !isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && !isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}') && (isEmpty(already_captured_gate) || already_captured_gate === 'unresolved')",
+                      "message": "Immunization history could not be checked. This vaccine cannot be recorded until the history is available."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "already_captured_gate === 'already-given' && !isTdVaccine(vaccine_name, '${var.concept.national.td.uuid}', '${var.concept.national.td2.uuid}', '${var.concept.national.td3.uuid}', '${var.concept.national.td4.uuid}', '${var.concept.national.td5.uuid}') && !isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}', '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}')",
+                      "message": "This vaccine has already been recorded for this patient."
                     },
                     {
                       "type": "js_expression",
