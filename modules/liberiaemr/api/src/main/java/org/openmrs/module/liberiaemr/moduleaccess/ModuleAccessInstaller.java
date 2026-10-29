@@ -54,6 +54,7 @@ public final class ModuleAccessInstaller {
 		ModuleAccessGuard guard = new ModuleAccessGuard();
 		for (Class<?> service : SERVICES) { advise(service, guard); }
 		adviseBillingVisits();
+		adviseVisitSaves();
 		adviseBillingProviders();
 		adviseOrderProviders();
 		adviseCashPointReads();
@@ -130,6 +131,25 @@ public final class ModuleAccessInstaller {
 			public boolean matches(Method method, Class<?> targetClass) {
 				String name = method.getName();
 				return "getVisit".equals(name) || "getVisitByUuid".equals(name) || "getActiveVisitsByPatient".equals(name);
+			}
+		});
+	}
+
+	/**
+	 * {@code saveVisit} only. While it runs, a matrix role that already holds the visit privilege
+	 * the save requires may pass the visit date check without reading encounters. No other visit
+	 * method opens that scope.
+	 */
+	private static void adviseVisitSaves() {
+		Object proxy = Context.getService(VisitService.class);
+		if (!(proxy instanceof Advised)) {
+			log.warn("Module access could not advise visit saves");
+			return;
+		}
+		((Advised) proxy).addAdvisor(0, new StaticMethodMatcherPointcutAdvisor(new VisitSaveEncounterScope()) {
+			@Override
+			public boolean matches(Method method, Class<?> targetClass) {
+				return "saveVisit".equals(method.getName());
 			}
 		});
 	}

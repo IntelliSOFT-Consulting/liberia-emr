@@ -37,6 +37,8 @@ import org.openmrs.Privilege;
 import org.openmrs.Role;
 import org.openmrs.TestOrder;
 import org.openmrs.User;
+import org.openmrs.Visit;
+import org.openmrs.VisitType;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.ContextAuthenticationException;
 import org.openmrs.module.liberiaemr.ContentUuids;
@@ -354,6 +356,85 @@ public class ModuleAccessGuardTest extends BaseModuleContextSensitiveTest {
 		try {
 			Context.getPatientService().savePatient(rejected);
 			fail("Nurse registration is read-only");
+		}
+		catch (RuntimeException e) {
+			assertTrue(e.toString(), denied(e));
+		}
+	}
+
+	@Test public void registrarCanReadVisitTypesAndCreateAVisit() throws Exception {
+		as("Registrar", PrivilegeConstants.GET_PATIENTS, PrivilegeConstants.GET_VISITS, PrivilegeConstants.GET_VISIT_TYPES,
+		        PrivilegeConstants.ADD_VISITS, PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES, "Get Beds",
+		        "Get Admission Locations");
+		assertFalse(Context.getVisitService().getAllVisitTypes().isEmpty());
+		Visit created = new Visit();
+		created.setPatient(Context.getPatientService().getPatient(2));
+		created.setVisitType(Context.getVisitService().getAllVisitTypes().get(0));
+		created.setStartDatetime(new Date());
+		assertNotNull(Context.getVisitService().saveVisit(created).getId());
+		assertFalse(VisitSaveEncounterScope.openNow());
+	}
+
+	/**
+	 * The queue number is stored by saving the visit that already exists. That save asks for the
+	 * visit's encounters. An encounter dated after the visit stop would fail the save if it were
+	 * visible. Registrar must not receive it, and a later direct read must still be refused.
+	 */
+	@Test public void registrarResavesAVisitWithoutReadingEncounters() throws Exception {
+		Patient patient = Context.getPatientService().getPatient(2);
+		VisitType type = Context.getVisitService().getAllVisitTypes().get(0);
+		long now = System.currentTimeMillis();
+		Visit created = new Visit();
+		created.setPatient(patient);
+		created.setVisitType(type);
+		created.setStartDatetime(new Date(now - 2 * 60 * 60 * 1000));
+		created = Context.getVisitService().saveVisit(created);
+		Encounter encounter = labor();
+		encounter.setEncounterDatetime(new Date(now));
+		encounter.setVisit(created);
+		Integer encounterId = Context.getEncounterService().saveEncounter(encounter).getId();
+		as("Registrar", PrivilegeConstants.GET_PATIENTS, PrivilegeConstants.ADD_VISITS, PrivilegeConstants.EDIT_VISITS,
+		        PrivilegeConstants.GET_VISITS, PrivilegeConstants.GET_VISIT_TYPES, PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES,
+		        "Get Queue Entries", "Get Beds", "Get Admission Locations");
+		Visit stored = Context.getVisitService().getVisit(created.getId());
+		stored.setStopDatetime(new Date(now - 60 * 60 * 1000));
+		Visit saved = Context.getVisitService().saveVisit(stored);
+		assertNotNull(saved.getId());
+		assertFalse(VisitSaveEncounterScope.openNow());
+		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_ENCOUNTERS));
+		assertFalse(Context.hasPrivilege("Manage Appointments"));
+		assertFalse(Context.hasPrivilege("Manage Own Appointments"));
+		try {
+			Context.getEncounterService().getEncountersByVisit(saved, false);
+			fail("a direct encounter read is still denied");
+		}
+		catch (RuntimeException e) {
+			assertTrue(e.toString(), denied(e));
+		}
+		try {
+			Context.getEncounterService().getEncounter(encounterId);
+			fail("the encounter on the visit is still denied");
+		}
+		catch (RuntimeException e) {
+			assertTrue(e.toString(), denied(e));
+		}
+		try {
+			Context.getObsService().getObservationsByPerson(patient);
+			fail("observations stay denied");
+		}
+		catch (RuntimeException e) {
+			assertTrue(e.toString(), denied(e));
+		}
+		try {
+			Context.getFormService().getAllForms();
+			fail("forms stay denied");
+		}
+		catch (RuntimeException e) {
+			assertTrue(e.toString(), denied(e));
+		}
+		try {
+			Context.getConditionService().getActiveConditions(patient);
+			fail("conditions stay denied");
 		}
 		catch (RuntimeException e) {
 			assertTrue(e.toString(), denied(e));
