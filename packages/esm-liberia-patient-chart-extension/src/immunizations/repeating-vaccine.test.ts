@@ -113,7 +113,7 @@ describe('pinned repeating obs group', () => {
     assert.equal(probe.rendering, 'repeating');
     assert.equal(probe.addText, 'Add Another Vaccine');
     assert.deepEqual(probe.childIds, [
-      'vaccine_name', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status', 'hpv_gate', 'hpv_status', 'route', 'return_date',
+      'vaccine_name', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status', 'hpv_gate', 'hpv_status', 'already_captured_gate', 'route', 'return_date',
     ]);
     assert.equal(probe.cloneId, 'vaccine_administration_1');
     assert.equal(probe.source.addText, true);
@@ -134,7 +134,10 @@ describe('pinned repeating obs group', () => {
     assert.match(route.validators.join('\n'), /td_gate_1/);
     assert.match(route.validators.join('\n'), /pediatric_pfizer_gate_1/);
     assert.match(route.validators.join('\n'), /hpv_gate_1/);
+    assert.match(route.validators.join('\n'), /already_captured_gate_1/);
+    assert.match(cloned('already_captured_gate_1').calculate, /vaccine_name_1/);
     assert.equal(mentionsBare(route.validators.join('\n'), 'td_gate'), false);
+    assert.equal(mentionsBare(route.validators.join('\n'), 'already_captured_gate'), false);
     assert.equal(mentionsBare(route.validators.join('\n'), 'pediatric_pfizer_gate'), false);
     assert.equal(mentionsBare(route.validators.join('\n'), 'hpv_gate'), false);
     assert.match(cloned('vaccine_name_1').validators[0], /allFieldValues, allFields/);
