@@ -144,3 +144,6 @@ export const routineImmunizationSchedule = getAsyncLifecycle(
   () => import('./immunizations/routine-schedule.extension'),
   options,
 );
+
+/** No-access cards for upstream summary widgets a privilege denial would otherwise render as ErrorState. */
+export const restrictedSummary = getAsyncLifecycle(() => import('./restricted-summary/restricted-summary.component'), options);
