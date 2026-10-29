@@ -430,8 +430,8 @@
       "patient-chart-summary-dashboard-slot": {
         "add": [],
         "order": [
-          "liberia-external-records-summary",
           "patient-flags-list",
+          "liberia-external-records-summary",
           "liberia-obs-widget",
           "vitals-overview-widget",
           "liberia-rbs-history",
@@ -520,6 +520,7 @@
       "${var.form.immunization.v1-9.uuid}",
       "${var.form.immunization.v1-10.uuid}",
       "${var.form.immunization.v1-11.uuid}",
+      "${var.form.immunization.v1-12.uuid}",
       "${var.form.immunization.uuid}"
     ],
     "showAddButton": true
@@ -531,7 +532,7 @@
     "nationalFormUuids and ancFormUuids are arrays. Frontend config replaces an array wholesale,",
     "so a site that sets either key must list every form version it still wants counted.",
     "var.form.immunization.uuid stays the current form. The v1-* variables are frozen historical identities.",
-    "v1.12 is current. v1.11 stays in this list so encounters saved on it still count.",
+    "v1.13 is current. v1.12 stays in this list so encounters saved on it still count.",
     "The current variable is also in the list so the next version bump stays visible until it is frozen.",
     "fhirDoseMappings stays empty until a deployment supplies verified generic vaccine codings.",
     "Configured doses with no sequence rule are recognized and do not block other series.",
@@ -552,6 +553,7 @@
         "${var.form.immunization.v1-9.uuid}",
         "${var.form.immunization.v1-10.uuid}",
         "${var.form.immunization.v1-11.uuid}",
+        "${var.form.immunization.v1-12.uuid}",
         "${var.form.immunization.uuid}"
       ],
       "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
