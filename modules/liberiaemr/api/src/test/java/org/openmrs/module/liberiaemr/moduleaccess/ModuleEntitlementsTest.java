@@ -190,9 +190,7 @@ public class ModuleEntitlementsTest {
 				assertFalse(role + " must not gain " + privilege, privileges.contains(privilege));
 			}
 		}
-		for (String role : new String[] { "Finance", "Registrar" }) {
-			assertFalse(role, grants(role, rows, new HashSet<String>()).contains("Get Visits"));
-		}
+		assertFalse("Finance", grants("Finance", rows, new HashSet<String>()).contains("Get Visits"));
 		// Main gives the pharmacy and laboratory queues Get Visits. They do not check patients in.
 		for (String role : new String[] { "Lab Technician", "Pharmacist" }) {
 			Set<String> privileges = grants(role, rows, new HashSet<String>());
@@ -218,7 +216,7 @@ public class ModuleEntitlementsTest {
 		assertTrue(assistant.contains("Get Queues"));
 		assertTrue(assistant.contains("Get Queue Entries"));
 		assertFalse(assistant.contains("Manage Queue Entries"));
-		for (String role : new String[] { "Registrar", "Finance", "Systems Administrator", "Facility in-charge" }) {
+		for (String role : new String[] { "Finance", "Systems Administrator", "Facility in-charge" }) {
 			Set<String> privileges = grants(role, rows, new HashSet<String>());
 			for (String privilege : Arrays.asList("Get Queues", "Get Queue Entries", "Manage Queues", "Manage Queue Entries",
 			        "Get Queue Rooms", "Manage Queue Rooms", "Purge Queues", "Purge Queue Entries")) {
@@ -233,6 +231,37 @@ public class ModuleEntitlementsTest {
 		assertTrue(nurse.contains("Write Labor and Delivery"));
 		assertFalse(nurse.contains("Get Users"));
 		assertFalse(nurse.contains("Edit Users"));
+	}
+
+	/**
+	 * The approved matrix role description says Registrar creates a visit and queues the patient.
+	 * These are the privileges those two calls actually check. Get Queues and Get Queue Entries
+	 * are the reads; Manage Queue Entries is the create. Clinical read stays closed, and
+	 * appointment status stays closed: Manage Appointments and Manage Own Appointments are not
+	 * granted, so the separate status-change call remains forbidden.
+	 * Edit Visits is required because {@code VisitServiceImpl.saveVisit} demands it once the
+	 * visit has an id, which is how the queue number is stored. Get Queue Entries is required
+	 * because the queue module's visit validator lists that visit's entries on the same save.
+	 */
+	@Test public void registrarCanStartAVisitAndQueueWithoutClinicalAccess() throws Exception {
+		Map<String, String[]> rows = roles();
+		Set<String> privileges = grants("Registrar", rows, new HashSet<String>());
+		for (String privilege : Arrays.asList("Get Visits", "Add Visits", "Edit Visits", "Get Visit Types",
+		        "Get Visit Attribute Types", "Get Beds", "Get Admission Locations", "Get Queues", "Get Queue Entries",
+		        "Manage Queue Entries")) {
+			assertTrue(privilege, privileges.contains(privilege));
+		}
+		for (String privilege : Arrays.asList("Manage Queues", "Purge Queues",
+		        "Purge Queue Entries", "Get Queue Rooms", "Manage Queue Rooms", "Get Encounters", "Get Observations",
+		        "Get Conditions", "Get Forms", "Add Encounters", "Add Observations", "Edit Encounters", "Edit Observations",
+		        "Get Orders", "Add Orders", "Manage Appointments", "Manage Own Appointments")) {
+			assertFalse(privilege, privileges.contains(privilege));
+		}
+		assertFalse(ModulePrivileges.anyClinicalRead(privileges));
+		for (String role : new String[] { "Nurse", "Records Officer", "Finance", "Physician Assistant", "Pharmacist",
+		        "Lab Technician" }) {
+			assertFalse(role + " inherited Registrar", rows.get(role)[5].contains("Registrar"));
+		}
 	}
 
 	@Test public void conceptSourcesSupportPharmacyMedicationRequestReadsOnly() throws Exception {

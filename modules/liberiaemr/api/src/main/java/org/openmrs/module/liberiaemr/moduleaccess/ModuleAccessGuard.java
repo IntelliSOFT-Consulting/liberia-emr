@@ -164,6 +164,14 @@ public final class ModuleAccessGuard implements MethodInterceptor {
 	private Object readEncounters(MethodInvocation invocation, List<String> proxied) throws Throwable {
 		Set<String> privileges = ModulePrivileges.current();
 		boolean had = ModulePrivileges.own(PrivilegeConstants.GET_ENCOUNTERS);
+		// saveVisit is already authorized, and VisitValidator asks for encounters only to bound
+		// that visit's dates. A matrix role with no clinical read has none it may see. The empty
+		// list is not loaded from the service, Get Encounters is not proxied, and the scope ends
+		// with saveVisit. Every other encounter read still reaches the OpenMRS check.
+		if (!had && !ModulePrivileges.anyClinicalRead(privileges)
+		        && "getEncountersByVisit".equals(invocation.getMethod().getName()) && VisitSaveEncounterScope.openNow()) {
+			return Collections.emptyList();
+		}
 		if (!had && ModulePrivileges.anyClinicalRead(privileges)) { proxyRead(proxied, PrivilegeConstants.GET_ENCOUNTERS); }
 		return filter(invocation.proceed(), privileges, had);
 	}
