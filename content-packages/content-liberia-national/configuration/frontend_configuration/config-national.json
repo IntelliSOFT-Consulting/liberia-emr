@@ -302,6 +302,10 @@
     "Brand color #3": "#002A86"
   },
   "@openmrs/esm-patient-forms-app": {
+    "_comment_display": "Get Forms is what FormService.getAllForms checks. The Clinical forms button is this app's workspace window, registered as an extension into the patient-chart slot, so this display condition hides that button and the offline forms cards before the forms list is requested. System Developer still sees the button.",
+    "Display conditions": {
+      "privileges": ["Get Forms"]
+    },
     "customFormsUrl": "/ws/rest/v1/liberiaemr/forms?patientUuid=${patientUuid}",
     "orderBy": "name",
     "formSections": [
@@ -422,6 +426,40 @@
           }
         }
       },
+      "patient-info-slot": {
+        "configure": {
+          "patient-vitals-info": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          }
+        }
+      },
+      "patient-chart-dashboard-slot": {
+        "configure": {
+          "results-summary-dashboard": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "conditions-summary-dashboard": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          }
+        }
+      },
+      "patient-chart-vitals-biometrics-dashboard-slot": {
+        "configure": {
+          "vitals-details-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "biometrics-details-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          }
+        }
+      },
+      "patient-chart-conditions-dashboard-slot": {
+        "configure": {
+          "conditions-details-widget": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          }
+        }
+      },
       "patient-chart-immunizations-dashboard-slot": {
         "remove": [
           "immunization-details-widget"
@@ -429,10 +467,27 @@
       },
       "patient-chart-summary-dashboard-slot": {
         "add": [],
+        "configure": {
+          "vitals-overview-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "biometrics-overview-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "conditions-overview-widget": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          },
+          "liberia-rbs-history": {
+            "Display conditions": {
+              "expression": "!!session.user && session.user.privileges.some(p => ['Get Encounters','Read TB Screening','Write TB Screening','Manage General Consultation','Manage ANC','Manage Laboratory','Manage PNC','Manage Pharmacy','Read Labor and Delivery','Write Labor and Delivery','Read Immunization','Write Immunization','Manage Family Planning'].includes(p.display))"
+            }
+          }
+        },
         "order": [
           "patient-flags-list",
           "liberia-external-records-summary",
           "liberia-obs-widget",
+          "liberia-restricted-summary",
           "vitals-overview-widget",
           "liberia-rbs-history",
           "biometrics-overview-widget",
