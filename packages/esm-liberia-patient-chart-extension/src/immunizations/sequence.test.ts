@@ -189,6 +189,7 @@ describe('runtime identifiers', () => {
       'var.form.immunization.v1-9.uuid',
       'var.form.immunization.v1-10.uuid',
       'var.form.immunization.v1-11.uuid',
+      'var.form.immunization.v1-12.uuid',
       'var.form.immunization.uuid',
     ];
     assert.deepEqual(raw.nationalFormUuids, formVariables.map((name) => `\${${name}}`));
@@ -321,7 +322,12 @@ describe('HPV', () => {
     blocked(decide('HPV2', '2015-01-01', '2025-02-27', [first]), 'WAITING_FOR_INTERVAL');
     const valid = decide('HPV2', '2015-01-01', '2025-02-28', [first]);
     allowed(valid);
+    assert.equal(valid.status, 'DUE');
     assert.equal(valid.eligibleDate, '2025-02-28');
+    const later = decide('HPV2', '2015-01-01', '2025-03-01', [first]);
+    allowed(later);
+    assert.equal(later.status, 'OVERDUE');
+    assert.equal(dose('HPV2').markOverdueAfterEligibleDate, true);
     assert.notEqual(addDateOffset('2024-08-31', { value: 6, unit: 'months' }), addDateOffset('2024-08-31', { value: 182, unit: 'days' }));
   });
   it('uses the later of the 9th birthday and the 6 month interval', () => {

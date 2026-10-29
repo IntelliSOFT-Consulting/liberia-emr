@@ -72,9 +72,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.12');
+    assert.equal(form.version, '1.13');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.12';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.13';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -84,6 +84,7 @@ describe('Immunization form Td entry point', () => {
     assert.match(variables, /^var\.form\.immunization\.v1-9\.uuid=03bb283b-fa68-3b2e-a97c-b8adf72d4a76$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-10\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-11\.uuid=6bf44913-ca7a-358c-a066-6de97661f13d$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-12\.uuid=52b3da7c-1749-3c54-9e65-2a508dad2748$/m);
   });
 
   it('keeps childhood vaccines available and gates only Td', () => {
@@ -102,7 +103,9 @@ describe('Immunization form Td entry point', () => {
     assert.match(answers[0].hide?.hideWhenExpression ?? '', /routineDoseOutsideWindow\(patient\.birthDate, tdEncounterDate, '\$\{var\.concept\.national\.bcg\.uuid\}'/);
     assert.match(answers[1].hide?.hideWhenExpression ?? '', /routineDoseOutsideWindow\(patient\.birthDate, tdEncounterDate, '\$\{var\.concept\.national\.opv0-1-dose\.uuid\}'/);
     assert.equal(answers[2].hide?.hideWhenExpression, 'age > 18');
-    for (const answer of answers.slice(3)) {
+    assert.equal(answers.find((answer) => answer.label === 'HPV1')?.hide?.hideWhenExpression, "!((patient.gender ?? '').toLowerCase() === 'female' || (patient.gender ?? '').toLowerCase() === 'f') || age < 9 || age >= 14");
+    assert.equal(answers.find((answer) => answer.label === 'HPV2')?.hide?.hideWhenExpression, "hpv2_offer !== 'due' && hpv2_offer !== 'overdue'");
+    for (const answer of answers.filter((item) => item.label === 'Pediatric Pfizer COVID-19 dose 1' || item.label === 'Pediatric Pfizer COVID-19 dose 2' || item.label.startsWith('TD'))) {
       assert.equal(answer.hide, undefined);
     }
     assert.equal(question('parent_caregiver').hide?.hideWhenExpression, 'age > 18');

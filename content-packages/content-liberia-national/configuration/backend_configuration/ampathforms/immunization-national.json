@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.12",
+  "version": "1.13",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -24,7 +24,7 @@
               },
               "id": "age_restriction_notice",
               "value": [
-                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy. Pediatric Pfizer dose 1 is recorded from the 5th birthday through the day before the 12th birthday. Pediatric Pfizer dose 2 is recorded 28 days after dose 1, including after the 12th birthday. BCG is recorded before 11 months of age. OPV0 is recorded from birth through day 7."
+                "**Childhood vaccines on this form are for children aged 18 and below.** Tetanus-diphtheria (Td) can be recorded at any age, and only during a confirmed pregnancy. Pediatric Pfizer dose 1 is recorded from the 5th birthday through the day before the 12th birthday. Pediatric Pfizer dose 2 is recorded 28 days after dose 1, including after the 12th birthday. BCG is recorded before 11 months of age. OPV0 is recorded from birth through day 7. HPV1 is recorded for females from the 9th birthday through the day before the 14th birthday. HPV2 is recorded 6 months after HPV1 and stays due, including when overdue, until the day before the 14th birthday."
               ]
             }
           ]
@@ -41,6 +41,21 @@
                 "rendering": "date"
               },
               "required": true
+            },
+            {
+              "label": "HPV2 eligibility",
+              "type": "control",
+              "id": "hpv2_offer",
+              "hide": {
+                "hideWhenExpression": "true"
+              },
+              "questionOptions": {
+                "rendering": "text",
+                "isTransient": true,
+                "calculate": {
+                  "calculateExpression": "hpvAdministrationGate(patient.id, patient.gender, patient.birthDate, tdEncounterDate, '${var.concept.national.hpv2.uuid}', vitaminAEditingEncounterUuid(), '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}').then(code => code)"
+                }
+              }
             },
             {
               "label": "Parent/Caregiver",
@@ -212,11 +227,17 @@
                       },
                       {
                         "concept": "${var.concept.national.hpv1.uuid}",
-                        "label": "HPV1"
+                        "label": "HPV1",
+                        "hide": {
+                          "hideWhenExpression": "!((patient.gender ?? '').toLowerCase() === 'female' || (patient.gender ?? '').toLowerCase() === 'f') || age < 9 || age >= 14"
+                        }
                       },
                       {
                         "concept": "${var.concept.national.hpv2.uuid}",
-                        "label": "HPV2"
+                        "label": "HPV2",
+                        "hide": {
+                          "hideWhenExpression": "hpv2_offer !== 'due' && hpv2_offer !== 'overdue'"
+                        }
                       },
                       {
                         "concept": "${var.concept.national.td.uuid}",
@@ -321,6 +342,36 @@
                   }
                 },
                 {
+                  "label": "HPV eligibility",
+                  "type": "control",
+                  "id": "hpv_gate",
+                  "hide": {
+                    "hideWhenExpression": "true"
+                  },
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "hpvAdministrationGate(patient.id, patient.gender, patient.birthDate, tdEncounterDate, vaccine_name, vitaminAEditingEncounterUuid(), '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}').then(code => code)"
+                    }
+                  }
+                },
+                {
+                  "label": "HPV status",
+                  "type": "control",
+                  "id": "hpv_status",
+                  "hide": {
+                    "hideWhenExpression": "hpvDoseId(vaccine_name, '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}') === ''"
+                  },
+                  "questionOptions": {
+                    "rendering": "text",
+                    "isTransient": true,
+                    "calculate": {
+                      "calculateExpression": "hpvStatusLabel(hpv_gate)"
+                    }
+                  }
+                },
+                {
                   "label": "Route",
                   "type": "obs",
                   "id": "route",
@@ -417,6 +468,71 @@
                       "type": "js_expression",
                       "failsWhenExpression": "isPediatricPfizerDose(vaccine_name, '${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}') && !isEmpty(pediatric_pfizer_gate) && pediatric_pfizer_gate !== 'due' && pediatric_pfizer_gate !== 'overdue' && pediatric_pfizer_gate !== 'unresolved' && pediatric_pfizer_gate !== 'waiting-for-prerequisite' && pediatric_pfizer_gate !== 'waiting-for-interval' && pediatric_pfizer_gate !== 'already-given'",
                       "message": "Pediatric Pfizer dose 2 cannot be given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}', '${var.concept.national.hpv2.uuid}') && (isEmpty(hpv_gate) || hpv_gate === 'unresolved')",
+                      "message": "HPV cannot be given because immunization history could not be resolved."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}') && hpv_gate === 'not-female'",
+                      "message": "HPV1 cannot be given. The patient is not eligible by sex."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}') && hpv_gate === 'not-yet-due'",
+                      "message": "HPV1 cannot be given. The patient is too young."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}') && hpv_gate === 'not-eligible'",
+                      "message": "HPV1 cannot be given. The patient is too old."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}') && hpv_gate === 'already-given'",
+                      "message": "HPV1 is already given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv1.uuid}') && !isEmpty(hpv_gate) && hpv_gate !== 'due' && hpv_gate !== 'overdue' && hpv_gate !== 'unresolved' && hpv_gate !== 'not-female' && hpv_gate !== 'not-yet-due' && hpv_gate !== 'not-eligible' && hpv_gate !== 'already-given'",
+                      "message": "HPV1 cannot be given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'not-female'",
+                      "message": "HPV2 cannot be given. The patient is not eligible by sex."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'not-yet-due'",
+                      "message": "HPV2 cannot be given. The patient is too young."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'not-eligible'",
+                      "message": "HPV2 cannot be given. The patient is too old."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'waiting-for-prerequisite'",
+                      "message": "HPV2 requires HPV1."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'waiting-for-interval'",
+                      "message": "HPV2 is not yet due."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && hpv_gate === 'already-given'",
+                      "message": "HPV2 is already given."
+                    },
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "isHpvDose(vaccine_name, '${var.concept.national.hpv2.uuid}') && !isEmpty(hpv_gate) && hpv_gate !== 'due' && hpv_gate !== 'overdue' && hpv_gate !== 'unresolved' && hpv_gate !== 'not-female' && hpv_gate !== 'not-yet-due' && hpv_gate !== 'not-eligible' && hpv_gate !== 'waiting-for-prerequisite' && hpv_gate !== 'waiting-for-interval' && hpv_gate !== 'already-given'",
+                      "message": "HPV2 cannot be given."
                     },
                     {
                       "type": "js_expression",

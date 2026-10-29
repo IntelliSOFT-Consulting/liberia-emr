@@ -10,8 +10,9 @@ is the separate [LE-559](routine-childhood-immunization.md) policy.
 `evaluateSequence` reads consolidated history and returns that evaluator's status.
 `canAdminister` is true only for `DUE` or `OVERDUE`. These rules set
 `overdueAfterDays` to null, so an eligible dose stays `DUE`. Pediatric Pfizer
-dose 2 is the exception: it is `DUE` on its eligible date and `OVERDUE` on
-every later day until it is recorded. That mark is not a maximum interval.
+dose 2 and HPV2 are the exceptions: each is `DUE` on its eligible date and
+`OVERDUE` on every later day until it is recorded. HPV2 still becomes
+`NOT_ELIGIBLE` on the 14th birthday. That mark is not a maximum interval.
 
 | Clinical meaning | Status |
 | --- | --- |
@@ -45,7 +46,7 @@ Historical doses from either source count.
   dose-specific concept because that concept is already the dose.
 - National Immunization encounters whose form UUID is in runtime
   `routineImmunizations.nationalFormUuids`. National config lists frozen Immunization
-  v1.0 through v1.11 and `${var.form.immunization.uuid}`, the current v1.12 form.
+  v1.0 through v1.12 and `${var.form.immunization.uuid}`, the current v1.13 form.
   The vaccine-name question is `vaccineQuestionUuid`. The
   form has no administration-date observation, so the encounter datetime is
   the clinical date. Other observations, including the return date, are not
@@ -86,7 +87,7 @@ National values are `${var.*}` entries in `config-national.json`, not literals i
 | Penta3, Pneumo3 | Matching dose 2 | None | None specified |
 | Malaria2, Malaria3, Malaria4 | The previous malaria dose | None | None specified |
 | HPV1 | None | None | 9th birthday through the day before the 14th birthday |
-| HPV2 | HPV1 | 6 calendar months | Same window |
+| HPV2 | HPV1 | 6 calendar months | Same window. Due on the eligible day, overdue after it, until the day before the 14th birthday |
 | Pediatric Pfizer 1 | None | None | 5th birthday through the day before the 12th birthday |
 | Pediatric Pfizer 2 | Pediatric Pfizer 1 | 28 days after the actual dose 1 date | No separate age window |
 | TD2 | TD1-equivalent | 4 weeks | None specified |
@@ -129,10 +130,31 @@ evaluation date. This is the eligibility result only.
 The O3 immunization workspace in 12.3.4 can show a duplicate warning and still
 save. Its submit path has no eligibility hook. FHIR2 does not enforce one row
 per patient, vaccine, and dose. Sequencing itself does not add that
-enforcement. Pediatric Pfizer dose 1 and dose 2 are the exception recorded on
-the national Immunization form, whose validators reject a second save. See
+enforcement. Pediatric Pfizer dose 1 and dose 2, and HPV1 and HPV2, are the
+exceptions recorded on the national Immunization form, whose validators reject
+a second save. See
 [Pediatric Pfizer COVID-19 vaccination](pediatric-pfizer-covid-vaccination.md).
-O3 remains warning-only for every vaccine, including these two doses.
+O3 remains warning-only for every other vaccine.
+
+## HPV on the national form
+
+Immunization v1.12 already lists HPV1 and HPV2 on Vaccine Name. Immunization v1.13
+adds the eligibility gate. The answers are also
+answers of the Vaccine Name concept. HPV1 is hidden unless lower-cased `patient.gender` is `female` or `f`
+and the form-engine completed age is 9 through 13.
+HPV2 is hidden unless a patient-level `hpv2_offer` calculation is `due` or
+`overdue`. That field sits outside the repeating group, so every row reads
+the same result. Hiding is not the control. Route validators reject a save
+unless `hpvAdministrationGate` returns `due` or `overdue`.
+
+The gate calls `evaluateSequence` for `HPV1` or `HPV2`. It does not keep a
+second schedule. Sex is `patient.gender` after lower-casing. `female` and `f`
+are eligible, so `F` counts. `male`, `m`, `other`, `unknown`, and a
+missing gender are not. History is the same consolidated FHIR and national-form
+reader. A conflicting or unreadable HPV record fails closed. An HPV1 that is
+already too young or too old is still refused when history cannot be loaded.
+An age-eligible HPV1 is not saved in that case, because the duplicate check
+was not completed. HPV2 is never saved when history cannot be loaded.
 
 ## History display and the ANC Date-of-TT gate (LE-563)
 
