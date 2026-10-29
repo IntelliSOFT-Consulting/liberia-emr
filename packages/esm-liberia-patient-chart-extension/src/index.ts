@@ -108,7 +108,7 @@ export const liberiaObsWidget = getAsyncLifecycle(
   },
 );
 
-/** Read-only history for random blood sugar saved on Triage and OPD. No data-entry workspace. */
+/** History of initial blood sugar, and the Add action that opens the blood sugar workspace. */
 export const liberiaRbsHistory = getAsyncLifecycle(
   () => import('./liberia-obs-widget/liberia-obs-widget.component'),
   {
@@ -116,6 +116,12 @@ export const liberiaRbsHistory = getAsyncLifecycle(
     moduleName: 'liberia-rbs-history',
   },
 );
+
+/** Unit and value for initial blood sugar. One vitals observation, CIEL 887 or CIEL 1458. */
+export const liberiaRbsWorkspace = getAsyncLifecycle(() => import('./vitals/rbs-form.workspace'), {
+  featureName: 'liberia-rbs-history',
+  moduleName: 'liberia-rbs-history',
+});
 
 /** Immunization history through REST encounters, so module read can authorize it without Get Encounters. */
 export const liberiaImmunizationHistory = getAsyncLifecycle(

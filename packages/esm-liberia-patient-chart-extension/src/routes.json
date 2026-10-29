@@ -25,6 +25,17 @@
       }
     },
     {
+      "name": "liberia-rbs-vitals",
+      "component": "liberiaRbsHistory",
+      "slot": "patient-chart-vitals-biometrics-dashboard-slot",
+      "order": 2,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "liberia-immunization-history",
       "component": "liberiaImmunizationHistory",
       "slot": "patient-chart-immunizations-dashboard-slot",
@@ -99,6 +110,20 @@
       "meta": {
         "fullWidth": true
       }
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "liberia-rbs-workspace",
+      "component": "liberiaRbsWorkspace",
+      "window": "liberia-rbs-workspace"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "liberia-rbs-workspace",
+      "group": "patient-chart",
+      "width": "narrow"
     }
   ]
 }

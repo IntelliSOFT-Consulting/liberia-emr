@@ -20,6 +20,17 @@ export const configSchema = {
       'UUID of the AMPATH form to open when the user clicks "Add" or "Edit". ' +
       'The form is launched inside the standard patient-form-entry-workspace.',
   },
+  entryWorkspace: {
+    _type: Type.String,
+    _default: '',
+    _description:
+      'Workspace opened by Add instead of an AMPATH form. Empty keeps the formUuid behavior.',
+  },
+  entryEncounterType: {
+    _type: Type.String,
+    _default: '',
+    _description: 'Encounter type saved by entryWorkspace. Empty when Add opens an AMPATH form.',
+  },
   encounterTypes: {
     _type: Type.Array,
     _elements: { _type: Type.String },
@@ -124,6 +135,8 @@ export const configSchema = {
 export interface ConfigObject {
   title: string;
   formUuid: string;
+  entryWorkspace: string;
+  entryEncounterType: string;
   encounterTypes: string[];
   displayMode: 'table' | 'graph' | 'switchable';
   data: Array<{

@@ -69,6 +69,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const session = useSession();
   const canWrite =
     !config.writePrivilege || Boolean(session?.user && userHasAccess(config.writePrivilege, session.user));
+  const canAdd = config.showAddButton !== false && canWrite && Boolean(config.entryWorkspace || config.formUuid);
   const canSee =
     !session?.user ||
     moduleEntryVisible((name) => userHasAccess(name, session.user), config.readPrivilege, config.writePrivilege);
@@ -87,15 +88,34 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
     return encounters.slice(start, start + config.maxEncounters);
   }, [encounters, page, config.maxEncounters]);
 
-  /** Launch the configured AMPATH form in the standard O3 workspace drawer */
+  /** Open the configured workspace, or the AMPATH form when no workspace is set. */
   const handleLaunchForm = useCallback(
     async (encounterUuid?: string) => {
-      if (!config.formUuid) {
+      const didStartVisit = await startVisitIfNeeded();
+      if (!didStartVisit) {
         return;
       }
 
-      const didStartVisit = await startVisitIfNeeded();
-      if (!didStartVisit) {
+      const chartStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
+      if (config.entryWorkspace) {
+        launchWorkspace2(
+          config.entryWorkspace,
+          {},
+          {},
+          {
+            patient: chartStore?.patient,
+            patientUuid,
+            visitContext: chartStore?.visitContext,
+            mutate: () => {
+              chartStore?.mutateVisitContext?.();
+              mutate();
+            },
+          },
+        );
+        return;
+      }
+
+      if (!config.formUuid) {
         return;
       }
 
@@ -107,10 +127,6 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
         showSnackbar({ kind: 'error', title: t('formLoadFailed', 'Unable to load form'), subtitle: err?.message });
         return;
       }
-
-      // Read the store AFTER the visit prompt resolves — values captured at render
-      // time are stale for a patient who had no open visit when clicked.
-      const chartStore = getGlobalStore<PatientChartStore>('patient-chart-global-store')?.getState();
 
       const workspaceProps = {
         workspaceTitle: data?.display ?? data?.name ?? config.title,
@@ -135,7 +151,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 
       launchWorkspace2('patient-form-entry-workspace', workspaceProps, {}, groupProps);
     },
-    [config.formUuid, config.title, startVisitIfNeeded, patientUuid, mutate, t],
+    [config.entryWorkspace, config.formUuid, config.title, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
   if (session?.user && !canSee) {
@@ -159,7 +175,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       <EmptyState
         displayText={config.title.toLowerCase()}
         headerTitle={config.title}
-        launchForm={config.formUuid && config.showAddButton !== false && canWrite ? () => handleLaunchForm() : undefined}
+        launchForm={canAdd ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -190,7 +206,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
           )}
 
           {/* Add button — always visible when formUuid is configured */}
-          {config.formUuid && config.showAddButton !== false && canWrite && (
+          {canAdd && (
             <Button
               kind="ghost"
               renderIcon={Add}
