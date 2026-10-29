@@ -44,6 +44,7 @@ import { formatHistoryCell } from './history-value';
 import { summarizeObsDisplays } from './keep-history-encounter';
 import { moduleEntryVisible } from './module-entry';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
+import { useRefreshPatientFlags } from '../patient-flags/use-refresh-patient-flags';
 import type { ConfigObject } from '../config-schema';
 import styles from './liberia-obs-widget.scss';
 
@@ -74,6 +75,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
     moduleEntryVisible((name) => userHasAccess(name, session.user), config.readPrivilege, config.writePrivilege);
 
   const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
+  useRefreshPatientFlags(patientUuid, encounters, isLoading);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'

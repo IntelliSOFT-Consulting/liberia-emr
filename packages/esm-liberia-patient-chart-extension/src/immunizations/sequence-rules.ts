@@ -62,6 +62,7 @@ export const sequenceRules: readonly SequenceRule[] = [
   rule({
     id: 'HPV2', series: 'hpv', sequenceNumber: 2,
     dueAge: hpvAge, upperAge: hpvUpper, prerequisiteId: 'HPV1', minimumInterval: { value: 6, unit: 'months' },
+    markOverdueAfterEligibleDate: true,
   }),
   rule({
     id: 'PediatricPfizer1', series: 'pediatric-pfizer', sequenceNumber: 1,
