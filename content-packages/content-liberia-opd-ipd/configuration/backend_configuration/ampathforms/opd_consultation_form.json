@@ -387,7 +387,7 @@
                         {
                             "id": "rbsUnit",
                             "label": "Initial blood sugar unit",
-                            "type": "obs",
+                            "type": "control",
                             "questionOptions": {
                                 "rendering": "radio",
                                 "isTransient": true,
