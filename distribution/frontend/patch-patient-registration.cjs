@@ -7,7 +7,7 @@ const spaDir = process.argv[2] ?? '/app/spa';
 const version = '11.1.0';
 // Bumped with every change to what is patched: the directory name is the import-map URL, so
 // a new revision is what stops browsers running a cached chunk from the previous one.
-const revision = 'liberia2';
+const revision = 'liberia3';
 const originalDirName = `openmrs-esm-patient-registration-app-${version}`;
 const patchedDirName = `${originalDirName}-${revision}`;
 const moduleDir = path.join(spaDir, originalDirName);
@@ -41,6 +41,192 @@ const identifierInputPrologue =
   'autoGeneration:b}))},[v,E]),N=!_&&z&&(!!v||x),F=!!v&&v!==A||!z&&x;';
 const identifierInputRender = 'return i().createElement("div",{className:Q.IDInput}';
 
+// Skip logic and radio coded attributes, ported from openmrs/openmrs-esm-patient-management#2741.
+// These helpers read only their arguments, so they are injected as their own source text into
+// the module that holds Field, SectionWrapper and the form; every bundle binding they need is
+// passed in by the minified call sites below.
+function __liberiaEmrAgeInYears(values) {
+  const birthDate = values.birthdate ? new Date(values.birthdate) : undefined;
+  if (birthDate && !isNaN(birthDate.getTime())) {
+    const today = new Date();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const birthdayPending = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate());
+    return today.getFullYear() - birthDate.getFullYear() - (birthdayPending ? 1 : 0);
+  }
+  return values.yearsEstimated ?? undefined;
+}
+
+function __liberiaEmrFieldValue(fieldId, values, config) {
+  const fieldDefinition = (config.fieldDefinitions || []).find((f) => f.id === fieldId);
+  if (fieldDefinition) {
+    if (fieldDefinition.type === 'person attribute') return values.attributes?.[fieldDefinition.uuid];
+    if (fieldDefinition.type === 'obs') return values.obs?.[fieldDefinition.uuid];
+    return undefined;
+  }
+  switch (fieldId) {
+    case 'gender':
+      return values.gender;
+    case 'dob':
+      return values.birthdate;
+    case 'phone':
+      return values.attributes?.[config.fieldConfigurations?.phone?.personAttributeUuid];
+    case 'causeOfDeath':
+      return values.deathCause;
+    case 'dateAndTimeOfDeath':
+      return values.deathDate;
+    default:
+      return values[fieldId];
+  }
+}
+
+function __liberiaEmrHides(element, values, config, ageInYears) {
+  if (element.hideIf) {
+    const { fieldId, value, notEquals } = element.hideIf;
+    const current = __liberiaEmrFieldValue(fieldId, values, config) ?? '';
+    if (value !== undefined && String(current) === String(value)) return true;
+    if (notEquals !== undefined && String(current) !== String(notEquals)) return true;
+  }
+  if (element.hideIfAge && ageInYears !== undefined) {
+    const { operator, value } = element.hideIfAge;
+    return (
+      (operator === '<' && ageInYears < value) ||
+      (operator === '>' && ageInYears > value) ||
+      (operator === '<=' && ageInYears <= value) ||
+      (operator === '>=' && ageInYears >= value) ||
+      (operator === '==' && ageInYears === value)
+    );
+  }
+  return false;
+}
+
+function __liberiaEmrClearHidden(values, hiddenFieldIds, config, initialAddress) {
+  const cleared = { ...values, attributes: { ...values.attributes }, obs: { ...values.obs } };
+  hiddenFieldIds.forEach((fieldId) => {
+    const fieldDefinition = (config.fieldDefinitions || []).find((f) => f.id === fieldId);
+    if (fieldDefinition) {
+      if (fieldDefinition.type === 'person attribute') delete cleared.attributes[fieldDefinition.uuid];
+      if (fieldDefinition.type === 'obs') delete cleared.obs[fieldDefinition.uuid];
+      return;
+    }
+    // Name, gender, dob and id stay: the backend requires them.
+    switch (fieldId) {
+      case 'phone':
+        delete cleared.attributes[config.fieldConfigurations?.phone?.personAttributeUuid];
+        break;
+      case 'address':
+        cleared.address = { ...initialAddress };
+        break;
+      case 'causeOfDeath':
+        cleared.deathCause = '';
+        cleared.nonCodedCauseOfDeath = '';
+        break;
+      case 'dateAndTimeOfDeath':
+        cleared.deathDate = '';
+        cleared.deathTime = '';
+        break;
+    }
+  });
+  return cleared;
+}
+
+// Re-evaluated with hidden fields cleared until stable, so a condition never reads the stale
+// value of a field that is itself hidden.
+function __liberiaEmrHiddenElements(values, config) {
+  values = values || {};
+  const fieldDefinitions = config.fieldDefinitions || [];
+  const sections = (config.sections || [])
+    .map((id) => (config.sectionDefinitions || []).find((s) => s.id === id))
+    .filter(Boolean);
+  const ageInYears = __liberiaEmrAgeInYears(values);
+  const evaluate = (current) => {
+    const fieldIds = new Set();
+    const sectionIds = new Set();
+    sections.forEach((section) => {
+      if (__liberiaEmrHides(section, current, config, ageInYears)) {
+        sectionIds.add(section.id);
+        (section.fields || []).forEach((fieldId) => fieldIds.add(fieldId));
+      }
+    });
+    fieldDefinitions.forEach((field) => {
+      if (__liberiaEmrHides(field, current, config, ageInYears)) fieldIds.add(field.id);
+    });
+    return { fieldIds, sectionIds };
+  };
+  const same = (a, b) => a.size === b.size && [...a].every((item) => b.has(item));
+  let hidden = evaluate(values);
+  for (let pass = 0; pass <= sections.length + fieldDefinitions.length; pass++) {
+    const next = evaluate(__liberiaEmrClearHidden(values, hidden.fieldIds, config));
+    if (same(next.fieldIds, hidden.fieldIds) && same(next.sectionIds, hidden.sectionIds)) break;
+    hidden = next;
+  }
+  return hidden;
+}
+
+// A hidden field is never saved, whatever was typed into it before it was hidden.
+function __liberiaEmrSanitize(values, config, initialValues) {
+  const { fieldIds } = __liberiaEmrHiddenElements(values, config);
+  return __liberiaEmrClearHidden(values, fieldIds, config, initialValues?.address);
+}
+
+const skipLogicHelpers = [
+  __liberiaEmrAgeInYears,
+  __liberiaEmrFieldValue,
+  __liberiaEmrHides,
+  __liberiaEmrClearHidden,
+  __liberiaEmrHiddenElements,
+  __liberiaEmrSanitize,
+]
+  .map(String)
+  .join('');
+
+// Config schema chunk: r = esm-framework. Keys appended to sectionDefinitions[] and
+// fieldDefinitions[] elements, so the framework validates them instead of rejecting them.
+const schemaMarker = '/*liberiaEmrSkipLogicSchema*/';
+const skipLogicSchema =
+  'hideIf:{_type:r.Type.Object,_default:null,_description:"Skip logic: hide this when another field has a value.",' +
+  '_validators:[(0,r.validator)(function(e){return null==e||"string"==typeof e.fieldId&&""!==e.fieldId.trim()&&' +
+  '(void 0!==e.value||void 0!==e.notEquals)},"hideIf must have a non-empty `fieldId` and either `value` or `notEquals`.")]},' +
+  'hideIfAge:{_type:r.Type.Object,_default:null,_description:"Skip logic: hide this based on patient age.",' +
+  '_validators:[(0,r.validator)(function(e){return null==e||["<",">","<=",">=","=="].includes(e.operator)&&' +
+  '"number"==typeof e.value},"hideIfAge must have an `operator` (one of <, >, <=, >=, ==) and a numeric `value`.")]}';
+const displayStyleSchema =
+  'displayStyle:{_type:r.Type.String,_default:"dropdown",' +
+  '_description:"How to render coded person attributes. Can be \\"dropdown\\" or \\"radio\\".",' +
+  '_validators:[r.validators.oneOf(["dropdown","radio"])]}';
+const sectionSchemaEnd = '_elements:{_type:r.Type.String}}}},fieldDefinitions:{';
+const fieldSchemaEnd =
+  '_description:"The custom label for the answer concept."}}}}},fieldConfigurations:{';
+
+// Field (nq), SectionWrapper (te) and the form (tA) in the main chunk. ee() =
+// usePatientRegistrationContext(); in the form, eE = useConfig(), eO = the initial form values,
+// eH = the configured sections, and onSubmit's e = the submitted values.
+const fieldStart = 'function nq(e){var n=e.name,t=(0,u.useConfig)();';
+const sectionWrapperStart =
+  'te=function(e){var n=e.sectionDefinition,t=e.index,a=(0,m.useTranslation)().t;return';
+const jumpToLinks = 'e$("jumpTo","Jump to")),eH.map(function(e){';
+const submitStart = 'case 0:var d,f;t=new AbortController,n.setSubmitting(!0),';
+
+// CodedPersonAttributeField (eU): t = id, r = personAttributeType, s = label, d = required,
+// b = field name, _ = answers, y = t(); in the Formik render, n = field and a = form.
+const radioMarker = '/*liberiaEmrRadioCodedAttribute*/';
+const codedAttributeCall = 'case"org.openmrs.Concept":return i().createElement(eU,{';
+const codedAttributeStart = 'function eU(e){var n,t=e.id,';
+const codedAttributeField =
+  'i().createElement($.D0,{name:b},function(e){var n=e.field,a=e.form,o=a.touched,l=a.errors;';
+const codedAttributeSelect =
+  'return e.meta,i().createElement(i().Fragment,null,i().createElement(c.l6P,eL({id:t,';
+const codedAttributeRadio =
+  'if("radio"===__liberiaEmrDisplayStyle){var __liberiaEmrInvalid=!!((e.meta.touched||a.submitCount>0)&&e.meta.error);' +
+  'return i().createElement("div",{className:ev.attributeField},' +
+  'i().createElement("div",{className:ev.dobContentSwitcherLabel},' +
+  'i().createElement("span",{id:t+"-label",className:ev.label01},null!=s?s:r.display)),' +
+  'i().createElement(c.Tps,{id:t,size:"md","aria-labelledby":t+"-label","aria-invalid":__liberiaEmrInvalid,"aria-required":d,' +
+  'style:{display:"grid",gridAutoFlow:"column",gridAutoColumns:"1fr",width:"max-content"},' +
+  'selectedIndex:_.findIndex(function(x){return x.uuid===n.value}),' +
+  'onChange:function(x){a.setFieldValue(b,x.name),a.setFieldTouched(b,!0,!1)}},' +
+  '_.map(function(x){return i().createElement(c.dOG,{key:x.uuid,name:x.uuid,text:x.label})})),' +
+  '__liberiaEmrInvalid&&i().createElement("div",{role:"alert",className:ev.radioFieldError},y(e.meta.error,e.meta.error)))}';
+
 const patches = [
   {
     // Registration app 11.1.0 disables its button through Formik state, but two click events
@@ -67,7 +253,68 @@ const patches = [
       ],
     ],
   },
+  {
+    description: 'skip logic config schema',
+    marker: schemaMarker,
+    replacements: [
+      [
+        sectionSchemaEnd,
+        `_elements:{_type:r.Type.String}},${schemaMarker}${skipLogicSchema}}},fieldDefinitions:{`,
+      ],
+      [
+        fieldSchemaEnd,
+        '_description:"The custom label for the answer concept."}}},' +
+          `${skipLogicSchema},${displayStyleSchema}}},fieldConfigurations:{`,
+      ],
+    ],
+  },
+  {
+    // A section or field whose hideIf/hideIfAge matches is not rendered, not linked from
+    // "Jump to", and its values are dropped on submit. All hooks run before each early return.
+    description: 'skip logic for sections and fields',
+    marker: '__liberiaEmrHiddenElements',
+    replacements: [
+      [
+        fieldStart,
+        skipLogicHelpers +
+          fieldStart +
+          'if(__liberiaEmrHiddenElements(ee().values,t).fieldIds.has(n))return null;',
+      ],
+      [
+        sectionWrapperStart,
+        sectionWrapperStart.slice(0, -'return'.length) +
+          'if(__liberiaEmrHiddenElements(ee().values,(0,u.useConfig)()).sectionIds.has(n.id))return null;return',
+      ],
+      [
+        jumpToLinks,
+        'e$("jumpTo","Jump to")),eH.filter(function(n){return!this.has(n.id)},' +
+          '__liberiaEmrHiddenElements(e.values,eE).sectionIds).map(function(e){',
+      ],
+      [submitStart, `case 0:var d,f;e=__liberiaEmrSanitize(e,eE,eO),${submitStart.slice('case 0:var d,f;'.length)}`],
+    ],
+  },
+  {
+    // displayStyle "radio" renders a coded person attribute as a ContentSwitcher (c.Tps, with
+    // c.dOG switches, as "Date of birth known?" does) instead of a Select.
+    description: 'radio coded person attributes',
+    marker: radioMarker,
+    replacements: [
+      [codedAttributeCall, `${codedAttributeCall}displayStyle:f.displayStyle,`],
+      [codedAttributeStart, `function eU(e){${radioMarker}var __liberiaEmrDisplayStyle=e.displayStyle,n,t=e.id,`],
+      [
+        codedAttributeField + codedAttributeSelect,
+        'i().createElement($.D0,{name:b,validate:function(e){if(d&&!e)return y("attributeFieldRequired","This field is required")}},' +
+          'function(e){var n=e.field,a=e.form,o=a.touched,l=a.errors;' +
+          codedAttributeRadio +
+          codedAttributeSelect,
+      ],
+    ],
+  },
 ];
+
+module.exports = { __liberiaEmrHiddenElements, __liberiaEmrSanitize };
+// Required by the test: export the helpers without touching a bundle.
+if (require.main !== module) return;
 
 if (!fs.existsSync(moduleDir)) {
   throw new Error(`Patient registration app ${version} was not assembled at ${moduleDir}`);

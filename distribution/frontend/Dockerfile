@@ -53,8 +53,11 @@ RUN set -eu; \
       --spa-path /openmrs/spa/ --api-url /openmrs/ --page-title LiberiaEMR ${config_args}
 
 # Registration app 11.1.0 disables its button through Formik state, but two click events can
-# enter onSubmit before React commits that state. The patch is pinned and asserts the exact
-# compiled input, so an upstream release cannot silently receive an incompatible rewrite.
+# enter onSubmit before React commits that state. The same patch hides server-generated
+# identifiers while creating a patient, and ports skip logic (hideIf/hideIfAge) and radio coded
+# person attributes from openmrs-esm-patient-management#2741 for the referral toggle (LE-223).
+# The patch is pinned and asserts the exact compiled input, so an upstream release cannot
+# silently receive an incompatible rewrite.
 COPY patch-patient-registration.cjs /app/patch-patient-registration.cjs
 RUN node /app/patch-patient-registration.cjs
 

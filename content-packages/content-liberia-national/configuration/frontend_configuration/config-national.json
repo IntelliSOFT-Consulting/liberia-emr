@@ -177,6 +177,7 @@
         "name": "Referral Details",
         "fields": [
           "purposeOfVisit",
+          "patientReferred",
           "referredFrom",
           "referredBy",
           "referralRefNumber",
@@ -201,32 +202,65 @@
         "placeholder": "Purpose of Visit"
       },
       {
+        "id": "patientReferred",
+        "type": "person attribute",
+        "uuid": "${var.personattribute.patient-referred.uuid}",
+        "label": "Has the patient been referred?",
+        "displayStyle": "radio",
+        "customConceptAnswers": [
+          {
+            "uuid": "${var.concept.ciel.yes.uuid}",
+            "label": "Yes"
+          },
+          {
+            "uuid": "${var.concept.ciel.no.uuid}",
+            "label": "No"
+          }
+        ]
+      },
+      {
         "id": "referredFrom",
         "type": "person attribute",
         "uuid": "${var.personattribute.referred-from.uuid}",
         "label": "Referred from",
-        "placeholder": "Referred from details"
+        "placeholder": "Referred from details",
+        "hideIf": {
+          "fieldId": "patientReferred",
+          "notEquals": "${var.concept.ciel.yes.uuid}"
+        }
       },
       {
         "id": "referredBy",
         "type": "person attribute",
         "uuid": "${var.personattribute.referred-by.uuid}",
         "label": "Referred by",
-        "placeholder": "Referred by"
+        "placeholder": "Referred by",
+        "hideIf": {
+          "fieldId": "patientReferred",
+          "notEquals": "${var.concept.ciel.yes.uuid}"
+        }
       },
       {
         "id": "referralRefNumber",
         "type": "person attribute",
         "uuid": "${var.personattribute.referral-ref-number.uuid}",
         "label": "Referral reference number",
-        "placeholder": "1234567"
+        "placeholder": "1234567",
+        "hideIf": {
+          "fieldId": "patientReferred",
+          "notEquals": "${var.concept.ciel.yes.uuid}"
+        }
       },
       {
         "id": "reasonForReferral",
         "type": "person attribute",
         "uuid": "${var.personattribute.reason-for-referral.uuid}",
         "label": "Reason for referral",
-        "placeholder": "Reason for referral"
+        "placeholder": "Reason for referral",
+        "hideIf": {
+          "fieldId": "patientReferred",
+          "notEquals": "${var.concept.ciel.yes.uuid}"
+        }
       },
       {
         "id": "telephoneNumber",
