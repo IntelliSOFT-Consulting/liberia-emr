@@ -136,9 +136,10 @@ public final class ModuleAccessInstaller {
 	}
 
 	/**
-	 * {@code saveVisit} only. While it runs, a matrix role that already holds the visit privilege
-	 * the save requires may pass the visit date check without reading encounters. No other visit
-	 * method opens that scope.
+	 * {@code saveVisit} and {@code endVisit}, the two calls that run core's visit validator. While
+	 * one runs for a matrix role that already holds the visit privilege it requires, the validator's
+	 * encounter lookup may proceed so the visit date check still applies. No other visit method
+	 * opens that scope.
 	 */
 	private static void adviseVisitSaves() {
 		Object proxy = Context.getService(VisitService.class);
@@ -149,7 +150,7 @@ public final class ModuleAccessInstaller {
 		((Advised) proxy).addAdvisor(0, new StaticMethodMatcherPointcutAdvisor(new VisitSaveEncounterScope()) {
 			@Override
 			public boolean matches(Method method, Class<?> targetClass) {
-				return "saveVisit".equals(method.getName());
+				return "saveVisit".equals(method.getName()) || "endVisit".equals(method.getName());
 			}
 		});
 	}

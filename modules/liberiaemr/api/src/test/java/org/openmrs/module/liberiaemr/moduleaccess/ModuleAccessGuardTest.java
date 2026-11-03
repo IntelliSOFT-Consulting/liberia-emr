@@ -38,7 +38,7 @@ import org.openmrs.Role;
 import org.openmrs.TestOrder;
 import org.openmrs.User;
 import org.openmrs.Visit;
-import org.openmrs.VisitType;
+import org.openmrs.api.ValidationException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.ContextAuthenticationException;
 import org.openmrs.module.liberiaemr.ContentUuids;
@@ -376,65 +376,112 @@ public class ModuleAccessGuardTest extends BaseModuleContextSensitiveTest {
 	}
 
 	/**
-	 * The queue number is stored by saving the visit that already exists. That save asks for the
-	 * visit's encounters. An encounter dated after the visit stop would fail the save if it were
-	 * visible. Registrar must not receive it, and a later direct read must still be refused.
+	 * The queue number is stored by saving the visit that already exists. That save runs core's
+	 * visit validator, which reads the visit's encounters to keep them inside the visit's dates.
+	 * Registrar has no encounter read, but the check must still run: a valid re-save succeeds, a
+	 * stop or start date that would leave an encounter outside the visit is rejected, and no
+	 * encounter read is available to Registrar afterwards.
 	 */
-	@Test public void registrarResavesAVisitWithoutReadingEncounters() throws Exception {
+	@Test public void registrarResavesAVisitAndTheDateCheckStillApplies() throws Exception {
 		Patient patient = Context.getPatientService().getPatient(2);
-		VisitType type = Context.getVisitService().getAllVisitTypes().get(0);
 		long now = System.currentTimeMillis();
-		Visit created = new Visit();
-		created.setPatient(patient);
-		created.setVisitType(type);
-		created.setStartDatetime(new Date(now - 2 * 60 * 60 * 1000));
-		created = Context.getVisitService().saveVisit(created);
-		Encounter encounter = labor();
-		encounter.setEncounterDatetime(new Date(now));
-		encounter.setVisit(created);
-		Integer encounterId = Context.getEncounterService().saveEncounter(encounter).getId();
-		as("Registrar", PrivilegeConstants.GET_PATIENTS, PrivilegeConstants.ADD_VISITS, PrivilegeConstants.EDIT_VISITS,
-		        PrivilegeConstants.GET_VISITS, PrivilegeConstants.GET_VISIT_TYPES, PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES,
-		        "Get Queue Entries", "Get Beds", "Get Admission Locations");
+		Visit created = visitWithEncounterAt(patient, now - 2 * HOUR, now - HOUR);
+		Integer encounterId = Context.getEncounterService().getEncountersByVisit(created, false).get(0).getId();
+		asRegistrarWithVisitEdit();
+
 		Visit stored = Context.getVisitService().getVisit(created.getId());
-		stored.setStopDatetime(new Date(now - 60 * 60 * 1000));
-		Visit saved = Context.getVisitService().saveVisit(stored);
-		assertNotNull(saved.getId());
+		stored.setStopDatetime(new Date(now));
+		assertNotNull("a re-save with valid dates succeeds", Context.getVisitService().saveVisit(stored).getId());
+
+		stored.setStopDatetime(new Date(now - 90 * MINUTE));
+		assertRejectedByDateCheck(() -> Context.getVisitService().saveVisit(stored));
+		Context.evictFromSession(stored);
+
+		Visit reloaded = Context.getVisitService().getVisit(created.getId());
+		reloaded.setStartDatetime(new Date(now - 30 * MINUTE));
+		assertRejectedByDateCheck(() -> Context.getVisitService().saveVisit(reloaded));
+		Context.evictFromSession(reloaded);
+
 		assertFalse(VisitSaveEncounterScope.openNow());
 		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_ENCOUNTERS));
 		assertFalse(Context.hasPrivilege("Manage Appointments"));
 		assertFalse(Context.hasPrivilege("Manage Own Appointments"));
+		Visit saved = Context.getVisitService().getVisit(created.getId());
+		assertDenied(() -> Context.getEncounterService().getEncountersByVisit(saved, false));
+		assertDenied(() -> Context.getEncounterService().getEncounter(encounterId));
+		assertDenied(() -> Context.getObsService().getObservationsByPerson(patient));
+		assertDenied(() -> Context.getFormService().getAllForms());
+		assertDenied(() -> Context.getConditionService().getActiveConditions(patient));
+	}
+
+	/** endVisit runs the same validator, so the same scope and the same date check apply. */
+	@Test public void registrarEndsAVisitAndTheDateCheckStillApplies() throws Exception {
+		Patient patient = Context.getPatientService().getPatient(2);
+		long now = System.currentTimeMillis();
+		Visit early = visitWithEncounterAt(patient, now - 4 * HOUR, now - 3 * HOUR);
+		asRegistrarWithVisitEdit();
+		Visit toEnd = Context.getVisitService().getVisit(early.getId());
+		assertRejectedByDateCheck(() -> Context.getVisitService().endVisit(toEnd, new Date(now - 210 * MINUTE)));
+		assertNotNull(Context.getVisitService().endVisit(toEnd, new Date(now - 2 * HOUR)).getStopDatetime());
+		assertFalse(VisitSaveEncounterScope.openNow());
+		assertFalse(Context.hasPrivilege(PrivilegeConstants.GET_ENCOUNTERS));
+	}
+
+	/** A proxied Edit Visits is not a standing grant, so it does not open the scope. */
+	@Test public void proxiedEditVisitsDoesNotOpenTheVisitSaveScope() throws Exception {
+		Patient patient = Context.getPatientService().getPatient(2);
+		long now = System.currentTimeMillis();
+		Visit created = visitWithEncounterAt(patient, now - 2 * HOUR, now - HOUR);
+		as("Registrar", PrivilegeConstants.GET_PATIENTS, PrivilegeConstants.GET_VISITS, PrivilegeConstants.GET_VISIT_TYPES,
+		        PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES);
+		Context.addProxyPrivilege(PrivilegeConstants.EDIT_VISITS);
 		try {
-			Context.getEncounterService().getEncountersByVisit(saved, false);
-			fail("a direct encounter read is still denied");
+			Visit stored = Context.getVisitService().getVisit(created.getId());
+			stored.setStopDatetime(new Date(now));
+			assertDenied(() -> Context.getVisitService().saveVisit(stored));
 		}
-		catch (RuntimeException e) {
-			assertTrue(e.toString(), denied(e));
+		finally {
+			Context.removeProxyPrivilege(PrivilegeConstants.EDIT_VISITS);
 		}
+	}
+
+	private static final long MINUTE = 60 * 1000L;
+
+	private static final long HOUR = 60 * MINUTE;
+
+	private Visit visitWithEncounterAt(Patient patient, long visitStart, long encounterAt) throws Exception {
+		Visit visit = new Visit();
+		visit.setPatient(patient);
+		visit.setVisitType(Context.getVisitService().getAllVisitTypes().get(0));
+		visit.setStartDatetime(new Date(visitStart));
+		visit = Context.getVisitService().saveVisit(visit);
+		Encounter encounter = labor();
+		encounter.setEncounterDatetime(new Date(encounterAt));
+		encounter.setVisit(visit);
+		Context.getEncounterService().saveEncounter(encounter);
+		return visit;
+	}
+
+	private void asRegistrarWithVisitEdit() throws Exception {
+		as("Registrar", PrivilegeConstants.GET_PATIENTS, PrivilegeConstants.ADD_VISITS, PrivilegeConstants.EDIT_VISITS,
+		        PrivilegeConstants.GET_VISITS, PrivilegeConstants.GET_VISIT_TYPES, PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES,
+		        "Get Queue Entries", "Get Beds", "Get Admission Locations", PrivilegeConstants.GET_CONCEPTS);
+	}
+
+	private static void assertRejectedByDateCheck(Runnable call) {
 		try {
-			Context.getEncounterService().getEncounter(encounterId);
-			fail("the encounter on the visit is still denied");
+			call.run();
+			fail("a visit date outside its encounters must be rejected");
 		}
-		catch (RuntimeException e) {
-			assertTrue(e.toString(), denied(e));
+		catch (ValidationException e) {
+			// expected: VisitValidator saw the encounter
 		}
+	}
+
+	private static void assertDenied(Runnable call) {
 		try {
-			Context.getObsService().getObservationsByPerson(patient);
-			fail("observations stay denied");
-		}
-		catch (RuntimeException e) {
-			assertTrue(e.toString(), denied(e));
-		}
-		try {
-			Context.getFormService().getAllForms();
-			fail("forms stay denied");
-		}
-		catch (RuntimeException e) {
-			assertTrue(e.toString(), denied(e));
-		}
-		try {
-			Context.getConditionService().getActiveConditions(patient);
-			fail("conditions stay denied");
+			call.run();
+			fail("must stay denied");
 		}
 		catch (RuntimeException e) {
 			assertTrue(e.toString(), denied(e));

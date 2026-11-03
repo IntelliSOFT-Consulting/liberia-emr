@@ -236,8 +236,10 @@ Why each role:
 - **Registrar** creates a patient, starts a visit, and queues the patient to a service provider.
   That is the role description on the approved Roles & Permissions matrix, not a clinical module
   cell. It holds the visit, bed-read, and queue privileges that those two actions actually call,
-  and it does not hold `Get Encounters`. Saving the queue number re-saves the visit; during that
-  already-authorized save the visit date check is given no encounters (see
+  plus `Get Concepts`, because a queue's priorities and statuses are concepts and the queue list
+  fails without it. It does not hold `Get Encounters`. Saving the queue number re-saves the visit;
+  during that already-authorized save the visit date check still reads the visit's encounters,
+  under a proxy that ends with the save (see
   [module access enforcement](module-access-enforcement.md)). It does not hold
   `Manage Appointments` or `Manage Own Appointments`. Bahmni's separate
   `POST /appointments/{uuid}/status-change` therefore stays forbidden. LE-628's acceptance

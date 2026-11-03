@@ -12,17 +12,18 @@ package org.openmrs.module.liberiaemr.moduleaccess;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.openmrs.Visit;
-import org.openmrs.api.context.Context;
 import org.openmrs.util.PrivilegeConstants;
 
 /**
- * Thread-local scope for one already-authorized {@code VisitService.saveVisit}.
+ * Thread-local scope for one already-authorized {@code VisitService.saveVisit} or
+ * {@code VisitService.endVisit}.
  *
- * <p>Core's visit validator asks for that visit's encounters while the save is in progress.
- * {@link ModuleAccessGuard} uses this scope to answer that lookup with no encounters for a matrix
- * role that has no clinical read, without proxying {@code Get Encounters}. The scope is open only
- * when the caller already holds {@code Add Visits} for a new visit or {@code Edit Visits} for an
- * existing one, and it is cleared before {@code saveVisit} returns.
+ * <p>Core's {@code VisitValidator} reads that visit's encounters during the call to check that
+ * they fall within the visit's start and stop dates. {@link ModuleAccessGuard} uses this scope to
+ * proxy {@code Get Encounters} for that lookup only, so the check still runs for a matrix role
+ * such as Registrar that has no encounter read. The scope is open only when the caller's own roles
+ * hold {@code Add Visits} for a new visit or {@code Edit Visits} for an existing one (a proxy
+ * privilege does not count), and it is cleared before the call returns or throws.
  */
 public final class VisitSaveEncounterScope implements MethodInterceptor {
 	private static final ThreadLocal<Integer> DEPTH = new ThreadLocal<>();
@@ -49,19 +50,15 @@ public final class VisitSaveEncounterScope implements MethodInterceptor {
 		}
 	}
 
-	/** The privilege {@code VisitServiceImpl.saveVisit} requires for this visit, already held. */
+	/**
+	 * The visit is the first argument of both {@code saveVisit(Visit)} and
+	 * {@code endVisit(Visit, Date)}. Core requires Add Visits for a new visit and Edit Visits for
+	 * an existing one; this only checks that the caller's own roles already hold it, and core still
+	 * enforces its own check on the call.
+	 */
 	private static boolean alreadyAuthorized(Object[] args) {
-		Visit visit = null;
-		if (args != null) {
-			for (Object arg : args) {
-				if (arg instanceof Visit) {
-					visit = (Visit) arg;
-					break;
-				}
-			}
-		}
-		if (visit == null) { return false; }
-		String privilege = visit.getId() == null ? PrivilegeConstants.ADD_VISITS : PrivilegeConstants.EDIT_VISITS;
-		return Context.hasPrivilege(privilege);
+		if (args == null || args.length == 0 || !(args[0] instanceof Visit)) { return false; }
+		Visit visit = (Visit) args[0];
+		return ModulePrivileges.own(visit.getId() == null ? PrivilegeConstants.ADD_VISITS : PrivilegeConstants.EDIT_VISITS);
 	}
 }

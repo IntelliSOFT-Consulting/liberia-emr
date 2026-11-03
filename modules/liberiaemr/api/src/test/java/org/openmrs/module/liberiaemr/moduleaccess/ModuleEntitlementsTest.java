@@ -242,13 +242,16 @@ public class ModuleEntitlementsTest {
 	 * Edit Visits is required because {@code VisitServiceImpl.saveVisit} demands it once the
 	 * visit has an id, which is how the queue number is stored. Get Queue Entries is required
 	 * because the queue module's visit validator lists that visit's entries on the same save.
+	 * Get Concepts is required because a queue's REST representation includes its allowed
+	 * priorities and statuses, which are concepts; without it the queue list fails and check-in
+	 * shows no services.
 	 */
 	@Test public void registrarCanStartAVisitAndQueueWithoutClinicalAccess() throws Exception {
 		Map<String, String[]> rows = roles();
 		Set<String> privileges = grants("Registrar", rows, new HashSet<String>());
 		for (String privilege : Arrays.asList("Get Visits", "Add Visits", "Edit Visits", "Get Visit Types",
 		        "Get Visit Attribute Types", "Get Beds", "Get Admission Locations", "Get Queues", "Get Queue Entries",
-		        "Manage Queue Entries")) {
+		        "Manage Queue Entries", "Get Concepts")) {
 			assertTrue(privilege, privileges.contains(privilege));
 		}
 		for (String privilege : Arrays.asList("Manage Queues", "Purge Queues",

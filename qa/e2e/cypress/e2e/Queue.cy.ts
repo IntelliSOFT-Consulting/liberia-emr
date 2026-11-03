@@ -21,8 +21,9 @@ describe('Queue', () => {
     const registrationPage = new RegistrationPage();
     const queuePage = new QueuePage();
     const visitPage = new VisitPage();
-    // A throwaway account on the disposable demo stack, with a password generated per run.
+    // Throwaway accounts on the disposable demo stack, with a password generated per run.
     const officer: Auth = { username: `e2e-queue-officer-${Date.now()}`, password: runPassword('Queue') };
+    const registrar: Auth = { username: `e2e-queue-registrar-${Date.now()}`, password: runPassword('Queue') };
 
     const registerNewPatient = (): string => {
         const firstName = faker.person.firstName();
@@ -52,6 +53,7 @@ describe('Queue', () => {
 
     before(() => {
         createUser(officer, ['Records Officer']);
+        createUser(registrar, ['Registrar']);
     });
 
     beforeEach(() => {
@@ -106,6 +108,40 @@ describe('Queue', () => {
             });
             cy.contains('Visit ended', { timeout: 20000 }).should('be.visible');
             cy.contains('Error ending visit').should('not.exist');
+            visitPage.verifyVisitNotActive();
+        });
+    })
+
+    /**
+     * LE-628. Registrar holds no encounter read and no billing privilege. The queue list needs
+     * Get Concepts (a queue's priorities and statuses are concepts): without it the Service field
+     * said "No services configured" and the patient could not be queued. Storing the queue number
+     * and ending the visit both re-save the visit, which runs core's visit date check over the
+     * visit's encounters; that check must still run, and must not fail on Get Encounters.
+     */
+    it('lets a Registrar check a patient in, queue them and end the visit (LE-628)', () => {
+        const patientName = registerNewPatient();
+
+        currentPatientUuid().then((patientUuid) => {
+            loginAs(registrar, 'queue');
+            queuePage.visitHomePage();
+            cy.location('pathname', { timeout: 30000 }).should('eq', '/openmrs/spa/home/service-queues');
+            cy.contains(/patients currently in queue/i, { timeout: 30000 }).should('be.visible');
+            queuePage.searchAndSelectPatient(patientName);
+            queuePage.startVisitFromSearch('Outpatient', null);
+            queuePage.verifyPatientInQueue(patientName, 'TB Screening');
+            cy.get(ERROR_NOTIFICATION).should('not.exist');
+
+            cy.intercept('POST', '**/ws/rest/v1/visit/*').as('endVisit');
+            cy.visit(`/openmrs/spa/patient/${patientUuid}/chart/Patient Summary`);
+            visitPage.verifyVisitActive();
+            visitPage.endVisit();
+
+            cy.wait('@endVisit', { timeout: 30000 }).then(({ request, response }) => {
+                expect(request.body, 'the end-visit call').to.have.property('stopDatetime');
+                expect(response?.statusCode, `end visit answered ${JSON.stringify(response?.body)}`).to.eq(200);
+            });
+            cy.contains('Visit ended', { timeout: 20000 }).should('be.visible');
             visitPage.verifyVisitNotActive();
         });
     })
