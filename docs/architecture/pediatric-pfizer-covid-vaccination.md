@@ -105,10 +105,13 @@ v1.10 is frozen as `var.form.immunization.v1-10.uuid`
 (`94f8fe92-b48c-3d44-a133-c572fa0b17bd`).
 v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`) is frozen as
 `var.form.immunization.v1-11.uuid`. v1.12 (`52b3da7c-1749-3c54-9e65-2a508dad2748`)
-is frozen as `var.form.immunization.v1-12.uuid`. The current form is v1.13
-(`0d652152-7780-3b5e-a3fe-f6921a5f795b`), stored as
+is frozen as `var.form.immunization.v1-12.uuid`. v1.13
+(`0d652152-7780-3b5e-a3fe-f6921a5f795b`) is frozen as
+`var.form.immunization.v1-13.uuid`. The current form is v1.14
+(`bcdd02a7-7a3a-303b-835d-79352d597eb9`), stored as
 `var.form.immunization.uuid`. v1.11 repeats one vaccine administration group per
 vaccine inside the same encounter. The stored questions are the same as v1.10.
 v1.11 changes the dose 1 history-unavailable warning only. v1.12 keeps that
 behavior and lists HPV1 and HPV2. v1.13 adds HPV eligibility and does not change
-the Pediatric Pfizer validators.
+the Pediatric Pfizer validators. v1.14 adds the generic duplicate gate and does
+not change the Pediatric Pfizer validators.

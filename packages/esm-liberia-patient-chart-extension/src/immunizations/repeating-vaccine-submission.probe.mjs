@@ -298,8 +298,8 @@ function metaOf(fields, id) {
 }
 
 const comparisonIds = [
-  'vaccine_administration', 'vaccine_name', 'route', 'return_date', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status', 'hpv_gate', 'hpv_status',
-  'vaccine_administration_1', 'vaccine_name_1', 'route_1', 'return_date_1', 'td_gate_1', 'pediatric_pfizer_gate_1', 'pediatric_pfizer_status_1', 'hpv_gate_1', 'hpv_status_1',
+  'vaccine_administration', 'vaccine_name', 'route', 'return_date', 'td_gate', 'pediatric_pfizer_gate', 'pediatric_pfizer_status', 'hpv_gate', 'hpv_status', 'already_captured_gate',
+  'vaccine_administration_1', 'vaccine_name_1', 'route_1', 'return_date_1', 'td_gate_1', 'pediatric_pfizer_gate_1', 'pediatric_pfizer_status_1', 'hpv_gate_1', 'hpv_status_1', 'already_captured_gate_1',
 ];
 
 process.stdout.write(`${JSON.stringify({
