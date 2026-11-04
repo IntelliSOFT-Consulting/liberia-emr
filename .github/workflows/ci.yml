@@ -237,6 +237,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sonar
 
+      # validate-configurations starts Testcontainers 1.15, which speaks Docker API 1.30; the
+      # runner's Docker 29 rejects anything below 1.40 unless the daemon lowers its minimum.
+      - name: Allow the Initializer validator's Docker API version
+        run: |
+          sudo mkdir -p /etc/systemd/system/docker.service.d
+          printf '[Service]\nEnvironment=DOCKER_MIN_API_VERSION=1.24\n' \
+            | sudo tee /etc/systemd/system/docker.service.d/min-api-version.conf
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+          docker version --format 'Docker {{.Server.Version}}, min API {{.Server.MinAPIVersion}}'
+
       - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
 

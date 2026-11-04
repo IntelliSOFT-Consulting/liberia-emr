@@ -72,9 +72,9 @@ describe('Immunization form Td entry point', () => {
   const vaccinationSection = form.pages[0].sections.find((section: { label: string }) => section.label === 'Vaccination');
 
   it('versions the form from its name and version', () => {
-    assert.equal(form.version, '1.13');
+    assert.equal(form.version, '1.14');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.13';
+    const seed = '794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.14';
     const digest = createHash('md5').update(seed).digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
@@ -85,6 +85,7 @@ describe('Immunization form Td entry point', () => {
     assert.match(variables, /^var\.form\.immunization\.v1-10\.uuid=94f8fe92-b48c-3d44-a133-c572fa0b17bd$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-11\.uuid=6bf44913-ca7a-358c-a066-6de97661f13d$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-12\.uuid=52b3da7c-1749-3c54-9e65-2a508dad2748$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-13\.uuid=0d652152-7780-3b5e-a3fe-f6921a5f795b$/m);
   });
 
   it('keeps childhood vaccines available and gates only Td', () => {
@@ -214,7 +215,8 @@ describe('Immunization form Td entry point', () => {
   });
 
   it('applies the shipped validators to Td and leaves other vaccines alone', () => {
-    const validators = (question('route').validators ?? []).filter((validator) => validator.failsWhenExpression.includes('isTdVaccine'));
+    const validators = (question('route').validators ?? []).filter((validator) =>
+      validator.failsWhenExpression.includes('isTdVaccine') && !validator.failsWhenExpression.includes('already_captured_gate'));
     assert.deepEqual(validators.map((validator) => validator.message), [
       'Td cannot be given because pregnancy status or tetanus history could not be checked.',
       'Confirm the current pregnancy before giving Td. Pregnancy status is not recorded.',
