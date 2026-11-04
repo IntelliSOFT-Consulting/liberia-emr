@@ -9,7 +9,9 @@
  * First consumer: TB Screening (content-liberia-national).
  * Also hosts globally loaded form-engine expression helpers (current-pregnancy
  * ANC numeric lookup for L&D Gravida/Parity prefill, Td pregnancy eligibility,
- * Pediatric Pfizer age, interval and duplicate checks, the transient WHO
+ * Pediatric Pfizer age, interval and duplicate checks, HPV sex, age,
+ * sequence and duplicate checks, the cross-visit already-captured vaccine
+ * check, the transient WHO
  * weight-for-length/height display, the MUAC completed-month check, and
  * Vitamin A supplementation age, history and return-date checks).
  * Planned consumers: Partograph obs summary, ANC summary.
@@ -33,7 +35,10 @@ import {
   vitaminARouteValue,
   vitaminASharedReturnValue,
 } from './forms/vitamin-a-supplementation';
+import { alreadyCapturedVaccineGate } from './immunizations/already-captured-gate';
 import { ttAdministrationGate } from './immunizations/anc-tt-gate';
+import { hpvAdministrationGate } from './immunizations/hpv-gate';
+import { hpvDoseId, hpvStatusLabel, isHpvDose } from './immunizations/hpv';
 import { pediatricPfizerAdministrationGate } from './immunizations/pediatric-pfizer-gate';
 import { isPediatricPfizerDose, pediatricPfizerDoseId, pediatricPfizerStatusLabel } from './immunizations/pediatric-pfizer';
 import { tdAdministrationGate } from './immunizations/td-administration-gate';
@@ -69,11 +74,16 @@ export function startupApp() {
   registerFormEngineExpressionHelper('routeRequired', routeRequired);
   registerFormEngineExpressionHelper('routineDoseOutsideWindow', routineDoseOutsideWindow);
   registerFormEngineExpressionHelper('routineNextDoseDate', routineNextDoseDate);
+  registerFormEngineExpressionHelper('alreadyCapturedVaccineGate', alreadyCapturedVaccineGate);
   registerFormEngineExpressionHelper('ttAdministrationGate', ttAdministrationGate);
   registerFormEngineExpressionHelper('pediatricPfizerAdministrationGate', pediatricPfizerAdministrationGate);
   registerFormEngineExpressionHelper('isPediatricPfizerDose', isPediatricPfizerDose);
   registerFormEngineExpressionHelper('pediatricPfizerDoseId', pediatricPfizerDoseId);
   registerFormEngineExpressionHelper('pediatricPfizerStatusLabel', pediatricPfizerStatusLabel);
+  registerFormEngineExpressionHelper('hpvAdministrationGate', hpvAdministrationGate);
+  registerFormEngineExpressionHelper('isHpvDose', isHpvDose);
+  registerFormEngineExpressionHelper('hpvDoseId', hpvDoseId);
+  registerFormEngineExpressionHelper('hpvStatusLabel', hpvStatusLabel);
   registerFormEngineExpressionHelper('vitaminACurrentStrength', vitaminACurrentStrength);
   registerFormEngineExpressionHelper('vitaminABlock', vitaminABlock);
   registerFormEngineExpressionHelper('vitaminAReturnDateValue', vitaminAReturnDateValue);

@@ -198,8 +198,10 @@ public class DeployScriptTest {
 	public void vitaminAFactCountsEveryImmunizationFormVersion() {
 		String fact = lastDefinition("sp_mamba_fact_nutrition_vitamin_a()");
 		assertTrue(fact.contains("f.name = 'Immunization'"));
-		assertTrue(fact.contains("f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '1.10', '1.11', '1.12')"));
-		assertTrue(fact.contains("52b3da7c-1749-3c54-9e65-2a508dad2748"));
+		assertTrue(fact.contains("f.version IN ('1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '1.10', '1.11', '1.12', '1.13', '1.14')"));
+		assertTrue(fact.contains("bcdd02a7-7a3a-303b-835d-79352d597eb9"));
+		assertTrue(fact.contains("'1.13'"));
+		assertTrue(fact.contains("'1.12'"));
 		assertTrue(fact.contains("'1.11'"));
 		assertFalse(fact.contains("ef.form_uuid = "));
 	}
