@@ -168,12 +168,8 @@ class PartographPage {
             assessment.drugs_given_and_iv_fluids, { timeout: this.chartLoadTimeout }).within(() => {
             cy.get('td').eq(0).invoke('text').should((text) => {
                 const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
                 if (date.toDateString() === today.toDateString()) {
                     expect(text, 'assessment date').to.match(/^Today,/);
-                } else if (date.toDateString() === yesterday.toDateString()) {
-                    expect(text, 'assessment date').to.match(/^Yesterday,/);
                 } else {
                     expect(text, 'assessment day').to.match(new RegExp(`\\b0?${date.getDate()}\\b`));
                     expect(text, 'assessment month').to.contain(month);

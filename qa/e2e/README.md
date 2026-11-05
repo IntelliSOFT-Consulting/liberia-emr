@@ -7,7 +7,7 @@ Browser tests against a fully launched distribution.
 Partograph assessment persistence: after an admission seeded at 4 cm, the test
 opens the assessment form from Add and saves fetal heart rate, cervical dilation,
 contractions and IV-fluid notes. It checks submitted values against REST read-back,
-then verifies the saved date/time (including Today/Yesterday display labels) and observations in the same dashboard row
+then verifies the saved date/time (Today for the current day, a calendar date otherwise) and observations in the same dashboard row
 after save, refresh and navigation away/back. Other assessment fields and editing
 existing assessments are not covered by this scenario.
 
