@@ -43,6 +43,8 @@ import {
 import { formatHistoryCell } from './history-value';
 import { summarizeObsDisplays } from './keep-history-encounter';
 import { moduleEntryVisible } from './module-entry';
+import NoAccessCard from '../restricted-summary/no-access-card.component';
+import { isPermissionDenied } from '../restricted-summary/permission';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
 import { useRefreshPatientFlags } from '../patient-flags/use-refresh-patient-flags';
 import type { ConfigObject } from '../config-schema';
@@ -147,6 +149,9 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   }
 
   if (error) {
+    if (isPermissionDenied(error)) {
+      return <NoAccessCard title={config.title} />;
+    }
     return <ErrorState error={error} headerTitle={config.title} />;
   }
 

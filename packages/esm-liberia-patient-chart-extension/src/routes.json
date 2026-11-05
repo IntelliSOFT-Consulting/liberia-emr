@@ -90,6 +90,16 @@
       }
     },
     {
+      "name": "liberia-restricted-summary",
+      "component": "restrictedSummary",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "liberia-routine-immunization-schedule",
       "component": "routineImmunizationSchedule",
       "slot": "patient-chart-immunizations-dashboard-slot",
