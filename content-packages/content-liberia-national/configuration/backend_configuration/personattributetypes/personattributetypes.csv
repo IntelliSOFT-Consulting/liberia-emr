@@ -8,3 +8,4 @@ ${var.personattributetypes.telephone-number.uuid},,Telephone Number,The telephon
 ${var.personattributetypes.unknown-patient.uuid},,Unknown patient,Used to flag patients that cannot be identified during the check-in process,java.lang.String,false
 ${var.personattributetypes.good-samaritan-name.uuid},,Good Samaritan (declined next of kin),Name of the Good Samaritan who brought the patient in and declined to be registered as next of kin,java.lang.String,false
 ${var.personattributetypes.good-samaritan-phone.uuid},,Good Samaritan Phone,Phone number of the Good Samaritan who brought the patient in and declined to be registered as next of kin,java.lang.String,false
+${var.personattribute.patient-referred.uuid},,Patient Referred,Whether the patient was referred to this facility,org.openmrs.Concept,false

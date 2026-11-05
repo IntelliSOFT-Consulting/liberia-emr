@@ -3,3 +3,6 @@ ${var.patientidentifiertypes.openmrs-id.uuid},,OpenMRS ID,"OpenMRS patient ident
 ${var.patientidentifiertypes.legacy-id.uuid},,Legacy ID,Identifier type to record optional previous identifers ,FALSE,,,,NOT_USED,
 ${var.patientidentifiertypes.id-card.uuid},,ID Card,ID Card,FALSE,,,,NOT_USED,UNIQUE
 ${var.patientidentifiertypes.ssn.uuid},,SSN,Social Security Number,FALSE,^[A-Z]{1}-[0-9]{7}$,"Identifier must be exactly one uppercase letter, followed by a dash and exactly 7 digits. Example: A-0010902",,NOT_USED,UNIQUE
+${var.patientidentifiertypes.birth-certificate.uuid},,Birth Certificate,Birth Certificate,FALSE,,,,NOT_USED,UNIQUE
+${var.patientidentifiertypes.driving-license.uuid},,Driving License,Driving License,FALSE,,,,NOT_USED,UNIQUE
+${var.patientidentifiertypes.passport.uuid},,Passport,Passport,FALSE,,,,NOT_USED,UNIQUE

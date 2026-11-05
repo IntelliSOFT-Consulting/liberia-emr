@@ -49,6 +49,7 @@ The sidecar records:
 | `esm-service-queues-app` (`11.1.0`) | `distribution/frontend/patch-service-queues-serve-redirect.cjs` | [`0008-esm-service-queues-app-serve-redirect.md`](.patches/0008-esm-service-queues-app-serve-redirect.md) | **none yet** (sidecar says TODO) |
 | `esm-form-engine-app` (`12.3.4`) | `distribution/frontend/patch-form-engine-checkbox.cjs` | [`0007-esm-form-engine-app-checkbox-required.md`](.patches/0007-esm-form-engine-app-checkbox-required.md) | [openmrs/openmrs-esm-form-engine-lib#840](https://github.com/openmrs/openmrs-esm-form-engine-lib/pull/840) |
 | `esm-patient-registration-app` (`11.1.0`) | `distribution/frontend/patch-patient-registration.cjs` | **none** | **none recorded** |
+| `esm-patient-registration-app` (`11.1.0`) | `distribution/frontend/patch-patient-registration.cjs` (skip logic and radio entries) | [`0009-esm-patient-registration-app-skip-logic.md`](.patches/0009-esm-patient-registration-app-skip-logic.md) | [openmrs/openmrs-esm-patient-management#2741](https://github.com/openmrs/openmrs-esm-patient-management/pull/2741) |
 | `esm-patient-orders-app` (`12.3.4`) | `distribution/frontend/patch-patient-orders.cjs` | **none** | **none recorded** |
 
 The two service-queues patches and the last two rows break
