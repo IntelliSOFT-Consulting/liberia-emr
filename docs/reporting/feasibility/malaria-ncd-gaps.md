@@ -70,7 +70,7 @@ Each gap is written so it can become a content ticket.
 - **mch: unify gestational age.** ANC Initial uses CIEL 1438; ANC Follow-up uses local
   `00663865-9680-476c-9033-60bd55e15970`. MAL-003 needs both.
 - **mch / national: settle one IPTp value set.** The MCH forms use `edf4344a-…` with exact
-  1st–4th answers. The national *1. ANC Form* uses `7d6e6ee9-…` with 1st/2nd/3rd+ and saves
+  1st–8th answers. The national *1. ANC Form* uses `7d6e6ee9-…` with 1st/2nd/3rd+ and saves
   under the **Consultation** encounter type. Both are live concepts. Pick one, or document the
   union.
 - **OCL: fix the LIB/mch mappings (existing issue).** LIB/mch 1.0.11 still has 0 mappings.
@@ -196,7 +196,7 @@ One flat table can serve both the Malaria and the RMNCAH reviews.
   | --- | --- |
   | Woman receiving IPT | `ed584a40-5ea6-4111-a41b-39fd65200d38` (Yes 1065 / No 1066) |
   | MCH IPTp dose | `edf4344a-2e9f-4e0e-88d1-824bd3f25069` |
-  | MCH dose answers: 1st / 2nd / 3rd / 4th | `025d9262-…` / `5b45044d-…` / `769be397-…` / `460f19eb-…` |
+  | MCH dose answers: 1st / 2nd / 3rd / 4th / 5th / 6th / 7th / 8th | `025d9262-…` / `5b45044d-…` / `769be397-…` / `460f19eb-…` / `4e84b602-…` / `a97c0d74-…` / `911e987a-…` / `3c28eb23-…` |
   | National IPT dose | `7d6e6ee9-7914-4d71-b84b-8383d39c30b9` |
   | National dose answers: 1st / 2nd / 3rd+ | `6ff4c373-…` / `802e28be-…` / `dc083ea2-…` |
   | Deferral | `22dae112-b695-4b93-9149-1755601f81cb` |

@@ -237,6 +237,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sonar
 
+      # validate-configurations starts Testcontainers 1.15, which speaks Docker API 1.30; the
+      # runner's Docker 29 rejects anything below 1.40 unless the daemon lowers its minimum.
+      - name: Allow the Initializer validator's Docker API version
+        run: |
+          sudo mkdir -p /etc/systemd/system/docker.service.d
+          printf '[Service]\nEnvironment=DOCKER_MIN_API_VERSION=1.24\n' \
+            | sudo tee /etc/systemd/system/docker.service.d/min-api-version.conf
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+          docker version --format 'Docker {{.Server.Version}}, min API {{.Server.MinAPIVersion}}'
+
       - name: Build, Test & Validate against Initializer schema
         run: mvn -B clean verify
 
@@ -866,15 +877,17 @@ jobs:
       - name: Install Cypress test dependencies
         working-directory: qa/e2e
         run: npm ci
-      # RoleSignIn.cy.ts and AuditLog.cy.ts serve these builds in place of the SPA's own while
-      # distro.properties pins builds without the behaviour under test (the home dashboards,
-      # LE-397): a change here is published only after merge and pinned in a follow-up PR.
+      # RoleSignIn.cy.ts, AuditLog.cy.ts and ExternalRecords.cy.ts serve these builds in place of
+      # the SPA's own while distro.properties pins builds without the behaviour under test (the home
+      # dashboards, LE-397; Remote import and External records, LE-386/387): a change here is
+      # published only after merge and pinned in a follow-up PR.
       # Once the pin carries it, the specs use the served builds and these go unused
       # (qa/e2e/cypress/support/local-esm.ts).
       - name: Build the LiberiaEMR apps the specs may overlay
         run: |
           set -euo pipefail
-          for app in esm-liberia-audit-log-app esm-liberia-reports-app esm-liberia-sync-status-app; do
+          for app in esm-liberia-audit-log-app esm-liberia-reports-app esm-liberia-sync-status-app \
+            esm-liberia-remote-search-app esm-liberia-patient-chart-extension; do
             (cd "packages/$app" && yarn install --frozen-lockfile && yarn build)
           done
 

@@ -82,7 +82,17 @@ const RemotePatientCard: React.FC<RemotePatientCardProps> = ({
   // Imported earlier: open the existing chart, with no reason asked and nothing imported (mockup 3c).
   // Otherwise Import & Open for those allowed to import (1a), and a hint for everyone else (1b).
   let action: React.ReactNode;
-  if (patient.alreadyLocal) {
+  if (patient.alreadyLocal && patient.localVoided) {
+    // A voided chart cannot be opened; un-voiding restores it, so there is no Open or Import.
+    action = (
+      <span className={styles.actionHint}>
+        {t(
+          'alreadyImportedVoided',
+          'This patient was already imported at this facility but is currently voided. Un-void the patient to restore them.',
+        )}
+      </span>
+    );
+  } else if (patient.alreadyLocal) {
     action = (
       <div className={styles.actionWithHint}>
         <span className={styles.actionHint}>{t('alreadyImported', 'Already imported at this facility')}</span>

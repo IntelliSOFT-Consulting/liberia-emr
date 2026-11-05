@@ -7,7 +7,8 @@
 # them and location rows are not synced. It must hold NOTHING ELSE from a site package: no ID
 # sequences, cash points, queues or facility global properties, which describe one facility
 # and would make central act as it. Both sets are derived from content-packages/content-site-*,
-# so a new site package is covered without editing this script.
+# so a new site package is covered without editing this script. None of the locations may
+# carry the Queue Location tag (LE-404).
 set -euo pipefail
 
 image="${1:?image}"
@@ -59,6 +60,26 @@ print("\n".join(sorted(n for n, c in seen.items() if c > 1)))
 if [[ -n "$dups" ]]; then
   echo "FAIL: $image ships locations whose names clash, which Initializer would reject:" >&2
   sed 's/^/  /' <<<"$dups" >&2
+  fail=1
+fi
+
+# Central runs no patient queues (LE-404): a queue-tagged location would put a facility's
+# queue entries in front of whoever logs in at central as any facility.
+tagged="$(docker run --rm --entrypoint sh "$image" -c "for f in $CONFIG/locations/*.csv; do cat \"\$f\"; echo; done" \
+  | python3 -c '
+import csv, sys
+col = None
+for row in csv.reader(sys.stdin):
+    if not row:
+        continue
+    if row[0] == "Uuid":
+        col = next((i for i, h in enumerate(row) if h.strip().lower() == "tag|queue location"), None)
+    elif col is not None and col < len(row) and row[col].strip().lower() in ("true", "1", "yes"):
+        print(row[2] if len(row) > 2 else row[0])
+')"
+if [[ -n "$tagged" ]]; then
+  echo "FAIL: $image ships locations tagged Queue Location, which central must not have:" >&2
+  sed 's/^/  /' <<<"$tagged" >&2
   fail=1
 fi
 

@@ -48,6 +48,24 @@ export const configSchema = {
         _default: '',
         _description: 'Column/row label. Defaults to the concept display name when empty.',
       },
+      concepts: {
+        _type: Type.Array,
+        _elements: {
+          _type: Type.Object,
+          concept: {
+            _type: Type.ConceptUuid,
+            _description: 'Concept that can fill this column.',
+          },
+          unit: {
+            _type: Type.String,
+            _default: '',
+            _description: 'Unit shown beside a numeric value for this concept. Empty leaves the value unchanged.',
+          },
+        },
+        _default: [],
+        _description:
+          'When set, the column shows whichever of these concepts was saved and appends that concept\'s unit. Empty keeps the single concept column.',
+      },
     },
     _default: [],
     _description: 'Ordered list of concepts to display. Each entry becomes one column in table mode.',
@@ -67,6 +85,40 @@ export const configSchema = {
     _default: true,
     _description: 'If true, displays the "Add" button to launch the form.',
   },
+  readPrivilege: {
+    _type: Type.String,
+    _default: '',
+    _description:
+      'Privilege that may see this widget. Together with writePrivilege, a matrix account with neither does not see the widget. The server still enforces access.',
+  },
+  writePrivilege: {
+    _type: Type.String,
+    _default: '',
+    _description: 'Privilege required to show the Add button. Empty leaves the button unchanged. The server still enforces access.',
+  },
+  formUuids: {
+    _type: Type.Array,
+    _elements: { _type: Type.String },
+    _default: [],
+    _description:
+      'When set, keep an encounter only if its form is one of these UUIDs or its type is in dedicatedTypeUuids. Empty leaves form filtering off.',
+  },
+  dedicatedTypeUuids: {
+    _type: Type.Array,
+    _elements: { _type: Type.String },
+    _default: [],
+    _description: 'Encounter types kept even when the encounter has no allowlisted form.',
+  },
+  summarizeObs: {
+    _type: Type.Boolean,
+    _default: false,
+    _description: 'Adds a column of observation displays for encounters whose concepts are not in data.',
+  },
+  hideWhenEmpty: {
+    _type: Type.Boolean,
+    _default: false,
+    _description: 'Render nothing when no encounter has a configured observation.',
+  },
 };
 
 export interface ConfigObject {
@@ -74,8 +126,18 @@ export interface ConfigObject {
   formUuid: string;
   encounterTypes: string[];
   displayMode: 'table' | 'graph' | 'switchable';
-  data: Array<{ concept: string; label: string }>;
+  data: Array<{
+    concept: string;
+    label: string;
+    concepts?: Array<{ concept: string; unit?: string }>;
+  }>;
   maxEncounters: number;
   oldestFirst: boolean;
   showAddButton: boolean;
+  readPrivilege: string;
+  writePrivilege: string;
+  formUuids: string[];
+  dedicatedTypeUuids: string[];
+  summarizeObs: boolean;
+  hideWhenEmpty: boolean;
 }

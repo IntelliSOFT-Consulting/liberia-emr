@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Loading, ModalBody, Tag } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
 import { useStore } from '@openmrs/esm-framework';
@@ -27,7 +27,12 @@ const StepIcon: React.FC<{ state: StepState }> = ({ state }) => {
     return <CheckmarkFilled size={16} className={styles.stepDone} aria-hidden="true" />;
   }
   if (state === 'active') {
-    return <Loading small withOverlay={false} className={styles.stepActive} description="" />;
+    // Hidden: Loading is an assertive live region; the step text is announced instead.
+    return (
+      <span aria-hidden="true">
+        <Loading small withOverlay={false} className={styles.stepActive} description="" />
+      </span>
+    );
   }
   return <span className={styles.stepPending} aria-hidden="true" />;
 };
@@ -37,6 +42,19 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ patientName, age, birth
   const { t } = useTranslation();
   const { steps: states } = useStore(importProgressStore);
   const percent = progressPercent(states);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const activeIndex = states.findIndex((state) => state === 'active');
+  const activeLabel = activeIndex >= 0 ? t(steps[activeIndex].key, steps[activeIndex].label) : '';
+  const stateLabels: Record<StepState, string> = {
+    done: t('importStepDone', 'done'),
+    active: t('importStepActive', 'in progress'),
+    pending: t('importStepPending', 'not started'),
+  };
+
+  // The Import & Open button that had focus is gone; keep focus inside the modal.
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     // Capture runs before the modal system's bubbling Escape listener on window.
@@ -53,7 +71,7 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ patientName, age, birth
   const details = [age, birthdate].filter(Boolean);
 
   return (
-    <div className={styles.dialog} aria-busy="true">
+    <div className={styles.dialog} ref={dialogRef} tabIndex={-1} aria-busy="true">
       <div className={styles.header}>
         <span className={styles.eyebrow}>{t('importingRecord', 'IMPORTING RECORD')}</span>
         <h3 className={styles.patientName}>{patientName}</h3>
@@ -80,6 +98,7 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ patientName, age, birth
             <li key={step.key} className={styles.step} aria-current={states[index] === 'active' ? 'step' : undefined}>
               <StepIcon state={states[index]} />
               <span>{t(step.key, step.label)}</span>
+              <span className="cds--visually-hidden"> ({stateLabels[states[index]]})</span>
             </li>
           ))}
         </ol>
@@ -90,9 +109,13 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ patientName, age, birth
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percent}
+          aria-valuetext={activeLabel ? `${percent}% · ${activeLabel}` : `${percent}%`}
         >
           <div className={styles.progressBar} style={{ width: `${percent}%` }} />
         </div>
+        <p className="cds--visually-hidden" aria-live="polite">
+          {activeLabel}
+        </p>
       </ModalBody>
     </div>
   );

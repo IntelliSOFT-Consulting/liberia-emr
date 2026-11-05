@@ -27,6 +27,8 @@ import {
   openmrsFetch,
   restBaseUrl,
   useConfig,
+  useSession,
+  userHasAccess,
   showSnackbar,
 } from '@openmrs/esm-framework';
 import { LineChart, type LineChartOptions, ScaleTypes } from '@carbon/charts-react';
@@ -38,7 +40,13 @@ import {
   useStartVisitIfNeeded,
   type PatientChartStore,
 } from '@openmrs/esm-patient-common-lib';
+import { formatHistoryCell } from './history-value';
+import { summarizeObsDisplays } from './keep-history-encounter';
+import { moduleEntryVisible } from './module-entry';
+import NoAccessCard from '../restricted-summary/no-access-card.component';
+import { isPermissionDenied } from '../restricted-summary/permission';
 import { getObsDisplayValue, useObsByEncounter, type EncounterRep } from './use-obs-by-encounter';
+import { useRefreshPatientFlags } from '../patient-flags/use-refresh-patient-flags';
 import type { ConfigObject } from '../config-schema';
 import styles from './liberia-obs-widget.scss';
 
@@ -60,8 +68,15 @@ interface LiberiaObsWidgetProps {
 const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const canWrite =
+    !config.writePrivilege || Boolean(session?.user && userHasAccess(config.writePrivilege, session.user));
+  const canSee =
+    !session?.user ||
+    moduleEntryVisible((name) => userHasAccess(name, session.user), config.readPrivilege, config.writePrivilege);
 
   const { encounters, isLoading, error, mutate } = useObsByEncounter(patientUuid);
+  useRefreshPatientFlags(patientUuid, encounters, isLoading);
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid);
 
   // Graph/table toggle state — only relevant when displayMode === 'switchable'
@@ -125,12 +140,23 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
     [config.formUuid, config.title, startVisitIfNeeded, patientUuid, mutate, t],
   );
 
+  if (session?.user && !canSee) {
+    return null;
+  }
+
   if (isLoading) {
     return <DataTableSkeleton columnCount={config.maxEncounters + 1} rowCount={config.data.length} />;
   }
 
   if (error) {
+    if (isPermissionDenied(error)) {
+      return <NoAccessCard title={config.title} />;
+    }
     return <ErrorState error={error} headerTitle={config.title} />;
+  }
+
+  if (!encounters.length && config.hideWhenEmpty) {
+    return null;
   }
 
   if (!encounters.length) {
@@ -138,7 +164,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
       <EmptyState
         displayText={config.title.toLowerCase()}
         headerTitle={config.title}
-        launchForm={config.formUuid && config.showAddButton !== false ? () => handleLaunchForm() : undefined}
+        launchForm={config.formUuid && config.showAddButton !== false && canWrite ? () => handleLaunchForm() : undefined}
       />
     );
   }
@@ -169,7 +195,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
           )}
 
           {/* Add button — always visible when formUuid is configured */}
-          {config.formUuid && config.showAddButton !== false && (
+          {config.formUuid && config.showAddButton !== false && canWrite && (
             <Button
               kind="ghost"
               renderIcon={Add}
@@ -189,6 +215,7 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
           <ObsTable
             encounters={pagedEncounters}
             configData={config.data}
+            summarizeObs={config.summarizeObs}
           />
           {/* Pagination controls */}
           <PatientChartPagination
@@ -217,9 +244,10 @@ const LiberiaObsWidget: React.FC<LiberiaObsWidgetProps> = ({ patientUuid }) => {
 interface ObsTableProps {
   encounters: EncounterRep[];
   configData: ConfigObject['data'];
+  summarizeObs?: boolean;
 }
 
-const ObsTable: React.FC<ObsTableProps> = ({ encounters, configData }: ObsTableProps) => {
+const ObsTable: React.FC<ObsTableProps> = ({ encounters, configData, summarizeObs }: ObsTableProps) => {
   const { t } = useTranslation();
 
   return (
@@ -231,6 +259,7 @@ const ObsTable: React.FC<ObsTableProps> = ({ encounters, configData }: ObsTableP
             {configData.map(({ concept, label }: any) => (
               <TableHeader key={concept}>{label || concept}</TableHeader>
             ))}
+            {summarizeObs ? <TableHeader>{t('observations', 'Observations')}</TableHeader> : null}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -239,12 +268,12 @@ const ObsTable: React.FC<ObsTableProps> = ({ encounters, configData }: ObsTableP
               <TableCell>
                 {formatDatetime(new Date(enc.encounterDatetime), { mode: 'wide' })}
               </TableCell>
-              {configData.map(({ concept }: any) => {
-                const obs = enc.obs.find((o: any) => o.concept.uuid === concept);
+              {configData.map((column) => {
                 return (
-                  <TableCell key={`${concept}-${enc.uuid}`}>{getObsDisplayValue(obs)}</TableCell>
+                  <TableCell key={`${column.concept}-${enc.uuid}`}>{formatHistoryCell(enc.obs, column)}</TableCell>
                 );
               })}
+              {summarizeObs ? <TableCell>{summarizeObsDisplays(enc.obs)}</TableCell> : null}
             </TableRow>
           ))}
         </TableBody>

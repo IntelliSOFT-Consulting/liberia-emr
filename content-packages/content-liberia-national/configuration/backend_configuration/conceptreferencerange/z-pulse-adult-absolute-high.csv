@@ -1,0 +1,2 @@
+Uuid,Concept Numeric uuid,Label,Absolute low,Critical low,Normal low,Normal high,Critical high,Absolute high,Criteria
+${var.conceptreferencerange.vitals.pulse-adult.uuid},${var.concept.ciel.pulse.uuid},Pulse Adult,0,45,60,100,110,250,$patient.getAge() >= 18

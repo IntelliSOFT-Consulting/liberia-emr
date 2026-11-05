@@ -61,6 +61,8 @@ export interface ExternalMedication extends Row {
 
 export interface ExternalImmunisation extends Row {
   vaccine: string;
+  /** Dose number in the series, when recorded. */
+  dose?: number;
   date?: string;
 }
 
@@ -77,6 +79,8 @@ export interface ExternalAncContact {
   contactDate?: string;
   gestationalAgeWeeks?: number;
   nextContactDate?: string;
+  /** ANC danger-sign flags that applied; empty when none did. */
+  riskFlags: Array<string>;
 }
 
 export interface ExternalEncounter extends Row {
@@ -108,6 +112,7 @@ interface FhirResource {
 }
 
 export const ancSummaryTag = 'anc-contact-summary';
+export const ancRiskFlagTag = 'anc-risk-flag';
 export const programmeStateExtension = 'https://liberiaemr.moh.gov.lr/fhir/StructureDefinition/programme-current-state';
 
 const text = (codeable: any): string | undefined =>
@@ -164,7 +169,13 @@ export function toSections(sources: LocalHistoryResponse['sources'] = []): Exter
           });
           break;
         case 'Immunization':
-          sections.immunisations.push({ id, facility, vaccine: text(r.vaccineCode) ?? '', date: r.occurrenceDateTime });
+          sections.immunisations.push({
+            id,
+            facility,
+            vaccine: text(r.vaccineCode) ?? '',
+            dose: r.protocolApplied?.[0]?.doseNumberPositiveInt,
+            date: r.occurrenceDateTime,
+          });
           break;
         case 'EpisodeOfCare':
           sections.programmes.push({
@@ -192,8 +203,13 @@ export function toSections(sources: LocalHistoryResponse['sources'] = []): Exter
         case 'Observation': {
           if (!r.meta?.tag?.some((tag: any) => tag?.code === ancSummaryTag)) break;
           const key = r.encounter?.reference ?? id;
-          const contact = ancByEncounter.get(key) ?? { facility };
+          const contact = ancByEncounter.get(key) ?? { facility, riskFlags: [] };
           contact.contactDate = contact.contactDate ?? r.effectiveDateTime;
+          if (r.meta.tag.some((tag: any) => tag?.code === ancRiskFlagTag)) {
+            if (r.valueString) contact.riskFlags.push(r.valueString);
+            ancByEncounter.set(key, contact);
+            break;
+          }
           if (typeof r.valueQuantity?.value === 'number') contact.gestationalAgeWeeks = r.valueQuantity.value;
           if (r.valueDateTime) contact.nextContactDate = r.valueDateTime;
           ancByEncounter.set(key, contact);
@@ -223,12 +239,34 @@ export function toFacilities(sections: ExternalSections): Array<FacilitySummary>
     ...(sections.lastAncContact ? [sections.lastAncContact] : []),
   ];
   for (const { facility } of rows) {
-    const key = facility.uuid ?? facility.name ?? '';
+    const key = facilityKey(facility);
     const summary = counts.get(key) ?? { ...facility, count: 0 };
     summary.count++;
     counts.set(key, summary);
   }
   return [...counts.values()];
+}
+
+/** Key of a facility, for the dashboard's facility filter. */
+export const facilityKey = (facility: Facility) => facility.uuid ?? facility.name ?? '';
+
+/** Only the rows recorded at one facility; `null` keeps them all. */
+export function filterByFacility(sections: ExternalSections, key: string | null): ExternalSections {
+  if (key === null) {
+    return sections;
+  }
+  const at = <T extends { facility: Facility }>(rows: Array<T>) =>
+    rows.filter((row) => facilityKey(row.facility) === key);
+  return {
+    allergies: at(sections.allergies),
+    conditions: at(sections.conditions),
+    medications: at(sections.medications),
+    immunisations: at(sections.immunisations),
+    programmes: at(sections.programmes),
+    encounters: at(sections.encounters),
+    lastAncContact:
+      sections.lastAncContact && facilityKey(sections.lastAncContact.facility) === key ? sections.lastAncContact : null,
+  };
 }
 
 export function countRows(sections: ExternalSections): number {

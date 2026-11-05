@@ -173,17 +173,21 @@ entries rendering as the identical label — national `concepts-national.csv` al
 Signed dictionary semantics (preserve; do not replace with Administered/Deferred):
 
 1. Woman receiving IPT? → coded Yes / No (CIEL 1065 / 1066)
-2. If Yes → IPT dose administered → 1st / 2nd / 3rd / 4th
+2. If Yes → IPT dose administered → 1st / 2nd / 3rd / 4th / 5th / 6th / 7th / 8th
 3. If No and deferred → IPTp deferral reason → Malaria treatment initiated (optional)
 
 | Element | Home | Variable |
 | --- | --- | --- |
 | Woman receiving IPT (`LBR.EMR.DE.53`) | Existing national coded Yes/No | `var.concept.national.woman-receiving-ipt.uuid` |
-| IPT dose administered (`LBR.EMR.DE.48`) | New MCH coded question | `var.concept.mch.ipt-dose-administered.uuid` |
+| IPT dose administered (extract `LBR.EMR.DE.48`; live sheet `LBR.EMR.DE.49`) | New MCH coded question | `var.concept.mch.ipt-dose-administered.uuid` |
 | 1st IPT dose | New MCH answer | `var.concept.mch.1st-ipt-dose.uuid` |
 | 2nd IPT dose | New MCH answer | `var.concept.mch.2nd-ipt-dose.uuid` |
 | 3rd IPT dose | New MCH answer | `var.concept.mch.3rd-ipt-dose.uuid` |
 | 4th IPT dose | New MCH answer | `var.concept.mch.4th-ipt-dose.uuid` |
+| 5th IPT dose | New MCH answer; live Data Dictionary id not assigned | `var.concept.mch.5th-ipt-dose.uuid` |
+| 6th IPT dose | New MCH answer; live Data Dictionary id not assigned | `var.concept.mch.6th-ipt-dose.uuid` |
+| 7th IPT dose | New MCH answer; live Data Dictionary id not assigned | `var.concept.mch.7th-ipt-dose.uuid` |
+| 8th IPT dose | New MCH answer; live Data Dictionary id not assigned | `var.concept.mch.8th-ipt-dose.uuid` |
 | IPTp deferral reason | New MCH coded question | `var.concept.mch.iptp-deferral-reason.uuid` |
 | Malaria treatment initiated | New MCH answer | `var.concept.mch.iptp-deferred-malaria-treatment.uuid` |
 | LLIN received at ANC (`LBR.EMR.DE.54`) | Existing national coded Yes/No | `var.concept.national.llin-received-at-anc.uuid` |
@@ -210,8 +214,8 @@ pregnancy*, not body weight). Both are the same class of defect as `LBR.LD.DE.81
 `EMR.FP.DE10`.
 
 The national IPT dose question (1st / 2nd / 3rd+) is left unchanged and is not used for the
-new MCH ANC forms — it has no exact 4th answer, and `3rd IPT dose+` must not be reused for
-exact 3rd. The MCH dose value set is entirely self-contained (no national answer UUID
+new MCH ANC forms — it has no exact dose past 2nd, and `3rd IPT dose+` must not be reused for
+an exact later dose. The MCH dose value set is entirely self-contained (exact 1st–8th, no national answer UUID
 references) because `concepts-mch.csv` is processed before `concepts-national.csv`. FSNs use
 the `… at ANC` / `IPTp …` wording to avoid colliding with national FSNs, and **short names
 carry the same disambiguation** (`IPTp dose administered`, `1st IPTp dose`, …) so Form
@@ -387,10 +391,11 @@ semantics under [IMPLEMENTATION.md §9](../../IMPLEMENTATION.md). Tracked as ope
   Converging means adding the four missing answers to the *national* question — additive and
   permitted under §9 — but it is a national value-set change that needs clinical sign-off,
   and CIEL 160090 remains the real target once it lands in the collection.
-- `DE.48` **IPT dose administered.** "ANC Form" offers 1st / 2nd / **3rd+**; "ANC Initial
-  Visit" offers exact 1st / 2nd / 3rd / 4th. These cannot merge until someone decides what
-  happens to the national `3rd IPT dose+` answer — it cannot be reused for exact 3rd, and
-  offering both alongside each other would be incoherent at the point of care.
+- `DE.48` **IPT dose administered** (live sheet `LBR.EMR.DE.49`). "ANC Form" offers 1st / 2nd / **3rd+**; "ANC Initial
+  Visit" and "ANC Follow-up Visit" offer exact 1st through 8th. These cannot merge until someone decides what
+  happens to the national `3rd IPT dose+` answer — it cannot be reused for an exact later dose, and
+  offering both alongside each other would be incoherent at the point of care. 5th–8th have no live
+  Data Dictionary id yet.
 
 Until those two land, an indicator on Presentation or IPT dose must read both concepts.
 
@@ -416,7 +421,7 @@ LLIN received at ANC uses the existing NATIONAL coded Yes/No concept (`var.conce
 CIEL 1065 / 1066 (`${var.concept.ciel.yes.uuid}` / `${var.concept.ciel.no.uuid}`) are the answers.
 The local Boolean fallbacks were removed and must not be reintroduced.
 
-When Woman receiving IPT is Yes (`${var.concept.ciel.yes.uuid}`), `var.concept.mch.ipt-dose-administered.uuid` is shown with exact 1st–4th MCH answers; when No (`${var.concept.ciel.no.uuid}`), `var.concept.mch.iptp-deferral-reason.uuid` is shown. The only sourced acceptance answer currently represented is `var.concept.mch.iptp-deferred-malaria-treatment.uuid`; no additional reasons are inferred.
+When Woman receiving IPT is Yes (`${var.concept.ciel.yes.uuid}`), `var.concept.mch.ipt-dose-administered.uuid` is shown with exact 1st–8th MCH answers; when No (`${var.concept.ciel.no.uuid}`), `var.concept.mch.iptp-deferral-reason.uuid` is shown. The only sourced acceptance answer currently represented is `var.concept.mch.iptp-deferred-malaria-treatment.uuid`; no additional reasons are inferred. Selecting 5th–8th does not add eligibility, interval, gestational-age, duplicate, or scheduling rules.
 
 ### Declared locally
 
@@ -426,8 +431,8 @@ local Boolean concepts that once stood in for them have been removed and must no
 
 | Concept (FSN) | Short name | Type | Answers / notes |
 | --- | --- | --- | --- |
-| IPTp Dose Administered at ANC | IPTp dose administered | Coded | MCH 1st–4th only |
-| First / Second / Third / Fourth IPTp Dose at ANC | 1st–4th IPTp dose | N/A | answers |
+| IPTp Dose Administered at ANC | IPTp dose administered | Coded | MCH 1st–8th only |
+| First through Eighth IPTp Dose at ANC | 1st–8th IPTp dose | N/A | answers; 5th–8th have no live `LBR.EMR.DE.*` id yet |
 | IPTp deferral reason | IPTp deferral reason | Coded | Malaria treatment initiated (optional — answer set incomplete) |
 | Malaria treatment initiated | Malaria treatment initiated | N/A | answer |
 | Fetal Presentation at ANC | Fetal presentation | Coded | Vertex; Breech; Transverse; Oblique; Other (CIEL 160090 traced in docs only) |
@@ -826,7 +831,7 @@ Updated against the DAK read on 2026-08-06 — see
     items in 10.
 21. **Clinical decision on the two ANC elements the two forms still record differently** —
     DE.24 Presentation (national is Vertex-only) and DE.48 IPT dose (national `3rd IPT dose+`
-    versus exact 3rd/4th). See *Converged ANC concepts*. Until they land, any indicator on
+    versus exact 1st–8th; live sheet id `LBR.EMR.DE.49`). See *Converged ANC concepts*. Until they land, any indicator on
     those two elements must read both concepts.
 22. **Retirement and migration analysis for the national ANC concepts superseded by the CIEL
     convergence** (LMP, FT/P/A/LN, gestational age, fundal height, FHT), including whether

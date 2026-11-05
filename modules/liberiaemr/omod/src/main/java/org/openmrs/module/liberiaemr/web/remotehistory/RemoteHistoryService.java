@@ -194,7 +194,21 @@ public class RemoteHistoryService {
 			record.programmes.add(programme);
 		}
 		record.encounters.addAll(Context.getEncounterService().getEncountersByPatient(patient));
+		if (hasAncContact(record)) {
+			record.ancRiskFlags.addAll(AncRiskFlags.evaluate(patient));
+		}
 		return record;
+	}
+
+	/** Risk flags are shown with the last ANC contact, so they're only worked out when there is one. */
+	private boolean hasAncContact(RemoteHistoryAssembler.Record record) {
+		Set<String> ancTypes = scope().ancEncounterTypeUuids;
+		for (Encounter encounter : record.encounters) {
+			if (encounter.getEncounterType() != null && ancTypes.contains(encounter.getEncounterType().getUuid())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private RemoteHistoryAssembler.Scope scope() {
@@ -208,6 +222,7 @@ public class RemoteHistoryService {
 		scope.nextContactConceptUuid = ContentUuids.get("var.concept.national.scheduled-date-for-next-anc-visit.uuid");
 		scope.vaccineConceptUuid = ContentUuids.get("var.concept.ciel.immunizations.uuid");
 		scope.vaccinationDateConceptUuid = ContentUuids.get("var.concept.ciel.vaccination-date.uuid");
+		scope.immunizationSequenceConceptUuid = ContentUuids.get("var.concept.ciel.immunization-sequence-number.uuid");
 		scope.excludedConceptUuids = excludedConcepts(
 		    Context.getAdministrationService().getGlobalProperty(GP_EXCLUDED_CONCEPTS, ""));
 		return scope;

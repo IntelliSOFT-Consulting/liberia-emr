@@ -64,6 +64,12 @@ RUN node /app/patch-patient-registration.cjs
 COPY patch-patient-orders.cjs /app/patch-patient-orders.cjs
 RUN node /app/patch-patient-orders.cjs
 
+# Dispensing 1.11.1 lists prescriptions through a generic encounter query and gates the
+# Dispense button on a task privilege outside the module access matrix. The patch reads
+# MedicationRequest and shows Dispense for Manage Pharmacy.
+COPY patch-dispensing-pharmacy.cjs /app/patch-dispensing-pharmacy.cjs
+RUN node /app/patch-dispensing-pharmacy.cjs
+
 # Service queues app 11.1.0: the QueueFields component sets `queueLocation` default as
 # `sessionLocation?.uuid ?? ''` in react-hook-form's `defaultValues`, but because
 # `useSession()` resolves asynchronously the value is always undefined at first render
@@ -71,6 +77,13 @@ RUN node /app/patch-patient-orders.cjs
 # session location once both the location UUID and the queue-location list are loaded.
 COPY patch-service-queues-location.cjs /app/patch-service-queues-location.cjs
 RUN node /app/patch-service-queues-location.cjs
+
+# Service queues app 11.1.0 (still in 12.1.1): Serve always opens the chart summary. This
+# patch adds a servePatientChartUrls config key (service concept UUID -> URL template) and
+# makes Serve use it, falling back to the chart. Runs after the location patch above, whose
+# -liberia1 directory it patches and renames to -liberia2 (LE-121).
+COPY patch-service-queues-serve-redirect.cjs /app/patch-service-queues-serve-redirect.cjs
+RUN node /app/patch-service-queues-serve-redirect.cjs
 
 # Patient search app 11.1.0 has no ExtensionSlot where a custom app can add Remote Search
 # (patients on the central server). This patch adds three slots - results (header dropdown,

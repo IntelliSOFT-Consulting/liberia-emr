@@ -16,6 +16,7 @@ import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
 import org.openmrs.module.liberiaemr.identity.IdentitySchedule;
+import org.openmrs.module.liberiaemr.programs.ProgramAutoCloseTask;
 import org.openmrs.module.liberiaemr.lab.LabOnFhirTasks;
 import org.openmrs.module.liberiaemr.mfl.MflSchedule;
 import org.openmrs.module.liberiaemr.mfl.MflSettings;
@@ -48,6 +49,17 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		return daemonToken;
 	}
 
+	@Override
+	public void willRefreshContext() {
+		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.resetForContextRefresh();
+	}
+
+	@Override
+	public void contextRefreshed() {
+		org.openmrs.module.liberiaemr.moduleaccess.ModuleAccessInstaller.install();
+		org.openmrs.module.liberiaemr.flags.PatientFlagsCommitOrder.apply();
+	}
+
 	/**
 	 * @see #started()
 	 */
@@ -63,9 +75,20 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		catch (Exception e) {
 			log.error("Failed to subscribe to Obs CREATED event", e);
 		}
+		try {
+			org.openmrs.event.Event.subscribe(
+			    org.openmrs.Patient.class,
+			    org.openmrs.event.Event.Action.VOIDED.name(),
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.PatientVoidedEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to subscribe to Patient VOIDED event", e);
+		}
 		scheduleIdentityTask();
 		scheduleMflTask();
 		LabOnFhirTasks.apply();
+		ProgramAutoCloseTask.schedule();
 	}
 
 	/**
@@ -111,6 +134,16 @@ public class LiberiaEMRActivator extends BaseModuleActivator implements DaemonTo
 		}
 		catch (Exception e) {
 			log.error("Failed to unsubscribe from Obs CREATED event", e);
+		}
+		try {
+			org.openmrs.event.Event.unsubscribe(
+			    org.openmrs.Patient.class,
+			    org.openmrs.event.Event.Action.VOIDED,
+			    org.openmrs.api.context.Context.getRegisteredComponents(
+			        org.openmrs.module.liberiaemr.api.listener.PatientVoidedEventListener.class).get(0));
+		}
+		catch (Exception e) {
+			log.error("Failed to unsubscribe from Patient VOIDED event", e);
 		}
 		if (identitySchedule != null) {
 			Context.getAdministrationService().removeGlobalPropertyListener(identitySchedule);

@@ -69,6 +69,8 @@ public class RemoteHistoryAssemblerTest {
 
 	private static final String VACCINE_DATE = "concept-vaccine-date";
 
+	private static final String SEQUENCE = "immunization-sequence";
+
 	private static final Date NOW = new Date();
 
 	private Location county;
@@ -102,6 +104,7 @@ public class RemoteHistoryAssemblerTest {
 		scope.nextContactConceptUuid = NEXT;
 		scope.vaccineConceptUuid = VACCINE;
 		scope.vaccinationDateConceptUuid = VACCINE_DATE;
+		scope.immunizationSequenceConceptUuid = SEQUENCE;
 		assembler = new RemoteHistoryAssembler(new FacilityResolver(TAG), scope);
 	}
 
@@ -261,6 +264,30 @@ public class RemoteHistoryAssemblerTest {
 		assertEquals("barnersville", facility[0]);
 		assertEquals("BCG", resource.path("vaccineCode").path("text").asText());
 		assertEquals("completed", resource.path("status").asText());
+		assertTrue(resource.path("protocolApplied").isMissingNode());
+	}
+
+	@Test
+	public void anImmunisationCarriesItsDoseNumber() {
+		RemoteHistoryAssembler.Record record = new RemoteHistoryAssembler.Record(patient);
+		Obs group = new Obs();
+		group.setPerson(patient);
+		group.setConcept(concept("immunization-history", "Immunization history"));
+		group.setLocation(barnersville);
+		group.setObsDatetime(NOW);
+		Obs vaccine = new Obs();
+		vaccine.setConcept(concept(VACCINE, "Immunizations"));
+		vaccine.setValueCoded(concept("td", "Tetanus-diphtheria"));
+		group.addGroupMember(vaccine);
+		Obs dose = new Obs();
+		dose.setConcept(concept(SEQUENCE, "Immunization sequence number"));
+		dose.setValueNumeric(2.0);
+		group.addGroupMember(dose);
+		record.immunizations.add(group);
+
+		JsonNode resource = only(assemble(null, record), "Immunization", new String[1]);
+
+		assertEquals(2, resource.path("protocolApplied").get(0).path("doseNumberPositiveInt").asInt());
 	}
 
 	@Test
@@ -370,6 +397,45 @@ public class RemoteHistoryAssemblerTest {
 		}
 		// GA and next contact from the latest ANC encounter only; the systolic BP is not in scope.
 		assertEquals(2, summaries);
+	}
+
+	@Test
+	public void riskFlagsComeWithTheLastAncContact() {
+		RemoteHistoryAssembler.Record record = new RemoteHistoryAssembler.Record(patient);
+		Encounter anc = encounter("anc-9", ANC_INITIAL, barnersville, NOW);
+		Obs ga = new Obs();
+		ga.setConcept(concept(GA, "Gestational age"));
+		ga.setValueNumeric(28.0);
+		anc.addObs(ga);
+		record.encounters.add(anc);
+		record.ancRiskFlags.add("High Systolic Blood Pressure (ANC)");
+		record.ancRiskFlags.add("Abnormal Fetal Heart Tone (ANC)");
+
+		ObjectNode out = assemble(null, record);
+
+		List<String> flags = new ArrayList<String>();
+		for (JsonNode source : out.path("sources")) {
+			for (JsonNode entry : source.path("bundle").path("entry")) {
+				JsonNode resource = entry.path("resource");
+				JsonNode tags = resource.path("meta").path("tag");
+				if (tags.size() == 2 && RemoteHistoryAssembler.ANC_RISK_FLAG_TAG.equals(tags.get(1).path("code").asText())) {
+					assertEquals(RemoteHistoryAssembler.ANC_SUMMARY_TAG, tags.get(0).path("code").asText());
+					assertEquals("Encounter/anc-9", resource.path("encounter").path("reference").asText());
+					assertEquals("barnersville", source.path("sourceFacilityUuid").asText());
+					flags.add(resource.path("valueString").asText());
+				}
+			}
+		}
+		assertEquals(Arrays.asList("High Systolic Blood Pressure (ANC)", "Abnormal Fetal Heart Tone (ANC)"), flags);
+	}
+
+	@Test
+	public void riskFlagsWithoutAnAncContactAreNotSent() {
+		RemoteHistoryAssembler.Record record = new RemoteHistoryAssembler.Record(patient);
+		record.encounters.add(encounter("opd-1", "opd", barnersville, NOW));
+		record.ancRiskFlags.add("High Systolic Blood Pressure (ANC)");
+
+		assertFalse(types(assemble(null, record)).contains("Observation"));
 	}
 
 	// --- rules across entity types ----------------------------------------------------------------

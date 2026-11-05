@@ -18,6 +18,31 @@
 	
 	<require_version>2.6.9</require_version>
 
+	<filter>
+		<filter-name>clinicalResponseFilter</filter-name>
+		<filter-class>org.openmrs.module.liberiaemr.web.moduleaccess.ClinicalResponseFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>clinicalResponseFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<filter>
+		<filter-name>orderCareSettingFilter</filter-name>
+		<filter-class>org.openmrs.module.liberiaemr.web.moduleaccess.OrderCareSettingFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>orderCareSettingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<filter>
+		<filter-name>billingVisitFilter</filter-name>
+		<filter-class>org.openmrs.module.liberiaemr.web.moduleaccess.BillingVisitFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>billingVisitFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
 	<!-- Required Modules -->
 	<!--
 		The MINIMUM webservices.rest, kept equal to webservicesRestVersion in the parent pom —
@@ -34,6 +59,9 @@
 		<require_module version="2.1.0">
 			org.bahmni.module.appointments
 		</require_module>
+		<require_module version="3.0.0">
+			org.openmrs.module.queue
+		</require_module>
 	</require_modules>
 	
 	<!--
@@ -45,11 +73,15 @@
 		labonfhir: aware of, never required. Starting it first means its liquibase has created
 		its scheduled tasks before LabOnFhirTasks turns them off (the LIS integration is out of
 		scope, LE-380).
+
+		patientflags: aware of, never required. Central evaluates the ANC danger-sign flags for the
+		last ANC contact it shares (LE-386); without the module the contact is sent without them.
 	-->
 	<aware_of_modules>
 		<aware_of_module>org.openmrs.module.legacyui</aware_of_module>
 		<aware_of_module>org.openmrs.module.auditlog</aware_of_module>
 		<aware_of_module>org.openmrs.module.labonfhir</aware_of_module>
+		<aware_of_module>org.openmrs.module.patientflags</aware_of_module>
 	</aware_of_modules>
 
 	<!-- Required Global Properties -->

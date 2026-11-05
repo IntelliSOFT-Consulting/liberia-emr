@@ -15,6 +15,26 @@
       }
     },
     {
+      "name": "liberia-rbs-history",
+      "component": "liberiaRbsHistory",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "liberia-immunization-history",
+      "component": "liberiaImmunizationHistory",
+      "slot": "patient-chart-immunizations-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
       "name": "liberia-external-records-summary",
       "component": "externalRecordsSummary",
       "slot": "patient-chart-summary-dashboard-slot",
@@ -52,7 +72,42 @@
         "path": "external-records",
         "title": "External records",
         "columns": 1,
-        "columnSpan": 1
+        "columnSpan": 1,
+        "hideDashboardTitle": true
+      }
+    },
+    {
+      "name": "liberia-external-records-dashboard",
+      "component": "externalRecordsDashboard",
+      "slot": "patient-chart-external-records-dashboard-slot",
+      "privileges": [
+        "View Remote History"
+      ],
+      "online": true,
+      "offline": true,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "liberia-restricted-summary",
+      "component": "restrictedSummary",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "liberia-routine-immunization-schedule",
+      "component": "routineImmunizationSchedule",
+      "slot": "patient-chart-immunizations-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": false,
+      "meta": {
+        "fullWidth": true
       }
     }
   ]

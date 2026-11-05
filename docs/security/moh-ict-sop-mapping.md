@@ -230,13 +230,28 @@ privileges are the ones the queue module (`omod.queue` 3.0.0) and core actually 
 
 Why each role:
 
-- **Records Officer** registers and checks patients in: starts the visit and puts the patient in
-  the first queue. It still reads no observation, order or programme.
+- **Records Officer** registers a patient, starts a visit, and puts the patient in the first
+  queue. Registrar does the same visit start and queue, without clinical read and without
+  appointment management. Records Officer still reads no observation, order or programme.
+- **Registrar** creates a patient, starts a visit, and queues the patient to a service provider.
+  That is the role description on the approved Roles & Permissions matrix, not a clinical module
+  cell. It holds the visit, bed-read, and queue privileges that those two actions actually call,
+  plus `Get Concepts`, because a queue's priorities and statuses are concepts and the queue list
+  fails without it. It does not hold `Get Encounters`. Saving the queue number re-saves the visit;
+  during that already-authorized save the visit date check still reads the visit's encounters,
+  under a proxy that ends with the save (see
+  [module access enforcement](module-access-enforcement.md)). It does not hold
+  `Manage Appointments` or `Manage Own Appointments`. Bahmni's separate
+  `POST /appointments/{uuid}/status-change` therefore stays forbidden. LE-628's acceptance
+  criterion that the appointment itself becomes Checked in conflicts with the matrix and is not
+  implemented: Registrar can start the visit and queue the patient, and the appointment status
+  stays unchanged.
 - **Nurse, Clinician, Midwife** see who is waiting for them, call the next patient, move them to
   the next service and end their entry. Nurses also start visits (they already held
   `Add Visits`), which needs the same visit-form and bed reads as the Records Officer.
-- **Pharmacist and Lab Technician**: each facility has TB Screening, ANC and General Consultation
-  queues at its Pharmacy and Laboratory (the site `queues/` CSV), so patients are sent to them
+- **Pharmacist and Lab Technician**: each facility has a queue for every service (TB Screening,
+  General Consultation, ANC Enrolment, ANC Follow-up, PNC Enrolment, Labour and Delivery,
+  Immunization, Family Planning) at its Pharmacy and Laboratory (the site `queues/` CSV), so patients are sent to them
   through the queue. They see their queue, serve the patient and end or move the entry. They do
   not check patients in, so they get no visit-type, visit-attribute or bed privilege.
 - **National Reporting Officer, Sync Administrator, Sync Conflict Reviewer, ICT Auditor** get no

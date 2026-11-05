@@ -59,12 +59,14 @@ In the chart (all gated by `View Remote History`, `offline: true`):
 | `liberia-external-records-summary` (card) | `patient-chart-summary-dashboard-slot`, first via `config-national.json` |
 | `liberia-external-records-banner-tag` | `patient-banner-tags-slot`, hidden in search results and when no facility has records |
 | `liberia-external-records-dashboard-link` | `patient-chart-dashboard-slot`, `order: 5.5` (directly below Visits, 5) |
+| `liberia-external-records-dashboard` (page) | `patient-chart-external-records-dashboard-slot`: every section, facility filter, Last ANC contact, encounter index |
 
 Reusable pieces: `external-records-sections.ts` defines each section's columns once;
 `ExternalRecordsTable` renders any section (EXTERNAL / READ ONLY tags, Facility column,
 paging); `ExternalRecordsStatusView` is the status bar or empty state. Config:
-`externalRecords.summarySections` (at most two, default `["allergies", "conditions"]`) and
-`externalRecords.pageSize` (default 5).
+`externalRecords.summarySections` (at most two, default `["allergies", "conditions"]`),
+`externalRecords.dashboardSections` (order of the dashboard, default all), `dashboardIcon` and
+`pageSize` (default 5).
 
 ## Development
 

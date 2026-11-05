@@ -1,4 +1,5 @@
 import { loginWithSession } from '../support/session';
+import { enrolInAnc } from '../support/anc-enrolment';
 import { faker, liberiaPhoneNumber, randomAdultBirthdateParts } from '../support/faker';
 import RegistrationPage from '../pages/Registration';
 import VisitPage from '../pages/visit';
@@ -140,10 +141,34 @@ describe('First and Second Stage of Labor and Delivery form (one shared patient)
 
 describe('First and Second Stage of Labor and Delivery form ANC pre-fill', { retries: 1 }, () => {
     let patientChartUrl: string;
+    let createdPatientUuid: string | undefined;
+    let createdEnrolmentUuid: string | undefined;
+
+    after(() => {
+        if (createdEnrolmentUuid) {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/programenrollment/${createdEnrolmentUuid}?reason=ANC-prefill-test-cleanup`);
+        }
+        if (createdPatientUuid) {
+            cy.request('DELETE', `/openmrs/ws/rest/v1/patient/${createdPatientUuid}?reason=ANC-prefill-test-cleanup`);
+        }
+    });
 
     before(() => {
         loginWithSession();
+        ancInitialForm.observeClinicalForms();
+        cy.intercept('POST', '**/ws/rest/v1/patient').as('registerAncPrefillPatient');
         registerMotherWithVisit();
+        cy.wait('@registerAncPrefillPatient').then(({ response }) => {
+            expect(response?.statusCode, 'synthetic patient registration').to.equal(201);
+            const patientUuid: unknown = response?.body.uuid;
+            if (typeof patientUuid !== 'string' || !patientUuid.trim()) {
+                throw new Error('Patient registration did not return a patient UUID for ANC enrolment');
+            }
+            createdPatientUuid = patientUuid;
+            return enrolInAnc(patientUuid).then((saved) => {
+                createdEnrolmentUuid = saved.uuid;
+            });
+        });
 
         ancInitialForm.openClinicalForms();
         ancInitialForm.selectForm();

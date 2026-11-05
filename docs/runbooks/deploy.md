@@ -24,6 +24,30 @@ carry no site content and keep one name. Compose falls back to the unsuffixed ba
 frontend names when `LIBERIAEMR_SITE` is empty; only CI and development builds publish those
 (the dev server's `:latest`), so the deploy script refuses a release deploy without it.
 
+**The site is baked into the image, not configured at runtime.** The backend and frontend
+images carry one site package (`SITE_PACKAGE` in the backend Dockerfile; the frontend's
+`config-site.json`). The unsuffixed images, the dev `:latest` included, are built with the
+default site, Careysburg. Running them at another facility loads Careysburg's facility root,
+locations, queues and cash points, and issues MOH Health Record Numbers with Careysburg's
+prefix (`HRN-CBG`), which collide with Careysburg's own once both sync to central.
+`facility.env` cannot correct this; `FACILITY_CODE` only names the facility to sync.
+
+### A site with no published release yet
+
+Until a release publishes `liberia-emr-backend-<site>`, build the site's images on the server
+and deploy them with `--local`. Set `REGISTRY` in `facility.env` to the same value the build
+tags with (the build defaults to `intellisoftdev`), and `LIBERIAEMR_VERSION` to the build's
+`--version`:
+
+```bash
+REGISTRY=intellisoftdev ./scripts/build/build-distribution.sh --version <version> --site <site>
+./scripts/deploy/deploy-facility.sh --env distribution/env/facility.env --local
+```
+
+The build needs Docker, JDK 17, Maven and Python 3, and `OCL_API_TOKEN` for the MOH CIEL
+collections. This is a staging instance, not a release deploy (ADR 0001): move it to the
+published tag once one exists.
+
 The script asks you to confirm the preconditions above, then pulls and starts the stack. It
 does **not** take the backup and does not start sync. By hand, it is:
 

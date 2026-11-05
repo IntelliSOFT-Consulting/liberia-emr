@@ -13,11 +13,47 @@
   ],
   "@openmrs/esm-service-queues-app": {
     "defaultInitialServiceQueue": "TB Screening",
+    "_comment_serve_redirect": "LE-121. Serve target per service (patch-service-queues-serve-redirect.cjs). Unmapped services open the chart.",
+    "servePatientChartUrls": [
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.anc-followup-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.pnc-enrolment-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.labour-delivery-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.family-planning-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/programs"
+      },
+      {
+        "serviceConceptUuid": "${var.concept.national.immunization-service.uuid}",
+        "url": "${openmrsSpaBase}/patient/${patientUuid}/chart/immunizations"
+      }
+    ],
     "concepts": {
       "defaultStatusConceptUuid": "${var.concept.ciel.queue-waiting.uuid}",
       "defaultTransitionStatus": "${var.concept.ciel.queue-in-progress.uuid}",
       "defaultPriorityConceptUuid": "${var.concept.national.queue-routine.uuid}",
       "emergencyPriorityConceptUuid": "${var.concept.ciel.queue-emergency.uuid}"
+    },
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Get Queues') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-appointments-app": {
+    "_comment_display": "Appointments is a module-access entitlement. Read is View Appointments and View Appointment Services. Write adds Manage Appointments (appointments-api 2.1.0). getAllAppointments, search, and get-by-uuid accept View Appointments. getAllAppointmentServices, used by GET /appointment/appointmentSummary and GET /appointmentService/all/default, accepts View Appointment Services. The home link is the extension clinical-appointments-dashboard-link; this module display condition applies to that extension. The framework privilege check still shows the extension to System Developer. Direct URL access is unchanged.",
+    "Display conditions": {
+      "privileges": ["View Appointments"]
     }
   },
   "_comment_home_dashboards": [
@@ -34,6 +70,7 @@
     "Privilege names: docs/security/moh-ict-sop-mapping.md, 'The login roles'."
   ],
   "@openmrs/esm-home-app": {
+    "_comment_display": "homepage-dashboard-slot belongs to esm-home-app. Display conditions are set on that slot's configure entry, the same way add-patient-action is gated. patient-lists-dashboard-link is the Patient Lists card; it loads GET /cohortm/cohort, which cohort 3.7.3 authorizes with View Cohorts In Cohort Module. ward-dashboard-link is the Wards card; GET /admissionLocation/{uuid} is BedManagementService.getAdmissionLocationByLocation, authorized by Get Admission Locations or Get Beds (bedmanagement 7.2.0, requireAll false). The card requires Get Admission Locations. These are not module-level Display conditions on esm-patient-list-management-app or esm-ward-app, because a partial module config for those apps crashes the home shell. Direct URL access is unchanged. System Developer still sees both cards.",
     "defaultDashboardPerRole": {
       "National Reporting Officer": "indicator-reports",
       "Sync Administrator": "sync-status",
@@ -56,10 +93,10 @@
             "Display conditions": { "privileges": ["View Cashier Bills"] }
           },
           "ward-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Beds", "Get Admission Locations", "Assign Beds"] }
+            "Display conditions": { "privileges": ["Get Admission Locations"] }
           },
           "patient-lists-dashboard-link": {
-            "Display conditions": { "privileges": ["Get Patient Cohorts"] }
+            "Display conditions": { "privileges": ["View Cohorts In Cohort Module"] }
           }
         }
       }
@@ -84,6 +121,15 @@
           },
           "dispensing-link": {
             "Display conditions": { "privileges": ["Get Medication Dispense"] }
+          }
+        }
+      },
+      "top-nav-actions-slot": {
+        "configure": {
+          "add-patient-action": {
+            "Display conditions": {
+              "privileges": ["Add Patients"]
+            }
           }
         }
       }
@@ -111,9 +157,18 @@
       "demographics",
       "contact",
       "referralDetails",
-      "relationships"
+      "relationships",
+      "goodSamaritan"
     ],
     "sectionDefinitions": [
+      {
+        "id": "goodSamaritan",
+        "name": "Good Samaritan (declined next of kin)",
+        "fields": [
+          "goodSamaritanName",
+          "goodSamaritanPhone"
+        ]
+      },
       {
         "id": "referralDetails",
         "name": "Referral Details",
@@ -122,7 +177,6 @@
           "referredFrom",
           "referredBy",
           "referralRefNumber",
-          "dateOfReferral",
           "reasonForReferral"
         ]
       },
@@ -165,16 +219,6 @@
         "placeholder": "1234567"
       },
       {
-        "id": "dateOfReferral",
-        "type": "obs",
-        "uuid": "${var.concept.date-of-referral.uuid}",
-        "label": "Date of Referral",
-        "placeholder": "Select Date",
-        "validation": {
-          "required": false
-        }
-      },
-      {
         "id": "reasonForReferral",
         "type": "person attribute",
         "uuid": "${var.personattribute.reason-for-referral.uuid}",
@@ -189,6 +233,18 @@
         "validation": {
           "required": true
         }
+      },
+      {
+        "id": "goodSamaritanName",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-name.uuid}",
+        "label": "Good Samaritan name"
+      },
+      {
+        "id": "goodSamaritanPhone",
+        "type": "person attribute",
+        "uuid": "${var.personattributetypes.good-samaritan-phone.uuid}",
+        "label": "Good Samaritan phone number"
       }
     ],
     "fieldConfigurations": {
@@ -220,6 +276,17 @@
       ]
     }
   },
+  "_comment_patient_banner": [
+    "Contact Details in the patient banner lists these attributes. Text formats only: the banner",
+    "renders the raw value, and a coded attribute's value is an object. Telephone is the app default."
+  ],
+  "@openmrs/esm-patient-banner-app": {
+    "contactAttributeTypes": [
+      "${var.personattributetypes.telephone-number.uuid}",
+      "${var.personattributetypes.good-samaritan-name.uuid}",
+      "${var.personattributetypes.good-samaritan-phone.uuid}"
+    ]
+  },
   "@liberiaemr/esm-liberia-login-app": {
     "_comment_idle_timeout": [
       "Minutes of human inactivity for the login-app watcher. Maven filtering leaves this as a string such as \"10\".",
@@ -235,6 +302,10 @@
     "Brand color #3": "#002A86"
   },
   "@openmrs/esm-patient-forms-app": {
+    "_comment_display": "Get Forms is what FormService.getAllForms checks. The Clinical forms button is this app's workspace window, registered as an extension into the patient-chart slot, so this display condition hides that button and the offline forms cards before the forms list is requested. System Developer still sees the button.",
+    "Display conditions": {
+      "privileges": ["Get Forms"]
+    },
     "customFormsUrl": "/ws/rest/v1/liberiaemr/forms?patientUuid=${patientUuid}",
     "orderBy": "name",
     "formSections": [
@@ -281,6 +352,10 @@
   },
   "@openmrs/esm-billing-app": {
     "defaultCurrency": "LRD",
+    "_comment_display": "Billing=W holds View Cashier Bills. Other matrix roles do not see the billing shell. Clinician has no Get People and keeps the previous shell. The server still enforces cashier privileges.",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'View Cashier Bills') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
     "_comment_logo": [
       "Printed invoice header. With logo.src and logo.alt both empty the app draws the OpenMRS",
       "logo, and country defaults to 'Kenya'. The seal SVG carries its own 72px print size."
@@ -291,16 +366,130 @@
     },
     "country": "Republic of Liberia"
   },
+  "@openmrs/esm-laboratory-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-dispensing-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-orders-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory' || p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-medications-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Pharmacy') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-tests-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Manage Laboratory') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-immunizations-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Immunization' || p.display == 'Write Immunization') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@liberiaemr/esm-liberia-epartograph-app": {
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read Labor and Delivery' || p.display == 'Write Labor and Delivery') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    }
+  },
+  "@openmrs/esm-patient-search-app": {
+    "extensionSlots": {
+      "patient-search-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      }
+    }
+  },
   "@openmrs/esm-patient-chart-app": {
     "showServiceQueueFields": true,
     "extensionSlots": {
+      "patient-actions-slot": {
+        "configure": {
+          "edit-patient-details-button": {
+            "Display conditions": {
+              "privileges": ["Edit Patients"]
+            }
+          }
+        }
+      },
+      "patient-info-slot": {
+        "configure": {
+          "patient-vitals-info": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          }
+        }
+      },
+      "patient-chart-dashboard-slot": {
+        "configure": {
+          "results-summary-dashboard": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "conditions-summary-dashboard": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          }
+        }
+      },
+      "patient-chart-vitals-biometrics-dashboard-slot": {
+        "configure": {
+          "vitals-details-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "biometrics-details-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          }
+        }
+      },
+      "patient-chart-conditions-dashboard-slot": {
+        "configure": {
+          "conditions-details-widget": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          }
+        }
+      },
+      "patient-chart-immunizations-dashboard-slot": {
+        "remove": [
+          "immunization-details-widget"
+        ]
+      },
       "patient-chart-summary-dashboard-slot": {
         "add": [],
+        "configure": {
+          "vitals-overview-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "biometrics-overview-widget": {
+            "Display conditions": { "privileges": ["Get Observations"] }
+          },
+          "conditions-overview-widget": {
+            "Display conditions": { "privileges": ["Get Concepts"] }
+          },
+          "liberia-rbs-history": {
+            "Display conditions": {
+              "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => ['Get Encounters','Read TB Screening','Write TB Screening','Manage General Consultation','Manage ANC','Manage Laboratory','Manage PNC','Manage Pharmacy','Read Labor and Delivery','Write Labor and Delivery','Read Immunization','Write Immunization','Manage Family Planning'].includes(p.display)))"
+            }
+          }
+        },
         "order": [
-          "liberia-external-records-summary",
           "patient-flags-list",
+          "liberia-external-records-summary",
           "liberia-obs-widget",
+          "liberia-restricted-summary",
           "vitals-overview-widget",
+          "liberia-rbs-history",
           "biometrics-overview-widget",
           "conditions-overview-widget",
           "active-medications-widget",
@@ -333,6 +522,9 @@
       "${var.encountertype.tb-screening.uuid}"
     ],
     "formUuid": "${var.form.tb-screening.uuid}",
+    "Display conditions": {
+      "expression": "!session.user ? false : (session.user.roles.some(r => r.display == 'System Developer') || session.user.privileges.some(p => p.display == 'Read TB Screening' || p.display == 'Write TB Screening') || !session.user.privileges.some(p => p.display == 'Get People'))"
+    },
     "data": [
       {
         "concept": "${var.concept.national.coughing-2-weeks-or-more.uuid}",
@@ -359,5 +551,128 @@
         "label": "Total Score"
       }
     ]
+  },
+  "_comment_immunization_entry": [
+    "Immunizations Add uses this widget, which opens the national Immunization form in",
+    "patient-form-entry-workspace. The upstream immunization-details-widget is removed",
+    "from the immunizations dashboard so it no longer opens the FHIR immunization workspace.",
+    "formUuids keeps the table on Immunization encounters. FHIR history stays on the",
+    "read-only immunizations history card and on Previous immunizations."
+  ],
+  "liberia-immunization-history": {
+    "title": "Immunization",
+    "formUuid": "${var.form.immunization.uuid}",
+    "formUuids": [
+      "${var.form.immunization.v1-0.uuid}",
+      "${var.form.immunization.v1-1.uuid}",
+      "${var.form.immunization.v1-2.uuid}",
+      "${var.form.immunization.v1-3.uuid}",
+      "${var.form.immunization.v1-4.uuid}",
+      "${var.form.immunization.v1-5.uuid}",
+      "${var.form.immunization.v1-6.uuid}",
+      "${var.form.immunization.v1-7.uuid}",
+      "${var.form.immunization.v1-8.uuid}",
+      "${var.form.immunization.v1-9.uuid}",
+      "${var.form.immunization.v1-10.uuid}",
+      "${var.form.immunization.v1-11.uuid}",
+      "${var.form.immunization.v1-12.uuid}",
+      "${var.form.immunization.v1-13.uuid}",
+      "${var.form.immunization.uuid}"
+    ],
+    "showAddButton": true
+  },
+  "_comment_routine_immunizations": [
+    "One routineImmunizations object feeds the routine schedule and dose sequencing.",
+    "Schedule policy and sequence rules stay in the ESM. UUID metadata is runtime config.",
+    "vaccineConceptUuids is an object: a site can replace one dose key and the other national values remain.",
+    "nationalFormUuids and ancFormUuids are arrays. Frontend config replaces an array wholesale,",
+    "so a site that sets either key must list every form version it still wants counted.",
+    "var.form.immunization.uuid stays the current form. The v1-* variables are frozen historical identities.",
+    "v1.14 is current. v1.13 stays in this list so encounters saved on it still count.",
+    "The current variable is also in the list so the next version bump stays visible until it is frozen.",
+    "fhirDoseMappings stays empty until a deployment supplies verified generic vaccine codings.",
+    "Configured doses with no sequence rule are recognized and do not block other series.",
+    "ancTtConceptUuids maps canonical TD dose IDs to ANC Date-of-TT concepts. TD1 uses the unsuffixed TD concept."
+  ],
+  "@liberiaemr/esm-liberia-patient-chart-extension": {
+    "routineImmunizations": {
+      "nationalFormUuids": [
+        "${var.form.immunization.v1-0.uuid}",
+        "${var.form.immunization.v1-1.uuid}",
+        "${var.form.immunization.v1-2.uuid}",
+        "${var.form.immunization.v1-3.uuid}",
+        "${var.form.immunization.v1-4.uuid}",
+        "${var.form.immunization.v1-5.uuid}",
+        "${var.form.immunization.v1-6.uuid}",
+        "${var.form.immunization.v1-7.uuid}",
+        "${var.form.immunization.v1-8.uuid}",
+        "${var.form.immunization.v1-9.uuid}",
+        "${var.form.immunization.v1-10.uuid}",
+        "${var.form.immunization.v1-11.uuid}",
+        "${var.form.immunization.v1-12.uuid}",
+        "${var.form.immunization.v1-13.uuid}",
+        "${var.form.immunization.uuid}"
+      ],
+      "vaccineQuestionUuid": "${var.concept.national.vaccine-name.uuid}",
+      "routeQuestionUuid": "${var.concept.national.route.uuid}",
+      "returnDateQuestionUuid": "${var.concept.national.return-date-for-the-next-vaccination.uuid}",
+      "vaccineConceptUuids": {
+        "BCG": "${var.concept.national.bcg.uuid}",
+        "OPV0": "${var.concept.national.opv0-1-dose.uuid}",
+        "OPV1": "${var.concept.national.opv1.uuid}",
+        "Penta1": "${var.concept.national.penta-1.uuid}",
+        "Pneumo1": "${var.concept.national.pneumo-1.uuid}",
+        "Rota1": "${var.concept.national.rota-1.uuid}",
+        "OPV2": "${var.concept.national.opv2.uuid}",
+        "Penta2": "${var.concept.national.penta-2.uuid}",
+        "Pneumo2": "${var.concept.national.pneumo-2.uuid}",
+        "Rota2": "${var.concept.national.rota-2.uuid}",
+        "OPV3": "${var.concept.national.opv3.uuid}",
+        "Penta3": "${var.concept.national.penta-3.uuid}",
+        "Pneumo3": "${var.concept.national.pneumo-3.uuid}",
+        "Malaria1": "${var.concept.national.malaria-vaccine-dose-1.uuid}",
+        "Malaria2": "${var.concept.national.malaria-vaccine-dose-2.uuid}",
+        "Malaria3": "${var.concept.national.malaria-vaccine-dose-3.uuid}",
+        "MCV1": "${var.concept.national.mcv1.uuid}",
+        "TCV": "${var.concept.national.tcv.uuid}",
+        "YellowFever": "${var.concept.national.yellow-fever.uuid}",
+        "MCV2": "${var.concept.national.mcv2.uuid}",
+        "Malaria4": "${var.concept.national.malaria-vaccine-dose-4.uuid}",
+        "HPV1": "${var.concept.national.hpv1.uuid}",
+        "HPV2": "${var.concept.national.hpv2.uuid}",
+        "PediatricPfizer1": "${var.concept.national.pediatric-pfizer-covid-19-dose-1.uuid}",
+        "PediatricPfizer2": "${var.concept.national.pediatric-pfizer-covid-19-dose-2.uuid}",
+        "TD1": "${var.concept.national.td.uuid}",
+        "TD2": "${var.concept.national.td2.uuid}",
+        "TD3": "${var.concept.national.td3.uuid}",
+        "TD4": "${var.concept.national.td4.uuid}",
+        "TD5": "${var.concept.national.td5.uuid}",
+        "IPV": "${var.concept.national.ipv.uuid}",
+        "Pfizer": "${var.concept.national.pfizer.uuid}",
+        "JJ": "${var.concept.national.j-j.uuid}",
+        "CovidBooster": "${var.concept.national.covid-19-booster.uuid}"
+      },
+      "fhirDoseMappings": [],
+      "ancFormUuids": [
+        "${var.form.1-anc-form.v1-1.uuid}",
+        "${var.form.anc-national.uuid}"
+      ],
+      "supplementaryImmunization": {
+        "activitiesConceptUuid": "${var.concept.national.supplementary-immunization-activities.uuid}",
+        "blueConceptUuid": "${var.concept.national.vit-a-blue-100-000iu.uuid}",
+        "redConceptUuid": "${var.concept.national.vit-a-red-200-000iu.uuid}",
+        "dateReceivedConceptUuid": "${var.concept.national.date-received.uuid}",
+        "administrationContextConceptUuid": "${var.concept.national.immunization-administration-context.uuid}",
+        "siaAnswerConceptUuid": "${var.concept.national.supplementary-immunization-activity.uuid}",
+        "routineAnswerConceptUuid": "${var.concept.national.routine-immunization-administration.uuid}"
+      },
+      "ancTtConceptUuids": {
+        "TD1": "${var.concept.national.date-of-tt1.uuid}",
+        "TD2": "${var.concept.national.date-of-tt2.uuid}",
+        "TD3": "${var.concept.national.date-of-tt3.uuid}",
+        "TD4": "${var.concept.national.date-of-tt4.uuid}",
+        "TD5": "${var.concept.national.date-of-tt5.uuid}"
+      }
+    }
   }
 }

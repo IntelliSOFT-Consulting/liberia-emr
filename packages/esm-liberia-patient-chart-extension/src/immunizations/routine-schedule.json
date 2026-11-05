@@ -1,0 +1,254 @@
+[
+  {
+    "id": "BCG",
+    "label": "BCG",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 0,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "upperAge": {
+      "age": {
+        "value": 11,
+        "unit": "months"
+      },
+      "inclusive": false
+    }
+  },
+  {
+    "id": "OPV0",
+    "label": "OPV0",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 0,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "upperAge": {
+      "age": {
+        "value": 7,
+        "unit": "days"
+      },
+      "inclusive": true
+    }
+  },
+  {
+    "id": "OPV1",
+    "label": "OPV1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Penta1",
+    "label": "Penta1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Pneumo1",
+    "label": "Pneumo1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Rota1",
+    "label": "Rota1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 42,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "OPV2",
+    "label": "OPV2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "OPV1",
+      "minimumInterval": {
+        "value": 28,
+        "unit": "days"
+      }
+    }
+  },
+  {
+    "id": "Penta2",
+    "label": "Penta2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "Penta1"
+    }
+  },
+  {
+    "id": "Pneumo2",
+    "label": "Pneumo2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "Pneumo1"
+    }
+  },
+  {
+    "id": "Rota2",
+    "label": "Rota2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 70,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "Rota1"
+    }
+  },
+  {
+    "id": "OPV3",
+    "label": "OPV3",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "OPV2"
+    }
+  },
+  {
+    "id": "Penta3",
+    "label": "Penta3",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "Penta2"
+    }
+  },
+  {
+    "id": "Pneumo3",
+    "label": "Pneumo3",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 98,
+      "unit": "days"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "Pneumo2"
+    }
+  },
+  {
+    "id": "Malaria1",
+    "label": "Malaria Dose 1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 5,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Malaria2",
+    "label": "Malaria Dose 2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 6,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "Malaria3",
+    "label": "Malaria Dose 3",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 7,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "MCV1",
+    "label": "Measles-containing vaccine 1",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "TCV",
+    "label": "TCV",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "YellowFever",
+    "label": "Yellow Fever",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 9,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  },
+  {
+    "id": "MCV2",
+    "label": "Measles-containing vaccine 2",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 15,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0,
+    "prerequisite": {
+      "canonicalDoseId": "MCV1"
+    }
+  },
+  {
+    "id": "Malaria4",
+    "label": "Malaria Dose 4",
+    "sequenceNumber": 1,
+    "dueAge": {
+      "value": 18,
+      "unit": "months"
+    },
+    "overdueAfterDays": 0
+  }
+]

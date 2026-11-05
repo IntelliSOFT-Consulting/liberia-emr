@@ -22,6 +22,7 @@ FROM eclipse-temurin:17-jdk AS content
 WORKDIR /build
 
 COPY content-packages/*/target/*.zip /build/zips/
+COPY distribution/backend/central-untag-queue-locations.pl /build/central-untag-queue-locations.pl
 
 # Layer order is load order: later layers override earlier ones.
 # The site layer is chosen at build time; default is Careysburg.
@@ -62,8 +63,8 @@ RUN set -eu; \
       echo "unpacking ${pkg}"; \
       rm -rf /tmp/pkg; mkdir -p /tmp/pkg; \
       (cd /tmp/pkg && jar xf "$zip"); \
-      # content-central's backend layer holds nothing of its own yet, and an empty directory
-      # may not survive into its ZIP; the site locations are added below instead.
+      # content-central's backend layer is skipped only if its ZIP carries none (LE-595 added
+      # central's own OpenMRS ID source); the site locations are added below.
       if [ "$pkg" = "liberiaemr-central" ] && [ ! -d /tmp/pkg/configuration/backend_configuration ]; then \
         continue; \
       fi; \
@@ -122,11 +123,18 @@ RUN set -eu; \
       done; \
       [ "$sites" -ge 1 ] || { echo "central: no site package in the build context" >&2; exit 1; }; \
       echo "central: locations from ${sites} site package(s)"; \
+      # Central runs no patient queues (LE-404): untagged, no location is offered as a queue
+      # location, so the queue screen cannot list one facility's entries to another.
+      perl /build/central-untag-queue-locations.pl /openmrs_config/locations/*.csv; \
       # The national MOH Health Record Number auto-generation option points at the ID source
       # each SITE package defines, with that site's HRN prefix, and central loads no site ID
       # source. Central is not a point-of-care system (sync-eip.md) and must not issue a
       # facility-scoped identifier, so the option is dropped here rather than satisfied.
       rm -f /openmrs_config/autogenerationoptions/autogenerationoptions-national.csv; \
+      # The common OpenMRS ID option names the generator facilities share, whose range the
+      # facility IDs synced to central already fill (LE-595). Central's own file carries the
+      # same option UUID against its own generator, so the common one is dropped, not doubled.
+      rm -f /openmrs_config/autogenerationoptions/autogenerationoptions-common.csv; \
     fi; \
     rm -rf /tmp/pkg; \
     # A resolved configuration must never contain demo content.
@@ -160,11 +168,13 @@ ARG LIBERIAEMR_VERSION=
 
 WORKDIR /build
 # The module's content UUIDs (liberiaemr-uuids.properties: the Health Facility tag the identity
-# service resolves a record's facility with, and what the remote history endpoint returns) are
-# filtered in from the national and MCH layers' variables.properties (ADR 0010 decision 7), and
-# the api build fails if one is unresolved.
+# service resolves a record's facility with, what the remote history endpoint returns, and
+# module-access ownership evidence) are filtered in from the content layers' variables.properties
+# (ADR 0010 decision 7), and the api build fails if one is unresolved.
+COPY content-packages/content-common/configuration/variables.properties /build/content-packages/content-common/configuration/variables.properties
 COPY content-packages/content-liberia-national/configuration/variables.properties /build/content-packages/content-liberia-national/configuration/variables.properties
 COPY content-packages/content-liberia-mch/configuration/variables.properties /build/content-packages/content-liberia-mch/configuration/variables.properties
+COPY content-packages/content-liberia-opd-ipd/configuration/variables.properties /build/content-packages/content-liberia-opd-ipd/configuration/variables.properties
 COPY modules/liberiaemr /build/liberiaemr
 # Tests run in CI's own backend-module job; repeating them here would add minutes to every
 # image build for a signal the pipeline already has.

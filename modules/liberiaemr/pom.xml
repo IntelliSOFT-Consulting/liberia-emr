@@ -192,6 +192,8 @@
             version the distribution actually RUNS (3.5.0); this is the floor it must clear.
         -->
         <webservicesRestVersion>3.0.0</webservicesRestVersion>
+        <!-- distro.properties pins 3.0.10; optional at runtime (aware_of_module in config.xml). -->
+        <patientflagsVersion>3.0.10</patientflagsVersion>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <!--

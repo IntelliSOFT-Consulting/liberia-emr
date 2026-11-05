@@ -1,0 +1,2 @@
+Uuid,Name,Description
+${var.patientflagtag.tb-screening.uuid},TB Screening,Patient flags for TB screening coverage

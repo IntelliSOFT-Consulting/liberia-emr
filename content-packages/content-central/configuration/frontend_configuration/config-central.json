@@ -28,6 +28,31 @@
       "locationsPerRequest": 50
     }
   },
+  "_comment_service_queues": [
+    "LE-404. Central runs no patient queues: queue entries are not synced, and central's queue",
+    "screen listed every facility's entries to whoever logged in as any facility. The central",
+    "build untags Queue Location from every location; this hides the queue app's extensions",
+    "(home and app menu links, queue actions) and the start-visit form's queue fields."
+  ],
+  "@openmrs/esm-service-queues-app": {
+    "Display conditions": {
+      "expression": "false"
+    }
+  },
+  "@openmrs/esm-patient-chart-app": {
+    "showServiceQueueFields": false
+  },
+  "_comment_home_dashboards": [
+    "LE-404. With service-queues gone, /home opens a role's defaultDashboardPerRole entry, else the",
+    "first dashboard in this order: sync status, then sync conflicts, then the rest."
+  ],
+  "@openmrs/esm-home-app": {
+    "extensionSlots": {
+      "homepage-dashboard-slot": {
+        "order": ["sync-status-dashboard-link", "sync-conflicts-dashboard-link"]
+      }
+    }
+  },
   "@openmrs/esm-patient-registration-app": {
     "registrationObs": {
       "encounterTypeUuid": "${var.encountertype.registration.uuid}"

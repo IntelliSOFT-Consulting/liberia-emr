@@ -38,8 +38,18 @@ class FamilyPlanningFormPage {
     openClinicalForms() {
         cy.get('[data-extension-slot-name="patient-chart-summary-dashboard-slot"]', { timeout: this.chartLoadTimeout })
             .should('be.visible');
-        cy.get('button[aria-label="Clinical forms"]', { timeout: this.chartLoadTimeout })
+        const clinicalFormsButton = 'button[aria-label="Clinical forms"]';
+        let previousPosition = '';
+        let stableReadings = 0;
+        cy.get(clinicalFormsButton, { timeout: this.chartLoadTimeout })
             .should('be.visible')
+            .should(($button) => {
+                const { x, y, width, height } = $button[0].getBoundingClientRect();
+                const position = [x, y, width, height].map(Math.round).join(':');
+                stableReadings = position === previousPosition ? stableReadings + 1 : 0;
+                previousPosition = position;
+                expect(stableReadings, 'Clinical Forms button position is stable').to.be.at.least(2);
+            })
             .click();
     }
 
@@ -64,15 +74,12 @@ class FamilyPlanningFormPage {
         }
     }
 
-    // The form engine occasionally re-evaluates the Purpose of Visit question but not the
-    // section-level hide on Obstetric Profile / Method Record. Only a change to Counselling
-    // Done re-runs that evaluation, so toggle it if the sections never render.
-    private ensureCounselledSectionsRendered(attempt = 1) {
+    private ensureCounselledSectionsRendered(attempt = 1, restorePurpose = false) {
         const maxAttempts = 3;
         const deadline = Date.now() + 10000;
         const poll = (): void => {
             cy.get('body').then(($body) => {
-                if ($body.find('#chosenFamilyPlanningMethod').length) {
+                if ($body.find('#parity').length && $body.find('#chosenFamilyPlanningMethod').length) {
                     return;
                 }
                 if (Date.now() < deadline) {
@@ -80,12 +87,17 @@ class FamilyPlanningFormPage {
                     return;
                 }
                 if (attempt >= maxAttempts) {
-                    throw new Error(`Method Record section did not render after ${maxAttempts} Counselling Done = Yes attempts`);
+                    throw new Error(
+                        `Obstetric Profile and Method Record sections did not render after ${maxAttempts} Counselling Done = Yes attempts`
+                    );
                 }
-                cy.log(`Method Record not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
+                cy.log(`Conditional Family Planning sections not rendered; re-selecting Counselling Done (attempt ${attempt + 1})`);
                 this.checkOption('counsellingDone-No');
                 this.checkOption('counsellingDone-Yes');
-                cy.then(() => this.ensureCounselledSectionsRendered(attempt + 1));
+                if (restorePurpose) {
+                    this.selectPurposeForCommodities();
+                }
+                cy.then(() => this.ensureCounselledSectionsRendered(attempt + 1, restorePurpose));
             });
         };
         poll();
@@ -99,7 +111,12 @@ class FamilyPlanningFormPage {
                 if (!id) {
                     throw new Error('For Commodities label is missing its checkbox identifier');
                 }
-                this.checkOption(id);
+                cy.get(`input[id="${id}"]`).then(($input) => {
+                    if (!$input.is(':checked')) {
+                        this.checkOption(id);
+                    }
+                });
+                cy.get(`input[id="${id}"]`).should('be.checked');
             });
     }
 
@@ -124,7 +141,6 @@ class FamilyPlanningFormPage {
         cy.get('input[id^="purposeOfVisit-"]', { timeout: this.timeout }).should('not.be.checked');
         cy.contains('button', /^Save$/, { timeout: this.timeout }).click();
 
-        // Nothing appears on screen to wait for, so give a save request time to be sent.
         cy.wait(3000);
         cy.get('@saveFamilyPlanning.all').should('have.length', 0);
         cy.get('label[for^="purposeOfVisit-"]').should('be.visible');
@@ -154,16 +170,98 @@ class FamilyPlanningFormPage {
         });
     }
 
-    private selectDropdownOption(fieldId: string, option: string) {
-        cy.get(`#${fieldId}`, { timeout: this.timeout })
+    private selectDropdownOption(fieldId: string, option: string, attempt = 1): void {
+        // Opening the list re-renders the combobox, and the workspace can scroll back
+        // to the top so the menu is clipped. Carbon mounts options only while open.
+        const maxAttempts = 3;
+        const openBudgetMs = 2000;
+        const combobox = `#${fieldId} button[role="combobox"]`;
+        const optionLabel = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+        const optionPattern = new RegExp(`^${this.escapeRegExp(option)}$`);
+        const selectedLabel = ($combo: JQuery<HTMLElement>) => {
+            const label = $combo.find('.cds--list-box__label').get(0) ?? $combo.get(0);
+            return label ? optionLabel(label) : '';
+        };
+
+        const openMenuOption = (doc: Document) => {
+            const combo = doc.querySelector(combobox);
+            const listboxId = combo?.getAttribute('aria-controls');
+            if (!combo || combo.getAttribute('aria-expanded') !== 'true' || !listboxId) {
+                return undefined;
+            }
+            return [...doc.querySelectorAll(
+                `#${CSS.escape(listboxId)} [role="option"], #${CSS.escape(listboxId)} .cds--list-box__menu-item`,
+            )].find((el) => optionLabel(el) === option && el instanceof HTMLElement && Cypress.dom.isVisible(el));
+        };
+
+        cy.get(combobox, { timeout: this.timeout })
             .scrollIntoView()
-            .within(() => {
-                cy.get('button[role="combobox"]').click();
+            .should('be.visible')
+            .then(($combo) => {
+                // A second click toggles the menu shut, so only open a closed list.
+                if (!Cypress.dom.isAttached($combo) || $combo.attr('aria-expanded') !== 'true') {
+                    cy.get(combobox).click();
+                }
             });
-        cy.contains('[role="option"], .cds--list-box__menu-item', new RegExp(`^${this.escapeRegExp(option)}$`), {
-            timeout: this.timeout,
-        }).click();
-        cy.get(`#${fieldId}`).should('contain.text', option);
+
+        cy.window({ timeout: this.timeout }).then((win) => new Cypress.Promise<boolean>((resolve) => {
+            const started = win.performance.now();
+            const tick = () => {
+                if (openMenuOption(win.document) || win.performance.now() - started >= openBudgetMs) {
+                    resolve(Boolean(openMenuOption(win.document)));
+                    return;
+                }
+                win.requestAnimationFrame(tick);
+            };
+            tick();
+        })).then((opened) => {
+            if (!opened) {
+                if (attempt >= maxAttempts) {
+                    cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'true');
+                    cy.get(combobox).invoke('attr', 'aria-controls').then((listboxId) => {
+                        expect(listboxId, `${fieldId} listbox`).to.be.a('string').and.not.be.empty;
+                        cy.contains(
+                            `#${CSS.escape(String(listboxId))} [role="option"], #${CSS.escape(String(listboxId))} .cds--list-box__menu-item`,
+                            optionPattern,
+                            { timeout: this.timeout },
+                        ).click();
+                    });
+                    cy.get(combobox, { timeout: this.timeout }).should(($selected) => {
+                        expect(selectedLabel($selected), `${fieldId} selected value`).to.eq(option);
+                    });
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                cy.log(`${fieldId} menu did not show "${option}" (attempt ${attempt}); reopening`);
+                cy.then(() => this.selectDropdownOption(fieldId, option, attempt + 1));
+                return;
+            }
+
+            cy.get(combobox).invoke('attr', 'aria-controls').then((listboxId) => {
+                expect(listboxId, `${fieldId} listbox`).to.be.a('string').and.not.be.empty;
+                cy.get(`#${CSS.escape(String(listboxId))}`)
+                    .find('[role="option"], .cds--list-box__menu-item')
+                    .filter((_, el) => optionLabel(el) === option)
+                    .first()
+                    .click();
+            });
+
+            cy.get(combobox, { timeout: this.timeout }).then(($selected) => {
+                if (Cypress.dom.isAttached($selected) && selectedLabel($selected) === option) {
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                if (attempt >= maxAttempts) {
+                    cy.get(combobox, { timeout: this.timeout }).should(($final) => {
+                        expect(selectedLabel($final), `${fieldId} selected value`).to.eq(option);
+                    });
+                    cy.get(`#${fieldId}`, { timeout: this.timeout }).should('contain.text', option);
+                    return;
+                }
+                cy.log(`${fieldId} did not keep "${option}" (attempt ${attempt}); retrying`);
+                cy.then(() => this.selectDropdownOption(fieldId, option, attempt + 1));
+            });
+        });
     }
 
     private escapeRegExp(value: string) {
@@ -216,17 +314,19 @@ class FamilyPlanningFormPage {
     }
 
     verifyLamIsNotADispensedOption() {
-        cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout })
-            .scrollIntoView()
-            .within(() => {
-                cy.get('button[role="combobox"]').click();
-                cy.get('[role="option"]', { timeout: this.timeout }).should(($options) => {
-                    const labels = [...$options].map((option) => option.textContent?.trim());
-                    expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
-                    expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
-                });
-                cy.get('button[role="combobox"]').click();
-            });
+        const combobox = '#familyPlanningMethodDispensed button[role="combobox"]';
+        cy.get('#familyPlanningMethodDispensed', { timeout: this.timeout }).scrollIntoView();
+        cy.get(combobox, { timeout: this.timeout })
+            .should('be.visible')
+            .and('be.enabled')
+            .click();
+        cy.get('#familyPlanningMethodDispensed [role="option"]', { timeout: this.timeout }).should(($options) => {
+            const labels = [...$options].map((option) => option.textContent?.trim());
+            expect(labels, 'dispensed method options').to.include('Contraceptive Implants');
+            expect(labels.some((label) => /LAM|Lactational/i.test(label ?? '')), 'LAM dispensed option').to.equal(false);
+        });
+        cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'true').click();
+        cy.get(combobox, { timeout: this.timeout }).should('have.attr', 'aria-expanded', 'false');
     }
 
     saveAndVerifyCounsellingNo(clientType: 'New Family Planning Client' | 'Continuing Family Planning Client') {
@@ -255,6 +355,18 @@ class FamilyPlanningFormPage {
         this.selectClientType('New Family Planning Client');
         this.selectCounsellingDone('Yes');
         this.selectPurposeForCommodities();
+        this.ensureCounselledSectionsRendered(1, true);
+        cy.get('input[id="counsellingDone-Yes"]').should('be.checked');
+        cy.contains('label', /^For Commodities$/).invoke('attr', 'for').then((id) => {
+            cy.get(`input[id="${id}"]`).should('be.checked');
+        });
+        ['Obstetric Profile', 'Method Record'].forEach((section) => {
+            this.verifySectionVisibility(section, true);
+        });
+        cy.get('#chosenFamilyPlanningMethod', { timeout: this.timeout }).scrollIntoView();
+        cy.get('#chosenFamilyPlanningMethod button[role="combobox"]', { timeout: this.timeout })
+            .should('be.visible')
+            .and('be.enabled');
     }
 
     completeAndSubmitImplantVisit() {
@@ -334,7 +446,6 @@ class FamilyPlanningFormPage {
     }
 
     private setNumber(fieldId: string, value: string) {
-        // An emptied number input reverts to 0, so overwrite the selected text instead of clearing it.
         cy.get(`#${fieldId}`, { timeout: this.timeout })
             .scrollIntoView()
             .type(`{selectall}${value}`)
