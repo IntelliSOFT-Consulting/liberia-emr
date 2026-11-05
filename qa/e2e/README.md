@@ -11,6 +11,12 @@ then verifies the saved date/time (including Today/Yesterday display labels) and
 after save, refresh and navigation away/back. Other assessment fields and editing
 existing assessments are not covered by this scenario.
 
+Partograph display and ordering: a separate scenario saves two assessments with
+distinct observations and verifies that the second encounter is newer and appears
+first, followed by the first assessment and the admission baseline. Both saved
+assessments' dates, times and observations are checked in the table. Graph plotting
+and tooltip interactions are not covered.
+
 In `cypress/e2e/`, with page objects in `cypress/pages/` and synthetic data from
 `cypress/support/faker.ts`.
 

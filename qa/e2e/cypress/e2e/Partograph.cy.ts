@@ -38,7 +38,6 @@ describe('Partograph access and prerequisites', { retries: 1 }, () => {
     beforeEach(() => {
         loginWithSession();
     });
-
     it('opens Labour Admission for a female patient and transitions to the dilation requirement after saving', () => {
         registerPatientWithVisit('female');
         partographPage.openDashboard();
@@ -72,29 +71,60 @@ describe('Partograph access and prerequisites', { retries: 1 }, () => {
             }
         });
 
-        it('saves an assessment and retains its date and observations after refreshing and reopening', () => {
-            const assessment: PartographAssessment = {
-                fetal_heart_rate: '140',
-                cervical_dilatation: '5',
-                contractions_per_10_minutes: '3',
-                drugs_given_and_iv_fluids: 'No IV fluids',
-            };
-            saveAdmissionWithDilation(4);
-            partographPage.verifyActiveMonitoring(4);
-            partographPage.openAssessmentForm();
-            labourDeliveryForm.setNumber('fetal_heart_rate', assessment.fetal_heart_rate);
-            labourDeliveryForm.setNumber('cervical_dilatation', assessment.cervical_dilatation);
-            labourDeliveryForm.setNumber('contractions_per_10_minutes', assessment.contractions_per_10_minutes);
-            cy.get('#drugs_given_and_iv_fluids').scrollIntoView().type(assessment.drugs_given_and_iv_fluids).blur();
-            partographPage.saveAssessment(assessment).then((encounterDatetime) => {
-                cy.get('#cervical_dilatation', { timeout: 60000 }).should('not.exist');
-                partographPage.verifyAssessment(assessment, encounterDatetime);
-                cy.reload();
-                partographPage.verifyAssessment(assessment, encounterDatetime);
-                cy.contains('a', /^Patient summary$/i).click();
-                partographPage.openDashboard();
-                partographPage.verifyAssessment(assessment, encounterDatetime);
-            });
+    });
+
+    it('saves an assessment and retains its date and observations after refreshing and reopening', () => {
+        const assessment: PartographAssessment = {
+            fetal_heart_rate: '140',
+            cervical_dilatation: '5',
+            contractions_per_10_minutes: '3',
+            drugs_given_and_iv_fluids: 'No IV fluids',
+        };
+        saveAdmissionWithDilation(4);
+        partographPage.verifyActiveMonitoring(4);
+        partographPage.openAssessmentForm();
+        partographPage.fillAssessment(assessment);
+        partographPage.saveAssessment(assessment).then((encounterDatetime) => {
+            cy.get('#cervical_dilatation', { timeout: 60000 }).should('not.exist');
+            partographPage.verifyAssessment(assessment, encounterDatetime);
+            cy.reload();
+            partographPage.verifyAssessment(assessment, encounterDatetime);
+            cy.contains('a', /^Patient summary$/i).click();
+            partographPage.openDashboard();
+            partographPage.verifyAssessment(assessment, encounterDatetime);
         });
+    });
+
+    it('retains both assessments and orders them newest first', () => {
+    const first: PartographAssessment = {
+        fetal_heart_rate: '140',
+        cervical_dilatation: '5',
+        contractions_per_10_minutes: '3',
+        drugs_given_and_iv_fluids: 'First assessment',
+    };
+    const second: PartographAssessment = {
+        fetal_heart_rate: '150',
+        cervical_dilatation: '6',
+        contractions_per_10_minutes: '4',
+        drugs_given_and_iv_fluids: 'Second assessment',
+    };
+    saveAdmissionWithDilation(4);
+    partographPage.verifyActiveMonitoring(4);
+    partographPage.openAssessmentForm();
+    partographPage.fillAssessment(first);
+    partographPage.saveAssessment(first).then((firstDatetime) => {
+        cy.get('#cervical_dilatation', { timeout: 60000 }).should('not.exist');
+        partographPage.verifyAssessment(first, firstDatetime);
+        partographPage.openAssessmentForm();
+        partographPage.fillAssessment(second);
+        partographPage.saveAssessment(second).then((secondDatetime) => {
+            expect(new Date(secondDatetime).getTime(), 'second assessment is newer')
+                .to.be.greaterThan(new Date(firstDatetime).getTime());
+            cy.get('#cervical_dilatation', { timeout: 60000 }).should('not.exist');
+            partographPage.verifyAssessment(first, firstDatetime, 3);
+            partographPage.verifyAssessment(second, secondDatetime, 3);
+            partographPage.verifyAssessmentOrder(second, first);
+        });
+    });
     });
 });

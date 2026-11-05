@@ -146,12 +146,24 @@ class PartographPage {
         });
     }
 
-    verifyAssessment(assessment: PartographAssessment, encounterDatetime: string) {
+    fillAssessment(assessment: PartographAssessment) {
+        Object.entries(assessment).forEach(([fieldId, value]) => {
+            const selector = `#${fieldId}`;
+            cy.get(selector, { timeout: this.chartLoadTimeout }).scrollIntoView();
+            cy.get(selector, { timeout: this.chartLoadTimeout })
+                .should('be.visible').and('be.enabled').focus();
+            cy.get(selector, { timeout: this.chartLoadTimeout }).type(`{selectall}${value}`);
+            cy.get(selector, { timeout: this.chartLoadTimeout }).blur();
+            cy.get(selector, { timeout: this.chartLoadTimeout }).should('have.value', value);
+        });
+    }
+
+    verifyAssessment(assessment: PartographAssessment, encounterDatetime: string, rowCount = 2) {
         const date = new Date(encounterDatetime);
         const month = date.toLocaleString('en', { month: 'short' });
         cy.get('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"] tbody tr', {
             timeout: this.chartLoadTimeout,
-        }).should('have.length', 2);
+        }).should('have.length', rowCount);
         cy.contains('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"] tbody tr',
             assessment.drugs_given_and_iv_fluids, { timeout: this.chartLoadTimeout }).within(() => {
             cy.get('td').eq(0).invoke('text').should((text) => {
@@ -177,6 +189,17 @@ class PartographPage {
             cy.get('td').eq(7).should('have.text', assessment.drugs_given_and_iv_fluids);
         });
     }
+
+    verifyAssessmentOrder(newest: PartographAssessment, older: PartographAssessment) {
+        cy.get('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"] tbody tr', {
+            timeout: this.chartLoadTimeout,
+        }).should('have.length', 3);
+        [newest, older].forEach((assessment, index) => {
+            cy.get('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"] tbody tr')
+                .eq(index).find('td').eq(7).should('have.text', assessment.drugs_given_and_iv_fluids);
+        });
+    }
+
 }
 
 export default PartographPage;
