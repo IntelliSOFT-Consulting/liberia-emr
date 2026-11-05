@@ -108,7 +108,18 @@ class PartographPage {
         cy.get('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"]').within(() => {
             cy.contains('button', /^Add$/, { timeout: this.chartLoadTimeout }).click();
         });
+        cy.get('body').then(($body) => {
+            const normalAlert = $body.find('.cds--actionable-notification')
+                .filter((_, element) => element.textContent?.includes('Labour Progress Normal'));
+            if (normalAlert.length) {
+                cy.wrap(normalAlert).find('.cds--actionable-notification__close-button').click();
+            }
+        });
         cy.get('#cervical_dilatation', { timeout: this.chartLoadTimeout }).should('be.visible');
+        ['#fetal_heart_rate', '#cervical_dilatation', '#contractions_per_10_minutes',
+            '#drugs_given_and_iv_fluids'].forEach((selector) => {
+            cy.get(selector, { timeout: this.chartLoadTimeout }).should('be.enabled');
+        });
     }
 
     saveAssessment(assessment: PartographAssessment) {
@@ -152,9 +163,8 @@ class PartographPage {
             cy.get(selector, { timeout: this.chartLoadTimeout }).scrollIntoView();
             cy.get(selector, { timeout: this.chartLoadTimeout })
                 .should('be.visible').and('be.enabled').focus();
-            cy.get(selector, { timeout: this.chartLoadTimeout }).type(`{selectall}${value}`);
-            cy.get(selector, { timeout: this.chartLoadTimeout }).blur();
-            cy.get(selector, { timeout: this.chartLoadTimeout }).should('have.value', value);
+            cy.get(selector, { timeout: this.chartLoadTimeout })
+                .type(`{selectall}${value}`).should('have.value', value);
         });
     }
 
