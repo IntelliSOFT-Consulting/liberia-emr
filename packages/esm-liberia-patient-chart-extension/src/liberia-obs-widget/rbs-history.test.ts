@@ -158,6 +158,9 @@ describe('random blood sugar capture contract', () => {
       });
 
       it('offers mg/dL and mmol/L and does not use fasting glucose', () => {
+        assert.equal(unit.type, 'control');
+        assert.equal(unit.questionOptions?.rendering, 'radio');
+        assert.equal(unit.questionOptions?.concept, undefined);
         assert.equal(unit.questionOptions?.isTransient, true);
         assert.deepEqual(
           unit.questionOptions?.answers?.map((answer) => answer.label),

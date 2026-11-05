@@ -44,12 +44,13 @@ public class ModuleAccessLifecycleTest {
 				proxies.add(service(EncounterService.class));
 				proxies.add(service(ObsService.class));
 				proxies.add(service(OrderService.class));
-				proxies.add(service(VisitService.class));
+				Advised visits = service(VisitService.class);
 				Advised provider = service(ProviderService.class);
 				activator.contextRefreshed();
 				activator.contextRefreshed();
 				ModuleAccessInstaller.install();
 				for (Advised proxy : proxies) { assertEquals(1, proxy.getAdvisors().length); }
+				assertEquals(2, visits.getAdvisors().length);
 				assertEquals(2, provider.getAdvisors().length);
 			}
 		}

@@ -46,7 +46,7 @@ Historical doses from either source count.
   dose-specific concept because that concept is already the dose.
 - National Immunization encounters whose form UUID is in runtime
   `routineImmunizations.nationalFormUuids`. National config lists frozen Immunization
-  v1.0 through v1.12 and `${var.form.immunization.uuid}`, the current v1.13 form.
+  v1.0 through v1.13 and `${var.form.immunization.uuid}`, the current v1.14 form.
   The vaccine-name question is `vaccineQuestionUuid`. The
   form has no administration-date observation, so the encounter datetime is
   the clinical date. Other observations, including the return date, are not

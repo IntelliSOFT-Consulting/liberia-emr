@@ -160,6 +160,18 @@ still use their upstream task privileges.
 * A matrix role without Appointments write is denied on recurring appointment
   saves. Appointments 2.1.0 does not check `AppointmentRecurringPatternService`.
   A user who holds no matrix role keeps that upstream behavior.
+* `VisitService.saveVisit` and `VisitService.endVisit` open a thread-local scope for
+  that call only, and only for a matrix role whose own roles hold `Add Visits` (new
+  visit) or `Edit Visits` (existing visit). A proxied visit privilege does not open
+  it. Check-in stores the queue number by saving the existing visit, and core's visit
+  validator then calls `getEncountersByVisit` to keep the visit's encounters inside
+  its start and stop dates. While the scope is open, that call runs with
+  `Get Encounters` proxied and returns every encounter, unfiltered, to the validator,
+  so the date check applies to Registrar like anyone else. The proxy is released when
+  that call returns. It is not held for REST rendering, and the visit in the response
+  is filtered as usual. The scope is cleared before the save returns, including when
+  it throws. A direct encounter read, including the same method outside that save,
+  still fails closed.
 * Nested encounter, visit, and FHIR filtering is proven on the JSON walker and
   the policy tests, not by an HTTP call against a running backend.
 
