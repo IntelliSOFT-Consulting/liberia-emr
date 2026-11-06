@@ -1150,7 +1150,7 @@
                                         },
                                         {
                                             "type": "js_expression",
-                                            "failsWhenExpression": "isDateBefore(myValue, encounterDate)",
+                                            "failsWhenExpression": "isDateBefore(myValue, dayjs(encounterDate).startOf('day').toDate())",
                                             "message": "follow up date cannot be set to previous dates"
                                         }
                                     ]
