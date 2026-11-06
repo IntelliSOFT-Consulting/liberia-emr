@@ -1,7 +1,7 @@
 {
   "name": "Immunization",
   "uuid": "${var.form.immunization.uuid}",
-  "version": "1.14",
+  "version": "1.15",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -397,6 +397,18 @@
                       {
                         "concept": "${var.concept.ciel.oral.uuid}",
                         "label": "Oral"
+                      },
+                      {
+                        "concept": "${var.concept.national.intradermal.uuid}",
+                        "label": "Intradermal"
+                      },
+                      {
+                        "concept": "${var.concept.ciel.subcutaneous.uuid}",
+                        "label": "Sub-cutaneous"
+                      },
+                      {
+                        "concept": "${var.concept.ciel.intramuscular.uuid}",
+                        "label": "Intramuscular"
                       }
                     ],
                     "calculate": {

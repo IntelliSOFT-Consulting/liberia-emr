@@ -100,9 +100,10 @@ LE-567 does not redefine that clinical interval.
 No lot, batch, provider, remarks, or dose number is collected. The dictionary does not
 require them for these elements. DE55 batch number belongs to AEFI, not to Vitamin A.
 
-The Immunization form is version 1.14. Initializer derives
-`bcdd02a7-7a3a-303b-835d-79352d597eb9`, which is `var.form.immunization.uuid`.
-v1.13 (`0d652152-7780-3b5e-a3fe-f6921a5f795b`) is frozen as
+The Immunization form is version 1.15. Initializer derives
+`e88dcee3-6f26-3d89-95ff-7019e336aa68`, which is `var.form.immunization.uuid`.
+v1.14 (`bcdd02a7-7a3a-303b-835d-79352d597eb9`) is frozen as
+`var.form.immunization.v1-14.uuid`. v1.13 (`0d652152-7780-3b5e-a3fe-f6921a5f795b`) is frozen as
 `var.form.immunization.v1-13.uuid`. v1.12 (`52b3da7c-1749-3c54-9e65-2a508dad2748`) is frozen as
 `var.form.immunization.v1-12.uuid`. v1.11 (`6bf44913-ca7a-358c-a066-6de97661f13d`) is frozen as
 `var.form.immunization.v1-11.uuid`. The earlier
@@ -130,16 +131,17 @@ historical form, including its Vitamin A behavior, and is not reused as the curr
 | 1.12 | `52b3da7c-1749-3c54-9e65-2a508dad2748` |
 | 1.13 | `0d652152-7780-3b5e-a3fe-f6921a5f795b` |
 | 1.14 | `bcdd02a7-7a3a-303b-835d-79352d597eb9` |
+| 1.15 | `e88dcee3-6f26-3d89-95ff-7019e336aa68` |
 
 `mamba_fact_nutrition_vitamin_a` counts a Blue observation on any of those versions. It
 matches the form name and version, and also the current form variable, because the
 Immunization form shares the Consultation encounter type. Reporting does not key the
 historical versions through `var.form.immunization.uuid`. Frozen
-`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.13.
-The current form is v1.14, supplied through `var.form.immunization.uuid`. v1.11 repeats a
+`var.form.immunization.v1-*` aliases exist so schedule history can still match v1.0–v1.14.
+The current form is v1.15, supplied through `var.form.immunization.uuid`. v1.11 repeats a
 vaccine-administration group. Vitamin A stays outside that group, on its own questions.
 v1.8 adds Immunization administration context beside DE50. It does not change the Blue or Red
-answers. Reporting still counts a Blue observation on v1.1 through v1.14, once per obs.
+answers. Reporting still counts a Blue observation on v1.1 through v1.15, once per obs.
 
 ## Route
 
@@ -152,8 +154,10 @@ route on the same encounter, and this change does not add a second field.
 - Vaccine and Vitamin A together: the shared field keeps the vaccine route. It does not
   record Vitamin A's route on its own.
 
-The answer list on that field is still only Oral. A combined visit therefore still cannot
-choose Intradermal from this control. That is a pre-existing limit of the shared field.
+From v1.15 (LE-622) the field offers every DE47 answer: Oral, Intradermal, Sub-cutaneous and
+Intramuscular. Route maps to LOINC 30958-3. Oral, Sub-cutaneous and Intramuscular are CIEL
+160240, 160245 and 160243. CIEL has no intradermal route, so Intradermal is a national concept
+mapped to SNOMED-CT 372464004. A combined visit still records one route, the vaccine's.
 
 ## Return date
 
@@ -210,7 +214,7 @@ EMR.IMMZ.DE50–DE52 are the current Vitamin A SIA-related elements. DE51 and DE
 define the Blue 6–11 month and Red 12–59 month age bands. Those elements stay the
 strength question and its answers. They are not the SIA marker.
 
-v1.11 through v1.14 keep the Vitamin A questions outside the repeating vaccine-administration group.
+v1.11 through v1.15 keep the Vitamin A questions outside the repeating vaccine-administration group.
 v1.8 stores a second observation, **Immunization administration context**, when a
 strength is selected. Its SIA answer is Supplementary immunization activity. The
 routine answer exists on the concept so a record can say routine instead, but this
