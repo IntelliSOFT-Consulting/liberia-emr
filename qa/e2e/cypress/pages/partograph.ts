@@ -11,6 +11,23 @@ type SavedEncounter = {
     obs: Array<{ concept: { uuid: string }; value: string | number }>;
 };
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The time as the dashboard renders it: the framework's formatTime, in the app's i18next locale. */
+const formatDashboardTime = (date: Date, win: Cypress.AUTWindow): string => {
+    const appWindow = win as Cypress.AUTWindow & { i18next?: { language?: string } };
+    const language = appWindow.i18next?.language || win.document.documentElement.lang || 'en';
+    const options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+    let time: string;
+    try {
+        time = date.toLocaleTimeString(language, options);
+    } catch {
+        // i18next can hold a non-BCP 47 value; the framework normalizes it, so fall back to the page tag.
+        time = date.toLocaleTimeString(win.document.documentElement.lang || 'en', options);
+    }
+    return time.replace(/\s+/g, ' ').trim();
+};
+
 class PartographPage {
     private readonly chartLoadTimeout = 60000;
 
@@ -176,18 +193,26 @@ class PartographPage {
         }).should('have.length', rowCount);
         cy.contains('[data-extension-slot-name="patient-chart-partograph-dashboard-slot"] tbody tr',
             assessment.drugs_given_and_iv_fluids, { timeout: this.chartLoadTimeout }).within(() => {
-            cy.get('td').eq(0).invoke('text').should((text) => {
-                const today = new Date();
-                if (date.toDateString() === today.toDateString()) {
-                    expect(text, 'assessment date').to.match(/^Today,/);
-                } else {
-                    expect(text, 'assessment day').to.match(new RegExp(`\\b0?${date.getDate()}\\b`));
-                    expect(text, 'assessment month').to.contain(month);
-                    expect(text, 'assessment year').to.contain(String(date.getFullYear()));
-                }
-                const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                expect(text.replace(/\s+/g, ' ').trim(), 'assessment time')
-                    .to.contain(time.replace(/\s+/g, ' '));
+            cy.window().then((win) => {
+                // The dashboard's formatDatetime appends the framework's formatTime:
+                // toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' }), where getLocale()
+                // is i18next's language. Format the expected time the same way, in the page's own locale,
+                // so a 24-hour locale (19:46) or a zero-padded hour (07:46 PM) is compared like for like.
+                const time = formatDashboardTime(date, win);
+                cy.get('td').eq(0).invoke('text').should((text) => {
+                    const cell = text.replace(/\s+/g, ' ').trim();
+                    const today = new Date();
+                    if (date.toDateString() === today.toDateString()) {
+                        expect(cell, 'assessment date').to.match(/^Today,/);
+                    } else {
+                        expect(cell, 'assessment month').to.contain(month);
+                        expect(cell, 'assessment year').to.contain(String(date.getFullYear()));
+                        // Only the date part, before the ", <time>" suffix, so the hour cannot match the day.
+                        const datePart = cell.slice(0, cell.lastIndexOf(','));
+                        expect(datePart, 'assessment day').to.match(new RegExp(`\\b0?${date.getDate()}\\b`));
+                    }
+                    expect(cell, 'assessment time').to.match(new RegExp(`, ${escapeRegExp(time)}$`));
+                });
             });
             cy.get('td').eq(1).should('have.text', assessment.fetal_heart_rate);
             cy.get('td').eq(4).should('have.text', assessment.cervical_dilatation);
