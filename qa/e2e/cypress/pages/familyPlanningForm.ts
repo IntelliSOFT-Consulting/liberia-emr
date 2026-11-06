@@ -375,14 +375,15 @@ class FamilyPlanningFormPage {
 
         this.selectClientType('New Family Planning Client');
         this.selectCounsellingDone('Yes');
+        this.setNumber('parity', '2');
         this.selectPurposeForCommodities();
         cy.contains('label', new RegExp(`^${this.escapeRegExp(removalPurpose)}$`), { timeout: this.timeout })
             .invoke('attr', 'for')
             .then((id) => this.checkOption(String(id)));
+        cy.get('#parity', { timeout: this.timeout }).should('be.visible').and('have.value', '2');
         this.verifySectionVisibility('Method Removal', true);
         this.enterDate('dateMethodRemoved', today);
 
-        this.setNumber('parity', '2');
         this.selectDropdownOption('chosenFamilyPlanningMethod', 'Contraceptive Implants');
         this.selectDropdownOption('familyPlanningMethodDispensed', 'Contraceptive Implants');
         this.verifySectionVisibility('LAM Assessment', false);
