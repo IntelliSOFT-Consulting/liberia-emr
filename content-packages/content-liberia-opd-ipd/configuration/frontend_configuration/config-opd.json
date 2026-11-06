@@ -3,20 +3,23 @@
     "OPD / IPD runtime configuration.",
     "Loaded after config-mch.json and before config-site.json. Must be listed in",
     "SPA_CONFIG_URLS or O3 will not read it (IMPLEMENTATION.md §7).",
-    "Random blood sugar history is read-only. Triage and OPD capture the value.",
-    "The O3 Record Vitals workspace is not given an input: its concept list has no glucose key.",
-    "mg/dL is CIEL 887 (Random blood sugar). mmol/L is CIEL 1458 (the same serum glucose in mmol/L).",
+    "Initial blood sugar is recorded from the card under Vitals and on the Vitals page.",
+    "mg/dL is CIEL 887. mmol/L is CIEL 1458. The saved concept is the unit.",
+    "The same card shows Triage, OPD, and Vitals values.",
     "Fasting blood glucose (CIEL 160912) is not this measurement."
   ],
   "liberia-rbs-history": {
-    "title": "Vitals history",
+    "title": "Initial blood sugar / RBS",
     "displayMode": "table",
-    "showAddButton": false,
-    "hideWhenEmpty": true,
+    "showAddButton": true,
+    "hideWhenEmpty": false,
     "formUuid": "",
+    "entryWorkspace": "liberia-rbs-workspace",
+    "entryEncounterType": "${var.encountertype.vitals.uuid}",
     "encounterTypes": [
       "${var.encountertype.triage.uuid}",
-      "${var.encountertype.consultation.uuid}"
+      "${var.encountertype.consultation.uuid}",
+      "${var.encountertype.vitals.uuid}"
     ],
     "formUuids": [
       "${var.form.triage.uuid}",
@@ -25,7 +28,8 @@
       "${var.form.opd-consultation-form.v2-1.uuid}"
     ],
     "dedicatedTypeUuids": [
-      "${var.encountertype.triage.uuid}"
+      "${var.encountertype.triage.uuid}",
+      "${var.encountertype.vitals.uuid}"
     ],
     "data": [
       {
