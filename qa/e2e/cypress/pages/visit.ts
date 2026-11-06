@@ -3,6 +3,7 @@ import { DateParts, faker, liberiaPhoneNumber, randomAdultBirthdateParts } from 
 
 type PatientRegistrationOverrides = {
     birthdate?: DateParts;
+    sex?: 'male' | 'female';
 };
 
 class VisitPage {
@@ -18,7 +19,7 @@ class VisitPage {
         this.registrationPage.fillRequiredFields({
             firstName: faker.person.firstName(),
             familyName: faker.person.lastName(),
-            sex: faker.helpers.arrayElement(['male', 'female'] as const),
+            sex: overrides.sex ?? faker.helpers.arrayElement(['male', 'female'] as const),
             birthdate: overrides.birthdate ?? randomAdultBirthdateParts(),
             phoneNumber: liberiaPhoneNumber()
         });
