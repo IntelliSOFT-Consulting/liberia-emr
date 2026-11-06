@@ -34,6 +34,7 @@ const properties = propertiesOf(readFileSync(new URL('content-packages/content-l
 const config = JSON.parse(readFileSync(new URL('content-packages/content-liberia-national/configuration/frontend_configuration/config-national.json', root), 'utf8'));
 const form = JSON.parse(readFileSync(new URL('content-packages/content-liberia-national/configuration/backend_configuration/ampathforms/immunization-national.json', root), 'utf8'));
 const concepts = readFileSync(new URL('content-packages/content-liberia-national/configuration/backend_configuration/concepts/concepts-national.csv', root), 'utf8');
+const routeConcepts = readFileSync(new URL('content-packages/content-liberia-national/configuration/backend_configuration/concepts/immunization_route-national.csv', root), 'utf8');
 const aefi = readFileSync(new URL('content-packages/content-liberia-national/configuration/backend_configuration/ampathforms/aefi-national.json', root), 'utf8');
 const widgetSource = readFileSync(new URL('../liberia-obs-widget/liberia-obs-widget.component.tsx', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../index.ts', import.meta.url), 'utf8');
@@ -83,7 +84,7 @@ describe('immunization entry', () => {
     assert.match(indexSource, /registerFormEngineExpressionHelper\('routineNextDoseDate', routineNextDoseDate\)/);
   });
 
-  it('adds the existing schedule concepts to Vaccine Name and leaves route, AEFI, and upstream fields alone', () => {
+  it('adds the existing schedule concepts to Vaccine Name and leaves AEFI and upstream fields alone', () => {
     const answers = question('vaccine_name').questionOptions.answers as Array<{ concept: string; label: string }>;
     const added = [
       ['${var.concept.national.penta-1.uuid}', 'Penta 1'],
@@ -120,17 +121,45 @@ describe('immunization entry', () => {
       answers.map((answer) => answer.concept),
       conceptRow.split(',')[7].split(';'),
     );
-    assert.deepEqual(question('route').questionOptions.answers.map((answer: { label: string }) => answer.label), ['Oral']);
     assert.equal(formQuestions.some((item) => ['aefi_vaccine_name', 'aefi_batch_number', 'aefi_onset_date', 'aefi_complaint'].includes(item.id)), false);
     assert.match(aefi, /"id": "aefi_vaccine_name"[\s\S]*"required": true/);
     assert.match(aefi, /"id": "aefi_batch_number"[\s\S]*"required": true/);
     const text = JSON.stringify(form);
-    for (const absent of ['vaccine-manufacturer', 'vaccine-lot-number', 'vaccine-lot-expiration', 'Vaccine Registration', 'intradermal', 'subcutaneous', 'intramuscular']) {
+    for (const absent of ['vaccine-manufacturer', 'vaccine-lot-number', 'vaccine-lot-expiration', 'Vaccine Registration']) {
       assert.equal(text.toLowerCase().includes(absent.toLowerCase()), false, absent);
     }
     for (const demographic of ['moh-health-record', 'national-id', 'telephone-number', 'good-samaritan']) {
       assert.equal(text.includes(demographic), false, demographic);
     }
+  });
+
+  it('offers every DE47 route and maps Route to LOINC 30958-3', () => {
+    const answers = question('route').questionOptions.answers as Array<{ concept: string; label: string }>;
+    assert.deepEqual(answers, [
+      { concept: '${var.concept.ciel.oral.uuid}', label: 'Oral' },
+      { concept: '${var.concept.national.intradermal.uuid}', label: 'Intradermal' },
+      { concept: '${var.concept.ciel.subcutaneous.uuid}', label: 'Sub-cutaneous' },
+      { concept: '${var.concept.ciel.intramuscular.uuid}', label: 'Intramuscular' },
+    ]);
+    assert.equal(properties.get('var.concept.ciel.intramuscular.uuid'), '160243AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    assert.equal(properties.get('var.concept.ciel.subcutaneous.uuid'), '160245AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    const rows = routeConcepts.trim().split('\n').map((line) => line.split(','));
+    const header = rows[0];
+    const row = (uuid: string) => {
+      const found = rows.find((cells) => cells[0] === uuid);
+      assert.ok(found, uuid);
+      return Object.fromEntries(header.map((name, index) => [name, found[index]]));
+    };
+    const route = row('${var.concept.national.route.uuid}');
+    assert.equal(route['Same as mappings'], 'LOINC:30958-3');
+    assert.equal(route['Data type'], 'Coded');
+    assert.deepEqual(route.Answers.split(';'), answers.map((answer) => answer.concept));
+    const intradermal = row('${var.concept.national.intradermal.uuid}');
+    assert.equal(intradermal['Fully specified name:en'], 'Intradermal');
+    assert.equal(intradermal['Same as mappings'], 'SNOMED-CT:372464004');
+    assert.ok(Number(header.find((name) => name.startsWith('_order:'))!.split(':')[1])
+      < Number(concepts.split('\n')[0].split(',').find((name) => name.startsWith('_order:'))!.split(':')[1]));
+    assert.equal(concepts.split('\n').some((line) => line.startsWith('${var.concept.national.route.uuid},')), false);
   });
 
   it('requires vaccine, route, date received, and a shown caregiver, and requires return date only for a next dose', () => {

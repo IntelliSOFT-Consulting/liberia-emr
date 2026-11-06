@@ -204,7 +204,7 @@ describe('HPV Immunization form entry', () => {
   const status = question('hpv_status');
 
   it('registers the gate against the current form and the vaccine-name concept', () => {
-    assert.equal(form.version, '1.14');
+    assert.equal(form.version, '1.15');
     const group = question('vaccine_administration') as { questions?: Array<{ id?: string }> };
     assert.equal(group.questions?.some((child) => child.id === 'hpv2_offer'), false);
     assert.equal(questions().some((item) => item.id === 'hpv2_offer'), true);

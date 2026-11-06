@@ -129,7 +129,9 @@ v1.12 is frozen as `var.form.immunization.v1-12.uuid`
 (`52b3da7c-1749-3c54-9e65-2a508dad2748`).
 v1.13 is frozen as `var.form.immunization.v1-13.uuid`
 (`0d652152-7780-3b5e-a3fe-f6921a5f795b`).
-The current form is v1.14 (`bcdd02a7-7a3a-303b-835d-79352d597eb9`).
+v1.14 is frozen as `var.form.immunization.v1-14.uuid`
+(`bcdd02a7-7a3a-303b-835d-79352d597eb9`).
+The current form is v1.15 (`e88dcee3-6f26-3d89-95ff-7019e336aa68`).
 v1.4 and v1.5 are not
 republished under a second body.
 

@@ -1,0 +1,3 @@
+Uuid,Void/Retire,Same as mappings,Fully specified name:en,Short name:en,Description:en,Data class,Data type,Answers,_version:1,_order:1790
+${var.concept.national.intradermal.uuid},,SNOMED-CT:372464004,Intradermal,Intradermal,Intradermal route of administration. CIEL has no intradermal route concept.,Misc,N/A,,,
+${var.concept.national.route.uuid},,LOINC:30958-3,Route,Route,Route,Question,Coded,${var.concept.ciel.oral.uuid};${var.concept.national.intradermal.uuid};${var.concept.ciel.subcutaneous.uuid};${var.concept.ciel.intramuscular.uuid},,
