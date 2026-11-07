@@ -287,6 +287,11 @@
                   "type": "js_expression",
                   "failsWhenExpression": "isMuacRequired(patient.birthDate, encounterDate) && isEmpty(myValue)",
                   "message": "MUAC is required for children aged 6 to 59 completed months."
+                },
+                {
+                  "type": "js_expression",
+                  "failsWhenExpression": "!isEmpty(myValue) && (myValue < 5 || myValue > 35)",
+                  "message": "MUAC must be between 5 and 35 cm."
                 }
               ]
             },
