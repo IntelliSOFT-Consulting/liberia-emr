@@ -1,7 +1,7 @@
 {
   "name": "3. Third Stage of Labor and Delivery",
   "uuid": "${var.form.third-stage-of-labor-and-delivery.uuid}",
-  "version": "1.1",
+  "version": "1.2",
   "published": true,
   "retired": false,
   "processor": "EncounterFormProcessor",
@@ -59,8 +59,9 @@
               "id": "medication_time",
               "questionOptions": {
                 "concept": "${var.concept.national.medication-time.uuid}",
-                "rendering": "time"
+                "rendering": "date"
               },
+              "datePickerFormat": "timer",
               "validators": [
                 {
                   "type": "js_expression",
@@ -92,8 +93,9 @@
               "id": "placenta_delivery_time",
               "questionOptions": {
                 "concept": "${var.concept.national.placenta-delivery-time.uuid}",
-                "rendering": "time"
+                "rendering": "date"
               },
+              "datePickerFormat": "timer",
               "required": true
             },
             {
@@ -406,8 +408,9 @@
               "id": "time_at_which_baby_delivered",
               "questionOptions": {
                 "concept": "${var.concept.national.time-at-which-the-baby-was-delivered.uuid}",
-                "rendering": "time"
+                "rendering": "date"
               },
+              "datePickerFormat": "timer",
               "required": true
             }
           ]
