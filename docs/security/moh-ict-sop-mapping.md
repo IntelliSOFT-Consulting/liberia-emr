@@ -75,6 +75,15 @@ returns to the login page. A background tab whose timers were throttled compares
 timestamp when it becomes visible and logs out immediately if the period has already
 elapsed.
 
+Human activity also has to reach the server. Typing into a form sends no requests, so
+without help the 10-minute servlet session would expire while the person is still
+working, and their next save would land on the login page. When there has been human
+activity since the last refresh, and at least 4 minutes have passed, the watcher sends
+`GET /ws/rest/v1/session?v=custom:(authenticated)`. The check runs on activity and on the
+15-second timer, so activity just before the interval is still passed on. The request is
+not counted as human activity. With no human activity there is no refresh, so 10 idle
+minutes still end the session on both layers.
+
 The period is `session.idleTimeoutMinutes` on `@liberiaemr/esm-liberia-login-app`,
 filled from `${var.security.session.timeout-minutes}`. The unit is minutes. Maven
 filtering leaves the built value as a JSON string such as `"10"`. A missing, invalid or

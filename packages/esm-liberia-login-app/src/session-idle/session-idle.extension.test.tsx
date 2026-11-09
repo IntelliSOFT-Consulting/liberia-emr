@@ -22,6 +22,7 @@ vi.mock('swr', () => ({
 }));
 
 const TEN_MINUTES = 10 * 60 * 1000;
+const KEEPALIVE_URL = `${restBaseUrl}/session?v=custom:(authenticated)`;
 const mockNavigate = vi.mocked(navigate);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockClearCurrentUser = vi.mocked(clearCurrentUser);
@@ -46,6 +47,14 @@ function dispatchStorageChange(newValue: string | null) {
     storageArea: { value: localStorage },
   });
   window.dispatchEvent(storageEvent);
+}
+
+function keepaliveCalls() {
+  return mockOpenmrsFetch.mock.calls.filter(([url]) => url === KEEPALIVE_URL);
+}
+
+function logoutCalls() {
+  return mockOpenmrsFetch.mock.calls.filter(([, init]) => init?.method === 'DELETE');
 }
 
 async function flush() {
@@ -182,13 +191,98 @@ describe('SessionIdle', () => {
 
     await advance(9 * 60 * 1000);
     activity('pointerdown');
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(logoutCalls()).toHaveLength(0);
 
     await advance(9 * 60 * 1000);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(logoutCalls()).toHaveLength(0);
 
     await advance(60 * 1000);
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(logoutCalls()).toHaveLength(1);
+  });
+
+  it('keeps the server session alive while the person keeps working without saving', async () => {
+    render(<SessionIdle />);
+
+    const refreshedAt = [Date.now()];
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (url === KEEPALIVE_URL) {
+        refreshedAt.push(Date.now());
+      }
+      return {} as FetchResponse<unknown>;
+    });
+
+    // 20 minutes of typing in a form that makes no requests of its own.
+    for (let minute = 1; minute <= 20; minute++) {
+      await advance(60 * 1000);
+      activity('keydown');
+    }
+
+    // The servlet session is 10 minutes since the last request. Refresh it well inside that.
+    const gaps = refreshedAt.slice(1).map((at, i) => at - refreshedAt[i]);
+    expect(refreshedAt.length).toBeGreaterThanOrEqual(5);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(5 * 60 * 1000);
+    expect(Date.now() - refreshedAt[refreshedAt.length - 1]).toBeLessThanOrEqual(5 * 60 * 1000);
+    expect(logoutCalls()).toHaveLength(0);
+  });
+
+  it('refreshes the server session for activity that came just before the keepalive interval', async () => {
+    render(<SessionIdle />);
+
+    await advance(3 * 60 * 1000 + 50 * 1000);
+    activity('keydown');
+    expect(keepaliveCalls()).toHaveLength(0);
+
+    // The person then stops. The activity still has to reach the server,
+    // or the servlet session would expire before the client-side deadline.
+    await advance(30 * 1000);
+    expect(keepaliveCalls()).toHaveLength(1);
+  });
+
+  it('does not refresh the server session without human activity', async () => {
+    render(<SessionIdle />);
+
+    await advance(TEN_MINUTES - 1_000);
+    expect(keepaliveCalls()).toHaveLength(0);
+
+    await advance(1_000);
+    expect(keepaliveCalls()).toHaveLength(0);
+    expect(logoutCalls()).toHaveLength(1);
+  });
+
+  it('does not let the keepalive count as human activity', async () => {
+    render(<SessionIdle />);
+
+    await advance(5 * 60 * 1000);
+    activity('keydown');
+    const lastHuman = stamp();
+    await advance(60 * 1000);
+    expect(keepaliveCalls()).toHaveLength(1);
+    expect(stamp()).toBe(lastHuman);
+
+    await advance(9 * 60 * 1000);
+    expect(logoutCalls()).toHaveLength(1);
+  });
+
+  it('keeps the idle logout working when the keepalive request fails', async () => {
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (url === KEEPALIVE_URL) {
+        throw new Error('network down');
+      }
+      return {} as FetchResponse<unknown>;
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      render(<SessionIdle />);
+      await advance(5 * 60 * 1000);
+      activity('keydown');
+      await advance(15_000);
+      expect(keepaliveCalls()).toHaveLength(1);
+
+      await advance(TEN_MINUTES);
+      expect(logoutCalls()).toHaveLength(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('does not log out an idle tab while another tab has recorded activity', async () => {
@@ -200,10 +294,10 @@ describe('SessionIdle', () => {
     dispatchStorageChange(peerActivity);
 
     await advance(9 * 60 * 1000);
-    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
+    expect(logoutCalls()).toHaveLength(0);
 
     await advance(60 * 1000);
-    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(logoutCalls()).toHaveLength(1);
   });
 
   it('logs out when another tab clears the shared timestamp after idle logout', async () => {
