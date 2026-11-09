@@ -88,6 +88,9 @@ public final class ModuleRecordClassifier {
 		        "third-stage-of-labor-and-delivery", "fourth-stage-monitoring-for-woman-and-baby" }) {
 			form(ModuleAccess.LABOR_AND_DELIVERY, form, "labor-delivery");
 		}
+		// Third Stage 1.0 and 1.1 stay owned after the 1.2 bump (LE-637).
+		form(ModuleAccess.LABOR_AND_DELIVERY, "3-third-stage-of-labor-and-delivery.v1-0", "labor-delivery");
+		form(ModuleAccess.LABOR_AND_DELIVERY, "3-third-stage-of-labor-and-delivery.v1-1", "labor-delivery");
 	}
 
 	private static String uuid(String key) { return ContentUuids.get("var." + key + ".uuid"); }

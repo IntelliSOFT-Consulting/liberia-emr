@@ -4,7 +4,8 @@
 -- Rows: encounters of the national `Labor & Delivery` type (where every labour form saves;
 -- gaps note, gap 12) entered on `1. First and Second Stage of Labor and Delivery` or
 -- `3. Third Stage of Labor and Delivery`, by their form variables. A new version of either form
--- is a new form uuid, so the variable (or this list) must cover it.
+-- is a new form uuid, so the variable (or this list) must cover it. Third Stage 1.0 and 1.1 stay
+-- listed through their frozen variables (LE-637).
 --
 -- Episodes: rows of one patient record whose encounter_datetime is within 42 days of the
 -- previous row are one delivery (matrix note; qa/reporting README, ambiguity 6). An episode
@@ -129,6 +130,8 @@ FROM (SELECT r.*,
                   WHERE e.voided = 0
                     AND et.uuid = '${var.encountertype.labor-delivery.uuid}'
                     AND f.uuid IN ('${var.form.first-and-second-stage-of-labor-and-delivery.uuid}',
-                                   '${var.form.third-stage-of-labor-and-delivery.uuid}')) d) r) s;
+                                   '${var.form.third-stage-of-labor-and-delivery.uuid}',
+                                   '${var.form.3-third-stage-of-labor-and-delivery.v1-0.uuid}',
+                                   '${var.form.3-third-stage-of-labor-and-delivery.v1-1.uuid}')) d) r) s;
 
 -- $END

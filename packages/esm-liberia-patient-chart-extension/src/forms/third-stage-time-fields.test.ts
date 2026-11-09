@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
@@ -67,6 +68,29 @@ describe('Third Stage time fields against the pinned form-engine-lib registry', 
       assert.equal(q.questionOptions.rendering, 'date', id);
       assert.equal(q.datePickerFormat, 'timer', id);
       assert.equal(q.questionOptions.datePickerFormat, undefined, id);
+    }
+  });
+
+  // A bump is a new form UUID; encounters on older versions must stay in the delivery fact.
+  it('freezes the 1.0 and 1.1 identities and keeps them in the delivery ETL', () => {
+    const vars = readFileSync(resolve(repoRoot, 'content-packages/content-liberia-mch/configuration/variables.properties'), 'utf8');
+    const sql = readFileSync(
+      resolve(repoRoot, 'modules/mambaetl/api/src/main/mamba/_etl/derived/rmncah/sp_mamba_fact_rmncah_delivery.sql'),
+      'utf8',
+    );
+    const derived = (version: string) => {
+      const b = createHash('md5').update(`794c4598-ab82-47ca-8d18-483a8abe6f4f_${form.name}_${version}`).digest();
+      b[6] = (b[6] & 0x0f) | 0x30;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      const h = b.toString('hex');
+      return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+    };
+    const declared = (key: string) => vars.match(new RegExp(`^${key.replace(/\./g, '\\.')}=(.+)$`, 'm'))?.[1];
+    assert.equal(declared('var.form.third-stage-of-labor-and-delivery.uuid'), derived(form.version));
+    for (const v of ['1-0', '1-1']) {
+      const key = `var.form.3-third-stage-of-labor-and-delivery.v${v}.uuid`;
+      assert.equal(declared(key), derived(v.replace('-', '.')), key);
+      assert.ok(sql.includes(`'\${${key}}'`), `delivery ETL lists ${key}`);
     }
   });
 
