@@ -219,16 +219,16 @@ describe('SessionIdle', () => {
 
     // The servlet session is 10 minutes since the last request. Refresh it well inside that.
     const gaps = refreshedAt.slice(1).map((at, i) => at - refreshedAt[i]);
-    expect(refreshedAt.length).toBeGreaterThanOrEqual(5);
-    expect(Math.max(...gaps)).toBeLessThanOrEqual(5 * 60 * 1000);
-    expect(Date.now() - refreshedAt[refreshedAt.length - 1]).toBeLessThanOrEqual(5 * 60 * 1000);
+    expect(refreshedAt.length).toBeGreaterThanOrEqual(15);
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(75 * 1000);
+    expect(Date.now() - refreshedAt[refreshedAt.length - 1]).toBeLessThanOrEqual(75 * 1000);
     expect(logoutCalls()).toHaveLength(0);
   });
 
   it('refreshes the server session for activity that came just before the keepalive interval', async () => {
     render(<SessionIdle />);
 
-    await advance(3 * 60 * 1000 + 50 * 1000);
+    await advance(50 * 1000);
     activity('keydown');
     expect(keepaliveCalls()).toHaveLength(0);
 
@@ -236,6 +236,33 @@ describe('SessionIdle', () => {
     // or the servlet session would expire before the client-side deadline.
     await advance(30 * 1000);
     expect(keepaliveCalls()).toHaveLength(1);
+  });
+
+  it('sends the last keepalive within 75 seconds of the last human input and none after it', async () => {
+    const refreshedAt: number[] = [];
+    mockOpenmrsFetch.mockImplementation(async (url) => {
+      if (url === KEEPALIVE_URL) {
+        refreshedAt.push(Date.now());
+      }
+      return {} as FetchResponse<unknown>;
+    });
+    render(<SessionIdle />);
+
+    // Activity just after each refresh is the worst case: it waits a full interval.
+    let lastInputAt = 0;
+    for (let i = 0; i < 6; i++) {
+      await advance(61 * 1000);
+      activity('keydown');
+      lastInputAt = Date.now();
+    }
+
+    // The person stops. If the browser died now, the servlet session would live
+    // 10 minutes past the last refresh, so that refresh bounds the overshoot.
+    await advance(TEN_MINUTES - 1_000);
+    const last = refreshedAt[refreshedAt.length - 1];
+    expect(last - lastInputAt).toBeGreaterThanOrEqual(0);
+    expect(last - lastInputAt).toBeLessThanOrEqual(75 * 1000);
+    expect(refreshedAt.filter((at) => at > lastInputAt + 75 * 1000)).toHaveLength(0);
   });
 
   it('does not refresh the server session without human activity', async () => {

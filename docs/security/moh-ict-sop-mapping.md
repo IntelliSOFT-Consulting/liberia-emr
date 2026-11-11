@@ -78,11 +78,17 @@ elapsed.
 Human activity also has to reach the server. Typing into a form sends no requests, so
 without help the 10-minute servlet session would expire while the person is still
 working, and their next save would land on the login page. When there has been human
-activity since the last refresh, and at least 4 minutes have passed, the watcher sends
+activity since the last refresh, and at least 1 minute has passed, the watcher sends
 `GET /ws/rest/v1/session?v=custom:(authenticated)`. The check runs on activity and on the
 15-second timer, so activity just before the interval is still passed on. The request is
 not counted as human activity. With no human activity there is no refresh, so 10 idle
 minutes still end the session on both layers.
+
+One residual bound: the last refresh can come up to 75 seconds (the 1-minute interval
+plus one 15-second check) after the person's last input. While the browser runs, the
+client logs out at 10 minutes and that `DELETE` ends the server session. If the browser
+dies first (a crash, a force-quit, a lost network), the server session ends 10 minutes
+after that last refresh, at most about 11¼ minutes after the last input.
 
 The period is `session.idleTimeoutMinutes` on `@liberiaemr/esm-liberia-login-app`,
 filled from `${var.security.session.timeout-minutes}`. The unit is minutes. Maven

@@ -24,9 +24,13 @@ const CHECK_INTERVAL_MS = 15000;
  * How often human activity is passed on to the server. The servlet session-timeout is
  * 10 minutes since the last request, and typing into a form sends none, so without this a
  * person who is working would lose the server session before the client deadline.
- * Four minutes plus one CHECK_INTERVAL_MS stays well inside 10.
+ *
+ * The last refresh can come up to this interval plus one CHECK_INTERVAL_MS after the last
+ * input. If the browser dies before the client logs out, the server session outlives the
+ * person's last input by that much. One minute keeps it near 11 minutes, at one small GET
+ * a minute while someone is working.
  */
-const KEEPALIVE_INTERVAL_MS = 4 * 60 * 1000;
+const KEEPALIVE_INTERVAL_MS = 60 * 1000;
 
 /** Smallest response that still touches the servlet session. */
 const KEEPALIVE_URL = `${restBaseUrl}/session?v=custom:(authenticated)`;
