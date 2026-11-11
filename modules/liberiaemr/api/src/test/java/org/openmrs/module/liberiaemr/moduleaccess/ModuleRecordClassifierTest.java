@@ -82,6 +82,15 @@ public class ModuleRecordClassifierTest {
 		assertFalse(frozen.isUnrelated());
 	}
 
+	@Test public void frozenThirdStageVersionsStayLaborAndDelivery() {
+		for (String form : new String[] { "3-third-stage-of-labor-and-delivery.v1-0",
+		        "3-third-stage-of-labor-and-delivery.v1-1" }) {
+			Ownership frozen = classifier.assessStoredEncounter(encounter(form, "encountertype.labor-delivery"));
+			assertEquals(form, ModuleAccess.LABOR_AND_DELIVERY, frozen.module);
+			assertFalse(form, frozen.ambiguous);
+		}
+	}
+
 	@Test public void dedicatedTypesClassifyFormlessEncountersAndConsultationAloneDoesNot() {
 		String[][] cases = { { "TB_SCREENING", "tb-screening" }, { "ANC", "anc" }, { "ANC", "anc-initial" },
 		    { "ANC", "anc-followup" }, { "PNC", "pnc" }, { "PNC", "mch-pnc" },
