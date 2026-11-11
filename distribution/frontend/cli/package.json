@@ -1,0 +1,11 @@
+{
+  "name": "liberiaemr-frontend-cli",
+  "private": true,
+  "description": "The openmrs CLI that assembles and builds the app shell. Locked so a transitive release cannot change the image. The openmrs version must equal spa.core in distribution/distro.properties.",
+  "dependencies": {
+    "openmrs": "10.0.0"
+  },
+  "overrides": {
+    "postcss-selector-parser": "7.1.8"
+  }
+}
