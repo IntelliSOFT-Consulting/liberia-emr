@@ -98,9 +98,9 @@ describe('Pediatric Pfizer Immunization form entry', () => {
   const status = question('pediatric_pfizer_status');
 
   it('versions the form and keeps the previous identity', () => {
-    assert.equal(form.version, '1.14');
+    assert.equal(form.version, '1.15');
     assert.equal(form.uuid, '${var.form.immunization.uuid}');
-    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.14').digest();
+    const digest = createHash('md5').update('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.15').digest();
     digest[6] = (digest[6] & 0x0f) | 0x30;
     digest[8] = (digest[8] & 0x3f) | 0x80;
     const hex = [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -114,6 +114,7 @@ describe('Pediatric Pfizer Immunization form entry', () => {
     assert.match(variables, /^var\.form\.immunization\.v1-11\.uuid=6bf44913-ca7a-358c-a066-6de97661f13d$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-12\.uuid=52b3da7c-1749-3c54-9e65-2a508dad2748$/m);
     assert.match(variables, /^var\.form\.immunization\.v1-13\.uuid=0d652152-7780-3b5e-a3fe-f6921a5f795b$/m);
+    assert.match(variables, /^var\.form\.immunization\.v1-14\.uuid=bcdd02a7-7a3a-303b-835d-79352d597eb9$/m);
   });
 
   it('offers both doses on the form and on the vaccine-name concept', () => {

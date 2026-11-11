@@ -178,15 +178,16 @@ function savedEncounter(groups: Group[], formUuid = properties.get('var.form.imm
 }
 
 describe('immunization repeating save payload', () => {
-  it('keeps form v1.14 and the pinned form engine', () => {
+  it('keeps form v1.15 and the pinned form engine', () => {
     assert.equal(probe.version, '4.2.2-pre.2449');
-    assert.equal(probe.formVersion, '1.14');
-    const current = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.14');
+    assert.equal(probe.formVersion, '1.15');
+    const current = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.15');
     const frozenV112 = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.12');
     const frozenV111 = nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.11');
     const frozenV19 = '03bb283b-fa68-3b2e-a97c-b8adf72d4a76';
     assert.equal(nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.9'), frozenV19);
     assert.equal(properties.get('var.form.immunization.uuid'), current);
+    assert.equal(properties.get('var.form.immunization.v1-14.uuid'), nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.14'));
     assert.equal(properties.get('var.form.immunization.v1-13.uuid'), nameUuid('794c4598-ab82-47ca-8d18-483a8abe6f4f_Immunization_1.13'));
     assert.equal(properties.get('var.form.immunization.v1-12.uuid'), frozenV112);
     assert.equal(properties.get('var.form.immunization.v1-11.uuid'), frozenV111);

@@ -446,7 +446,7 @@ describe('chart load', () => {
 });
 
 describe('Immunization form wiring', () => {
-  it('registers the gate once on Immunization v1.14 and keeps the previous identity', () => {
+  it('registers the gate once on the current Immunization form and keeps the previous identity', () => {
     const indexSource = readFileSync(new URL('../index.ts', import.meta.url), 'utf8');
     const registrations = indexSource.match(/registerFormEngineExpressionHelper\('alreadyCapturedVaccineGate'/g) ?? [];
     assert.equal(registrations.length, 1);
@@ -454,7 +454,7 @@ describe('Immunization form wiring', () => {
       '../../../../content-packages/content-liberia-national/configuration/backend_configuration/ampathforms/immunization-national.json',
       import.meta.url,
     ), 'utf8')) as { version: string; pages: Array<{ sections: Array<{ questions?: unknown[] }> }> };
-    assert.equal(form.version, '1.14');
+    assert.equal(form.version, '1.15');
     const flat: Array<{ id?: string; questionOptions?: { calculate?: { calculateExpression?: string } }; validators?: Array<{ failsWhenExpression?: string; message?: string }> }> = [];
     const visit = (items: unknown[] | undefined) => {
       for (const item of items ?? []) {
@@ -487,10 +487,10 @@ describe('Immunization form wiring', () => {
     assert.match(pfizer?.questionOptions?.calculate?.calculateExpression ?? '', /^pediatricPfizerAdministrationGate\(/);
     const hpv = flat.find((question) => question.id === 'hpv_gate');
     assert.match(hpv?.questionOptions?.calculate?.calculateExpression ?? '', /^hpvAdministrationGate\(/);
-    assert.equal(properties.get('var.form.immunization.uuid'), 'bcdd02a7-7a3a-303b-835d-79352d597eb9');
-    assert.equal(properties.get('var.form.immunization.v1-13.uuid'), '0d652152-7780-3b5e-a3fe-f6921a5f795b');
-    assert.equal(national.nationalFormUuids.includes('0d652152-7780-3b5e-a3fe-f6921a5f795b'), true);
-    assert.equal(national.nationalFormUuids.at(-1), 'bcdd02a7-7a3a-303b-835d-79352d597eb9');
+    assert.equal(properties.get('var.form.immunization.uuid'), 'e88dcee3-6f26-3d89-95ff-7019e336aa68');
+    assert.equal(properties.get('var.form.immunization.v1-14.uuid'), 'bcdd02a7-7a3a-303b-835d-79352d597eb9');
+    assert.equal(national.nationalFormUuids.includes('bcdd02a7-7a3a-303b-835d-79352d597eb9'), true);
+    assert.equal(national.nationalFormUuids.at(-1), 'e88dcee3-6f26-3d89-95ff-7019e336aa68');
     for (const name of ['already-captured.ts', 'already-captured-gate.ts']) {
       const source = readFileSync(new URL(name, import.meta.url), 'utf8');
       assert.equal(uuidLiteral.test(source), false, name);
