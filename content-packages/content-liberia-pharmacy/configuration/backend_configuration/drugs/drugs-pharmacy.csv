@@ -47,6 +47,7 @@ ${var.drug.pharmacy.ciel-1447-dispersible-tablet-20mg-120mg.uuid},,Artemether an
 ${var.drug.pharmacy.ciel-161182-tablet-25mg-67-5mg.uuid},,Artesunate and amodiaquine 25mg+67.5mg tablet,${var.concept.ciel.161182.uuid},${var.concept.ciel.1513.uuid},25mg+67.5mg,
 ${var.drug.pharmacy.ciel-161182-tablet-50mg-135mg.uuid},,Artesunate and amodiaquine 50mg+135mg tablet,${var.concept.ciel.161182.uuid},${var.concept.ciel.1513.uuid},50mg+135mg,
 ${var.drug.pharmacy.ciel-161182-tablet-100mg-270mg.uuid},,Artesunate and amodiaquine 100mg+270mg tablet,${var.concept.ciel.161182.uuid},${var.concept.ciel.1513.uuid},100mg+270mg,
+${var.drug.pharmacy.ciel-71561-powder-for-injection-60mg.uuid},,Artesunate 60mg powder for injection,${var.concept.ciel.71561.uuid},${var.concept.ciel.162778.uuid},60mg,
 ${var.drug.pharmacy.item-a5f95187.uuid},,Ascorbic acid (Vit C),${var.concept.national.item-a5f95187.uuid},,,
 ${var.drug.pharmacy.item-5c8b92d4.uuid},,Atazanavir & Ritonavir,${var.concept.national.item-5c8b92d4.uuid},,,
 ${var.drug.pharmacy.ciel-71652-solution-for-injection-0-5mg-ml.uuid},,Atenolol 0.5mg/ml solution for injection,${var.concept.ciel.drug.atenolol.uuid},${var.concept.ciel.1516.uuid},0.5mg/ml,
