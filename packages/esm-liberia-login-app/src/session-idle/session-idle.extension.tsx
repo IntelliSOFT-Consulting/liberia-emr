@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useConfig, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, useSession } from '@openmrs/esm-framework';
 import { clearHistory } from '@openmrs/esm-framework/src/internal';
 import { type ConfigSchema } from '../config-schema';
 import { completeLogout, navigateAfterLogout } from '../redirect-logout/logout.resource';
@@ -20,6 +20,21 @@ const ACTIVITY_THROTTLE_MS = 1000;
  */
 const CHECK_INTERVAL_MS = 15000;
 
+/**
+ * How often human activity is passed on to the server. The servlet session-timeout is
+ * 10 minutes since the last request, and typing into a form sends none, so without this a
+ * person who is working would lose the server session before the client deadline.
+ *
+ * The last refresh can come up to this interval plus one CHECK_INTERVAL_MS after the last
+ * input. If the browser dies before the client logs out, the server session outlives the
+ * person's last input by that much. One minute keeps it near 11 minutes, at one small GET
+ * a minute while someone is working.
+ */
+const KEEPALIVE_INTERVAL_MS = 60 * 1000;
+
+/** Smallest response that still touches the servlet session. */
+const KEEPALIVE_URL = `${restBaseUrl}/session?v=custom:(authenticated)`;
+
 const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel', 'scroll'] as const;
 
 /**
@@ -31,6 +46,7 @@ const SessionIdle: React.FC = () => {
   const session = useSession();
   const loggingOut = useRef(false);
   const lastWriteAt = useRef(0);
+  const lastKeepaliveAt = useRef(0);
   const timeoutMinutes = resolveIdleTimeoutMinutes(config?.session?.idleTimeoutMinutes);
   const providerType = config?.provider?.type;
   const loginUrl = config?.provider?.loginUrl;
@@ -65,6 +81,20 @@ const SessionIdle: React.FC = () => {
         });
     };
 
+    /**
+     * Refresh the server session when there has been human activity since the last
+     * refresh and the interval has passed. The request itself is not human activity.
+     */
+    const keepAlive = (now: number, humanActivityAt: number) => {
+      if (humanActivityAt <= lastKeepaliveAt.current || now - lastKeepaliveAt.current < KEEPALIVE_INTERVAL_MS) {
+        return;
+      }
+      lastKeepaliveAt.current = now;
+      void openmrsFetch(KEEPALIVE_URL).catch((error: unknown) => {
+        console.warn('Session keepalive failed:', error);
+      });
+    };
+
     const check = () => {
       if (loggingOut.current) {
         return;
@@ -77,7 +107,9 @@ const SessionIdle: React.FC = () => {
       }
       if (now - read.at >= timeoutMs) {
         expire(false);
+        return;
       }
+      keepAlive(now, read.at);
     };
 
     let exactTimer = 0;
@@ -95,6 +127,8 @@ const SessionIdle: React.FC = () => {
     };
 
     const now = Date.now();
+    // Loading the app just made requests, so the server session is fresh.
+    lastKeepaliveAt.current = now;
     const initial = readHumanActivity(now);
     if (initial.status === 'missing') {
       recordHumanActivity(now);
@@ -114,6 +148,7 @@ const SessionIdle: React.FC = () => {
       }
       lastWriteAt.current = activityAt;
       recordHumanActivity(activityAt);
+      keepAlive(activityAt, activityAt);
       scheduleExact();
     };
 
