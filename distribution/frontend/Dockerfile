@@ -11,13 +11,24 @@ FROM node:20-alpine AS assemble
 
 WORKDIR /app
 
-# The `openmrs` CLI IS the app shell, so its version is spa.core and nothing else. Passed in
-# by scripts/build/build-distribution.sh straight from distro.properties rather than written
-# here, because a second copy of the number is a second thing to forget: this file previously
-# pinned 5.9.0 against a spa.core of 10.0.0, a version npm has never published.
+# The `openmrs` CLI IS the app shell, so its version is spa.core and nothing else. SPA_CORE is
+# passed in by scripts/build/build-distribution.sh straight from distro.properties. The
+# install comes from cli/package-lock.json, and the build fails if the locked CLI is not
+# spa.core: moving spa.core means regenerating that lockfile.
+#
+# The lockfile matters because `openmrs build` compiles the app shell from the CLI's own
+# dependency tree. An unlocked `npm install -g` picked up postcss-selector-parser 7.2.0
+# (2026-11-08), which double-escapes hashed CSS-module class names. Every app-shell module
+# style stopped matching, and the patient chart's Actions menu no longer opened. The
+# override in cli/package.json holds it at 7.1.8.
 ARG SPA_CORE
-RUN [ -n "$SPA_CORE" ] || { echo "SPA_CORE build-arg is required (spa.core in distro.properties)" >&2; exit 2; }; \
-    npm install -g "openmrs@${SPA_CORE}"
+COPY cli/package.json cli/package-lock.json /app/cli/
+RUN set -eu; \
+    [ -n "$SPA_CORE" ] || { echo "SPA_CORE build-arg is required (spa.core in distro.properties)" >&2; exit 2; }; \
+    locked="$(node -p "require('/app/cli/package-lock.json').packages['node_modules/openmrs'].version")"; \
+    [ "$locked" = "$SPA_CORE" ] || { echo "cli/package-lock.json locks openmrs ${locked}, but spa.core is ${SPA_CORE}. Set cli/package.json to ${SPA_CORE} and regenerate the lockfile." >&2; exit 2; }; \
+    cd /app/cli && npm ci --no-audit --no-fund; \
+    ln -s /app/cli/node_modules/.bin/openmrs /usr/local/bin/openmrs
 
 # spa-assemble-config.json is GENERATED from distribution/distro.properties by
 # scripts/build/generate-import-map.sh — do not hand-edit it.
