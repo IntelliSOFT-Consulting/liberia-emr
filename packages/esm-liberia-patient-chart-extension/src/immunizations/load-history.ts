@@ -10,22 +10,33 @@ type Page = {
   links?: Array<{ rel: string; uri: string }>;
 };
 
-/** Pagination is mandatory: a first page is not evidence that a later dose is absent. */
+const local = 'http://openmrs.local';
+
+/** Path from the API root ("/ws/..."), dropping the server's host and context path. */
+function apiPath(url: URL) {
+  const at = url.pathname.indexOf('/ws/');
+  return at < 0 ? url.pathname : url.pathname.slice(at);
+}
+
+/**
+ * Pagination is mandatory: a first page is not evidence that a later dose is absent.
+ * URLs must be context-relative; server-built next links are re-rooted onto the same
+ * API path, so pages are only ever fetched from this OpenMRS instance.
+ */
 export async function loadHistory(
   fhirUrl: string, encounterUrl: string, fetchPage: (url: string) => Promise<Page>,
 ) {
   async function allPages(initialUrl: string, fhir: boolean) {
     const records: Array<FhirImmunization | NationalEncounter> = [];
     const seen = new Set<string>();
-    const base = new URL(initialUrl, 'http://openmrs.local');
+    const scope = apiPath(new URL(initialUrl, local));
+    // FHIR continuation links (`?_getpages=`) sit at the FHIR root, not the resource path.
+    const allowed = fhir ? [scope, scope.slice(0, scope.lastIndexOf('/'))] : [scope];
     let url: string | undefined = initialUrl;
     let expectedTotal: number | undefined;
     while (url) {
-      const parsed = new URL(url, base);
-      if (parsed.origin !== base.origin || parsed.pathname !== base.pathname || seen.has(parsed.href)) {
-        throw new Error('Invalid or repeated history pagination link');
-      }
-      seen.add(parsed.href);
+      if (seen.has(url)) throw new Error('Repeated history pagination link');
+      seen.add(url);
       const page = await fetchPage(url);
       if (fhir) {
         if (page.resourceType !== 'Bundle' || page.type !== 'searchset' ||
@@ -42,9 +53,10 @@ export async function loadHistory(
       const href = next?.[0];
       if (!href) url = undefined;
       else {
-        const resolved = new URL(href, parsed);
-        url = base.origin === 'http://openmrs.local' ? `${resolved.pathname}${resolved.search}` : resolved.href;
-        if (resolved.origin !== base.origin) throw new Error('History pagination changed origin');
+        const resolved = new URL(href, new URL(url, local));
+        const path = apiPath(resolved);
+        if (!allowed.includes(path)) throw new Error('Invalid history pagination link');
+        url = `${path}${resolved.search}`;
       }
     }
     if (fhir && expectedTotal !== undefined && records.length !== expectedTotal) throw new Error('Incomplete Immunization history');
