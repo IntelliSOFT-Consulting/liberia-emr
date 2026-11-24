@@ -333,9 +333,30 @@ describe('history completeness', () => {
         if (mode === 'malformed') return {};
         return { resourceType: 'Bundle', type: 'searchset', total: mode === 'missing' ? 1 : 0,
           link: mode === 'cycle' ? [{ relation: 'next', url: '/fhir' }]
-            : mode === 'foreign' ? [{ relation: 'next', url: 'https://other.example/fhir' }] : [] };
+            : mode === 'foreign' ? [{ relation: 'next', url: 'https://other.example/elsewhere' }] : [] };
       }));
     }
+  });
+  it('follows absolute server-built next links re-rooted on the context-relative API path', async () => {
+    const fhirUrl = '/ws/fhir2/R4/Immunization?patient=patient';
+    const restUrl = '/ws/rest/v1/encounter?patient=patient&limit=100';
+    const pages: Record<string, unknown> = {
+      [fhirUrl]: { resourceType: 'Bundle', type: 'searchset', total: 2, entry: [{ resource: fhir('OPV1', day(42)) }],
+        link: [{ relation: 'next', url: 'http://backend:8080/openmrs/ws/fhir2/R4?_getpages=abc&_getpagesoffset=1' }] },
+      '/ws/fhir2/R4?_getpages=abc&_getpagesoffset=1': { resourceType: 'Bundle', type: 'searchset', total: 2,
+        entry: [{ resource: fhir('Penta1', day(42)) }] },
+      [restUrl]: { results: [],
+        links: [{ rel: 'next', uri: 'https://emr.example/openmrs/ws/rest/v1/encounter?patient=patient&limit=100&startIndex=100' }] },
+      '/ws/rest/v1/encounter?patient=patient&limit=100&startIndex=100': { results: [national('OPV1', day(42))] },
+    };
+    const fetched: string[] = [];
+    const history = await loadHistory(fhirUrl, restUrl, async (url) => {
+      fetched.push(url);
+      return pages[url] as never;
+    });
+    assert.equal(history.fhir.length, 2);
+    assert.equal(history.encounters.length, 1);
+    assert.ok(fetched.every((url) => url.startsWith('/ws/')));
   });
 });
 
