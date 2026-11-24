@@ -35,6 +35,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * O3 reads the session on sign-in, so the record is made then, once. The provider is rendered as
  * the REST module renders it (REF, under a Get Providers proxy). Any failure leaves the body as the
  * REST module wrote it.
+ * <p>
+ * Not a UserService save hook on purpose: legacy UserFormController saves its own Provider after
+ * createUser when "Create a Provider account" is ticked, without checking for an existing one, and
+ * ProviderValidator accepts duplicate identifiers, so a save hook would give that user two providers.
  */
 @ControllerAdvice(assignableTypes = SessionController1_9.class)
 public class ClinicalProviderSessionAdvice implements ResponseBodyAdvice<Object> {

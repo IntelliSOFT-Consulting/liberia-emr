@@ -56,7 +56,11 @@ public final class ClinicalProviderAccount {
 		        && user.hasPrivilege(PrivilegeConstants.ADD_ENCOUNTERS);
 	}
 	
-	static Provider ensureFor(User user, ProviderService providers) {
+	/**
+	 * Synchronized: O3 fires several /session calls at boot and duplicate identifiers pass
+	 * validation.
+	 */
+	static synchronized Provider ensureFor(User user, ProviderService providers) {
 		Person person = user.getPerson();
 		if (!providers.getProvidersByPerson(person, true).isEmpty()) {
 			return null;
