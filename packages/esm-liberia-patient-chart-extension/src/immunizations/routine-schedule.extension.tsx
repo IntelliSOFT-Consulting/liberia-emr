@@ -69,8 +69,8 @@ export default function RoutineSchedule({ patientUuid, patient }: { patientUuid:
   const encounterUrl = `${restBaseUrl}/encounter?patient=${encodeURIComponent(patientUuid)}&v=${rep}&limit=100`;
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     patientUuid ? ['liberia-routine-immunization-history', fhirUrl, encounterUrl] : null,
-    () => loadHistory(new URL(fhirUrl, window.location.origin).href,
-      new URL(encounterUrl, window.location.origin).href, async (url) => (await openmrsFetch(url)).data),
+    // Context-relative: openmrsFetch adds window.openmrsBase only to non-absolute URLs.
+    () => loadHistory(fhirUrl, encounterUrl, async (url) => (await openmrsFetch(url)).data),
     { refreshInterval: 30_000 },
   );
   const normalized = useMemo(() => data && normalizeHistory({
