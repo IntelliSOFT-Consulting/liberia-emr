@@ -12,7 +12,7 @@ import {
 } from '../forms/vitamin-a-supplementation.ts';
 import { isPediatricPfizerDose } from './pediatric-pfizer.ts';
 import { routeRequired, sameSubmissionVaccineDuplicate, vaccineNameRequired } from './same-submission-vaccine.ts';
-import { routineDoseOutsideWindow, routineNextDoseDate } from './routine-dose-gate.ts';
+import { routineDoseNotYetDue, routineDoseOutsideWindow, routineNextDoseDate } from './routine-dose-gate.ts';
 import { decideTdGate, isTdVaccine, tdConceptsFromFormArgs, type TdGateCode } from './td-pregnancy.ts';
 
 /**
@@ -54,7 +54,7 @@ function question(id: string) {
   assert.ok(found, `missing form question ${id}`);
   return found as {
     questionOptions?: { calculate?: { calculateExpression?: string } };
-    validators?: Array<{ failsWhenExpression: string }>;
+    validators?: Array<{ failsWhenExpression?: string; warnsWhenExpression?: string }>;
   };
 }
 
@@ -159,6 +159,7 @@ function runtime(values: Record<string, unknown>) {
     vaccineNameRequired,
     routeRequired,
     routineDoseOutsideWindow,
+    routineDoseNotYetDue,
     routineNextDoseDate,
     node: { value: { id: 'vaccine_name' } },
     allFieldValues: { vaccine_name: values.vaccine_name ?? '' },
@@ -177,7 +178,7 @@ async function selectVaccine(vaccineName: string) {
   const currentReturn = new Date(2024, 5, 1, 12, 0, 0, 0);
   const returnDate = await evaluateAsync(calculate('return_date'), { ...values, myValue: currentReturn });
   const validatorResults = (question('vaccine_name').validators ?? []).map((validator) =>
-    evaluateAsync(substitute(validator.failsWhenExpression), { ...values, myValue: vaccineName, td_gate: gate }));
+    evaluateAsync(substitute(validator.warnsWhenExpression ?? validator.failsWhenExpression ?? ''), { ...values, myValue: vaccineName, td_gate: gate }));
   await Promise.all(validatorResults);
   return { gate, route, returnDate, currentReturn };
 }
