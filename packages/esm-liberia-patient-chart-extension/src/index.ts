@@ -42,7 +42,7 @@ import { hpvDoseId, hpvStatusLabel, isHpvDose } from './immunizations/hpv';
 import { pediatricPfizerAdministrationGate } from './immunizations/pediatric-pfizer-gate';
 import { isPediatricPfizerDose, pediatricPfizerDoseId, pediatricPfizerStatusLabel } from './immunizations/pediatric-pfizer';
 import { tdAdministrationGate } from './immunizations/td-administration-gate';
-import { routineDoseOutsideWindow, routineNextDoseDate } from './immunizations/routine-dose-gate';
+import { routineDoseNotYetDue, routineDoseOutsideWindow, routineNextDoseDate } from './immunizations/routine-dose-gate';
 import { routeRequired, sameSubmissionVaccineDuplicate, vaccineNameRequired } from './immunizations/same-submission-vaccine';
 import { isTdVaccine } from './immunizations/td-pregnancy';
 
@@ -73,6 +73,7 @@ export function startupApp() {
   registerFormEngineExpressionHelper('vaccineNameRequired', vaccineNameRequired);
   registerFormEngineExpressionHelper('routeRequired', routeRequired);
   registerFormEngineExpressionHelper('routineDoseOutsideWindow', routineDoseOutsideWindow);
+  registerFormEngineExpressionHelper('routineDoseNotYetDue', routineDoseNotYetDue);
   registerFormEngineExpressionHelper('routineNextDoseDate', routineNextDoseDate);
   registerFormEngineExpressionHelper('alreadyCapturedVaccineGate', alreadyCapturedVaccineGate);
   registerFormEngineExpressionHelper('ttAdministrationGate', ttAdministrationGate);

@@ -63,6 +63,28 @@ export function routineNextDoseDate(
   }
 }
 
+/**
+ * Warn-only check: true when a routine-schedule dose is recorded before its due age.
+ * Same age rule as the schedule's NOT_YET_DUE. Non-routine or incomplete input never warns.
+ */
+export function routineDoseNotYetDue(
+  birthDate: unknown,
+  evaluationDate: unknown,
+  vaccineConceptUuid: unknown,
+  doseMap: unknown,
+): boolean {
+  const id = conceptIds(doseMap).get(text(vaccineConceptUuid));
+  const policy = id ? routineSchedule.find((dose) => dose.id === id) : undefined;
+  const birth = calendarIso(birthDate);
+  const evaluation = calendarIso(evaluationDate);
+  if (!policy || !birth || !evaluation) return false;
+  try {
+    return evaluation < addDateOffset(birth, policy.dueAge);
+  } catch {
+    return false;
+  }
+}
+
 function successor(id: string): { dueAge: Offset; minimumInterval?: Offset } | null {
   const routine = routineSchedule.find((dose) => dose.prerequisite?.canonicalDoseId === id);
   if (routine) {
